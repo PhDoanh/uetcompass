@@ -1,3 +1,6 @@
-# abcxyz
+# UETCompass
 
-_P/s: Tên chính thức của dự án chưa được quyết định_
+## Project Constitution
+This project follows a strict set of principles defined in the [Constitution](.specify/memory/constitution.md). All contributors must adhere to these principles.
+
+

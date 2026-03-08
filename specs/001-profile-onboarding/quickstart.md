@@ -87,21 +87,22 @@ npm run dev
 
 ## 4. Seed course catalog (prerequisite data)
 
-The onboarding course multi-select requires `course_units` documents in MongoDB. Run the seed script (separate feature — you may use a minimal fixture for local dev):
+The onboarding course multi-select requires `course_units` documents in MongoDB. These are populated by the `002-seed-ctdt-dag` background job. Run it once locally before testing this feature:
 
 ```bash
 cd backend
-node scripts/seed-courses.js
-# Inserts sample CourseUnit documents for each major
+npm run seed:ctdt
+# Calls Tavily + Gemini to extract and upsert CourseUnits from configured UET curriculum URLs
+# Requires TAVILY_API_KEY and GEMINI_API_KEY in backend/.env (see feature 002-seed-ctdt-dag quickstart)
 ```
 
-If the seed script does not exist yet, insert a minimal fixture manually:
+If you don't have API keys set up yet, insert a minimal fixture manually instead:
 
 ```js
-// In mongo shell or MongoDB Compass:
+// MongoDB Compass or mongosh
 db.course_units.insertMany([
-  { code: "INT2204", name: "Object-Oriented Programming", major: "Computer Science" },
-  { code: "INT2208", name: "Data Structures & Algorithms", major: "Computer Science" },
+  { code: "INT2204", name: "Lập trình hướng đối tượng", credits: 4, major: "CNTT", prerequisites: [], seededAt: new Date() },
+  { code: "INT2210", name: "Cấu trúc dữ liệu và Giải thuật", credits: 4, major: "CNTT", prerequisites: ["INT2204"], seededAt: new Date() },
   // Add more as needed for local testing
 ]);
 ```

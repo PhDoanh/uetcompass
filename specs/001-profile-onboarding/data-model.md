@@ -86,6 +86,8 @@ All free-text fields (`careerGoal.role`, `careerGoal.companyType`, `personalAspi
 | `name` | String | Display name for the multi-select UI |
 | `major` | String | Used as filter: `CourseUnit.find({ major })` |
 
+See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
+
 **Access pattern from onboarding module**: `find({ major })` on `GET /onboarding/draft` response enrichment and on major change. No writes.
 
 ---

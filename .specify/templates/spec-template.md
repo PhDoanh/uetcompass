@@ -95,12 +95,6 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
-### Non-Functional Requirements
-
-- **NFR-001 (Privacy)**: Student credentials MUST NOT be stored or logged.
-- **NFR-002 (AI Validation)**: All Gemini API responses MUST be validated against a schema before processing.
-- **NFR-003 (UX)**: Loading states MUST handle Render's cold start (~50s) gracefully.
-
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]

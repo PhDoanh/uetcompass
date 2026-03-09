@@ -31,11 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- [ ] **Modular Monolithic**: Does this feature respect module boundaries? (No cross-module imports)
-- [ ] **UET-First**: Is the design specific to UET context? (No premature generalization)
-- [ ] **Privacy**: Are student credentials handled safely? (No storage/logging)
-- [ ] **AI-Assisted**: Is Gemini output validated? Is there a human override?
-- [ ] **Test What Matters**: Are core logic and side effects covered by unit tests?
+[Gates determined based on constitution file]
 
 ## Project Structure
 

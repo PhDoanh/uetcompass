@@ -103,7 +103,7 @@ After every successful login — regardless of login method — the system route
 
 ### User Story 6 – Update Profile and Trigger Roadmap Re-personalization (Priority: P2)
 
-A student who has completed onboarding opens Account Settings and updates their personal information, including fields originally entered during onboarding. The system detects changed onboarding fields, places a "Re-personalize" button in the roadmap view (Feature 003), and delivers an in-app notification with a direct link to navigate to the roadmap.
+A student who has completed onboarding opens Account Settings and updates their personal information, including fields originally entered during onboarding. The system detects changed onboarding fields, places a "Re-personalize" button in the roadmap view (Feature 004), and delivers an in-app notification with a direct link to navigate to the roadmap.
 
 **Why this priority**: Profile updates enable the skill tree and roadmap to reflect the student's current situation, not just their initial snapshot. Without this feedback loop, the learning path becomes stale.
 
@@ -214,7 +214,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 
 - **FR-026**: A student MUST be able to update their full name and profile picture at any time after account creation.
 - **FR-027**: After a student has submitted onboarding, all onboarding profile fields (major, completed courses, target job role, target company type, graduation timeline, personal aspirations) MUST be displayed and editable within Account Settings.
-- **FR-028**: When a student saves changes to one or more onboarding profile fields, the system MUST detect the change and place a "Re-personalize" button in the roadmap view (Feature 003).
+- **FR-028**: When a student saves changes to one or more onboarding profile fields, the system MUST detect the change and place a "Re-personalize" button in the roadmap view (Feature 004).
 - **FR-029**: Simultaneously with placing the "Re-personalize" button, the system MUST deliver an in-app notification containing a direct link that navigates the student to the roadmap view.
 - **FR-030**: Saving changes to non-onboarding fields (name, avatar) MUST NOT trigger the "Re-personalize" button or any re-personalization notification.
 - **FR-031**: A student MUST be able to change their password by entering their current password and a new password; the current password MUST be verified before the change takes effect.
@@ -270,7 +270,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 
 - All students accessing UETCompass are affiliated with UET-VNU and hold a `@vnu.edu.vn` email address; no other account types (admin, advisor, guest) are in scope for this feature.
 - The Onboarding Panel described in FR-021 through FR-025 is implemented by Feature 001 (Profile Onboarding); this feature is only responsible for triggering its display, pre-fill, dismissal, and permanent closure based on login state.
-- The "Re-personalize" button described in FR-028 is rendered by Feature 003 (Skill Tree); this feature is responsible for signaling the need for it when onboarding fields change.
+- The "Re-personalize" button described in FR-028 is rendered by Feature 004 (Skill Tree); this feature is responsible for signaling the need for it when onboarding fields change.
 - Email delivery for OTP codes and account deletion confirmation depends on an external email delivery mechanism; delivery reliability and timing are outside the scope of this feature.
 - Google Sign-In relies on the Google account selection panel to surface accounts already signed in on the student's device; the list of accounts shown is determined by the student's browser or device state, not by this system.
 - No two-factor authentication (2FA) beyond OTP-based email verification is required at this time.
@@ -284,6 +284,6 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - Transcript or GPA import at account creation time — handled by a separate feature.
 - Management of predefined onboarding lists (job roles, company types, majors) — maintained outside this feature.
 - The Onboarding Panel form fields, validation, and submission logic — defined in Feature 001 (Profile Onboarding).
-- The roadmap "Re-personalize" button rendering and re-personalization execution logic — defined in Feature 003 (Skill Tree).
+- The roadmap "Re-personalize" button rendering and re-personalization execution logic — defined in Feature 004 (Skill Tree).
 - Rate limiting on OTP resend requests beyond the lock/unlock mechanism described in FR-006.
 - Social sign-in methods other than Google.

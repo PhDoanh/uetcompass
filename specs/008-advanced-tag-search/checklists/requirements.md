@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: March 11, 2026
-**Feature**: [specs/007-advanced-tag-search/spec.md](specs/007-advanced-tag-search/spec.md)
+**Feature**: [specs/008-advanced-tag-search/spec.md](specs/008-advanced-tag-search/spec.md)
 
 ## Content Quality
 

@@ -1,6 +1,6 @@
 # Feature Specification: Advanced Tag-Based Search
 
-**Feature Branch**: `007-advanced-tag-search`  
+**Feature Branch**: `008-advanced-tag-search`  
 **Created**: March 11, 2026  
 **Status**: Draft  
 **Input**: User description: "Advanced Tag-Based Search (feat-advanced-search) - System for advanced search allowing users to discover the ecosystem through AI-generated tags, creating multi-dimensional connections between Roadmap, Course, and Skill. UX flow: Users click on tag #Database -> system shows related courses (SQL, NoSQL) -> displays related roadmaps (Backend Developer, Data Engineer). Acceptance criteria: 2 sections display (related courses and related roadmaps), query latency <500ms for 10,000 skills, support combined filters (Tag + Level)."

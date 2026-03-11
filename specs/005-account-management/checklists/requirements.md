@@ -32,6 +32,6 @@
 ## Notes
 
 - All 8 user stories pass independently with no blocking issues.
-- Cross-feature integration points (Feature 001 onboarding panel, Feature 003 Re-personalize trigger) are clearly bounded in Assumptions and Out of Scope.
+- Cross-feature integration points (Feature 001 onboarding panel, Feature 004 Re-personalize trigger) are clearly bounded in Assumptions and Out of Scope.
 - No [NEEDS CLARIFICATION] markers were required — all decisions resolved using input constraints (e.g., OTP 4-digit, 2-minute expiry, 5-attempt lockout) or documented as reasonable defaults in Assumptions.
 - Spec is ready to proceed to `/speckit.clarify` or `/speckit.plan`.

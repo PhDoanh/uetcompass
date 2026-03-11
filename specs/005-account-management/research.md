@@ -217,15 +217,15 @@ async function attemptLogin(email, password) {
 
 ---
 
-## R-007: Re-personalization Signal (Feature 003 Integration)
+## R-007: Re-personalization Signal (Feature 004 Integration)
 
 **Decision**: When `PATCH /api/auth/account/profile` saves changes, `profileSettings.service.js` compares new values against the stored `StudentProfile` for the 6 onboarding fields (major, completedCourseIds, careerGoal.role, careerGoal.companyType, graduationTimeline, personalAspirations). If any changed, it sets `student_profiles.repersonalizationPending = true` via `StudentProfile.updateOne()` (service-layer call — no direct cross-module import), and creates a `Notification` record of type `REPERSONALIZE` with a link to the roadmap.
 
 **SSE delivery**: Uses the shared `notification.sse.js` (same pattern as `onboarding.sse.js` from Feature 001 — `Map<userId, res>` + `notifyUser(userId, event, data)`). If the student is not currently connected, the notification persists in the `notifications` collection and is fetched on next mount.
 
-**Feature 003 reads**: `GET /api/roadmap/status` (Feature 003's responsibility) reads `student_profiles.repersonalizationPending` to decide whether to show the "Re-personalize" button. When the student acts on it, Feature 003 clears the flag via `StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: false } })`.
+**Feature 004 reads**: `GET /api/roadmap/status` (Feature 004's responsibility) reads `student_profiles.repersonalizationPending` to decide whether to show the "Re-personalize" button. When the student acts on it, Feature 004 clears the flag via `StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: false } })`.
 
-**Rationale**: A boolean flag on `StudentProfile` is the simplest cross-feature signal — no event bus, no queue, no additional storage beyond what already exists. The flag is owned by the `student_profiles` collection (Feature 001) but is set by Feature 004 and read/cleared by Feature 003 via the service layer, maintaining the module boundary.
+**Rationale**: A boolean flag on `StudentProfile` is the simplest cross-feature signal — no event bus, no queue, no additional storage beyond what already exists. The flag is owned by the `student_profiles` collection (Feature 001) but is set by Feature 004 and read/cleared by Feature 004 via the service layer, maintaining the module boundary.
 
 **Alternatives considered**:
 - Event emitter (rejected — in-process only, lost on Render restart; fragile)

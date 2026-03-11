@@ -11,6 +11,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - MongoDB Atlas for primary data; new collections `skills`, `tags`, `tagging_jobs` used as queue and audit log. (006-ai-auto-tagging)
 
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
+- JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)
+- MongoDB Atlas free tier — new collections: `skill_node_statuses`, `course_ai_contexts`, `course_resources`; read-only: `student_roadmaps` (written by personalization job), `market_skills`, `skill_learning_resources` (written by crawling service), `student_profiles` (Feature 001) (004-skill-tree)
 
 ## Project Structure
 
@@ -29,9 +31,9 @@ npm test; npm run lint
 JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard conventions
 
 ## Recent Changes
-- 006-ai-auto-tagging: Added JavaScript/TypeScript – Node.js 20 LTS for backend (existing monolith), React 18 (frontend admin UI if needed).
-- 007-progress-tracking: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 005-account-management: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 002-seed-ctdt-dag: Added Node.js 20 LTS + Express.js (consistent with existing backend stack) + `node-cron` (Cron scheduler), `@google/generative-ai` (Gemini SDK — first integration), `@tavily/core` (Tavily Extract SDK — first integration), `mongoose` (existing)
 
 
 <!-- MANUAL ADDITIONS START -->

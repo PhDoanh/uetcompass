@@ -1,10 +1,8 @@
-# Specification Quality Checklist: Skill Tree – Visual Career Path Tracker
+# Specification Quality Checklist: Progress Tracking Dashboard
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
-**Created**: 2026-03-09  
+**Created**: 2026-03-11  
 **Feature**: [spec.md](../spec.md)
-
----
 
 ## Content Quality
 
@@ -33,7 +31,7 @@
 
 ## Notes
 
-- All items passed on first validation iteration (2026-03-09).
-- Implementation notes from the original user request (React Flow, WebSocket, DAG traversal, E2E test counts) were deliberately excluded from the spec as they are implementation concerns, not specification concerns. They can be addressed during planning (`/speckit.plan`).
-- The language preference default (Vietnamese) is documented as an assumption; if the default should be system-locale-based, that can be clarified during `/speckit.clarify`.
-- Spec is **ready for** `/speckit.clarify` (optional) or `/speckit.plan`.
+- Spec explicitly scopes out Skill Tree responsibilities (tree view, node state writes, progress bar, Next Steps) to prevent scope creep during planning.
+- 5-second update guarantee (SC-004 / FR-008) is looser than Skill Tree's 3-second cross-session sync (Skill Tree FR-008) to allow for the indirection through the cache layer — this is intentional.
+- The `RoadmapProgressCache` entity is described at the conceptual level only; no storage technology is specified.
+- Node type is scoped to `Course` only, consistent with Skill Tree spec scope.

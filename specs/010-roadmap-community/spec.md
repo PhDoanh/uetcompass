@@ -9,16 +9,16 @@
 
 ## Context & Scope
 
-Roadmap Community enables students to share their accepted personalised roadmaps — either as persistent read-only snapshot links or as live discoverable community entries — so that peers with similar career goals can benefit from real examples.
+Roadmap Community enables students to share their accepted personalised roadmaps — either as persistent read-only snapshot links or as snapshot-based discoverable community entries — so that peers with similar career goals can benefit from real examples.
 
 Two distinct sharing mechanisms exist with different persistence semantics:
 
 - **Share via link (snapshot)**: The link captures the roadmap at the moment it is generated. If the student later accepts a new roadmap, the link continues to serve the original snapshot. The link persists until the student explicitly revokes it; it is never automatically invalidated.
-- **Publish to community feed (live)**: The community entry always reflects the student's current accepted roadmap. When the student accepts a new roadmap, the community entry automatically updates — no republication is needed.
+- **Publish to community feed (snapshot)**: Publishing captures the student's current accepted roadmap as an immutable snapshot at the moment of publication. Accepting a new roadmap does NOT automatically update or remove the published entry. To update their community presence, a student must explicitly publish again, which replaces the existing entry with a fresh snapshot. At most one active community entry per student exists at any time.
 
-Both sharing actions are time-gated: a student must have held their current accepted roadmap for a minimum configurable period of **Y days** before generating a new share link or making an initial publication to the community. The time-gate resets when a new roadmap is accepted, but it only governs new share link generation and new community publications — automatic community entry updates on roadmap replacement are not subject to the time-gate.
+Both sharing actions are time-gated: a student must have held their current accepted roadmap for a minimum configurable period of **Y days** before generating a new share link or publishing to the community (including replacing an existing entry with a new publication).
 
-Authenticated UETCompass users can also **like** a community entry (a simple interest signal displayed as a count) and **fork** a published roadmap — sending its course sequence through Feature 009's standard acceptance flow (including prerequisite validation), which, if it passes, saves the forked roadmap as the forking student's new accepted roadmap. Both actions require authentication and apply only to community feed entries, not to share link snapshots.
+Authenticated UETCompass users can also **like** a community entry (a simple interest signal displayed as a count) and **fork** a published roadmap — sending its course sequence through Feature 009's standard acceptance flow (including prerequisite validation). Before the result is committed, courses the forking student has already completed are filtered out. If the filtered sequence passes validation, it becomes the forking student's new accepted roadmap. Both actions require authentication and apply only to community feed entries, not to share link snapshots.
 
 This feature depends on Feature 009's prerequisite compatibility validation being in place at the acceptance endpoint. That validation is specified and owned by Feature 009; this feature consumes it (fork triggers it) but does not define it.
 
@@ -42,6 +42,12 @@ This feature depends on Feature 009's prerequisite compatibility validation bein
 - Q: What does fork produce — a read-only reference copy, a re-personalised template via Feature 009, or a direct import through Feature 009's standard acceptance flow? → A: Fork sends the community roadmap's course sequence through Feature 009's acceptance flow (with prerequisite checking). If it passes, the forked roadmap becomes the forking student's new accepted roadmap.
 - Q: Can a student have multiple simultaneous active share links, or only one? → A: Each accepted roadmap can have at most one active share link. A student cannot generate a second link while one already exists for their current roadmap.
 - Q: What is the default sort order of the community feed — publication date, like count, or something else? → A: Entries are ordered by relevance to the viewing student's major: entries from the same or related major group appear first.
+
+### Session 2026-03-11 (Pre-plan)
+
+- Q: Is community entry content live (auto-updates on roadmap change) or snapshot-based (fixed at publish time)? → A: Snapshot — community entries capture the roadmap at publication time and do not auto-update when the student accepts a new roadmap.
+- Q: Can a student have multiple simultaneous active community entries? → A: No — at most one active community entry per student; publishing again replaces the existing entry.
+- Q: When forking, are courses the forking student has already completed excluded from the forked roadmap? → A: Yes — courses already in the forking student's `completedCourseIds` are filtered out before the fork is committed; the saved roadmap contains only courses not yet completed.
 
 ---
 
@@ -68,13 +74,13 @@ An eligible student (whose accepted roadmap has been held for at least Y days) o
 
 ---
 
-### User Story 2 – Publish Roadmap to Community Feed (Live Entry) (Priority: P1)
+### User Story 2 – Publish Roadmap to Community Feed (Snapshot Entry) (Priority: P1)
 
-An eligible student publishes their accepted roadmap to the community feed. The community entry is live — it always reflects the student's current accepted roadmap. If the student later accepts a new roadmap, the community entry automatically updates without the student needing to republish. Authenticated peers can discover it while browsing the feed. The student can unpublish at any time and controls whether their real identity or "Anonymous" is shown.
+An eligible student publishes their accepted roadmap to the community feed as a snapshot — a fixed capture of their roadmap at the moment of publication. Accepting a new roadmap does not automatically update the published entry; the snapshot persists until the student explicitly publishes again (replacing it) or unpublishes. Authenticated peers can discover the entry while browsing the feed. The student can unpublish at any time and controls whether their real identity or “Anonymous” is shown.
 
-**Why this priority**: Publishing to the community feed is the central social value proposition. The live semantic — where the community entry tracks the student's current roadmap automatically — keeps the feed accurate without manual maintenance overhead.
+**Why this priority**: Publishing to the community feed is the central social value proposition. The snapshot semantic ensures that what peers see is a stable, auditable version of a real student roadmap at a point in time.
 
-**Independent Test**: Can be fully tested by publishing a roadmap as an eligible student, verifying the entry appears in the feed with correct metadata, then accepting a new roadmap and verifying the community entry updates automatically to the new content — without the student taking any re-publication action.
+**Independent Test**: Can be fully tested by publishing a roadmap as an eligible student, verifying the entry appears in the feed with correct metadata, then accepting a new roadmap and verifying the community entry still shows the original snapshot — confirming no automatic update occurred. Then publish again after the Y-day hold and verify the existing entry is replaced.
 
 **Acceptance Scenarios**:
 
@@ -82,8 +88,8 @@ An eligible student publishes their accepted roadmap to the community feed. The 
 2. **Given** an eligible student activates "Publish to community", **When** the action is confirmed, **Then** their roadmap entry appears in the community feed visible to all authenticated users.
 3. **Given** a community entry is displayed, **When** a viewer inspects its metadata, **Then** they see: owner's display name (or "Anonymous"), major identity (exact major when identified; major group label when anonymous), career goal role, number of roadmap nodes, publication date, and a preview of the first few nodes.
 4. **Given** a published roadmap, **When** any authenticated user views the full roadmap detail from the community, **Then** they see all nodes with `courseCode`, `courseName`, `gainedSkills`, and `reason` — but `supportingSkills` and `careerRelevanceNote` are NOT shown.
-5. **Given** a student has an active community entry and then accepts a new roadmap, **When** another student views the community feed, **Then** the community entry automatically reflects the new roadmap content — the student did not need to take any republication action.
-6. **Given** a student has an active community entry and accepts a new roadmap, **When** the student checks whether they need to republish, **Then** no action is required — the time-gate does NOT prevent this automatic update; it only applies to students who have no current community entry and wish to publish for the first time (or after an explicit unpublish).
+5. **Given** a student has an active community entry and then accepts a new roadmap, **When** another student views the community feed, **Then** the community entry still shows the snapshot captured at the time of the original publication — it is NOT automatically updated by the roadmap change.
+6. **Given** a student has an active community entry and later publishes again (after accepting a new roadmap and satisfying the Y-day hold), **When** the new publication is confirmed, **Then** the existing community entry is replaced with a fresh snapshot of the new roadmap.
 7. **Given** a student publishes their roadmap, **When** they later activate "Unpublish", **Then** the entry is removed from the community feed immediately and is no longer discoverable.
 8. **Given** a student who previously unpublished wants to republish after accepting a new roadmap, **When** they attempt to publish, **Then** the Y-day hold on the current roadmap applies — they must wait until eligible.
 9. **Given** a student has no share link generated but has published to the community, **When** another student visits the community detail view, **Then** the detail renders without error — share link and community publication are independent.
@@ -131,7 +137,7 @@ An authenticated student opens the community feed to discover roadmaps shared by
 
 ### User Story 5 – View Full Community Roadmap Detail (Priority: P2)
 
-An authenticated student browsing the community feed clicks an entry to open the full read-only detail view of that roadmap. Because community entries are live, they see the current roadmap content for that student — all nodes with skills and reasoning, but no personal career context fields.
+An authenticated student browsing the community feed clicks an entry to open the full read-only detail view of that roadmap. Because community entries are snapshots, they see the roadmap content as it was at the time of publication — all nodes with skills and reasoning, but no personal career context fields.
 
 **Why this priority**: The detail view completes the loop from discovery (feed) to depth (full roadmap). Without it the feed is a summary list with no actionable content. It is P2 because it depends on the feed existing (Story 4).
 
@@ -168,7 +174,7 @@ An authenticated student browsing the community feed or viewing a roadmap detail
 
 ### User Story 7 – Fork a Community Roadmap (Priority: P3)
 
-An authenticated student viewing a community roadmap detail activates "Fork this roadmap". The system sends the community roadmap's course sequence through Feature 009's standard acceptance flow — the same flow that runs when a student accepts any roadmap, including prerequisite validation. If the validation passes, the forked roadmap becomes the student's new accepted roadmap (replacing whatever they had before). If validation fails, the fork is blocked and the student sees which courses violate their prerequisite constraints. Forking resets the student's Y-day eligibility clock, exactly as accepting any new roadmap does.
+An authenticated student viewing a community roadmap detail activates “Fork this roadmap”. The system sends the community roadmap's course sequence through Feature 009's standard acceptance flow — the same flow that runs when a student accepts any roadmap, including prerequisite validation. Before the result is committed, courses the forking student has already completed are filtered out of the sequence. If the filtered sequence passes validation, it becomes the student's new accepted roadmap (replacing whatever they had before). If validation fails, the fork is blocked and the student sees which courses violate their prerequisite constraints. Forking resets the student's Y-day eligibility clock, exactly as accepting any new roadmap does.
 
 **Why this priority**: Forking enables active reuse of peer roadmaps, closing the loop from passive discovery to personal adoption. It is P3 because the community feature delivers full discovery and sharing value independently; fork adds an optional adoption path.
 
@@ -178,8 +184,8 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 
 1. **Given** an authenticated student is viewing a community roadmap detail view, **When** they inspect the page, **Then** a "Fork this roadmap" action is visible. (A student MUST NOT be able to fork their own community entry.)
 2. **Given** a student activates "Fork this roadmap", **When** the action is submitted, **Then** the community roadmap's course sequence is submitted to Feature 009's acceptance flow for prerequisite validation.
-3. **Given** the fork's course sequence passes Feature 009's prerequisite validation, **When** acceptance succeeds, **Then** the forked roadmap is saved as the student's new accepted roadmap, replacing any previously accepted roadmap.
-4. **Given** a fork acceptance succeeds, **When** the student returns to their roadmap view, **Then** they see the forked roadmap as their current accepted roadmap, with all standard post-acceptance behaviour applying (Y-day clock resets; any existing snapshot share links survive; any existing community entry auto-updates to the new content).
+3. **Given** the fork's course sequence passes Feature 009's prerequisite validation, **When** acceptance succeeds, **Then** courses already in the forking student's completed courses are filtered out from the sequence; the remaining courses are saved as the student's new accepted roadmap, replacing any previously accepted roadmap.
+4. **Given** a fork acceptance succeeds, **When** the student returns to their roadmap view, **Then** they see the forked roadmap (minus their already-completed courses) as their current accepted roadmap, with all standard post-acceptance behaviour applying (Y-day clock resets; any existing snapshot share links survive; any existing community entry remains unchanged as its original snapshot).
 5. **Given** the fork's course sequence fails Feature 009's prerequisite validation, **When** the error is returned, **Then** the fork is blocked; the student sees a clear error message identifying the violating courses (as per Feature 009's validation behaviour). The student's existing accepted roadmap, share links, and community entry are unaffected.
 6. **Given** an unauthenticated visitor opens a share link snapshot, **When** they view the snapshot, **Then** no "Fork this roadmap" action is shown — forking is only available to authenticated users on community entries.
 
@@ -188,8 +194,8 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 ### Edge Cases
 
 - **Roadmap replaced while snapshot link is active**: The snapshot link is NOT invalidated — it continues to serve the content captured at generation time. The student cannot generate a new share link until the new roadmap has been held for Y days.
-- **Roadmap replaced while community entry is published**: The community entry automatically updates to reflect the new roadmap content — it is NOT removed. The Y-day time-gate does not apply to this automatic update.
-- **Ineligible for new sharing but snapshot link persists**: After the Y-day clock resets, the student cannot generate a new share link, but their existing snapshot links remain valid indefinitely until explicitly revoked.
+- **Roadmap replaced while community entry is published**: The community entry is NOT automatically updated — it continues to show the snapshot captured at the time of the original publication. The student must explicitly publish again (subject to the Y-day hold on the new roadmap) to update their community presence.
+- **Ineligible for new sharing but existing snapshots persist**: After the Y-day clock resets, the student cannot generate a new share link or publish a new community entry, but their existing snapshot share links and any active community entry remain valid until explicitly revoked or unpublished.
 - **Y-day threshold at exact boundary**: A student whose roadmap acceptance timestamp is exactly Y days old at the moment they view the page sees sharing actions as available (inclusive boundary).
 - **Anonymous student in a small cohort**: The major group label (not the exact major) is displayed, reducing re-identification risk even when few students share the same major.
 - **Student revokes share link while a visitor is viewing it**: The URL becomes invalid immediately; the viewer receives a not-found response if they refresh or navigate.
@@ -222,11 +228,11 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 
 **Publish to Community Feed (Live)**
 
-- **FR-010**: Once eligible, a student MUST be able to publish their current accepted roadmap to the community feed as a live entry.
-- **FR-011**: A live community entry MUST always reflect the student's current accepted roadmap. When the student accepts a new roadmap, the community entry MUST automatically update to the new roadmap content without requiring student action.
-- **FR-012**: The automatic community entry update triggered by a new roadmap acceptance MUST NOT be subject to the Y-day time gate.
+- **FR-010**: Once eligible, a student MUST be able to publish their current accepted roadmap to the community feed as a snapshot entry. Publishing captures the roadmap's node content at the moment of publication as an immutable snapshot.
+- **FR-011**: A community entry is snapshot-based — it MUST NOT be automatically updated when the student accepts a new roadmap. The published content remains fixed until the student explicitly publishes again or unpublishes.
+- **FR-012**: A new publication by a student MUST replace their existing community entry (if one exists). At most one active community entry per student is permitted at any time.
 - **FR-013**: A student MUST be able to unpublish their community entry at any time; the entry MUST be removed from the feed immediately.
-- **FR-014**: After an explicit unpublish, re-publication is subject to the Y-day hold on the current accepted roadmap.
+- **FR-014**: Publishing (whether initial, after an unpublish, or replacing an existing entry) is subject to the Y-day hold on the student's current accepted roadmap.
 - **FR-015**: The community feed MUST be accessible only to authenticated UETCompass users.
 
 **Community Feed Browsing**
@@ -256,14 +262,14 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 
 - **FR-027**: An authenticated user MUST be able to fork a community roadmap entry. A student MUST NOT be able to fork their own community entry.
 - **FR-028**: A fork action MUST submit the community roadmap's course sequence to Feature 009's standard acceptance flow, including prerequisite validation.
-- **FR-029**: If Feature 009's acceptance flow succeeds, the forked roadmap MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying (Y-day clock resets; existing snapshot share links survive; existing community entry auto-updates).
+- **FR-029**: If Feature 009's acceptance flow succeeds, courses already present in the forking student's completed courses MUST be filtered out from the forked sequence before it is saved. The resulting filtered sequence MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying (Y-day clock resets; existing snapshot share links survive; the existing community entry remains unchanged as its original snapshot).
 - **FR-030**: If Feature 009's acceptance flow fails prerequisite validation, the fork MUST be blocked. Feature 009's error message identifying the violating courses MUST be surfaced to the forking student. The forking student's existing accepted roadmap, share links, and community entry MUST remain unchanged.
 - **FR-031**: The fork action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
 
 ### Key Entities
 
 - **ShareLink**: A snapshot-based share token generated by an eligible student. Contains an immutable copy of the roadmap nodes at generation time (`courseCode`, `courseName`, `gainedSkills`, `reason` only), a unique token, a generation timestamp, and a reference to the owning student's privacy setting. At most one active ShareLink exists per accepted roadmap snapshot. Not invalidated by subsequent roadmap changes; persists until explicitly revoked.
-- **CommunityEntry**: A live, discoverable record in the community feed. Always mirrors the student's current accepted roadmap content. Tracks major group, career goal role, personalisation level, node count, preview nodes, and the original publication date. Automatically reflects the latest accepted roadmap when the student accepts a new one.
+- **CommunityEntry**: A snapshot-based, discoverable record in the community feed. Captures the student's accepted roadmap content at the moment of publication (via a RoadmapSnapshot reference). Tracks major group, career goal role, personalisation level, node count, preview nodes, and publication date. Content does not change after publication; accepting a new roadmap does not update an existing entry. At most one active CommunityEntry per student at any time.
 - **RoadmapSnapshot**: An immutable point-in-time export of a student's roadmap nodes captured when a ShareLink is generated. Contains only the fields exposed publicly (`courseCode`, `courseName`, `gainedSkills`, `reason`). Distinct from a CommunityEntry, which is live rather than snapshot-based.
 
 ---
@@ -275,11 +281,10 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 - **SC-001**: A student who meets the Y-day eligibility threshold can generate a share link or publish to the community in under 60 seconds with no more than 3 user interactions.
 - **SC-002**: A share link revocation takes effect within 5 seconds — a visitor who held the link and refreshes after revocation sees the invalid/not-found response without any caching grace period visible to them.
 - **SC-003**: An unpublish action removes the community entry within 5 seconds — the entry is no longer visible to any peer browsing the feed within that window.
-- **SC-004**: A community entry update triggered by a new roadmap acceptance is reflected in the community feed within 10 seconds — a peer who refreshes the feed within that window sees the updated content.
-- **SC-005**: The community feed, with up to 500 published entries, displays filtered results within 2 seconds of the filter being applied.
-- **SC-006**: A privacy setting change (identified ↔ anonymous) is reflected in the community feed and any active share link views within one page refresh — no manual re-publish or re-generation required.
-- **SC-007**: Zero instances of `supportingSkills` or `careerRelevanceNote` content are exposed in any share link or community view (verified by audit of rendered outputs).
-- **SC-008**: Zero instances of an anonymous student's exact major being exposed in any share link or community feed view when anonymous mode is active (verified by audit).
+- **SC-004**: The community feed, with up to 500 published entries, displays filtered results within 2 seconds of the filter being applied.
+- **SC-005**: A privacy setting change (identified ↔ anonymous) is reflected in the community feed and any active share link views within one page refresh — no manual re-publish or re-generation required.
+- **SC-006**: Zero instances of `supportingSkills` or `careerRelevanceNote` content are exposed in any share link or community view (verified by audit of rendered outputs).
+- **SC-007**: Zero instances of an anonymous student's exact major being exposed in any share link or community feed view when anonymous mode is active (verified by audit).
 
 ---
 
@@ -287,7 +292,7 @@ An authenticated student viewing a community roadmap detail activates "Fork this
 
 - **Y default value**: The specification does not prescribe Y. The planning phase will identify a suitable default (assumed to be 7 days) until the configuration value is set by the product owner.
 - **Snapshot timing for share links**: The roadmap node snapshot for a share link is taken at the moment the student generates the link — not at acceptance time. Subsequent changes to the accepted roadmap data do not update existing snapshots.
-- **Community entries are live at render time**: There is no separate snapshot for community entries. The entry content is derived from the student's current accepted roadmap at the time it is rendered.
+- **Community entries are snapshots**: Community entries capture the roadmap content at publication time, stored as a RoadmapSnapshot. Content does not change after publication; there is no live derivation from the current roadmap.
 - **Single accepted roadmap per student**: Each student has at most one accepted roadmap at a time. All sharing and eligibility rules apply to that single active roadmap.
 - **Feature 009 defines roadmap structure**: The node fields (`courseCode`, `courseName`, `gainedSkills`, `reason`, `supportingSkills`, `careerRelevanceNote`) are defined and owned by Feature 009. This feature treats them as read-only inputs.
 - **Display name source**: The student's display name is stored in Feature 005 (Account Management), populated during Feature 001 (Profile Onboarding). Updates are reflected in identified community entries and share link views.

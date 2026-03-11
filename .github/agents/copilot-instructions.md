@@ -8,6 +8,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)
 - MongoDB Atlas free tier — new collections: `skill_node_statuses`, `course_ai_contexts`, `course_resources`; read-only: `student_roadmaps` (written by personalization job), `market_skills`, `skill_learning_resources` (written by crawling service), `student_profiles` (Feature 001) (004-skill-tree)
+- TypeScript — Node.js 20 LTS (backend), React 18 (frontend). This feature introduces TypeScript + NestJS as the evolving target stack; existing modules remain in their current JS/Express form. (010-roadmap-community)
+- MongoDB Atlas free tier — new collections: `roadmap_snapshots`, `share_links`, `community_entries`, `like_records`; reads (read-only): `student_profiles` (Feature 001), `roadmaps` (Feature 009), `users` (Feature 005); shared: `system_config` (Y-day config) (010-roadmap-community)
 
 ## Project Structure
 
@@ -26,9 +28,9 @@ npm test; npm run lint
 JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard conventions
 
 ## Recent Changes
+- 010-roadmap-community: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 010-roadmap-community: Added TypeScript — Node.js 20 LTS (backend), React 18 (frontend). This feature introduces TypeScript + NestJS as the evolving target stack; existing modules remain in their current JS/Express form.
 - 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 002-seed-ctdt-dag: Added Node.js 20 LTS + Express.js (consistent with existing backend stack) + `node-cron` (Cron scheduler), `@google/generative-ai` (Gemini SDK — first integration), `@tavily/core` (Tavily Extract SDK — first integration), `mongoose` (existing)
 
 
 <!-- MANUAL ADDITIONS START -->

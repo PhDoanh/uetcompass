@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: March 11, 2026
-**Feature**: [specs/001-ai-auto-tagging/spec.md](specs/001-ai-auto-tagging/spec.md)
+**Feature**: [specs/006-ai-auto-tagging/spec.md](specs/006-ai-auto-tagging/spec.md)
 
 ## Content Quality
 

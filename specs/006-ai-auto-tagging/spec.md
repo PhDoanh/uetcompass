@@ -1,6 +1,6 @@
 # Feature Specification: AI Auto-Tagging System
 
-**Feature Branch**: `001-ai-auto-tagging`  
+**Feature Branch**: `006-ai-auto-tagging`  
 **Created**: March 11, 2026  
 **Status**: Draft  
 **Input**: User description: "1. Feature: AI Auto-Tagging System (feat-ai-tagging)

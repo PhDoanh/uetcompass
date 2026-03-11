@@ -29,7 +29,9 @@ JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard co
 ## Recent Changes
 - 007-progress-tracking: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
 - 005-account-management: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 002-seed-ctdt-dag: Added Node.js 20 LTS + Express.js (consistent with existing backend stack) + `node-cron` (Cron scheduler), `@google/generative-ai` (Gemini SDK — first integration), `@tavily/core` (Tavily Extract SDK — first integration), `mongoose` (existing)
 
+- 001-profile-onboarding: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

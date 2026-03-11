@@ -1,7 +1,7 @@
 # Implementation Plan: Resource Curation
 
-**Branch**: `009-resource-curation` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/009-resource-curation/spec.md`
+**Branch**: `003-resource-curation` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/003-resource-curation/spec.md`
 
 ## Summary
 
@@ -27,7 +27,7 @@ Build the Resource Curation subsystem as a new `scraping` module in the backend 
 *GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design: all items pass.*
 
 - [x] **Modular Monolithic**: All new code lives in `backend/src/modules/scraping/` — the `scraping` module is a first-class domain boundary explicitly listed in the constitution ("auth, curriculum, roadmap, scraping, recommendation"). No cross-module direct imports: the `scraping` module reads the `skills` collection via its own `skillCatalog.service.js` accessor; it does not import from the `roadmap` module. Frontend feature components are self-contained under `features/resources/`.
-- [x] **UET-First**: Academic Finder targets UET-VNU official sources exclusively (FR-009); Vietnamese job boards (TopDev, ITviec, JobOKO) are prioritized; skill catalog is UET-specific. No abstraction or generalization for other universities introduced.
+- [x] **UET-First**: Academic Finder targets UET-VNU official sources exclusively (FR-003); Vietnamese job boards (TopDev, ITviec, JobOKO) are prioritized; skill catalog is UET-specific. No abstraction or generalization for other universities introduced.
 - [x] **Privacy by Minimalism**: This feature collects only public external data — no student credentials, no grades, no UET portal sessions. `LearningResource`, `AcademicDocument`, and `SkillTrendSnapshot` contain zero student PII. Privacy principle is fully satisfied.
 - [x] **AI-Assisted, Human-Controlled**: Gemini is used only for skill-to-document inference (the parse/transform role explicitly authorized in the constitution). Gemini output is validated against a strict JSON schema (`{ skillId, confidence }`) before any persistence — no blind trust. Free/paid classification uses deterministic per-source rules with no Gemini involvement (R-004). Free tier: one Gemini call per academic document per weekly run — token usage is minimal.
 - [x] **Test What Matters**: Unit tests mandatory for: skill-mapping/inference logic (`skillInference.service.js` — explicitly named in constitution), crawl pipeline partial-failure handling (one source down → job continues), trend ±10% computation (boundary values), and per-source free/paid classifiers (`classifyFree`). All external APIs (YouTube, Udemy, Coursera, job boards, Gemini) are mocked in tests.
@@ -37,7 +37,7 @@ Build the Resource Curation subsystem as a new `scraping` module in the backend 
 ### Documentation (this feature)
 
 ```text
-specs/009-resource-curation/
+specs/003-resource-curation/
 ├── plan.md              ← this file
 ├── spec.md              ← feature requirements
 ├── research.md          ← Phase 0: 7 technical decisions resolved

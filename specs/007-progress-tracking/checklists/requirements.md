@@ -1,7 +1,7 @@
-# Specification Quality Checklist: Student Account Management
+# Specification Quality Checklist: Progress Tracking Dashboard
 
-**Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-03-11
+**Purpose**: Validate specification completeness and quality before proceeding to planning  
+**Created**: 2026-03-11  
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,7 +31,7 @@
 
 ## Notes
 
-- All 8 user stories pass independently with no blocking issues.
-- Cross-feature integration points (Feature 001 onboarding panel, Feature 004 Re-personalize trigger) are clearly bounded in Assumptions and Out of Scope.
-- No [NEEDS CLARIFICATION] markers were required — all decisions resolved using input constraints (e.g., OTP 4-digit, 2-minute expiry, 5-attempt lockout) or documented as reasonable defaults in Assumptions.
-- Spec is ready to proceed to `/speckit.clarify` or `/speckit.plan`.
+- Spec explicitly scopes out Skill Tree responsibilities (tree view, node state writes, progress bar, Next Steps) to prevent scope creep during planning.
+- 5-second update guarantee (SC-004 / FR-008) is looser than Skill Tree's 3-second cross-session sync (Skill Tree FR-008) to allow for the indirection through the cache layer — this is intentional.
+- The `RoadmapProgressCache` entity is described at the conceptual level only; no storage technology is specified.
+- Node type is scoped to `Course` only, consistent with Skill Tree spec scope.

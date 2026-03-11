@@ -1,6 +1,6 @@
 # Feature Specification: Resource Curation
 
-**Feature Branch**: `009-resource-curation`  
+**Feature Branch**: `003-resource-curation`  
 **Created**: 2026-03-11  
 **Status**: Draft  
 **Input**: User description: "Build the Resource Curation feature for UETCompass — a brand-new subsystem responsible for automatically gathering, classifying, and surfacing external learning resources for students."

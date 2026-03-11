@@ -1,6 +1,6 @@
 # Research: Resource Curation
 
-**Feature**: `009-resource-curation`  
+**Feature**: `003-resource-curation`  
 **Date**: 2026-03-11  
 **Feeds into**: [plan.md](plan.md), [data-model.md](data-model.md), [contracts/rest-api.md](contracts/rest-api.md)
 

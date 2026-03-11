@@ -1,6 +1,6 @@
 # Quickstart: Resource Curation
 
-**Feature**: `009-resource-curation`  
+**Feature**: `003-resource-curation`  
 **Date**: 2026-03-11  
 **Prerequisites**: Feature 001 (Profile Onboarding) must be running — shared `auth.middleware.js` and `users` collection. The UETCompass skill catalog (`skills` collection) must contain at least one active skill for the crawlers to process.
 
@@ -33,7 +33,7 @@ PORT=4000
 # Already required by Feature 002
 GEMINI_API_KEY=<your Gemini API key>
 
-# NEW — required by Feature 009 only
+# NEW — required by Feature 003 only
 YOUTUBE_API_KEY=<your YouTube Data API v3 key from Google Cloud Console>
 ```
 

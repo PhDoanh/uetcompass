@@ -1,7 +1,7 @@
 # Implementation Plan: Resource Curation
 
-**Branch**: `009-resource-curation` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/009-resource-curation/spec.md`
+**Branch**: `003-resource-curation` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/003-resource-curation/spec.md`
 
 ## Summary
 
@@ -37,7 +37,7 @@ Build the Resource Curation subsystem as a new `scraping` module in the backend 
 ### Documentation (this feature)
 
 ```text
-specs/009-resource-curation/
+specs/003-resource-curation/
 ├── plan.md              ← this file
 ├── spec.md              ← feature requirements
 ├── research.md          ← Phase 0: 7 technical decisions resolved

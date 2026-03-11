@@ -1,6 +1,6 @@
 # Data Model: Resource Curation
 
-**Feature**: `009-resource-curation`  
+**Feature**: `003-resource-curation`  
 **Date**: 2026-03-11  
 **Research dependency**: [research.md](research.md) (R-001, R-002, R-005, R-006)
 

@@ -8,6 +8,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - MongoDB Atlas free tier — `users` collection (auth + lockout state), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag) (005-account-management)
 - MongoDB Atlas free tier — new `roadmap_progress_cache` collection (owned by this feature); reads `roadmap_nodes` collection (owned by Feature 004 — Skill Tree) (007-progress-tracking)
 - MongoDB Atlas free tier — `skills` collection (with AI-generated tags), `courses` collection, `roadmaps` collection (all pre-existing), `search_cache` collection (for graceful degradation fallback data); user enrollment data read from `student_profiles.enrolledRoadmap` (008-advanced-tag-search)
+- JavaScript/TypeScript – Node.js 20 LTS for backend (existing monolith), React 18 (frontend admin UI if needed). (006-ai-auto-tagging)
+- MongoDB Atlas for primary data; new collections `skills`, `tags`, `tagging_jobs` used as queue and audit log. (006-ai-auto-tagging)
 
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)

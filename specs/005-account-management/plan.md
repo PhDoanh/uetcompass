@@ -5,7 +5,7 @@
 
 ## Summary
 
-Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (profile edits + re-personalization signal → Feature 003, change password, Google link/unlink, hard-delete with email confirmation), and logout. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 003.
+Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (profile edits + re-personalization signal → Feature 004, change password, Google link/unlink, hard-delete with email confirmation), and logout. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
 
 ## Technical Context
 
@@ -98,7 +98,7 @@ frontend/
 │       └── AuthGuard.jsx                 # Redirect to /login if no valid AT
 ```
 
-**Structure Decision**: Option 2 — Web application. Modular monolith backend; all auth logic isolated in `modules/auth/`. Notifications extracted to `modules/notifications/` (shared with Feature 003). Feature 001's `onboarding` module is read-only from this feature — the `repersonalizationPending` flag is set via `studentProfileService` call through the service layer. Frontend uses a feature-folder structure mirroring the backend module boundary.
+**Structure Decision**: Option 2 — Web application. Modular monolith backend; all auth logic isolated in `modules/auth/`. Notifications extracted to `modules/notifications/` (shared with Feature 004). Feature 001's `onboarding` module is read-only from this feature — the `repersonalizationPending` flag is set via `studentProfileService` call through the service layer. Frontend uses a feature-folder structure mirroring the backend module boundary.
 
 ## Complexity Tracking
 

@@ -37,67 +37,67 @@ Build an interactive, personalized Skill Tree that renders a student's UET acade
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+specs/004-skill-tree/
+├── plan.md              ← this file
+├── spec.md              ← feature requirements
+├── research.md          ← Phase 0: 8 decisions resolved
+├── data-model.md        ← Phase 1: 6 MongoDB collections + state machine
+├── quickstart.md        ← Phase 1: local dev setup + manual test guide
+├── contracts/
+│   └── rest-api.md      ← Phase 1: 7 endpoint contracts
+└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
+│   └── modules/
+│       └── skill-tree/
+│           ├── skillNodeStatus.model.js        # Mongoose schema: skill_node_statuses collection
+│           ├── aiContext.model.js               # Mongoose schema: course_ai_contexts collection
+│           ├── skillTree.service.js             # DAG traversal, unlock, state guard, repersonalize flag
+│           ├── aiContext.service.js             # Gemini "Why This Course" + cache read/write
+│           ├── courseResource.service.js        # Read course_resources collection
+│           ├── marketSkill.service.js           # Read market_skills + skill_learning_resources
+│           ├── skillTree.controller.js          # Express handlers (thin — delegates to services)
+│           ├── skillTree.routes.js              # Express Router + auth middleware applied
+│           └── skillTree.validation.js          # Input validation: status enum, courseCode format
 └── tests/
+    └── unit/
+        └── skill-tree/
+            ├── dagTraversal.test.js             # isUnlocked: single prereq, multi-prereq, diamond DAG, no prereqs
+            ├── stateGuard.test.js               # Locked node → 403; invalid transition → 400; valid → pass
+            ├── aiContextCache.test.js           # Cache hit (no Gemini call); cache miss (Gemini called + validation)
+            └── repersonalizeFlag.test.js        # updatedAt > generatedAt → true; equal or older → false; null roadmap
 
 frontend/
 ├── src/
-│   ├── components/
-│   ├── pages/
+│   ├── app/
+│   │   └── skill-tree/
+│   │       └── page.jsx                        # Next.js App Router route: /skill-tree
+│   ├── features/
+│   │   └── skill-tree/
+│   │       ├── SkillTreePage.jsx               # Outer layout: canvas + side panel + repersonalize button
+│   │       ├── SkillTreeCanvas.jsx             # <ReactFlow> wrapper with custom node type
+│   │       ├── CourseNode.jsx                  # Custom React Flow node: state badge + locked indicator
+│   │       ├── RepersonalizeButton.jsx         # Shown when needsRepersonalization; shows loading during job
+│   │       ├── CourseDetailPanel.jsx           # Side panel: 3 tabs (Resources / Why / Market Skills)
+│   │       ├── ResourcesTab.jsx                # Grouped materials (textbook, slide, lab, assignment)
+│   │       ├── WhyThisCourseTab.jsx            # AI content (loading state + 502 error fallback)
+│   │       ├── MarketSkillsTab.jsx             # Skill list sorted by job count; click opens sub-panel
+│   │       ├── SkillResourcesModal.jsx         # Sub-panel/modal: free + paid resources for a skill
+│   │       └── useSkillTree.js                 # Polling hook: 2500ms interval, visibilitychange, optimistic update
+│   ├── stores/
+│   │   └── skillTreeStore.js                   # Zustand: nodes[], activeCourseId, activeTab, activeSkillName
 │   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+│       └── skillTree.api.js                    # Fetch wrappers: getTree, patchNodeStatus, getResources,
+│                                               #   getWhyCourse, getMarketSkills, getLearningResources, repersonalize
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Option 2 — Web application. Modular monolith backend with all Skill Tree logic isolated in `backend/src/modules/skill-tree/`. Feature-folder structure on the frontend mirrors the backend module boundary. Communication from `skill-tree` to the `onboarding` module (`studentProfile.updatedAt` read) passes through `studentProfileService` called from `skillTree.service.js` — no direct cross-module import of schemas or models.
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+No Constitution violations — complexity tracking table not required.

@@ -102,22 +102,25 @@ Panel renders are gated: the course detail side panel renders only when `activeC
 **Rationale**:
 - A single Zustand store for all panel states avoids prop-drilling across the canvas, side panel, and modal layers.
 - Resetting `activeTab` on course switch prevents a stale "Why This Course" tab from remaining open when the student navigates to a different node.
-- Keeping all panels on one page (`/skill-tree`) follows the Next.js SPA pattern established by Feature 003 and avoids unnecessary route complexity for what is fundamentally a layered UI state problem.
+- Keeping all panels on one page (`/skill-tree`) avoids unnecessary route complexity for what is fundamentally a layered UI state problem. The existing React Router setup (Feature 001) registers `/skill-tree` as a single route; all panel layers are pure in-page state.
 
 **Alternatives considered**:
-- URL-based panel state (query params `/skill-tree?course=IT3910E&tab=why`) — rejected; it adds routing complexity, makes deep-linking possible but undesirable (direct link to an AI tab would trigger an LLM call from URL), and is inconsistent with Feature 003's store-based state management.
-- React Context for panel state — rejected; Zustand is already established in this feature's stack (from Feature 003 precedent); adding Context would create competing state management paradigms.
+- URL-based panel state (query params `/skill-tree?course=IT3910E&tab=why`) — rejected; it adds routing complexity, makes deep-linking possible but undesirable (direct link to an AI tab would trigger an LLM call from URL), and is inconsistent with the store-based state management used in this project.
+- React Context for panel state — rejected; Zustand is established as the client state management approach; adding Context would create competing state management paradigms.
 
 ---
 
 ## Decision 7: Graph rendering — @xyflow/react v12 (consistent with Feature 003)
 
-**Decision**: Reuse `@xyflow/react` v12 (React Flow) for the skill tree graph — same library and version as Feature 003.
+**Decision**: Use `@xyflow/react` v12 (React Flow) for the skill tree graph.
 
 **Rationale**:
-- Feature 003 thoroughly evaluated graph rendering options (see Feature 003 research Decision 1) and chose React Flow v12 for React-native integration, built-in pan/zoom, and zero SVG boilerplate. Feature 004 has the same rendering requirements plus an additional node interaction (click to open detail panel) — fully supported by React Flow's `onNodeClick` handler.
-- Reusing the same library means the `CourseNode` custom component pattern (Feature 003) can be carried forward with minimal changes: add an `onClick` prop for panel opening, add locked visual indicator.
-- The college-tree data source changes (from static JSON to personalized roadmap in DB), but the graph rendering layer is identical.
+- React Flow v12 provides React-native integration, built-in pan/zoom/collapse hooks, and zero SVG/Canvas boilerplate — ideal for a React SPA.
+- The `onNodeClick` handler natively supports opening the course detail side panel on node click without any additional event wiring.
+- `NodeResizer` and `NodeToolbar` built-ins (v12) simplify status-change controls on nodes without custom overlay logic.
+- As a plain React library (not framework-specific), it works identically in a React 18 + React Router SPA as in any other React setup.
+- The `CourseNode` custom component pattern can be applied directly: add an `onClick` prop for panel opening, add a locked visual indicator.
+- The data source changes (from static JSON to personalized roadmap in DB), but the graph rendering layer is identical.
 
 **Alternatives considered**:
 - Switching to Cytoscape.js or D3 — no reason to change; Feature 003's decision reasoning still holds. Adding a new graph library for an existing use case would be inconsistent.

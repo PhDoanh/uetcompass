@@ -9,15 +9,15 @@ Build an interactive, personalized Skill Tree that renders a student's UET acade
 
 ## Technical Context
 
-**Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 via Next.js 14 (frontend)  
+**Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 (frontend)  
 **Primary Dependencies**:
 - Backend: Express.js, Mongoose 8, `@google/generative-ai` (Gemini SDK — for "Why This Course" on-demand generation), `jsonwebtoken` (existing auth middleware from Feature 001)
-- Frontend: Next.js 14, `@xyflow/react` v12 (React Flow — same as Feature 003), Zustand 4 with `persist` middleware, Tailwind CSS
+- Frontend: React 18, React Router v6, `@xyflow/react` v12 (React Flow), Zustand 4 with `persist` middleware, Tailwind CSS (bundled with Vite)
 
 **Storage**: MongoDB Atlas free tier — new collections: `skill_node_statuses`, `course_ai_contexts`, `course_resources`; read-only: `student_roadmaps` (written by personalization job), `market_skills`, `skill_learning_resources` (written by crawling service), `student_profiles` (Feature 001)  
 **Testing**: Jest — unit tests only; MongoDB, Gemini SDK, and auth middleware all mocked; no external services required to run tests  
-**Target Platform**: Backend → Render (Node.js web service, free tier, cold start ~50s); Frontend → Vercel (Next.js 14, App Router)  
-**Project Type**: Web application — Next.js 14 frontend + Node.js/Express modular-monolith backend  
+**Target Platform**: Backend → Render (Node.js web service, free tier, cold start ~50s); Frontend → Vercel (React SPA)  
+**Project Type**: Web application — React SPA + Node.js/Express modular-monolith backend  
 **Performance Goals**: Skill tree page fully interactive within 3s; node state transition visible within 500ms (optimistic update); detail side panel opens within 1s; AI "Why This Course" content returned within 5s  
 **Constraints**: No Redis; no WebSocket; no SSE for this feature — polling (2500ms, paused when tab hidden) for roadmap ready detection; Render free tier cold start handled by frontend skeleton loading state; Gemini free-tier token minimization enforced via `{courseCode, careerGoal}` cache  
 **Scale/Scope**: UET-VNU students only — hundreds to low thousands of concurrent users; roadmap nodes: 15–100 per student; Vietnamese names primary
@@ -74,12 +74,9 @@ backend/
 
 frontend/
 ├── src/
-│   ├── app/
-│   │   └── skill-tree/
-│   │       └── page.jsx                        # Next.js App Router route: /skill-tree
 │   ├── features/
 │   │   └── skill-tree/
-│   │       ├── SkillTreePage.jsx               # Outer layout: canvas + side panel + repersonalize button
+│   │       ├── SkillTreePage.jsx               # Top-level page component (rendered by React Router <Route>)
 │   │       ├── SkillTreeCanvas.jsx             # <ReactFlow> wrapper with custom node type
 │   │       ├── CourseNode.jsx                  # Custom React Flow node: state badge + locked indicator
 │   │       ├── RepersonalizeButton.jsx         # Shown when needsRepersonalization; shows loading during job
@@ -96,7 +93,7 @@ frontend/
 │                                               #   getWhyCourse, getMarketSkills, getLearningResources, repersonalize
 ```
 
-**Structure Decision**: Option 2 — Web application. Modular monolith backend with all Skill Tree logic isolated in `backend/src/modules/skill-tree/`. Feature-folder structure on the frontend mirrors the backend module boundary. Communication from `skill-tree` to the `onboarding` module (`studentProfile.updatedAt` read) passes through `studentProfileService` called from `skillTree.service.js` — no direct cross-module import of schemas or models.
+**Structure Decision**: Option 2 — Web application. Modular monolith backend with all Skill Tree logic isolated in `backend/src/modules/skill-tree/`. Feature-folder structure on the frontend mirrors the backend module boundary and is consistent with Feature 001 (`frontend/src/features/<module>`). The `/skill-tree` route is registered in the root React Router setup. Communication from `skill-tree` to the `onboarding` module (`studentProfile.updatedAt` read) passes through `studentProfileService` called from `skillTree.service.js` — no direct cross-module import of schemas or models.
 
 ## Complexity Tracking
 

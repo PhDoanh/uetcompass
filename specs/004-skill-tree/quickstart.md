@@ -32,9 +32,9 @@ JWT_SECRET=<your-jwt-secret>
 GEMINI_API_KEY=<your-gemini-api-key>
 ```
 
-Frontend `frontend/.env.local`:
+Frontend `frontend/.env.local` (never commit this file):
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+VITE_API_BASE_URL=http://localhost:3001/api
 ```
 
 ---
@@ -118,10 +118,10 @@ npm run dev     # nodemon on port 3001
 # Terminal 2 — Frontend  
 cd frontend
 npm install
-npm run dev     # Next.js on port 3000
+npm run dev     # Vite dev server on port 5173
 ```
 
-Navigate to `http://localhost:3000/skill-tree`.
+Navigate to `http://localhost:5173/skill-tree`.
 
 ---
 

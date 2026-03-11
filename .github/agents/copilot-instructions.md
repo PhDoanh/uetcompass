@@ -10,6 +10,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - MongoDB Atlas free tier — `skills` collection (with AI-generated tags), `courses` collection, `roadmaps` collection (all pre-existing), `search_cache` collection (for graceful degradation fallback data); user enrollment data read from `student_profiles.enrolledRoadmap` (008-advanced-tag-search)
 
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
+- JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)
+- MongoDB Atlas free tier — new collections: `skill_node_statuses`, `course_ai_contexts`, `course_resources`; read-only: `student_roadmaps` (written by personalization job), `market_skills`, `skill_learning_resources` (written by crawling service), `student_profiles` (Feature 001) (004-skill-tree)
 
 ## Project Structure
 
@@ -28,9 +30,10 @@ npm test; npm run lint
 JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard conventions
 
 ## Recent Changes
-- 008-advanced-tag-search: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 008-advanced-tag-search: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 008-advanced-tag-search: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
+- 002-seed-ctdt-dag: Added Node.js 20 LTS + Express.js (consistent with existing backend stack) + `node-cron` (Cron scheduler), `@google/generative-ai` (Gemini SDK — first integration), `@tavily/core` (Tavily Extract SDK — first integration), `mongoose` (existing)
+
 
 
 <!-- MANUAL ADDITIONS START -->

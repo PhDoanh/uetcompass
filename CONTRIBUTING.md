@@ -1,27 +1,11 @@
-# Hướng Dẫn Đóng Góp cho UETCompass
+# Hướng dẫn đóng góp cho UETCompass
 
-> Dự án tuân thủ **Spec-Driven Development (SDD)** bằng [Spec-Kit](https://github.com/github/spec-kit). Mọi đóng góp mới — từ feature lớn đến fix nhỏ — đều bắt đầu từ _đặc tả_, không phải từ code.  
-> Trước khi bắt đầu, hãy đọc [Constitution](.specify/memory/constitution.md). Constitution **supersedes** mọi convention cá nhân.
-
----
-
-## Mục Lục
-
-1. [Tổng Quan Về Quy Trình SDD](#1-tổng-quan-về-quy-trình-sdd)
-2. [Cách Tiếp Cận A — Tuần Tự (Mặc Định Spec-Kit)](#2-cách-tiếp-cận-a--tuần-tự-mặc-định-spec-kit)
-3. [Cách Tiếp Cận B — Backlog Spec Song Song (Trước Khi Implement)](#3-cách-tiếp-cận-b--backlog-spec-song-song-trước-khi-implement)
-4. [Lựa Chọn Cách Tiếp Cận](#4-lựa-chọn-cách-tiếp-cận)
-5. [Refine Artifacts Đã Tồn Tại](#5-refine-artifacts-đã-tồn-tại)
-6. [Quy Tắc Commit Convention](#6-quy-tắc-commit-convention)
-7. [Quy Tắc Chung Cho Mọi Đóng Góp](#7-quy-tắc-chung-cho-mọi-đóng-góp)
-8. [Kiến Trúc & Technology Stack Tham Chiếu](#8-kiến-trúc--technology-stack-tham-chiếu)
-9. [Tài Nguyên Tham Khảo](#9-tài-nguyên-tham-khảo)
-
----
+> Dự án tuân thủ **Spec-Driven Development (SDD)** thông qua [Spec-Kit](https://github.com/github/spec-kit). Mọi đóng góp mới — từ feature lớn đến fix nhỏ — đều bắt đầu từ _đặc tả_, không phải từ code.  
+> Trước khi bắt đầu, hãy đọc [Constitution](.specify/memory/constitution.md) (Constitution **supersedes** mọi convention cá nhân).
 
 ## 1. Tổng Quan Về Quy Trình SDD
 
-**Spec-Driven Development (SDD)** đặt câu hỏi *"Cần gì và tại sao?"* trước khi hỏi *"Làm thế nào?"*. Mỗi feature trong UETCompass đều có một thư mục spec riêng tại:
+**Spec-Driven Development (SDD)** đặt câu hỏi *"Cần gì và tại sao?"* trước khi hỏi *"Làm thế nào?"*. Mỗi feature trong UETCompass đều có một thư mục spec riêng biệt:
 
 ```
 specs/NNN-feature-name/
@@ -39,23 +23,21 @@ specs/NNN-feature-name/
 
 **Các lệnh Spec-Kit** được cấu hình sẵn tại `.github/agents/` và chạy trong **GitHub Copilot** (VS Code / GitHub.com):
 
-| Lệnh | Mô tả | Tạo ra |
+| Lệnh | Mô tả | Đầu ra |
 |---|---|---|
 | `/speckit.constitution` | Cập nhật hoặc tạo constitution | `.specify/memory/constitution.md` |
 | `/speckit.specify` | Tạo đặc tả từ mô tả tính năng | `specs/NNN-feat/spec.md` + tạo branch |
-| `/speckit.clarify` | Làm rõ các điểm mơ hồ trong spec | Cập nhật `spec.md` |
+| `/speckit.clarify` | Làm rõ các điểm mơ hồ trong spec | `spec.md` được cập nhật |
 | `/speckit.plan` | Sinh kế hoạch kỹ thuật | `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md` |
 | `/speckit.checklist` | Sinh checklist kiểm tra chất lượng | `checklists/*.md` |
 | `/speckit.tasks` | Sinh danh sách task | `tasks.md` |
-| `/speckit.analyze` | Phân tích consistency giữa spec/plan/tasks | Báo cáo (read-only) |
+| `/speckit.analyze` | Phân tích consistency giữa spec/plan/tasks | Báo cáo ngay trong phiên chat (read-only) |
 | `/speckit.implement` | Thực thi triển khai theo tasks.md | Code thực tế |
 | `/speckit.taskstoissues` | Chuyển tasks thành GitHub Issues | Issues trên repo |
 
 > **AI Agent dùng trong dự án:** GitHub Copilot (files tại `.github/agents/`). Tất cả lệnh dùng PowerShell scripts tại `.specify/scripts/powershell/`.
 
----
-
-## 2. Cách Tiếp Cận A — Tuần Tự (Mặc Định Spec-Kit)
+## 2. Cách Tiếp Cận A — Tuần Tự (Mặc Định của Spec-Kit)
 
 **Phù hợp khi:** Đóng góp một feature độc lập, không phụ thuộc nhiều vào feature khác đang trong giai đoạn spec.
 
@@ -107,7 +89,7 @@ Spec-Kit sẽ tự động:
 
 Lệnh này sẽ hỏi tối đa 5 câu hỏi, trả lời xong spec sẽ được cập nhật tự động.
 
-#### Bước 4 — Sinh kế hoạch kỹ thuật
+#### Bước 4 — Lập kế hoạch kỹ thuật
 
 ```
 /speckit.plan
@@ -124,7 +106,7 @@ Sinh ra: `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md
 /speckit.tasks
 ```
 
-#### Bước 6 — Phân tích consistency (Khuyến nghị trước khi implement)
+#### Bước 6 — Phân tích tính nhất quán (Khuyến nghị trước khi implement)
 
 ```
 /speckit.analyze
@@ -150,9 +132,7 @@ git push origin 011-study-reminder
 
 Tạo Pull Request trên GitHub với base branch là `main`. Yêu cầu **ít nhất 1 reviewer** trước khi merge (theo Constitution).
 
----
-
-## 3. Cách Tiếp Cận B — Backlog Spec Song Song (Trước Khi Implement)
+## 3. Cách Tiếp Cận B — Song Song nhiều Spec (Trước Khi Implement)
 
 **Phù hợp khi:** Cần thiết kế nhiều feature cùng lúc để thấy toàn cảnh kiến trúc, phát hiện xung đột data model sớm (ví dụ: feature A và B cùng sử dụng `users` collection theo cách khác nhau).
 
@@ -249,7 +229,7 @@ git push origin 001-profile-onboarding
 
 ### Ưu Điểm & Hạn Chế
 
-| Tiêu chí | Cách A (Tuần Tự) | Cách B (Song Song Spec) |
+| Tiêu chí | Cách A (Tuần Tự) | Cách B (Song Song) |
 |---|---|---|
 | Phát hiện xung đột data model sớm | ❌ Chỉ thấy sau khi implement | ✅ Thấy ngay khi review backlog |
 | Tốc độ bắt đầu code | ✅ Nhanh hơn | ❌ Chậm hơn (spec xong rồi mới code) |
@@ -264,15 +244,13 @@ git push origin 001-profile-onboarding
 ```
 Bạn đang đóng góp feature mới?
     │
-    ├─► Feature có liên quan đến data model của feature khác đang trong giai đoạn spec?
-    │       └─► CÓ  → Dùng Cách B (Backlog Spec Song Song)
+    ├─► Feature có liên quan nhiều đến feature khác trong giai đoạn spec?
+    │       └─► CÓ  → Dùng Cách B (Song Song)
     │       └─► KHÔNG → Dùng Cách A (Tuần Tự)
     │
     └─► Bạn đang fix bug / cải thiện tính năng đã có spec?
             └─► Xem phần Refine Artifacts bên dưới
 ```
-
----
 
 ## 5. Refine Artifacts Đã Tồn Tại
 
@@ -319,7 +297,7 @@ Lệnh `clarify` sẽ:
 - `research.md`: Thêm decision mới theo format `Decision: / Rationale: / Alternatives considered:`
 - `plan.md` — **Constitution Check section**: Không được xóa hoặc tự ý pass gates; nếu có violation phải justify rõ ràng trong `## Complexity Tracking`
 
-> ⚠️ **Nguyên Tắc I — Modular Monolithic**: Mọi thay đổi ở `plan.md` liên quan đến kiến trúc phải đảm bảo không tách service khi chưa cần thiết. Violation phải được ghi vào `## Complexity Tracking`.
+> **Nguyên Tắc I — Modular Monolithic**: Mọi thay đổi ở `plan.md` liên quan đến kiến trúc phải đảm bảo không tách service khi chưa cần thiết. Violation phải được ghi vào `## Complexity Tracking`.
 
 ### 5.3. Refine `tasks.md`
 
@@ -367,8 +345,6 @@ Lệnh sẽ:
 - Yêu cầu commit message chuẩn: `docs: amend constitution to vX.Y.Z (reason)`
 
 > Thay đổi Constitution yêu cầu approval của **project owner** trước khi merge.
-
----
 
 ## 6. Quy Tắc Commit Convention
 
@@ -446,8 +422,6 @@ chore: bump @google/generative-ai to 0.21.0
 ci: add pre-commit hook for conventional commit validation
 ```
 
----
-
 ## 7. Quy Tắc Chung Cho Mọi Đóng Góp
 
 ### 7.1. Trước Khi Bắt Đầu
@@ -477,7 +451,7 @@ ci: add pre-commit hook for conventional commit validation
 **Về code:**
 
 - Không hardcode secrets — dùng environment variables
-- Backend: Node.js 20 LTS + Express.js (JavaScript). Feature 010 đang migrate sang TypeScript + NestJS — tham khảo `specs/010-roadmap-community/plan.md` trước khi bắt đầu feature mới
+- Backend: Node.js 20 LTS + Express.js (JavaScript).
 - Frontend: React 18
 - Database: MongoDB Atlas (Mongoose) — tuân theo naming convention của các collections hiện tại
 - Free tier Render có cold start ~50s — frontend phải handle loading state gracefully
@@ -502,8 +476,6 @@ ci: add pre-commit hook for conventional commit validation
 - [ ] Code có cross-import trực tiếp giữa domain modules không?
 - [ ] Có secrets hardcode không?
 - [ ] Gemini output có được validate schema không?
-
----
 
 ## 8. Kiến Trúc & Technology Stack Tham Chiếu
 
@@ -551,8 +523,6 @@ tests/
 - Backend → **Render** (free tier, cold start ~50s)
 - Database → **MongoDB Atlas** (free tier)
 
----
-
 ## 9. Tài Nguyên Tham Khảo
 
 | Tài liệu | Đường dẫn |
@@ -563,8 +533,5 @@ tests/
 | Tất cả specs hiện tại | [`specs/`](specs/) |
 | Copilot agent files | [`.github/agents/`](.github/agents/) |
 | Spec-Kit AGENTS.md | [github/spec-kit AGENTS.md](https://github.com/github/spec-kit/blob/main/AGENTS.md) |
-| Issue: Backlog spec workflow | [#5 — Spec nhiều feature trước khi implement](https://github.com/PhDoanh/uetcompass/issues/5) |
-
----
 
 *Tài liệu này được duy trì bởi project owner. Mọi đề xuất thay đổi quy trình hãy mở Issue với label `documentation`.*

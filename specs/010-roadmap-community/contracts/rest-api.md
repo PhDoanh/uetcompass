@@ -8,6 +8,38 @@
 
 ---
 
+## Common Conventions
+
+### Error envelope (all non-2xx responses)
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable description",
+    "details": {}
+  }
+}
+```
+
+`details` is optional and included only when machine-readable context is useful.
+
+### Error code taxonomy
+
+| HTTP | `code` | Meaning |
+|---|---|---|
+| 400 | `INVALID_INPUT` | Request input failed validation |
+| 401 | `UNAUTHORIZED` | Missing or expired token |
+| 403 | `FORBIDDEN` | Authenticated user is not allowed to perform the action |
+| 404 | `NOT_FOUND` | Requested community/share resource does not exist |
+| 404 | `ROADMAP_NOT_FOUND` | No accepted roadmap available for current user (aligned with Feature 009) |
+| 409 | `CONFLICT` | State conflict with existing resource lifecycle |
+| 422 | `ALL_COMPLETED` | Fork payload fully filtered out by completed courses |
+| 422 | `PREREQUISITE_VIOLATION` | Fork payload violates prerequisite constraints (passthrough from Feature 009) |
+| 500 | `INTERNAL_ERROR` | Unexpected server failure |
+
+---
+
 ## Eligibility Error (shared response shape)
 
 When any write action is blocked by the Y-day time gate, the API returns:
@@ -17,9 +49,14 @@ When any write action is blocked by the Y-day time gate, the API returns:
 ```
 ```json
 {
-  "error": "INELIGIBLE",
-  "message": "Your roadmap must be held for at least Y days before sharing.",
-  "daysUntilEligible": 3
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Your roadmap must be held for at least Y days before sharing.",
+    "details": {
+      "reason": "INELIGIBLE",
+      "daysUntilEligible": 3
+    }
+  }
 }
 ```
 
@@ -53,10 +90,10 @@ No request body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `400 Bad Request` | `NO_ROADMAP` | Student has no accepted roadmap |
-| `403 Forbidden` | `INELIGIBLE` | Y-day hold not met; includes `daysUntilEligible` |
-| `409 Conflict` | `LINK_EXISTS` | An active share link already exists; student must revoke it first |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `ROADMAP_NOT_FOUND` | Student has no accepted roadmap |
+| `403 Forbidden` | `FORBIDDEN` | Y-day hold not met; includes `details.reason = INELIGIBLE` and `details.daysUntilEligible` |
+| `409 Conflict` | `CONFLICT` | An active share link already exists; student must revoke it first |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -81,8 +118,8 @@ Empty body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `404 Not Found` | `NO_ACTIVE_LINK` | Student has no active link to revoke |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `NOT_FOUND` | Student has no active link to revoke |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -125,9 +162,9 @@ GET /api/community/share-links/:token
 
 ### Error responses
 
-| Status | Condition |
-|---|---|
-| `404 Not Found` | Token does not exist or has been revoked |
+| Status | Code | Condition |
+|---|---|---|
+| `404 Not Found` | `NOT_FOUND` | Token does not exist or has been revoked |
 
 ---
 
@@ -158,9 +195,9 @@ No request body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `400 Bad Request` | `NO_ROADMAP` | Student has no accepted roadmap |
-| `403 Forbidden` | `INELIGIBLE` | Y-day hold not met; includes `daysUntilEligible` |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `ROADMAP_NOT_FOUND` | Student has no accepted roadmap |
+| `403 Forbidden` | `FORBIDDEN` | Y-day hold not met; includes `details.reason = INELIGIBLE` and `details.daysUntilEligible` |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -185,8 +222,8 @@ Empty body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `404 Not Found` | `NO_ENTRY` | Student has no active community entry |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `NOT_FOUND` | Student has no active community entry |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -252,9 +289,9 @@ Authorization: Bearer <accessToken>
 
 ### Error responses
 
-| Status | Condition |
-|---|---|
-| `401 Unauthorized` | Missing or expired token |
+| Status | Code | Condition |
+|---|---|---|
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -307,10 +344,10 @@ Authorization: Bearer <accessToken>
 
 ### Error responses
 
-| Status | Condition |
-|---|---|
-| `404 Not Found` | Entry does not exist or has been unpublished |
-| `401 Unauthorized` | Missing or expired token |
+| Status | Code | Condition |
+|---|---|---|
+| `404 Not Found` | `NOT_FOUND` | Entry does not exist or has been unpublished |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -339,9 +376,9 @@ No request body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `404 Not Found` | `NO_ENTRY` | Entry does not exist |
-| `409 Conflict` | `ALREADY_LIKED` | User has already liked this entry |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `NOT_FOUND` | Entry does not exist |
+| `409 Conflict` | `CONFLICT` | User has already liked this entry |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -370,8 +407,8 @@ No request body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `404 Not Found` | `NO_ENTRY` or `NOT_LIKED` | Entry does not exist, or user has not liked it |
-| `401 Unauthorized` | — | Missing or expired token |
+| `404 Not Found` | `NOT_FOUND` | Entry does not exist, or user has not liked it |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 ---
 
@@ -410,25 +447,30 @@ No request body.
 
 | Status | Code | Condition |
 |---|---|---|
-| `404 Not Found` | `NO_ENTRY` | Entry does not exist |
-| `403 Forbidden` | `CANNOT_FORK_OWN` | Student is trying to fork their own entry |
+| `404 Not Found` | `NOT_FOUND` | Entry does not exist |
+| `403 Forbidden` | `FORBIDDEN` | Student is trying to fork their own entry (`details.reason = CANNOT_FORK_OWN`) |
+| `409 Conflict` | `CONFLICT` | Feature 009 acceptance conflicted with an in-flight lifecycle operation |
 | `422 Unprocessable Entity` | `ALL_COMPLETED` | All courses in the roadmap are already completed by the student under canonical key `(major, courseCode)` — nothing to fork |
-| `422 Unprocessable Entity` | `PREREQUISITE_VIOLATION` | Feature 009 prerequisite validation failed; includes `violations[]` array from Feature 009's error payload |
-| `401 Unauthorized` | — | Missing or expired token |
+| `422 Unprocessable Entity` | `PREREQUISITE_VIOLATION` | Feature 009 prerequisite validation failed; includes `details.violations[]` from Feature 009 |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired token |
 
 **`PREREQUISITE_VIOLATION` error shape**:
 
 ```json
 {
-  "error": "PREREQUISITE_VIOLATION",
-  "message": "This roadmap cannot be accepted because some courses have unmet prerequisites.",
-  "violations": [
-    {
-      "courseCode": "INT3306",
-      "courseName": "Kiến trúc phần mềm",
-      "missingPrerequisites": ["INT2204", "INT2210"]
+  "error": {
+    "code": "PREREQUISITE_VIOLATION",
+    "message": "This roadmap cannot be accepted because some courses have unmet prerequisites.",
+    "details": {
+      "violations": [
+        {
+          "courseCode": "INT3306",
+          "courseName": "Kiến trúc phần mềm",
+          "missingPrerequisites": ["INT2204", "INT2210"]
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -438,3 +480,4 @@ No request body.
 2. Completed-course identity uses **`(major, courseCode)`** consistently.
 3. Feature 010 calls Feature 009's **fork-consumable** endpoint with **full roadmap nodes payload**.
 4. On successful acceptance, side effects are executed: user notification, eligibility-clock reset, audit logging, and progress update when integration exists.
+5. This feature exposes no SSE endpoint; async notification side effects are out-of-band and do not change the REST error envelope contract.

@@ -5,7 +5,7 @@
 
 ## Summary
 
-A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and career goals (role, company type, graduation timeline, personal aspirations). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). No LLM is called during onboarding.
+A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and career goals (role, company type, graduation timeline, personal aspirations). `careerGoal` remains a nested object; downstream `careerGoalRole` is always derived from `careerGoal.role`. Completed-course identity follows canonical rule `(`major`, `courseCode`)`, with optional `courseUnitId` persisted only for join optimization. `privacySetting` is not part of `StudentProfile` (owned by `User` in feature 005). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). No LLM is called during onboarding.
 
 ## Technical Context
 
@@ -22,6 +22,8 @@ A one-time, skippable onboarding panel that appears on first login and collects 
 **Constraints**: Render cold start ~50s — frontend must show loading states gracefully on first API call; no Redis/BullMQ; no WebSocket; SSE only while client connected (no server-side queue for missed events)
 **Scale/Scope**: UET-VNU students only — hundreds to low thousands of concurrent users; no multi-tenancy
 
+**Data Contract Policy**: Pre-implementation alignment only; no runtime migration/backfill is executed in onboarding request path.
+
 ## Constitution Check
 
 *Pre-design gate — re-checked after Phase 1 design: all items still pass.*
@@ -31,6 +33,7 @@ A one-time, skippable onboarding panel that appears on first login and collects 
 - [x] **Privacy**: No UET portal credentials collected or stored. Only academic profile data (major, completed courses, career goals). `personalAspirations` is voluntary free text — no sensitive credential data.
 - [x] **AI-Assisted**: Gemini API is **not called** in this feature. Free-text validation uses pure regex/string logic (`validateFreeText`) per NFR-005. No LLM calls during onboarding.
 - [x] **Test What Matters**: Unit tests cover the two complex pieces with side effects — (1) `validateFreeText` edge cases, (2) `StudentProfile` state machine transitions including duplicate-submit rejection.
+- [x] **Boundary Ownership**: `privacySetting` remains in `User` domain (feature 005), not duplicated in onboarding `StudentProfile`.
 
 ## Project Structure
 

@@ -20,7 +20,7 @@
 | `userId` | ObjectId | yes | — | **Unique index**; ref: `users` | Foreign key to authenticated user |
 | `isDraft` | Boolean | yes | `true` | — | `false` = submitted; **irreversible once false** |
 | `major` | String | on submit | `null` | Non-empty when `isDraft: false` | Selected from predefined UET major list |
-| `completedCourseIds` | ObjectId[] | no | `[]` | Each element ref: `course_units` | Completion flag only — no grade stored |
+| `completedCourses` | Array<{ major, courseCode, courseUnitId? }> | no | `[]` | Canonical identity = (`major`, `courseCode`); `courseUnitId` optional ObjectId ref `course_units` | Completion flag only — no grade stored |
 | `careerGoal.role` | String\|null | no | `null` | maxlength: 500; `validateFreeText` if non-null | Predefined option or free-text |
 | `careerGoal.companyType` | String\|null | no | `null` | maxlength: 500; `validateFreeText` if non-null | Predefined option or free-text |
 | `careerGoal.graduationTimeline` | String\|null | no | `null` | maxlength: 100 | Free-form, e.g. "3 semesters" or "2027-06" |
@@ -28,6 +28,10 @@
 | `submittedAt` | Date\|null | no | `null` | Set once on submit; never overwritten | `null` while draft |
 | `createdAt` | Date | auto | `Date.now()` | Set on first upsert (`$setOnInsert`) | |
 | `updatedAt` | Date | auto | `Date.now()` | Updated on every `PUT /onboarding/draft` and on submit | |
+
+> `careerGoalRole` is a downstream/read-model alias and MUST always be read from `careerGoal.role`.
+>
+> `privacySetting` is intentionally excluded from `StudentProfile`; ownership belongs to `User` (feature 005).
 
 ### Indexes
 
@@ -39,6 +43,12 @@
 ### Validation rules applied at service layer
 
 All free-text fields (`careerGoal.role`, `careerGoal.companyType`, `personalAspirations`) are passed through `validateFreeText()` (see [research.md R-004](research.md)) before upsert. `null` and empty string after trimming both pass — the field is treated as "not provided".
+
+For `completedCourses`, service layer canonicalizes identity by (`major`, `courseCode`) and de-duplicates repeated entries in the same payload. `courseUnitId` is optional and does not change identity semantics.
+
+## Pre-Implementation Policy
+
+This specification update is contract-alignment only. No runtime data migration/backfill is performed in onboarding APIs. Any one-off migration (if required) is handled separately as an operational task.
 
 ---
 
@@ -81,14 +91,14 @@ All free-text fields (`careerGoal.role`, `careerGoal.companyType`, `personalAspi
 
 | Field | Type | Notes |
 |---|---|---|
-| `_id` | ObjectId | Referenced by `StudentProfile.completedCourseIds` |
+| `_id` | ObjectId | Optionally referenced by `StudentProfile.completedCourses[].courseUnitId` |
 | `code` | String | e.g., `"INT2204"` |
 | `name` | String | Display name for the multi-select UI |
 | `major` | String | Used as filter: `CourseUnit.find({ major })` |
 
 See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
 
-**Access pattern from onboarding module**: `find({ major })` on `GET /onboarding/draft` response enrichment and on major change. No writes.
+**Access pattern from onboarding module**: `find({ major })` on `GET /onboarding/draft` response enrichment and on major change. No writes. `courseUnitId` (when present) is used as join optimization only; canonical matching remains (`major`, `courseCode`).
 
 ---
 

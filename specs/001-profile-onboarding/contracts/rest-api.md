@@ -9,6 +9,10 @@
 
 ## Common Conventions
 
+`careerGoal` remains a nested object in all request/response bodies. Any downstream/read-model `careerGoalRole` field is derived from `careerGoal.role` only.
+
+`privacySetting` is out of scope for onboarding payloads and must not appear in this contract (owned by `User` / feature 005).
+
 **Request headers** (all endpoints):
 ```
 Authorization: Bearer <JWT>
@@ -50,7 +54,17 @@ No body.
 {
   "isDraft": true,
   "major": "Computer Science",
-  "completedCourseIds": ["64a1b2c3d4e5f6a7b8c9d0e1", "64a1b2c3d4e5f6a7b8c9d0e2"],
+  "completedCourses": [
+    {
+      "major": "Computer Science",
+      "courseCode": "INT2204",
+      "courseUnitId": "64a1b2c3d4e5f6a7b8c9d0e1"
+    },
+    {
+      "major": "Computer Science",
+      "courseCode": "INT2211"
+    }
+  ],
   "careerGoal": {
     "role": "Backend Engineer",
     "companyType": null,
@@ -91,7 +105,13 @@ All fields optional. The server merges the provided fields into the existing dra
 ```json
 {
   "major": "Computer Science",
-  "completedCourseIds": ["64a1b2c3d4e5f6a7b8c9d0e1"],
+  "completedCourses": [
+    {
+      "major": "Computer Science",
+      "courseCode": "INT2204",
+      "courseUnitId": "64a1b2c3d4e5f6a7b8c9d0e1"
+    }
+  ],
   "careerGoal": {
     "role": "Backend Engineer",
     "companyType": null,
@@ -104,11 +124,13 @@ All fields optional. The server merges the provided fields into the existing dra
 | Field | Type | Constraints |
 |---|---|---|
 | `major` | string \| null | Any string; no server-side allowlist check on draft (checked on submit) |
-| `completedCourseIds` | ObjectId[] | Array of valid ObjectId strings |
+| `completedCourses` | Array<{ major, courseCode, courseUnitId? }> | Canonical identity is (`major`, `courseCode`); `courseUnitId` optional for join optimization |
 | `careerGoal.role` | string \| null | `validateFreeText()` if non-null; maxlength 500 |
 | `careerGoal.companyType` | string \| null | `validateFreeText()` if non-null; maxlength 500 |
 | `careerGoal.graduationTimeline` | string \| null | maxlength 100 |
 | `personalAspirations` | string \| null | `validateFreeText()` if non-null; maxlength 1000 |
+
+If duplicate items with same (`major`, `courseCode`) are sent, server canonicalizes to one record.
 
 ### Response — 200 OK
 
@@ -142,7 +164,13 @@ Same shape as `PUT /draft`. The full profile state at the time of submission. `m
 ```json
 {
   "major": "Computer Science",
-  "completedCourseIds": ["64a1b2c3d4e5f6a7b8c9d0e1"],
+  "completedCourses": [
+    {
+      "major": "Computer Science",
+      "courseCode": "INT2204",
+      "courseUnitId": "64a1b2c3d4e5f6a7b8c9d0e1"
+    }
+  ],
   "careerGoal": {
     "role": "Backend Engineer",
     "companyType": "Product company",
@@ -155,6 +183,7 @@ Same shape as `PUT /draft`. The full profile state at the time of submission. `m
 | Field | Required | Notes |
 |---|---|---|
 | `major` | **yes** | Must be a non-empty string matching a known UET major |
+| `completedCourses` | no | Canonical identity by (`major`, `courseCode`); `courseUnitId` optional |
 | all other fields | no | Omitting all optional fields is valid — triggers generic roadmap (BR-003) |
 
 ### Response — 202 Accepted
@@ -284,3 +313,9 @@ data: {"code":"UNAUTHORIZED","message":"Invalid or missing token"}
 When roadmap generation fails (communicated via SSE or email), the student can retry generation. This endpoint lives in the `roadmap` module and is triggered from the frontend. The onboarding module communicates the failure status; the retry action is handled by the roadmap service layer.
 
 This is documented here for cross-reference only — it is **not implemented** by the onboarding module.
+
+---
+
+## Pre-Implementation Policy
+
+This contract update is pre-implementation alignment. Runtime migration/backfill is not part of onboarding request handling.

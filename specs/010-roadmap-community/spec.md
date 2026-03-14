@@ -18,7 +18,7 @@ Two distinct sharing mechanisms exist with different persistence semantics:
 
 Both sharing actions are time-gated: a student must have held their current accepted roadmap for a minimum configurable period of **Y days** before generating a new share link or publishing to the community (including replacing an existing entry with a new publication).
 
-Authenticated UETCompass users can also **like** a community entry (a simple interest signal displayed as a count) and **fork** a published roadmap — sending its course sequence through Feature 009's standard acceptance flow (including prerequisite validation). Before the result is committed, courses the forking student has already completed are filtered out. If the filtered sequence passes validation, it becomes the forking student's new accepted roadmap. Both actions require authentication and apply only to community feed entries, not to share link snapshots.
+Authenticated UETCompass users can also **like** a community entry (a simple interest signal displayed as a count) and **fork** a published roadmap — sending fork-consumable payload to Feature 009's acceptance flow (including prerequisite validation). Before validation is executed, courses the forking student has already completed are filtered out using canonical identity `(major, courseCode)`. If the filtered payload passes validation, it becomes the forking student's new accepted roadmap and triggers standard post-acceptance side effects (notification, eligibility reset, audit log, optional progress update). Both actions require authentication and apply only to community feed entries, not to share link snapshots.
 
 This feature depends on Feature 009's prerequisite compatibility validation being in place at the acceptance endpoint. That validation is specified and owned by Feature 009; this feature consumes it (fork triggers it) but does not define it.
 
@@ -39,7 +39,7 @@ This feature depends on Feature 009's prerequisite compatibility validation bein
 
 - Q: Are liking and forking in scope for this feature, or are they also out of scope like commenting, rating, and editing? → A: Both liking and forking are IN scope. Commenting, rating, and editing remain out of scope.
 - Q: Does User Story 1 (prerequisite validation on roadmap acceptance) belong to this feature or Feature 009? → A: It belongs to Feature 009. This feature depends on it but does not own it.
-- Q: What does fork produce — a read-only reference copy, a re-personalised template via Feature 009, or a direct import through Feature 009's standard acceptance flow? → A: Fork sends the community roadmap's course sequence through Feature 009's acceptance flow (with prerequisite checking). If it passes, the forked roadmap becomes the forking student's new accepted roadmap.
+- Q: What does fork produce — a read-only reference copy, a re-personalised template via Feature 009, or a direct import through Feature 009's standard acceptance flow? → A: Fork sends filtered full-node payload through Feature 009's fork-consumable acceptance contract (with prerequisite checking). If it passes, the forked roadmap becomes the forking student's new accepted roadmap.
 - Q: Can a student have multiple simultaneous active share links, or only one? → A: Each accepted roadmap can have at most one active share link. A student cannot generate a second link while one already exists for their current roadmap.
 - Q: What is the default sort order of the community feed — publication date, like count, or something else? → A: Entries are ordered by relevance to the viewing student's major: entries from the same or related major group appear first.
 
@@ -47,7 +47,16 @@ This feature depends on Feature 009's prerequisite compatibility validation bein
 
 - Q: Is community entry content live (auto-updates on roadmap change) or snapshot-based (fixed at publish time)? → A: Snapshot — community entries capture the roadmap at publication time and do not auto-update when the student accepts a new roadmap.
 - Q: Can a student have multiple simultaneous active community entries? → A: No — at most one active community entry per student; publishing again replaces the existing entry.
-- Q: When forking, are courses the forking student has already completed excluded from the forked roadmap? → A: Yes — courses already in the forking student's `completedCourseIds` are filtered out before the fork is committed; the saved roadmap contains only courses not yet completed.
+- Q: When forking, are courses the forking student has already completed excluded from the forked roadmap? → A: Yes — courses already completed by canonical key `(major, courseCode)` are filtered out before validation/commit; the saved roadmap contains only courses not yet completed.
+
+### Session 2026-03-14 (Alignment pass)
+
+- Q: Which domain owns privacy for community/share rendering? → A: Feature 005 `User.privacySetting` is authoritative; Feature 010 must not read privacy from `StudentProfile`.
+- Q: In identified mode, what name should community/share UI show? → A: Prefer `User.displayName`; if missing/blank, use the standard system-wide fallback-name policy.
+- Q: Which contract should fork call in Feature 009? → A: The new fork-consumable endpoint, with full roadmap nodes payload.
+- Q: Must filtering happen before prerequisite validation? → A: Yes, always. Completed-course filtering executes first.
+- Q: How to distinguish duplicate course codes across majors? → A: Use canonical key `(major, courseCode)` consistently.
+- Q: What side effects are required after successful fork acceptance? → A: Notification, eligibility clock reset, audit log, and progress update when progress module integration exists.
 
 ---
 
@@ -98,7 +107,7 @@ An eligible student publishes their accepted roadmap to the community feed as a 
 
 ### User Story 3 – Control Privacy (Display Name and Major Identity) (Priority: P2)
 
-Before or after generating a share link or publishing to the community, a student can choose to appear identified (real display name + exact major) or anonymous ("Anonymous" + major group label). When anonymous, the exact major is replaced with a general major group label to reduce re-identification risk in small cohorts. This choice can be changed at any time and takes effect immediately.
+Before or after generating a share link or publishing to the community, a student can choose to appear identified (real display name + exact major) or anonymous ("Anonymous" + major group label). Privacy mode is read from `User.privacySetting` (Feature 005). In identified mode, the UI prefers `User.displayName`; when it is missing/blank, the system-wide fallback-name policy is applied. When anonymous, the exact major is replaced with a general major group label to reduce re-identification risk in small cohorts. This choice can be changed at any time and takes effect immediately.
 
 **Why this priority**: Privacy control is critical in a small-cohort university context where even a general description combined with a career goal could re-identify a student. The major group obfuscation is key to making anonymous mode meaningfully private. It is P2 because the feature works with a default of identified mode and this story adds user control.
 
@@ -111,7 +120,8 @@ Before or after generating a share link or publishing to the community, a studen
 3. **Given** a student's share link is active and they switch to anonymous, **When** an unauthenticated visitor opens the share link, **Then** the snapshot shows "Anonymous" and the major group label — not the real name or exact major.
 4. **Given** a student switches from anonymous back to identified, **When** the community feed is viewed, **Then** the entry correctly shows the student's real display name and exact major — confirming the reversal works.
 5. **Given** a student changes their display name in their account settings (Feature 005), **When** they look at the community feed or share link in identified mode, **Then** the roadmap entry reflects the updated display name.
-6. **Given** two students share the same major group label, **When** one is anonymous and one is identified, **Then** the anonymous entry shows only the group label while the identified entry shows the exact major — both remain in the feed without conflict.
+6. **Given** identified mode is active and `displayName` is missing/blank, **When** the community feed or share link is rendered, **Then** the display name is populated by the standard system-wide fallback-name policy.
+7. **Given** two students share the same major group label, **When** one is anonymous and one is identified, **Then** the anonymous entry shows only the group label while the identified entry shows the exact major — both remain in the feed without conflict.
 
 ---
 
@@ -174,7 +184,7 @@ An authenticated student browsing the community feed or viewing a roadmap detail
 
 ### User Story 7 – Fork a Community Roadmap (Priority: P3)
 
-An authenticated student viewing a community roadmap detail activates “Fork this roadmap”. The system sends the community roadmap's course sequence through Feature 009's standard acceptance flow — the same flow that runs when a student accepts any roadmap, including prerequisite validation. Before the result is committed, courses the forking student has already completed are filtered out of the sequence. If the filtered sequence passes validation, it becomes the student's new accepted roadmap (replacing whatever they had before). If validation fails, the fork is blocked and the student sees which courses violate their prerequisite constraints. Forking resets the student's Y-day eligibility clock, exactly as accepting any new roadmap does.
+An authenticated student viewing a community roadmap detail activates “Fork this roadmap”. The system reads the snapshot's full roadmap nodes, filters out courses already completed by the forking student using canonical identity `(major, courseCode)`, then sends the filtered full-node payload to Feature 009's fork-consumable acceptance endpoint (which performs prerequisite validation). If validation passes, the filtered roadmap becomes the student's new accepted roadmap (replacing whatever they had before). If validation fails, the fork is blocked and the student sees which courses violate their prerequisite constraints. Successful fork acceptance triggers post-acceptance side effects: notification, eligibility clock reset, audit log, and progress update when integration is enabled.
 
 **Why this priority**: Forking enables active reuse of peer roadmaps, closing the loop from passive discovery to personal adoption. It is P3 because the community feature delivers full discovery and sharing value independently; fork adds an optional adoption path.
 
@@ -183,9 +193,9 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 **Acceptance Scenarios**:
 
 1. **Given** an authenticated student is viewing a community roadmap detail view, **When** they inspect the page, **Then** a "Fork this roadmap" action is visible. (A student MUST NOT be able to fork their own community entry.)
-2. **Given** a student activates "Fork this roadmap", **When** the action is submitted, **Then** the community roadmap's course sequence is submitted to Feature 009's acceptance flow for prerequisite validation.
-3. **Given** the fork's course sequence passes Feature 009's prerequisite validation, **When** acceptance succeeds, **Then** courses already in the forking student's completed courses are filtered out from the sequence; the remaining courses are saved as the student's new accepted roadmap, replacing any previously accepted roadmap.
-4. **Given** a fork acceptance succeeds, **When** the student returns to their roadmap view, **Then** they see the forked roadmap (minus their already-completed courses) as their current accepted roadmap, with all standard post-acceptance behaviour applying (Y-day clock resets; any existing snapshot share links survive; any existing community entry remains unchanged as its original snapshot).
+2. **Given** a student activates "Fork this roadmap", **When** the action is submitted, **Then** the system filters completed courses first using canonical key `(major, courseCode)` and only then sends the filtered full-node payload to Feature 009's fork-consumable acceptance endpoint for prerequisite validation.
+3. **Given** the filtered fork payload passes Feature 009's prerequisite validation, **When** acceptance succeeds, **Then** the remaining nodes are saved as the student's new accepted roadmap, replacing any previously accepted roadmap.
+4. **Given** a fork acceptance succeeds, **When** the student returns to their roadmap view, **Then** they see the forked roadmap (minus their already-completed courses) as their current accepted roadmap, with all standard post-acceptance behaviour applying (notification, Y-day clock reset; any existing snapshot share links survive; any existing community entry remains unchanged as its original snapshot; audit log written; and progress state updated if available).
 5. **Given** the fork's course sequence fails Feature 009's prerequisite validation, **When** the error is returned, **Then** the fork is blocked; the student sees a clear error message identifying the violating courses (as per Feature 009's validation behaviour). The student's existing accepted roadmap, share links, and community entry are unaffected.
 6. **Given** an unauthenticated visitor opens a share link snapshot, **When** they view the snapshot, **Then** no "Fork this roadmap" action is shown — forking is only available to authenticated users on community entries.
 
@@ -200,7 +210,8 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 - **Anonymous student in a small cohort**: The major group label (not the exact major) is displayed, reducing re-identification risk even when few students share the same major.
 - **Student revokes share link while a visitor is viewing it**: The URL becomes invalid immediately; the viewer receives a not-found response if they refresh or navigate.
 - **Student unpublishes community entry**: The entry is removed from the feed immediately; any direct link to the community detail view returns a not-found response.
-- **Fork attempt fails prerequisite validation**: A student forks a community roadmap whose course sequence violates their prerequisite constraints. Feature 009 blocks the acceptance and returns a clear error identifying the violating courses. The forking student's existing accepted roadmap, share links, and community entry are unaffected.
+- **Fork attempt fails prerequisite validation**: A student forks a community roadmap whose filtered course sequence violates their prerequisite constraints. Feature 009 blocks the acceptance and returns a clear error identifying the violating courses. The forking student's existing accepted roadmap, share links, and community entry are unaffected.
+- **Identified mode with missing displayName**: If `User.displayName` is blank/null, the system fallback-name policy is applied consistently in feed, detail, and share-link responses.
 - **Student deletes their account**: All share links and published community entries associated with that student are immediately invalidated and removed.
 - **No roadmaps published yet**: A student opens the community feed when it is empty → an empty state is shown, not an error page.
 - **Privacy toggle mid-session**: A student changes their privacy setting while a peer has the community feed open in another tab → the peer sees the updated identity on next page refresh.
@@ -246,8 +257,9 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 
 **Privacy Controls**
 
-- **FR-019**: A student MUST be able to set their sharing identity to either identified (real display name + exact major) or anonymous ("Anonymous" + major group label). The default is identified.
+- **FR-019**: A student MUST be able to set their sharing identity to either identified (real display name + exact major) or anonymous ("Anonymous" + major group label). The default is identified. Privacy source of truth is `User.privacySetting` (Feature 005).
 - **FR-020**: A privacy setting change MUST apply immediately to all active share links and published community entries without requiring re-generation or re-publication.
+- **FR-021A**: In identified mode, rendering MUST prefer `User.displayName`; if missing/blank, rendering MUST apply the standard system-wide fallback-name policy.
 - **FR-021**: The major group label used for anonymous entries MUST be determined by a system-level configuration mapping that does not require a code deployment to change.
 
 **Like**
@@ -261,14 +273,15 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 **Fork**
 
 - **FR-027**: An authenticated user MUST be able to fork a community roadmap entry. A student MUST NOT be able to fork their own community entry.
-- **FR-028**: A fork action MUST submit the community roadmap's course sequence to Feature 009's standard acceptance flow, including prerequisite validation.
-- **FR-029**: If Feature 009's acceptance flow succeeds, courses already present in the forking student's completed courses MUST be filtered out from the forked sequence before it is saved. The resulting filtered sequence MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying (Y-day clock resets; existing snapshot share links survive; the existing community entry remains unchanged as its original snapshot).
+- **FR-028**: A fork action MUST filter completed courses first using canonical identity `(major, courseCode)`, then submit the filtered full-node payload to Feature 009's fork-consumable acceptance endpoint, which performs prerequisite validation.
+- **FR-029**: If Feature 009's acceptance flow succeeds, the filtered sequence MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying.
 - **FR-030**: If Feature 009's acceptance flow fails prerequisite validation, the fork MUST be blocked. Feature 009's error message identifying the violating courses MUST be surfaced to the forking student. The forking student's existing accepted roadmap, share links, and community entry MUST remain unchanged.
 - **FR-031**: The fork action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
+- **FR-032**: After successful fork acceptance, the system MUST execute post-success side effects: user notification, eligibility-clock reset, audit log write, and progress-tracking update when Feature 007 integration is enabled.
 
 ### Key Entities
 
-- **ShareLink**: A snapshot-based share token generated by an eligible student. Contains an immutable copy of the roadmap nodes at generation time (`courseCode`, `courseName`, `gainedSkills`, `reason` only), a unique token, a generation timestamp, and a reference to the owning student's privacy setting. At most one active ShareLink exists per accepted roadmap snapshot. Not invalidated by subsequent roadmap changes; persists until explicitly revoked.
+- **ShareLink**: A snapshot-based share token generated by an eligible student. Contains an immutable copy of the roadmap nodes at generation time (`courseCode`, `courseName`, `gainedSkills`, `reason` only), a unique token, and a generation timestamp. Privacy rendering for link responses is derived at read-time from `User.privacySetting` (Feature 005). At most one active ShareLink exists per accepted roadmap snapshot. Not invalidated by subsequent roadmap changes; persists until explicitly revoked.
 - **CommunityEntry**: A snapshot-based, discoverable record in the community feed. Captures the student's accepted roadmap content at the moment of publication (via a RoadmapSnapshot reference). Tracks major group, career goal role, personalisation level, node count, preview nodes, and publication date. Content does not change after publication; accepting a new roadmap does not update an existing entry. At most one active CommunityEntry per student at any time.
 - **RoadmapSnapshot**: An immutable point-in-time export of a student's roadmap nodes captured when a ShareLink is generated. Contains only the fields exposed publicly (`courseCode`, `courseName`, `gainedSkills`, `reason`). Distinct from a CommunityEntry, which is live rather than snapshot-based.
 
@@ -305,8 +318,8 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 
 ## Dependencies
 
-- **Feature 009** (AI-Powered Personalised Roadmap Generator): Provides the accepted roadmap structure including all node fields and personalisation level. The roadmap's `accepted_at` timestamp is the start of the eligibility clock. Fork actions in this feature invoke Feature 009's standard acceptance flow (including its prerequisite validation); Feature 009 owns that logic.
+- **Feature 009** (AI-Powered Personalised Roadmap Generator): Provides the accepted roadmap structure including all node fields and personalisation level. The roadmap's `accepted_at` timestamp is the start of the eligibility clock. Fork actions in this feature invoke Feature 009's fork-consumable acceptance contract (including its prerequisite validation); Feature 009 owns that logic.
 - **Feature 002** (Seed CTDT DAG): Provides the authoritative CourseUnit prerequisite graph consumed by Feature 009's acceptance flow — relevant transitively via fork.
-- **Feature 005** (Account Management): Provides the student's display name and exact major used in community and share link views.
-- **Feature 001** (Profile Onboarding): Provides the student's career goal role and major used as community feed metadata.
+- **Feature 005** (Account Management): Provides `User.displayName`, `User.privacySetting`, and exact major used in community/share rendering.
+- **Feature 001** (Profile Onboarding): Provides `careerGoal.role` and canonical completed-course records used in feed metadata and fork pre-filtering.
 - **Feature 004** (Skill Tree): Owns the primary rendering of a student's own roadmap. The community feature provides a separate, independent read-only rendering context and does not reuse Skill Tree's interactive components.

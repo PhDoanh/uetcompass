@@ -39,29 +39,38 @@
 
 ---
 
-## R-003: Fork Flow — completedCourseIds Filtering
+## R-003: Fork Flow — Canonical Completed-Course Filtering + 009 Fork-Consumable Contract
 
-**Question**: When student A forks student B's community roadmap, should the fork be saved as-is, filtered to remove A's completed courses, or annotated with "already done" markers?
+**Question**: When student A forks student B's community roadmap, what is the canonical course-identity rule for filtering completed courses, what call contract should be used with Feature 009, and in what order should operations execute?
 
-**Decision**: Option B — filter out courses present in the forking student's `completedCourseIds` before submitting to Feature 009's acceptance flow.
+**Decision**:
+1. Filter out completed courses **before** any prerequisite validation.
+2. Use canonical course identity tuple **`(major, courseCode)`** for duplicate-course distinction and completed filtering.
+3. Submit the remaining roadmap to Feature 009's new **fork-consumable endpoint** using the **full roadmap node payload** (not course codes only).
 
-**Filter source**: `completedCourseIds[]` from the forking student's `StudentProfile` (Feature 001).
+**Filter source**: canonical completed-course records from the forking student's `StudentProfile` (Feature 001), compared by `(major, courseCode)`; `courseUnitId` is optional optimization metadata only.
 
 **Fork pipeline**:
 ```
-1. Read CommunityEntry → snapshotId → RoadmapSnapshot.nodes[].courseCode
-2. Read forking student's StudentProfile.completedCourseIds
-3. filteredSequence = snapshot.nodes.filter(n => !completedCourseIds.includes(n.courseCode))
-4. If filteredSequence is empty → return 422 "All courses already completed"
-5. POST to Feature 009 accept endpoint with filteredSequence
-6. If 009 returns success → new Roadmap saved; Y-day clock resets; existing ShareLink + CommunityEntry of forking student unchanged
-7. If 009 returns validation failure → surface 009's error (violating courses) to forking student; no state change
+1. Read CommunityEntry → snapshotId → RoadmapSnapshot.nodes[] (full node objects)
+2. Read forking student's StudentProfile completed-course records
+3. Build set of completed keys by `(major, courseCode)`
+4. Resolve `major` for each snapshot node (`node.major` when available, otherwise derive from course catalog mapping), then filter:
+  `filteredNodes = snapshot.nodes.filter(n => !completedSet.has(key(resolveMajor(n), n.courseCode)))`
+5. If `filteredNodes` is empty → return `422 ALL_COMPLETED`
+6. POST `filteredNodes` (full nodes payload) to Feature 009 fork-consumable endpoint (which runs prerequisite validation)
+7. If 009 returns success → persist new accepted roadmap and run post-success side effects:
+  - reset Y-day eligibility clock (normal acceptance semantics),
+  - emit user notification,
+  - write audit log,
+  - update progress tracking state if Feature 007 integration is present.
+8. If 009 returns validation failure → surface 009's `PREREQUISITE_VIOLATION` payload; no state change in community/share records.
 ```
 
 **Rationale**:
-- Submitting already-completed courses to Feature 009's prerequisite validation is semantically incorrect — you can't validate prerequisites for courses you've finished. Filtering first preserves the integrity of the acceptance flow.
-- The forking student's roadmap should represent remaining work only.
-- Feature 009 owns the prerequisite validation logic; this feature delegates entirely to it.
+- Submitting already-completed courses to prerequisite validation is semantically incorrect. Pre-filtering guarantees that validation evaluates only remaining work.
+- `(major, courseCode)` alignment matches Feature 001 canonical contract and avoids ambiguity when course codes overlap across majors.
+- Feature 009 owns validation and acceptance semantics; Feature 010 sends fork-ready payload to the dedicated 009 contract.
 
 **Alternatives considered**:
 - No filtering (Option A): Redundant completed courses in new roadmap. Confusing UX. Rejected.
@@ -73,15 +82,16 @@
 
 **Question**: Should anonymous mode be implemented by storing anonymised values, or by substituting at query/response time?
 
-**Decision**: Substitution at response time only. `CommunityEntry` always stores raw values (`exactMajor`, `userId` for display name lookup). When building any community or share-link response payload, the service reads `privacySetting` from the student's profile and applies:
+**Decision**: Substitution at response time only. `CommunityEntry` always stores raw values (`exactMajor`, `userId` for display name lookup). When building any community or share-link response payload, the service reads `privacySetting` from **`User` (Feature 005)** and applies:
 - `privacySetting === 'anonymous'` → `displayName: "Anonymous"`, `major: majorGroupLabel`
-- `privacySetting === 'identified'` → `displayName: <real name from Feature 005>`, `major: exactMajor`
+- `privacySetting === 'identified'` → `displayName: <displayName if present, else system fallback name policy>`, `major: exactMajor`
 
 Raw stored data is never altered by a privacy toggle.
 
 **Rationale**:
 - A student can toggle privacy freely and immediately (FR-020). If the stored value changed, every toggle would require updating all community entries and share links. Response-time substitution responds instantly with no DB writes.
 - Constitution Principle III: store minimum necessary data. One source of truth; no sync problem.
+- Using the global fallback-name policy keeps UI naming behavior consistent across features when `displayName` is missing/blank.
 
 **Alternatives considered**:
 - Store both raw and anonymised: Redundant data, sync problem on display name changes. Rejected.

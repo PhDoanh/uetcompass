@@ -20,22 +20,30 @@ Content-Type: application/json
 {
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human-readable description"
+    "message": "Human-readable description",
+    "details": {}
   }
 }
 ```
+
+`details` is optional. Include it only when extra machine-readable context is useful (for example: lockout timers, field-level validation metadata).
 
 **Global error codes**:
 
 | HTTP | `code` | Meaning |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Request body or param failed validation |
+| 400 | `INVALID_INPUT` | Request body, query, or params failed validation |
 | 401 | `UNAUTHORIZED` | Missing, expired, or invalid access token |
 | 403 | `FORBIDDEN` | Authenticated but not permitted for this action |
 | 404 | `NOT_FOUND` | Resource does not exist |
 | 409 | `CONFLICT` | Duplicate resource or invalid state transition |
 | 429 | `RATE_LIMITED` | Too many requests in window |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
+
+Code taxonomy policy for this module:
+- Reuse canonical shared codes for shared semantics (`INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL_ERROR`).
+- Use endpoint/domain-specific codes only for truly domain-specific states (`INVALID_CREDENTIALS`, `EMAIL_ALREADY_EXISTS`, `OTP_EXPIRED`, ...).
+- Do not use multiple codes for the same semantic condition.
 
 ### Identity render conventions (global)
 
@@ -100,8 +108,11 @@ Email already associated with an active, pending, or locked account.
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "email: Must end in @vnu.edu.vn"
+    "code": "INVALID_INPUT",
+    "message": "email: Must end in @vnu.edu.vn",
+    "details": {
+      "field": "email"
+    }
   }
 }
 ```
@@ -237,7 +248,9 @@ Sets `rt` httpOnly cookie (Refresh Token, `SameSite=None; Secure; path=/api/auth
   "error": {
     "code": "ACCOUNT_LOCKED",
     "message": "Account locked due to too many failed attempts.",
-    "remainingSeconds": 847
+    "details": {
+      "remainingSeconds": 847
+    }
   }
 }
 ```
@@ -338,7 +351,7 @@ Covers: missing cookie, expired token, already-revoked token, reuse-detected.
 ```json
 {
   "error": {
-    "code": "INVALID_TOKEN",
+    "code": "UNAUTHORIZED",
     "message": "Session expired. Please log in again."
   }
 }
@@ -578,8 +591,11 @@ Returns the full profile as per `GET /api/account/profile` response.
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "profile.careerGoal.role: Must contain at least one letter"
+    "code": "INVALID_INPUT",
+    "message": "profile.careerGoal.role: Must contain at least one letter",
+    "details": {
+      "field": "profile.careerGoal.role"
+    }
   }
 }
 ```
@@ -810,13 +826,22 @@ Mark a notification as read.
 
 SSE stream for real-time notification push. Reuses the same `Map<userId, res>` pattern established in Feature 001's `onboarding.sse.js`.
 
-**Auth**: Bearer token required (passed as `Authorization: Bearer <token>` header or `?token=<token>` query param — EventSource does not support custom headers natively in browsers; use query param fallback)
+**Auth**: Uses short-lived, purpose-bound query token: `?sseToken=<token>`. For consistency with other modules, this endpoint does not accept raw access JWT in query string.
+
+### Request
+
+```js
+const es = new EventSource(`/api/auth/sse/notifications?sseToken=${sseToken}`);
+```
+
+`sseToken` is minted from an authenticated context, expires quickly, and is valid only for notification SSE.
 
 ### Behavior
 
 - On connect: server sends initial handshake comment (`:ok`) and starts 15s heartbeat
 - On `REPERSONALIZE` notification created: server pushes `event: notification` with the notification payload
 - On disconnect: server removes connection from the Map and clears the heartbeat interval
+- On invalid/missing/expired `sseToken`: server sends `event: error` and closes the connection
 
 ### Event format
 
@@ -826,8 +851,16 @@ data: {"_id":"...","type":"REPERSONALIZE","message":"...","link":"/roadmap","rea
 
 ```
 
+### Auth error event format
+
+```
+event: error
+data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}
+
+```
+
 ---
 
 ## SSE Connection note (Feature 001 compatibility)
 
-The `/api/auth/sse/notifications` endpoint shares the same SSE infrastructure as Feature 001's `/api/onboarding/sse/status`. Both use the `notification.sse.js` shared module (Map-based connection store). A student opening two tabs will have two SSE connections in the Map (keyed by `userId`) — the last one registered wins for push delivery. This is an acknowledged limitation of the simple Map pattern (consistent with Feature 001's design).
+The `/api/auth/sse/notifications` endpoint shares the same SSE infrastructure as Feature 001's `/api/onboarding/status`. Both use the `notification.sse.js` shared module (Map-based connection store). A student opening two tabs will have two SSE connections in the Map (keyed by `userId`) — the last one registered wins for push delivery. This is an acknowledged limitation of the simple Map pattern (consistent with Feature 001's design).

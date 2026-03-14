@@ -5,7 +5,41 @@
 **Updated**: 2026-03-14  
 **Research dependency**: [research.md](research.md) (R-002, R-004)  
 **Base URL**: `/api/progress`  
-**Auth**: All endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. The SSE endpoint uses `?token=<JWT>` query param instead (see endpoint 3).
+**Auth**: All non-SSE endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. SSE uses short-lived query token `?sseToken=<token>` (see endpoint 3).
+
+---
+
+## Common Conventions
+
+### Error envelope (all non-2xx responses)
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable description",
+    "details": {}
+  }
+}
+```
+
+`details` is optional and included only when additional machine-readable context is useful.
+
+### Error code taxonomy
+
+| HTTP | `code` | Meaning |
+|---|---|---|
+| 400 | `INVALID_INPUT` | Request input (query/path/body) failed validation |
+| 401 | `UNAUTHORIZED` | Missing/invalid/expired auth token |
+| 403 | `FORBIDDEN` | Authenticated student is not allowed to access requested roadmap |
+| 404 | `ROADMAP_NOT_FOUND` | Requested roadmap does not exist |
+| 500 | `INTERNAL_ERROR` | Unexpected server/service/cache failure |
+
+SSE auth failures use `UNAUTHORIZED` with the same envelope fields in SSE `event: error` payload.
+
+### SSE naming convention
+
+SSE event names use namespaced format `<domain>:<action>`.
 
 ---
 
@@ -77,10 +111,10 @@ No query parameters. No request body.
 
 ### Error responses
 
-| Status | Condition |
-|---|---|
-| `401 Unauthorized` | Missing or expired access token |
-| `500 Internal Server Error` | Unexpected DB failure |
+| Status | `code` | Condition |
+|---|---|---|
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired access token |
+| `500 Internal Server Error` | `INTERNAL_ERROR` | Unexpected DB failure |
 
 ---
 
@@ -154,23 +188,23 @@ All three keys (`done`, `inProgress`, `pending`) are always present — never om
 
 ### Error responses
 
-| Status | Condition |
-|---|---|
-| `401 Unauthorized` | Missing or expired access token |
-| `403 Forbidden` | Authenticated student does not own this `roadmapId` |
-| `404 Not Found` | `roadmapId` does not exist |
-| `500 Internal Server Error` | Unexpected DB or service failure |
+| Status | `code` | Condition |
+|---|---|---|
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired access token |
+| `403 Forbidden` | `FORBIDDEN` | Authenticated student does not own this `roadmapId` |
+| `404 Not Found` | `ROADMAP_NOT_FOUND` | `roadmapId` does not exist |
+| `500 Internal Server Error` | `INTERNAL_ERROR` | Unexpected DB or service failure |
 
 ---
 
 ## Endpoint 3 — GET /api/progress/sse (Server-Sent Events)
 
-Long-lived SSE connection. The server pushes a `progress:update` event each time the authenticated student's progress changes on any roadmap (triggered by Skill Tree node status writes). The client does not need to poll or reload the dashboard.
+Long-lived SSE connection. The server pushes a `progress:updated` event each time the authenticated student's progress changes on any roadmap (triggered by Skill Tree node status writes). The client does not need to poll or reload the dashboard.
 
 ### Request
 
 ```http
-GET /api/progress/sse?token=<accessToken>
+GET /api/progress/sse?sseToken=<short-lived-sse-token>
 Accept: text/event-stream
 ```
 
@@ -178,7 +212,7 @@ Accept: text/event-stream
 
 | Param | Type | Notes |
 |---|---|---|
-| `token` | String | JWT Access Token. Required because `EventSource` does not support custom request headers. |
+| `sseToken` | String | Short-lived, purpose-bound SSE token minted from authenticated context. Required because `EventSource` does not support custom request headers reliably. |
 
 ### Response headers (on successful connection)
 
@@ -190,23 +224,23 @@ Connection: keep-alive
 X-Accel-Buffering: no
 ```
 
-### SSE event: `progress:update`
+### SSE event: `progress:updated`
 
 Fired after each successful cache refresh. Payload is the updated summary for the affected roadmap — identical shape to a single element of the `GET /api/progress/summaries` `roadmaps` array.
 
 ```
-event: progress:update
+event: progress:updated
 data: {"roadmapId":"64f1a2b3c4d5e6f7a8b9c0d1","roadmapName":"Frontend Developer","isPrimary":true,"totalNodes":24,"doneNodes":9,"inProgressNodes":2,"pendingNodes":13,"progressPercent":38,"lastActivityDate":"2026-03-11T10:05:00.000Z"}
 
 ```
 
 ### SSE event: `error` (auth failure)
 
-Sent when the `token` query param is missing or invalid. The server then closes the connection. The frontend MUST call `es.close()` on receiving this event to prevent infinite EventSource retries.
+Sent when the `sseToken` query param is missing, invalid, or expired. The server then closes the connection. The frontend MUST call `es.close()` on receiving this event to prevent infinite EventSource retries.
 
 ```
 event: error
-data: {"code":"UNAUTHORIZED","message":"Invalid or expired token"}
+data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}
 
 ```
 
@@ -223,9 +257,9 @@ Sent every 15 seconds to prevent Render's idle-connection close (~30s). Does not
 
 ```js
 // useProgressSSE.js
-const es = new EventSource(`/api/progress/sse?token=${accessToken}`);
+const es = new EventSource(`/api/progress/sse?sseToken=${sseToken}`);
 
-es.addEventListener('progress:update', (e) => {
+es.addEventListener('progress:updated', (e) => {
   const summary = JSON.parse(e.data);
   // Merge into dashboard state: update the card matching summary.roadmapId
 });

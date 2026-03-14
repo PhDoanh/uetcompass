@@ -2,6 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
+**Updated**: 2026-03-14  
 **Feeds into**: [plan.md](plan.md), [data-model.md](data-model.md), [contracts/rest-api.md](contracts/rest-api.md)
 
 ---
@@ -10,12 +11,13 @@
 
 **Question**: In a monolith with no queue and no cross-module direct imports, how does the Skill Tree module cause the Progress cache to refresh after a node status write?
 
-**Decision**: Sequential `await` via service-layer dependency injection. The Skill Tree service receives a `progressService` reference at bootstrap and calls `await progressService.refreshCache(userId, roadmapId)` directly after the node write commits. If `refreshCache` throws, Skill Tree soft-fails (logs the error, does not re-throw) — because the node write has already committed and returning HTTP 500 to the student would be misleading.
+**Decision**: Sequential `await` via service-layer dependency injection. Skill Tree calls `await progressService.refreshCache(userId, roadmapId)` right after status write commit. If `refreshCache` throws, Skill Tree **soft-fails** (log only, do not re-throw) and Progress module schedules asynchronous retry for eventual consistency.
 
 **Rationale**:
 - Fire-and-forget (un-awaited Promise) gives no delivery guarantee on a busy event loop. The 5-second SSE update window (SC-004) requires the call to be awaited.
 - The call is pure in-process — no network hop, no queue latency. End-to-end latency from node write commit → cache upsert → SSE push is estimated at 50–200ms on MongoDB Atlas M0 free tier.
-- Soft-fail is correct because the `roadmap_progress_cache` document is derived data. Stale cache is a degraded-but-safe state; a spurious 500 to the student is a worse failure mode.
+- Soft-fail is correct because `roadmap_progress_cache` is derived data. Stale cache is degraded-but-safe; a spurious 500 to the student is worse.
+- Eventual consistency retry (in-process retry queue with bounded backoff) repairs transient Mongo failures without queue infrastructure.
 
 **Alternatives considered**:
 - MongoDB Change Streams: Not available on Atlas M0 free tier. Rejected.
@@ -48,31 +50,27 @@
 
 ## R-003: Cache Computation — aggregation pipeline vs. multiple `countDocuments` calls?
 
-**Question**: When `refreshCache(userId, roadmapId)` runs, should it compute `totalNodes`, `doneNodes`, `inProgressNodes` via one `$group` aggregation or three separate `countDocuments` calls?
+**Question**: With Feature 004 now canonical for node status (`skill_node_statuses` + `getNodesByStatus`), should Progress compute counts by querying Mongo directly or by consuming the 004 grouped contract?
 
-**Decision**: Single `$group` aggregation pipeline with conditional `$sum` operators.
+**Decision**: Consume `skillTreeService.getNodesByStatus(userId, roadmapId)` and compute summary counts in-process from returned arrays.
 
 ```js
-const [result] = await RoadmapNode.aggregate([
-  { $match: { userId, roadmapId } },
-  {
-    $group: {
-      _id: null,
-      totalNodes:       { $sum: 1 },
-      doneNodes:        { $sum: { $cond: [{ $eq: ['$status', 'done'] },        1, 0] } },
-      inProgressNodes:  { $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] } },
-    }
-  }
-]);
+const detail = await skillTreeService.getNodesByStatus(userId, roadmapId);
+
+const doneNodes = detail.done.length;
+const inProgressNodes = detail.inProgress.length;
+const pendingNodes = detail.pending.length;
+const totalNodes = doneNodes + inProgressNodes + pendingNodes;
 ```
 
 **Rationale**:
-- Three `countDocuments` calls = 3 round trips to Atlas M0. Each trip adds 20–60ms; total 60–180ms. Worse, the three counts are not from the same logical snapshot — a concurrent write between call 2 and call 3 produces a corrupted cache document.
-- A single aggregation is one atomic read, one round trip, consistent counts. On Atlas M0, this runs in 5–20ms for the expected data volume (tens to low hundreds of nodes per student per roadmap).
+- Removes schema coupling from Progress to internal 004 persistence details.
+- Reuses already-standardized 004 status grouping payload used by detail endpoint.
+- Keeps ownership boundaries strict: 004 owns status semantics; 007 owns aggregate cache.
 
 **Alternatives considered**:
-- `countDocuments` × 3: Simpler to read but not atomic, more round trips. Rejected.
-- Pre-counting with embedded counters in a `roadmaps` document: Requires counter synchronization logic everywhere Skill Tree updates a node. More complexity for no benefit. Rejected.
+- Direct query on `skill_node_statuses` from Progress: tighter coupling and duplicated grouping logic. Rejected.
+- Embedded counters in `roadmaps`: introduces write-time coupling into 009 canonical owner. Rejected.
 
 ---
 
@@ -95,14 +93,29 @@ const [result] = await RoadmapNode.aggregate([
 
 ## R-005: Skill Tree Node Storage Schema — what does `refreshCache` read from?
 
-**Question**: Feature 004 (Skill Tree) has not been planned yet. What shape of data does `refreshCache` need from the Skill Tree module, and how should this dependency be declared?
+**Question**: What exact 004 contract does Progress depend on after introducing canonical roadmap ownership in 009?
 
-**Decision**: Progress Tracking declares a **forward-compatible interface contract** with the Skill Tree module. The contract is:
+**Decision**: Progress Tracking depends on two canonical contracts:
 
-1. The Skill Tree module MUST maintain a MongoDB collection (working name: `roadmap_nodes`) with at minimum the following fields per document: `userId` (ObjectId), `roadmapId` (ObjectId), `status` (String enum: `"pending"` | `"in_progress"` | `"done"`). A compound index on `{ userId: 1, roadmapId: 1 }` MUST exist for aggregation performance.
-2. The Skill Tree module MUST expose a service function `getNodesByStatus(userId, roadmapId)` that returns `{ done: [...], inProgress: [...], pending: [...] }` — each entry with `nodeId`, `nodeCode`, `nodeName` fields. The Progress module calls this for the `/nodes` detail endpoint.
-3. The Skill Tree module MUST call `progressService.refreshCache(userId, roadmapId)` from its `updateNodeStatus` service function, after the node write commits.
+1. **Feature 004 contract**: `getNodesByStatus(userId, roadmapId)` returns `{ roadmapId, roadmapName, done[], inProgress[], pending[] }` with node entries `{ nodeId, courseCode, courseName, status, updatedAt }`, backed by `skill_node_statuses`.
+2. **Feature 009 contract**: roadmap ownership and stable identity come from 009 `roadmaps._id`; Progress treats this as authoritative `roadmapId`.
+3. **Trigger contract**: Skill Tree calls `progressService.refreshCache(userId, roadmapId)` after node-status commit.
 
-**Rationale**: Documenting the contract here locks in the interface before Skill Tree planning begins, preventing a design mismatch. Skill Tree's plan can accommodate this contract as an explicit integration requirement.
+**Rationale**: This preserves canonical ownership boundaries: 009 owns roadmap lifecycle/identity, 004 owns node status state machine, 007 owns derived aggregation and dashboard read model.
 
-**Note for Skill Tree planner**: The `roadmap_nodes` collection name is a working assumption. Skill Tree may use a different name or embed nodes inside a `roadmaps` document — what matters is that `progressService.refreshCache` can run the `$group` aggregation against whichever collection Skill Tree uses, and that `getNodesByStatus(userId, roadmapId)` is exposed as a service function.
+---
+
+## R-006: Multi-roadmap source of truth — enrolled roadmaps vs owned roadmaps
+
+**Question**: Should dashboard scope use legacy onboarding enrollment mapping or canonical roadmap ownership from Feature 009?
+
+**Decision**: Use Feature 009 canonical ownership only. Dashboard list is all owned roadmap documents in dashboard scope (typically `status=completed`).
+
+**Rationale**:
+- 009 is explicit canonical owner of roadmap lifecycle and identity.
+- Ownership semantics remain correct even with roadmap history/variants and primary switching.
+- Avoids cross-feature drift where enrollment view differs from actual roadmap documents.
+
+**Alternatives considered**:
+- Onboarding-based enrollment list: legacy assumption, not canonical after 009. Rejected.
+- Skill Tree primary-only scope: fails multi-roadmap requirement. Rejected.

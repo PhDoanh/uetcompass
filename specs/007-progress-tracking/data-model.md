@@ -2,6 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
+**Updated**: 2026-03-14  
 **Research dependency**: [research.md](research.md) (R-003, R-005)
 
 ---
@@ -10,7 +11,9 @@
 
 **MongoDB collection**: `roadmap_progress_cache`
 
-**Purpose**: Pre-computed progress summary for one (student, roadmap) pair. This is the sole collection owned by the Progress Tracking feature. It is written exclusively by `progress.service.js#refreshCache` (called from the Skill Tree module after every node status change) and read by the Progress Dashboard endpoints. It is never written by the API handlers — the REST layer is read-only.
+**Purpose**: Pre-computed progress summary for one `(student, roadmap)` pair. This is the sole collection owned by Progress Tracking. It is written exclusively by `progress.service.js#refreshCache` (triggered by Skill Tree after node-status writes) and read by dashboard endpoints. It is never written by REST handlers.
+
+**Cardinality (multi-roadmap)**: For each `userId`, cardinality is `0..N` cache docs where `N` equals count of owned roadmap documents returned by Feature 009 in dashboard scope. Exactly one cache document exists per unique `(userId, roadmapId)`.
 
 ### Schema
 
@@ -18,7 +21,9 @@
 |---|---|---|---|---|---|
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `userId` | ObjectId | yes | — | ref: `users`; part of compound unique key | FK to authenticated student |
-| `roadmapId` | ObjectId | yes | — | ref: `roadmaps` (Skill Tree); part of compound unique key | FK to the student's roadmap |
+| `roadmapId` | ObjectId | yes | — | ref: `roadmaps` (Feature 009); part of compound unique key | Stable roadmap key from 009 canonical owner |
+| `roadmapName` | String | yes | — | Non-empty | Display name snapshot for dashboard cards |
+| `isPrimary` | Boolean | yes | `false` | Non-unique | Snapshot hint from 009 for frontend sort/display |
 | `totalNodes` | Number | yes | — | Integer ≥ 0 | Total course nodes on the roadmap path |
 | `doneNodes` | Number | yes | — | Integer ≥ 0; ≤ `totalNodes` | Count of nodes in `done` status |
 | `inProgressNodes` | Number | yes | — | Integer ≥ 0; ≤ `totalNodes` | Count of nodes in `in_progress` status |
@@ -34,7 +39,8 @@
 |---|---|---|---|
 | `_id` (default) | `_id` | Unique | MongoDB default |
 | `userId_roadmapId_unique` | `userId: 1, roadmapId: 1` | **Unique compound** | One cache document per (student, roadmap) pair; upsert filter key |
-| `userId_idx` | `userId: 1` | Standard | Fast `find({ userId })` for the dashboard's overview query |
+| `userId_updatedAt_idx` | `userId: 1, updatedAt: -1` | Standard compound | Fast dashboard listing by user + recency sort |
+| `userId_isPrimary_updatedAt_idx` | `userId: 1, isPrimary: -1, updatedAt: -1` | Standard compound | Optional sort path: primary first, then recent |
 
 ### Write path (via `progress.service.js#refreshCache`)
 
@@ -43,13 +49,16 @@ Skill Tree updateNodeStatus()
     │
     │  await progressService.refreshCache(userId, roadmapId)
     ▼
-RoadmapNode.aggregate([ $match{userId, roadmapId}, $group{totalNodes, doneNodes, inProgressNodes} ])
+skillTreeService.getNodesByStatus(userId, roadmapId)
+       │   returns { roadmapId, roadmapName, done[], inProgress[], pending[] }
+       │   backed by Feature 004 `skill_node_statuses`
     │
-    │  One round trip to Atlas — atomic snapshot
+       │  In-process computation from canonical grouped payload
     ▼
 RoadmapProgressCache.findOneAndUpdate(
   { userId, roadmapId },                          ← filter (hits compound unique index)
-  { $set: { totalNodes, doneNodes, inProgressNodes, pendingNodes,
+       { $set: { roadmapName, isPrimary,
+                                          totalNodes, doneNodes, inProgressNodes, pendingNodes,
             progressPercent, lastActivityDate, updatedAt },
     $setOnInsert: { createdAt } },
   { upsert: true, new: true }
@@ -57,6 +66,8 @@ RoadmapProgressCache.findOneAndUpdate(
     │
     ▼
 progressSse.notifyUser(userId, updatedSummary)     ← fire-and-forget SSE push
+
+On refresh error: log + schedule retry (eventual consistency), do not fail already-committed Skill Tree action.
 ```
 
 ### `progressPercent` computation rule
@@ -71,26 +82,23 @@ This is the same formula as the Skill Tree progress bar (SC-002 consistency guar
 
 ---
 
-## Referenced Entity: RoadmapNode (read-only, owned by Feature 004 — Skill Tree)
+## Referenced Entity: SkillNodeStatus (read-only, owned by Feature 004 — Skill Tree)
 
-**MongoDB collection**: `roadmap_nodes` *(working name — Skill Tree's planner may rename)*
+**MongoDB collection**: `skill_node_statuses`
 
-**Purpose**: Per-student node status records. The `$group` aggregation in `refreshCache` runs against this collection. Progress Tracking MUST NOT write to it.
+**Purpose**: Canonical node status store (`pending` | `in_progress` | `done`) for Skill Tree. Progress Tracking MUST NOT read this collection directly in normal flow; it consumes Feature 004 service contract `getNodesByStatus(userId, roadmapId)`.
 
-### Minimum fields required by Progress Tracking
+### Contract fields required by Progress Tracking
 
 | Field | Type | Notes |
 |---|---|---|
-| `userId` | ObjectId | Part of compound index `{ userId, roadmapId }` |
-| `roadmapId` | ObjectId | Part of compound index `{ userId, roadmapId }` |
-| `nodeId` | ObjectId | ref: `course_units._id` |
-| `nodeName` | String | Display name; returned by `getNodesByStatus()` for the detail view |
-| `nodeCode` | String | Course code (e.g., `INT2215`); used as a stable key in the deep-link |
+| `nodeId` | String | Stable node identifier in roadmap payload |
+| `courseCode` | String | Course code (e.g., `INT2215`) |
+| `courseName` | String | Display name for detail view |
 | `status` | String (enum) | `"pending"` \| `"in_progress"` \| `"done"` |
+| `updatedAt` | Date | Last status mutation timestamp |
 
-**Compound index required**: `{ userId: 1, roadmapId: 1 }` — must be present for the `$group` aggregation to stay within Atlas M0 scan limits.
-
-> **Note to Skill Tree planner**: Progress Tracking depends on the above field names and index. If the actual schema differs, update the `$match` in `progress.service.js#_computeStats` accordingly and document the change in Skill Tree's `data-model.md`.
+`getNodesByStatus(userId, roadmapId)` MUST always return all three arrays (`done`, `inProgress`, `pending`) even when empty.
 
 ---
 
@@ -102,11 +110,11 @@ This is the same formula as the Skill Tree progress bar (SC-002 consistency guar
 
 ---
 
-## Referenced Entity: Roadmap (read-only, owned by Feature 001 — Onboarding / Feature 004 — Skill Tree)
+## Referenced Entity: Roadmap (read-only, owned by Feature 009 — Roadmap Generator)
 
-**MongoDB collection**: `roadmaps` *(to be confirmed by Skill Tree planner)*
+**MongoDB collection**: `roadmaps`
 
-**Purpose**: `roadmapId` and `roadmapName` are needed to populate the dashboard cards. Progress Tracking reads `roadmapId` and `roadmapName` from the Skill Tree module's `getNodesByStatus()` / `getAllRoadmaps(userId)` service function — it does NOT query the `roadmaps` collection directly.
+**Purpose**: Canonical ownership + identity source. Progress Tracking uses 009 service/API contract to resolve which roadmaps the student owns and uses `_id` as stable `roadmapId`.
 
 ---
 
@@ -117,14 +125,16 @@ Student updates node on Skill Tree
          │
          ▼
   skillTree.service.js#updateNodeStatus(userId, roadmapId, nodeId, newStatus)
-         │   writes node status to roadmap_nodes
+         │   writes node status to skill_node_statuses
          │
          │   await progressService.refreshCache(userId, roadmapId)
          ▼
   progress.service.js#refreshCache
-         │   reads roadmap_nodes → $group aggregation
+         │   calls skillTreeService.getNodesByStatus(userId, roadmapId)
+         │   computes counts in-process
          │   upserts roadmap_progress_cache
          │   fire-and-forget: progressSse.notifyUser(userId, summary)
+         │   on error: soft-fail + eventual-consistency retry
          ▼
   Progress Dashboard (open tab)
          │   receives SSE event: progress:update

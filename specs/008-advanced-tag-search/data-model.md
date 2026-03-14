@@ -2,28 +2,45 @@
 
 **Feature**: `008-advanced-tag-search`  
 **Date**: 2026-03-11  
-**Research dependency**: [research.md](research.md) (R-001 to R-007)
+**Research dependency**: [research.md](research.md) (R-001 to R-008)
 
 ---
 
-## Entity: SearchQuery Request
+## Entity: SearchQueryRequest
 
-**Purpose**: Frontend → Backend request payload for tag-based and keyword-based search.
+**Purpose**: Frontend → Backend request payload for tag-based and keyword-based search, with canonical normalization before execution.
 
 ### Schema
 
 | Field | Type | Required | Default | Constraints | Notes |
 |---|---|---|---|---|---|
-| `queryType` | String (enum) | yes | — | `"tag"` \| `"keyword"` | Determines which search mode: tag click or keyword search |
-| `tagId` | String (ObjectId) | conditional | — | required if `queryType === "tag"`; ref: `skills.tags` | Tag to search for (e.g., #Database) |
-| `keyword` | String | conditional | — | required if `queryType === "keyword"`; 1–100 chars | Free-text search term (e.g., "SQL", "Database") |
-| `filters` | Object | no | `{}` | Nested object | Combined filter criteria |
-| `filters.levels` | Array[String] | no | `[]` | Enum values from `courses.level` | Level filter (Beginner, Intermediate, Advanced) |
-| `filters.domains` | Array[String] | no | `[]` | Enum values from `courses.domain` | Domain filter (Backend, Frontend, Data, etc.) |
-| `filters.additionalTags` | Array[String] | no | `[]` | Array of TagIds (ObjectId) | Additional tags to further narrow results (AND semantics) |
-| `sortBy` | String (enum) | no | `"relevance"` | `"relevance"` \| `"alphabetical"` | Result sorting strategy |
-| `page` | Number | no | `1` | Integer ≥ 1 | Page number for pagination (20 results per page) |
-| `enrolledRoadmapId` | String (ObjectId) | no | null | Optional ref: `roadmaps._id` | User's enrolled roadmap ID for personalization highlighting |
+| `queryType` | String (enum) | yes | — | `"tag"` \| `"keyword"` | Determines search mode |
+| `query` | Object | yes | — | nested | Query payload |
+| `query.tagId` | String (ObjectId) | conditional | null | required for tag search when `query.tagNormalizedName` is absent | Canonical tag identity (preferred) |
+| `query.tagNormalizedName` | String | conditional | null | lowercase, trimmed; required for tag search when `query.tagId` is absent | Human-entered/tag-cloud key; backend resolves to canonical `tagId` |
+| `query.keyword` | String | conditional | null | required if `queryType === "keyword"`; 1–100 chars | Free-text term |
+| `filters` | Object | no | `{}` | nested object | AND semantics across dimensions |
+| `filters.levels` | Array[String] | no | `[]` | enum values from `courses.level` | Course level filter |
+| `filters.domains` | Array[String] | no | `[]` | enum values from `courses.domain` | Course domain filter |
+| `filters.additionalTagIds` | Array[String] | no | `[]` | ObjectIds | Additional canonical tags |
+| `filters.minConfidence` | Number | no | `0` | 0–100 | Minimum `Skill.tags.confidence` for matched tags |
+| `sort` | Object | no | `{ "by": "relevance", "order": "desc" }` | nested | Sorting contract |
+| `sort.by` | String (enum) | no | `"relevance"` | `"relevance"` \| `"alphabetical"` | In fallback mode, backend forces `alphabetical` |
+| `sort.order` | String (enum) | no | `"desc"` | `"asc"` \| `"desc"` | `relevance` generally uses `desc` |
+| `pagination` | Object | no | `{ "page": 1, "pageSize": 20 }` | nested | Pagination contract |
+| `pagination.page` | Number | no | `1` | integer ≥ 1 | 1-indexed page number |
+| `pagination.pageSize` | Number | no | `20` | integer 1–50 | Default and recommended = 20 |
+| `personalization` | Object | no | `{}` | nested | Optional personalization payload |
+| `personalization.enrolledRoadmapId` | String (ObjectId) | no | null | ref: `roadmaps._id` | Highlighting hint |
+
+### Canonical normalization rule
+
+- If `queryType = "tag"`, backend MUST resolve input to `resolvedTagId` before query execution.
+- Accepted inputs:
+  - `query.tagId`
+  - `query.tagNormalizedName`
+  - both together (must map to same tag)
+- Conflict or unresolved input returns `INVALID_INPUT`.
 
 ### Example payloads
 
@@ -31,14 +48,20 @@
 ```json
 {
   "queryType": "tag",
-  "tagId": "64f1a2b3c4d5e6f7a8b9c0d1",
+  "query": {
+    "tagNormalizedName": "database"
+  },
   "filters": {
     "levels": ["Intermediate"],
-    "domains": []
+    "domains": [],
+    "additionalTagIds": [],
+    "minConfidence": 60
   },
-  "sortBy": "relevance",
-  "page": 1,
-  "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2"
+  "sort": { "by": "relevance", "order": "desc" },
+  "pagination": { "page": 1, "pageSize": 20 },
+  "personalization": {
+    "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2"
+  }
 }
 ```
 
@@ -46,15 +69,18 @@
 ```json
 {
   "queryType": "keyword",
-  "keyword": "database design",
+  "query": {
+    "keyword": "database design"
+  },
   "filters": {
     "levels": ["Intermediate", "Advanced"],
     "domains": ["Backend", "Data"],
-    "additionalTags": ["64f1a2b3c4d5e6f7a8b9c0d1"]
+    "additionalTagIds": ["64f1a2b3c4d5e6f7a8b9c0d1"],
+    "minConfidence": 70
   },
-  "sortBy": "alphabetical",
-  "page": 2,
-  "enrolledRoadmapId": null
+  "sort": { "by": "alphabetical", "order": "asc" },
+  "pagination": { "page": 2, "pageSize": 20 },
+  "personalization": { "enrolledRoadmapId": null }
 }
 ```
 
@@ -71,7 +97,9 @@
 | `courses` | Array[CourseResult] | Related courses (max 20 per page) |
 | `roadmaps` | Array[RoadmapResult] | Related roadmaps (max 20 per page) |
 | `pagination` | PaginationMeta | Metadata for pagination control |
+| `queryContext` | Object | Canonical query context after normalization |
 | `appliedFilters` | Object | Echo of filters applied (for UI feedback) |
+| `appliedSort` | Object | Effective sort strategy |
 | `fallbackMode` | Boolean | `true` if results served from cache (search index unavailable); `false` if from live index |
 
 ### CourseResult subtype
@@ -84,7 +112,7 @@
 | `level` | String | Enum: Beginner, Intermediate, Advanced |
 | `domain` | String | Domain category (Backend, Frontend, Data, etc.) |
 | `description` | String | Short course description |
-| `relatedTags` | Array[String] | Tags that matched the search (shows why course was returned) |
+| `matchedTags` | Array[SkillTagMatch] | Canonical matched tags from `Skill.tags` (`tagId`, `normalizedName`, `confidence`) |
 | `relatedSkillCount` | Number | Count of skills in this course matching the search filter |
 | `highlighted` | Boolean | `true` if course is part of user's enrolled roadmap (personalization) |
 | `highlightReason` | String | If `highlighted: true`, explain why (e.g., "Part of your Backend Developer roadmap") |
@@ -99,10 +127,18 @@
 | `difficulty` | String | Difficulty level (Beginner, Intermediate, Advanced) |
 | `duration` | String | Estimated duration (e.g., "6 months", "12 weeks") |
 | `courseCount` | Number | Number of courses in this roadmap |
-| `relatedTags` | Array[String] | Tags that matched the search |
+| `matchedTags` | Array[SkillTagMatch] | Canonical matched tags aggregated from roadmap courses |
 | `highlightedCourseCount` | Number | Count of courses in this roadmap that matched the search (shows connection strength) |
 | `highlighted` | Boolean | `true` if this is the user's enrolled roadmap (personalization) |
 | `highlightReason` | String | If `highlighted: true`, explain why (e.g., "Your enrolled roadmap") |
+
+### SkillTagMatch subtype
+
+| Field | Type | Notes |
+|---|---|---|
+| `tagId` | String (ObjectId) | Canonical tag reference |
+| `normalizedName` | String | Canonical tag key (lowercase/trimmed) |
+| `confidence` | Number | Matched confidence (0–100) |
 
 ### PaginationMeta subtype
 
@@ -129,7 +165,10 @@
       "level": "Beginner",
       "domain": "Backend",
       "description": "Learn SQL basics and database querying.",
-      "relatedTags": ["#Database", "#SQL"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 92 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d9", "normalizedName": "sql", "confidence": 90 }
+      ],
       "relatedSkillCount": 8,
       "highlighted": true,
       "highlightReason": "Part of your Backend Developer roadmap"
@@ -141,7 +180,10 @@
       "level": "Intermediate",
       "domain": "Backend",
       "description": "Master NoSQL databases with MongoDB.",
-      "relatedTags": ["#Database", "#NoSQL"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 88 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0da", "normalizedName": "nosql", "confidence": 86 }
+      ],
       "relatedSkillCount": 6,
       "highlighted": false,
       "highlightReason": null
@@ -155,12 +197,20 @@
       "difficulty": "Intermediate",
       "duration": "6 months",
       "courseCount": 12,
-      "relatedTags": ["#Database", "#Backend", "#Server"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 91 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0db", "normalizedName": "backend", "confidence": 84 }
+      ],
       "highlightedCourseCount": 3,
       "highlighted": true,
       "highlightReason": "Your enrolled roadmap"
     }
   ],
+  "queryContext": {
+    "queryType": "tag",
+    "input": { "tagNormalizedName": "database" },
+    "resolvedTagId": "64f1a2b3c4d5e6f7a8b9c0d1"
+  },
   "pagination": {
     "currentPage": 1,
     "pageSize": 20,
@@ -174,11 +224,29 @@
   "appliedFilters": {
     "levels": ["Intermediate"],
     "domains": [],
-    "additionalTags": []
+    "additionalTagIds": [],
+    "minConfidence": 0
+  },
+  "appliedSort": {
+    "by": "relevance",
+    "order": "desc"
   },
   "fallbackMode": false
 }
 ```
+
+---
+
+## Entity: ErrorResponse
+
+**Purpose**: Standardized non-2xx response envelope shared across search endpoints.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `error` | Object | yes | Error wrapper |
+| `error.code` | String | yes | Stable machine code (`INVALID_INPUT`, `UNAUTHORIZED`, `INTERNAL_ERROR`, etc.) |
+| `error.message` | String | yes | Human-readable message |
+| `error.details` | Object | no | Optional validation/debug metadata |
 
 ---
 
@@ -263,11 +331,11 @@
 | `_id` | ObjectId | Unique skill identifier |
 | `name` | String | Skill name (e.g., "SQL", "REST API Design") |
 | `description` | String | Detailed description (used in full-text search) |
-| `tags` | Array[Object] | Array of tags: `[{ tagId: ObjectId, tagName: String, confidence: Number }]` |
+| `tags` | Array[SkillTag] | Canonical shape from FEAT-006: `[{ tagId: ObjectId, normalizedName: String, confidence: Number }]` |
 | `categoryId` | ObjectId | ref: `skill_categories` (used for Domain filter) |
 | `level` | String | Enum: Beginner, Intermediate, Advanced |
 
-**Index required**: `{ tags: 1, description: "text" }` — for tag matching and full-text search (text index on description). If MongoDB text index is used, this is essential.
+**Index required**: `{'tags.tagId': 1, 'tags.normalizedName': 1, description: 'text', name: 'text'}` — for canonical tag matching + full-text search.
 
 ---
 
@@ -320,10 +388,12 @@ Frontend: POST /api/search/query
         │
         ▼
 Backend: search.controller.js
-        │ Validates payload, calls searchService.executeSearch()
+  │ Validates payload + normalizes query.tagId/query.tagNormalizedName → resolvedTagId
+  │ Calls searchService.executeSearch()
         │
-        ├─── Try: Query MongoDB text index or Elasticsearch
+  ├─── Try: Query MongoDB text index
         │         • Build filter query from criteria
+  │         • Filter canonical Skill.tags by tagId/normalizedName/confidence
         │         • Fetch courses and roadmaps
         │         • Deduplicate by _id (Map/Set)
         │         • Highlight results (if enrolledRoadmapId provided)
@@ -351,10 +421,12 @@ User views results with "Recommended for You" highlights
 ## Constraints & Consistency Rules
 
 1. **Deduplication**: Same course/roadmap must appear only once in results, regardless of how many paths (Tag → Skill → Course) lead to it.
-2. **Pagination**: Page 1 always shows courses 1–20 of total results, not per-section. Same for roadmaps.
-3. **Highlighting logic**: A course is highlighted only if it appears in the roadmap (via `roadmapId.courseIds`) that matches `enrolledRoadmapId`.
-4. **Fallback mode**: When `fallbackMode: true`, sorting is fixed to alphabetical (no relevance scoring available), and highlighting is disabled (no relationship data available).
-5. **Filter consistency**: All three filter types (Tag, Level, Domain) use AND semantics — a result must match all selected filters.
+2. **Input normalization**: Tag search is executed only after `tagId` canonicalization succeeds.
+3. **Pagination**: `pagination.page` and `pagination.pageSize` are validated before execution.
+4. **Highlighting logic**: A course is highlighted only if it appears in the roadmap (via `roadmapId.courseIds`) that matches `enrolledRoadmapId`.
+5. **Fallback mode**: When `fallbackMode: true`, sorting is fixed to alphabetical (no relevance scoring available), and highlighting is disabled (no relationship data available).
+6. **Filter consistency**: Tag/Level/Domain/additional tags/min confidence use AND semantics.
+7. **Error contract**: Non-2xx responses always use `ErrorResponse` envelope.
 
 ---
 
@@ -363,3 +435,4 @@ User views results with "Recommended for You" highlights
 - **At 10K skills**: MongoDB text index performs well (<100ms query time).
 - **At 50K skills**: Re-evaluate and consider migrating to Elasticsearch. Text index latency may exceed 500ms target. Update `search.index.js` to support both backends via abstraction.
 - **Fallback cache size**: At 50K skills, fallback document may exceed BSON 16MB limit. Consider splitting into multiple documents or archiving older cache data.
+- **MVP infra decision**: MongoDB text index is finalized; there is no undecided search backend in current scope.

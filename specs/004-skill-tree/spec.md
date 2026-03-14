@@ -113,6 +113,7 @@ After updating career goal, current year, or completed courses in the Settings p
 - **FR-006**: Students MUST be able to transition node states sequentially by clicking: `pending` → `in_progress` → `done`; no other transitions are permitted
 - **FR-007**: A node MUST become interactable only when ALL of its direct prerequisite nodes are in `done` state; partial prerequisite completion MUST NOT unlock a node
 - **FR-008**: All node state changes MUST be persisted server-side and survive page reloads and new sessions
+- **FR-008a**: The system MUST persist `pending` as an explicit status record in `skill_node_statuses` for every node in the student's canonical primary roadmap (no implicit `pending` from missing documents)
 - **FR-009**: When a student clicks any course node, the system MUST open a detail side panel with three tabs: Resources, Why This Course, and Market Skills
 - **FR-010**: The Resources tab MUST display course materials (textbooks, lecture slides, lab assignments, and major assignments) sourced from the application database
 - **FR-011**: The "Why This Course" tab MUST display an AI-generated explanation of why the course is relevant and necessary for the student's declared career goal, generated using course metadata and the student's goal profile
@@ -122,10 +123,11 @@ After updating career goal, current year, or completed courses in the Settings p
 - **FR-015**: Clicking the "Re-personalize" button MUST trigger re-generation of the personalized roadmap and fully re-render the skill tree with the updated node set, prerequisite ordering, and seeded states
 - **FR-016**: Each student MUST only be able to view and interact with their own skill tree; access to another student's tree MUST be prohibited
 - **FR-017**: The Skill Tree page MUST be accessible only to authenticated students; unauthenticated requests MUST be rejected
+- **FR-018**: The module MUST expose a downstream `getNodesByStatus()` contract that returns `roadmapId`, `roadmapName`, and always-present grouped arrays `done`, `inProgress`, `pending`; each item MUST include `nodeId`, `courseCode`, `courseName`, `status`, `updatedAt`
 
 ### Key Entities
 
-- **Skill Tree**: The student's complete personalized academic roadmap; scoped to one student and one career goal; contains an ordered set of course nodes derived from the personalization JSON
+- **Skill Tree**: The student's complete personalized academic roadmap; scoped to one student and one career goal; contains an ordered set of course nodes consumed from Feature 009 canonical primary roadmap
 - **Course Node**: A single UET course in the skill tree; carries a state (`pending`/`in_progress`/`done`), a locked/unlocked status computed from prerequisite states, and references to prerequisite nodes
 - **Course Resource**: A learning material item (textbook, slide deck, lab assignment, or major assignment) linked to a course node; pre-seeded by administrators
 - **Market Skill**: An industry skill (e.g., "React.js", "REST API design") associated with a course node; populated from Vietnamese IT job platform crawl data
@@ -146,10 +148,10 @@ After updating career goal, current year, or completed courses in the Settings p
 
 ## Assumptions
 
-- The personalized roadmap JSON (course nodes and prerequisite relationships filtered to the student's career goal) is provided as input by the onboarding/personalization system; this feature does not generate it
+- Feature 009 is the canonical owner of roadmap generation/storage; Feature 004 consumes the primary roadmap via `GET /api/primary-roadmap` (or equivalent internal service contract) and does not maintain a duplicate `student_roadmaps` store
 - Course resource data (textbooks, slides, lab and major assignments) is pre-seeded into the application database by administrators before students access the feature
 - Market skills data is populated and refreshed by a separate job market crawling service; this feature only consumes that data
 - AI content for the "Why This Course" tab is generated on-demand by an LLM service accessible to the backend
 - Node state transitions are strictly one-directional (`pending` → `in_progress` → `done`); reversal and skipping states are not supported
-- The personalized JSON is assumed to represent a valid DAG (no circular prerequisites); this feature does not validate graph integrity
-- Students who have not completed onboarding do not yet have a personalized roadmap and will be directed to complete onboarding before accessing the Skill Tree
+- The canonical primary roadmap payload is assumed to represent a valid DAG (no circular prerequisites); this feature does not validate graph integrity
+- Students who have not completed onboarding may not have a primary roadmap in Feature 009 and will be directed to complete onboarding before accessing the Skill Tree

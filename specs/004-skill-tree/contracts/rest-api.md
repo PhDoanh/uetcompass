@@ -5,6 +5,8 @@
 
 All endpoints require `Authorization: Bearer <JWT>` header. The JWT is issued by the auth system (Feature 001). The payload includes `userId`.
 
+Roadmap topology is consumed from Feature 009 canonical contract (`GET /api/primary-roadmap` or equivalent service-layer adapter). Feature 004 does not read a local `student_roadmaps` collection.
+
 Base path: `/api/skill-tree`
 
 ---
@@ -26,6 +28,8 @@ No query parameters. No request body.
 
 ```json
 {
+  "roadmapId": "rm_frontend_2026_v1",
+  "roadmapName": "Frontend Developer Roadmap",
   "careerGoal": "frontend-developer",
   "needsRepersonalization": false,
   "repersonalizing": false,
@@ -62,9 +66,10 @@ No query parameters. No request body.
 ```
 
 **Field notes**:
-- `needsRepersonalization`: `true` when `studentProfile.updatedAt > studentRoadmap.generatedAt`.
-- `repersonalizing`: `true` in the brief window after `POST /api/skill-tree/repersonalize` returns and before the job completes (tracked via `studentRoadmap.repersonalizing` flag on the document).
-- `status`: `"pending"` (default when no document in `skill_node_statuses`), `"in_progress"`, or `"done"`.
+- `roadmapId`/`roadmapName`: passthrough identifiers from Feature 009 canonical primary roadmap.
+- `needsRepersonalization`: `true` when `studentProfile.updatedAt > primaryRoadmap.generatedAt`.
+- `repersonalizing`: passthrough from canonical roadmap metadata (`primaryRoadmap.repersonalizing`).
+- `status`: always one of explicit persisted records in `skill_node_statuses`: `"pending"`, `"in_progress"`, or `"done"`.
 - `isUnlocked`: computed server-side; `true` when all `prerequisites` are `"done"` in the student's status records, or when `prerequisites` is empty.
 
 ### Responses — Error Cases
@@ -73,7 +78,7 @@ No query parameters. No request body.
 |---|---|
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | JWT valid but `studentProfile.isDraft === true` (onboarding not submitted yet) |
-| `404 Not Found` | No `student_roadmaps` document for this student (personalization has not run); body: `{ "error": "ROADMAP_NOT_FOUND" }` |
+| `404 Not Found` | No canonical primary roadmap from Feature 009 for this student; body: `{ "error": "PRIMARY_ROADMAP_NOT_FOUND" }` |
 
 ---
 
@@ -114,7 +119,7 @@ Content-Type: application/json
 | `400 Bad Request` | `status` field missing or not a valid enum value; or transition is not `pending → in_progress → done` (e.g., `done → in_progress`) |
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | Node is locked (`isUnlocked === false`) |
-| `404 Not Found` | `courseCode` does not exist in the student's roadmap |
+| `404 Not Found` | `courseCode` does not exist in the student's primary roadmap |
 
 ---
 
@@ -160,7 +165,7 @@ Authorization: Bearer <JWT>
 | Status | Condition |
 |---|---|
 | `401 Unauthorized` | Missing or invalid JWT |
-| `404 Not Found` | `courseCode` not in the student's roadmap |
+| `404 Not Found` | `courseCode` not in the student's primary roadmap |
 
 ---
 
@@ -198,7 +203,7 @@ Authorization: Bearer <JWT>
 | Status | Condition |
 |---|---|
 | `401 Unauthorized` | Missing or invalid JWT |
-| `404 Not Found` | `courseCode` not in the student's roadmap |
+| `404 Not Found` | `courseCode` not in the student's primary roadmap |
 | `502 Bad Gateway` | Gemini API call failed (cache miss path only); body: `{ "error": "AI_SERVICE_UNAVAILABLE" }` |
 
 ---
@@ -238,7 +243,7 @@ Authorization: Bearer <JWT>
 | Status | Condition |
 |---|---|
 | `401 Unauthorized` | Missing or invalid JWT |
-| `404 Not Found` | `courseCode` not in the student's roadmap |
+| `404 Not Found` | `courseCode` not in the student's primary roadmap |
 
 ---
 
@@ -295,7 +300,7 @@ Authorization: Bearer <JWT>
 
 ## Endpoint 7 — POST /api/skill-tree/repersonalize
 
-Triggers re-generation of the student's personalized roadmap. Only available when `needsRepersonalization === true`.
+Triggers re-generation of the student's canonical primary roadmap via Feature 009. Only available when `needsRepersonalization === true`.
 
 ### Request
 
@@ -316,9 +321,9 @@ No body required.
 ```
 
 **Server-side actions on 202**:
-1. Set `studentRoadmap.generatedAt = Date.now()` and `studentRoadmap.repersonalizing = true` immediately (prevents button reappearing on next poll).
-2. Dispatch personalization job asynchronously (Promise-based, same pattern as Feature 001 roadmap trigger).
-3. Job completion: updates `studentRoadmap.nodes[]`, clears `repersonalizing: false`, sets final `generatedAt`.
+1. Delegate re-personalization trigger to Feature 009 canonical roadmap service (async).
+2. Feature 009 sets/maintains canonical `repersonalizing` and final `generatedAt`.
+3. After primary roadmap changes, Feature 004 reconciles `skill_node_statuses` to explicit records for the new node set (upsert new nodes with `pending`, remove obsolete node records).
 
 The frontend continues polling `GET /api/skill-tree` every 2500ms; when `repersonalizing` becomes `false` and the new nodes array is present, the tree re-renders automatically.
 
@@ -329,3 +334,43 @@ The frontend continues polling `GET /api/skill-tree` every 2500ms; when `reperso
 | `401 Unauthorized` | Missing or invalid JWT |
 | `403 Forbidden` | `needsRepersonalization === false` (profile has not been updated since last personalization) |
 | `409 Conflict` | Re-personalization already in progress (`repersonalizing === true`) |
+
+---
+
+## Downstream Service Contract — `getNodesByStatus()`
+
+This is a service-layer contract for downstream modules (not a public HTTP endpoint in this document).
+
+### Return shape
+
+```json
+{
+  "roadmapId": "rm_frontend_2026_v1",
+  "roadmapName": "Frontend Developer Roadmap",
+  "done": [
+    {
+      "nodeId": "IT1010",
+      "courseCode": "IT1010",
+      "courseName": "Nhập môn lập trình",
+      "status": "done",
+      "updatedAt": "2026-03-11T09:00:00.000Z"
+    }
+  ],
+  "inProgress": [
+    {
+      "nodeId": "IT3910E",
+      "courseCode": "IT3910E",
+      "courseName": "Lập trình Web",
+      "status": "in_progress",
+      "updatedAt": "2026-03-12T09:00:00.000Z"
+    }
+  ],
+  "pending": []
+}
+```
+
+### Contract rules
+
+- Always return all three arrays: `done`, `inProgress`, `pending` (even when empty).
+- Every node item uses the same shape: `nodeId`, `courseCode`, `courseName`, `status`, `updatedAt`.
+- `roadmapId` and `roadmapName` are always included from Feature 009 canonical roadmap metadata.

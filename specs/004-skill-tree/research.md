@@ -6,20 +6,20 @@ All NEEDS CLARIFICATION items from Technical Context are resolved below. No rema
 
 ---
 
-## Decision 1: Personalized roadmap JSON — storage and consumption
+## Decision 1: Canonical roadmap ownership — consume from Feature 009
 
-**Decision**: The personalized roadmap is stored in a MongoDB collection `student_roadmaps` as one document per student. It is written by the onboarding/personalization job (out of scope) and read by this feature. The document contains the student's career goal, ordered node list (each with `courseCode`, `nameVi`, `nameEn`, `prerequisites[]`), and a `generatedAt` timestamp.
+**Decision**: Feature 004 does **not** own or read a local `student_roadmaps` collection. Skill Tree consumes the canonical roadmap from Feature 009 through `GET /api/primary-roadmap` (or an equivalent service-layer adapter). The response is treated as the single source of truth for `roadmapId`, `roadmapName`, `careerGoal`, ordered nodes, and roadmap freshness metadata (`generatedAt`, `repersonalizing`).
 
 **Rationale**:
-- Feature 003 used static hardcoded career-path JSON files. Feature 004 requires per-student personalization — the personalized roadmap must be student-scoped and mutable over time (re-personalization).
-- The collection is the natural handoff point between the onboarding/personalization service (writer) and the skill tree feature (reader). Using a named MongoDB collection creates a clean contract between features with no direct code coupling.
-- The `generatedAt` timestamp enables detection of "profile updated since last personalization" (see Decision 3).
-- Students without a roadmap (onboarding incomplete) receive a clear 404 response from `GET /api/skill-tree`, and the frontend routes them to the onboarding flow.
+- Feature 009 already defines roadmap generation and canonical ownership. Re-creating `student_roadmaps` in Feature 004 would duplicate source-of-truth and introduce divergence risk.
+- Consuming `GET /api/primary-roadmap` creates a clean boundary: Feature 009 writes and evolves roadmap logic; Feature 004 only reads canonical data and manages progress state.
+- The canonical payload already carries freshness metadata required by Feature 004 (`generatedAt`, `repersonalizing`), so no duplicate persistence is needed.
+- Students without a canonical roadmap (onboarding incomplete or roadmap not generated) return a clear 404-like domain error from the primary roadmap contract, and the frontend routes to onboarding.
 
 **Alternatives considered**:
+- Local `student_roadmaps` mirror inside Feature 004 — rejected because it creates dual-write/dual-read ownership and stale-read risk versus Feature 009 canonical data.
 - Static JSON files per student on the filesystem — rejected because they cannot be updated at runtime on Render; Render's ephemeral filesystem means files are lost on restart.
-- Embedding the roadmap array inside `StudentProfile` — rejected because it couples two distinct concerns: profile identity + personalized curriculum. Separate collection preserves clean module boundaries.
-- Generating roadmap on-the-fly from `StudentProfile.careerGoal + course_units` — rejected because the personalization logic is non-trivial, belongs to the onboarding/personalization feature, and would duplicate that logic here.
+- Generating roadmap on-the-fly from `StudentProfile.careerGoal + course_units` inside Feature 004 — rejected because personalization belongs to Feature 009 and would duplicate logic.
 
 ---
 
@@ -40,23 +40,37 @@ All NEEDS CLARIFICATION items from Technical Context are resolved below. No rema
 
 ---
 
-## Decision 3: Re-personalize button visibility — profile change detection
+## Decision 3: Re-personalize button visibility — canonical freshness from Feature 009
 
-**Decision**: A `needsRepersonalization` boolean flag is computed server-side on every `GET /api/skill-tree` call. The flag is `true` when `studentProfile.updatedAt > studentRoadmap.generatedAt`. When the student clicks "Re-personalize", the backend dispatches the personalization job asynchronously (same Promise-based pattern as Feature 001's roadmap trigger), updates `studentRoadmap.generatedAt` to `Date.now()`, and returns `202 Accepted`. The frontend polls `GET /api/skill-tree` every 2500ms (existing pattern from Feature 003) to detect when the new roadmap is ready.
+**Decision**: A `needsRepersonalization` boolean flag is computed server-side on every `GET /api/skill-tree` call using canonical roadmap metadata from Feature 009. The flag is `true` when `studentProfile.updatedAt > primaryRoadmap.generatedAt`. When the student clicks "Re-personalize", Feature 004 delegates regeneration to Feature 009 (async), returns `202 Accepted`, and relies on polling `GET /api/skill-tree` every 2500ms to detect completion via canonical `repersonalizing`/`generatedAt` updates.
 
 **Rationale**:
-- `StudentProfile.updatedAt` is already maintained by Feature 001 (updated on every `PUT /onboarding/draft` and on submit). `student_roadmaps.generatedAt` is set when the personalization job completes. The delta is the cheapest possible signal for "profile newer than roadmap."
-- Updating `generatedAt` to `Date.now()` on the POST request (before job completion) prevents the button from reappearing immediately on the next poll while the job is still running.
-- The polling approach reuses the existing 2500ms polling infrastructure (Feature 003) — no new SSE channel or WebSocket needed. This is consistent with the "polling only" constraint from the constitution (Render free tier, no Redis/WebSocket).
+- `StudentProfile.updatedAt` is already maintained by Feature 001, while `primaryRoadmap.generatedAt` is owned by Feature 009. Their delta is the cheapest signal for "profile newer than roadmap" without extra state.
+- Keeping `repersonalizing` ownership in Feature 009 avoids duplicate state machines across modules.
+- Polling reuses the existing 2500ms infrastructure (Feature 003) — no SSE/WebSocket required.
 
 **Alternatives considered**:
-- A separate "repersonalization status" endpoint — rejected; adds a round-trip. Including `needsRepersonalization` in the existing `GET /api/skill-tree` response is zero-cost.
-- SSE for re-personalization completion notification — rejected; no SSE channel is established for the skill tree feature; polling is sufficient for a 10s completion target.
-- Setting `generatedAt` after job completion (not before) — rejected; this would cause a brief window where the button reappears mid-job, confusing the student.
+- A separate "repersonalization status" endpoint in Feature 004 — rejected; status already belongs to canonical roadmap metadata.
+- Mirroring `generatedAt` into a local Feature 004 document — rejected; violates single source of truth.
+- SSE for completion notification — rejected; polling is sufficient for the 10s completion target.
 
 ---
 
-## Decision 4: Market Skills and Learning Resources — DB schema and ownership
+## Decision 4: Node progress canonicalization — explicit `pending` records
+
+**Decision**: `skill_node_statuses` is the canonical progress collection and must contain an explicit record for every node in the student's primary roadmap. `pending` is stored as a real persisted status, not inferred from missing documents.
+
+**Rationale**:
+- Downstream consumers require deterministic grouping by status without null/default inference.
+- Explicit records simplify analytics and contract stability (`done`/`in_progress`/`pending` counts always computed from persisted rows).
+- Re-personalization can reconcile statuses by upserting/removing records against the latest primary roadmap node set.
+
+**Alternatives considered**:
+- Implicit pending (`missing doc => pending`) — rejected due to ambiguity, extra branching in read paths, and weak downstream contracts.
+
+---
+
+## Decision 5: Market Skills and Learning Resources — DB schema and ownership
 
 **Decision**: Two read-only collections consumed by this feature:
 - `market_skills`: keyed by `courseCode`, contains an array of skill objects `{ name, jobCount }` representing industry-relevant skills associated with the course. Written by the job market crawling service (separate feature).
@@ -75,7 +89,7 @@ This feature only reads from both collections via `GET /api/skill-tree/nodes/:co
 
 ---
 
-## Decision 5: Course Resources — DB schema
+## Decision 6: Course Resources — DB schema
 
 **Decision**: New collection `course_resources` — one document per (courseCode × resourceType). Schema: `{ courseCode, type: 'textbook'|'slide'|'lab'|'assignment', title, url, description? }`. Admin-seeded. This feature's Resources tab queries `find({ courseCode })` and groups the results by `type` for display.
 
@@ -90,7 +104,7 @@ This feature only reads from both collections via `GET /api/skill-tree/nodes/:co
 
 ---
 
-## Decision 6: Frontend panel state management — three nested layers
+## Decision 7: Frontend panel state management — three nested layers
 
 **Decision**: The Zustand `skillTreeStore` has three state fields governing the panel layers:
 1. `activeCourseId: string | null` — set when a node is clicked; `null` when panel is closed.
@@ -110,7 +124,7 @@ Panel renders are gated: the course detail side panel renders only when `activeC
 
 ---
 
-## Decision 7: Graph rendering — @xyflow/react v12 (consistent with Feature 003)
+## Decision 8: Graph rendering — @xyflow/react v12 (consistent with Feature 003)
 
 **Decision**: Use `@xyflow/react` v12 (React Flow) for the skill tree graph.
 
@@ -120,14 +134,14 @@ Panel renders are gated: the course detail side panel renders only when `activeC
 - `NodeResizer` and `NodeToolbar` built-ins (v12) simplify status-change controls on nodes without custom overlay logic.
 - As a plain React library (not framework-specific), it works identically in a React 18 + React Router SPA as in any other React setup.
 - The `CourseNode` custom component pattern can be applied directly: add an `onClick` prop for panel opening, add a locked visual indicator.
-- The data source changes (from static JSON to personalized roadmap in DB), but the graph rendering layer is identical.
+- The data source changes (from static JSON to canonical primary roadmap from Feature 009), but the graph rendering layer is identical.
 
 **Alternatives considered**:
 - Switching to Cytoscape.js or D3 — no reason to change; Feature 003's decision reasoning still holds. Adding a new graph library for an existing use case would be inconsistent.
 
 ---
 
-## Decision 8: Node state enum casing — `pending`/`in_progress`/`done` (lowercase snake_case)
+## Decision 9: Node state enum casing — `pending`/`in_progress`/`done` (lowercase snake_case)
 
 **Decision**: Node states are stored as lowercase snake_case strings: `"pending"`, `"in_progress"`, `"done"`. This differs from Feature 003's PascalCase (`"Pending"`, `"InProgress"`, `"Done"`).
 

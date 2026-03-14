@@ -2,6 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
+**Updated**: 2026-03-14  
 **Research dependency**: [research.md](research.md) (R-002, R-004)  
 **Base URL**: `/api/progress`  
 **Auth**: All endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. The SSE endpoint uses `?token=<JWT>` query param instead (see endpoint 3).
@@ -10,7 +11,7 @@
 
 ## Endpoint 1 — GET /api/progress/summaries
 
-Returns the progress summary for all roadmaps the authenticated student is enrolled in. Data is served from `roadmap_progress_cache` — no aggregation at read time.
+Returns the progress summary for all roadmap documents owned by the authenticated student (canonical ownership from Feature 009). Data is served from `roadmap_progress_cache` — no aggregation at read time.
 
 ### Request
 
@@ -29,6 +30,7 @@ No query parameters. No request body.
     {
       "roadmapId": "64f1a2b3c4d5e6f7a8b9c0d1",
       "roadmapName": "Frontend Developer",
+      "isPrimary": true,
       "totalNodes": 24,
       "doneNodes": 8,
       "inProgressNodes": 2,
@@ -39,6 +41,7 @@ No query parameters. No request body.
     {
       "roadmapId": "74f1a2b3c4d5e6f7a8b9c0d2",
       "roadmapName": "Backend Developer",
+      "isPrimary": false,
       "totalNodes": 30,
       "doneNodes": 0,
       "inProgressNodes": 0,
@@ -50,7 +53,7 @@ No query parameters. No request body.
 }
 ```
 
-**Empty state** (student has no roadmaps yet):
+**Empty state** (student owns no roadmap yet):
 
 ```json
 {
@@ -62,8 +65,9 @@ No query parameters. No request body.
 
 | Field | Type | Notes |
 |---|---|---|
-| `roadmapId` | String (ObjectId) | Identifies the roadmap — used to build deep-link URLs |
+| `roadmapId` | String (ObjectId) | Stable roadmap identifier from Feature 009 (`roadmaps._id`) |
 | `roadmapName` | String | Human-readable roadmap name |
+| `isPrimary` | Boolean | Snapshot from canonical roadmap ownership; useful for ordering/badges |
 | `totalNodes` | Number | Total course nodes on this roadmap path |
 | `doneNodes` | Number | Nodes in `done` status |
 | `inProgressNodes` | Number | Nodes in `in_progress` status |
@@ -82,7 +86,7 @@ No query parameters. No request body.
 
 ## Endpoint 2 — GET /api/progress/summaries/:roadmapId/nodes
 
-Returns every node on a specific roadmap, grouped by status. This enables the detail view (User Story 2). Data is served from the Skill Tree module via `skillTreeService.getNodesByStatus(userId, roadmapId)` — not from the cache.
+Returns every node on a specific roadmap, grouped by status. This enables the detail view (User Story 2). Data is served from Feature 004 canonical contract `skillTreeService.getNodesByStatus(userId, roadmapId)` — not from the cache.
 
 ### Request
 
@@ -105,15 +109,15 @@ Authorization: Bearer <accessToken>
   "roadmapName": "Frontend Developer",
   "nodes": {
     "done": [
-      { "nodeId": "aaa111", "nodeCode": "INT2215", "nodeName": "Lập trình" },
-      { "nodeId": "aaa112", "nodeCode": "INT2204", "nodeName": "Nhập môn lập trình" }
+      { "nodeId": "aaa111", "courseCode": "INT2215", "courseName": "Lập trình", "status": "done", "updatedAt": "2026-03-10T14:22:00.000Z" },
+      { "nodeId": "aaa112", "courseCode": "INT2204", "courseName": "Nhập môn lập trình", "status": "done", "updatedAt": "2026-03-09T09:00:00.000Z" }
     ],
     "inProgress": [
-      { "nodeId": "bbb222", "nodeCode": "INT2210", "nodeName": "Cấu trúc dữ liệu và Giải thuật" }
+      { "nodeId": "bbb222", "courseCode": "INT2210", "courseName": "Cấu trúc dữ liệu và Giải thuật", "status": "in_progress", "updatedAt": "2026-03-11T10:05:00.000Z" }
     ],
     "pending": [
-      { "nodeId": "ccc333", "nodeCode": "INT3120", "nodeName": "Lập trình Web" },
-      { "nodeId": "ccc334", "nodeCode": "INT3121", "nodeName": "Phát triển ứng dụng Web" }
+      { "nodeId": "ccc333", "courseCode": "INT3120", "courseName": "Lập trình Web", "status": "pending", "updatedAt": "2026-03-05T09:00:00.000Z" },
+      { "nodeId": "ccc334", "courseCode": "INT3121", "courseName": "Phát triển ứng dụng Web", "status": "pending", "updatedAt": "2026-03-05T09:00:00.000Z" }
     ]
   }
 }
@@ -142,16 +146,18 @@ All three keys (`done`, `inProgress`, `pending`) are always present — never om
 | `nodes.done` | Array | Nodes in `done` status |
 | `nodes.inProgress` | Array | Nodes in `in_progress` status |
 | `nodes.pending` | Array | Nodes in `pending` status (locked + actionable, not distinguished here — locked state is a Skill Tree concern) |
-| `nodes.*.nodeId` | String (ObjectId) | Used to build the Skill Tree deep-link URL |
-| `nodes.*.nodeCode` | String | Course code, e.g. `INT2215` |
-| `nodes.*.nodeName` | String | Course display name |
+| `nodes.*.nodeId` | String | Used to build the Skill Tree deep-link URL |
+| `nodes.*.courseCode` | String | Course code, e.g. `INT2215` |
+| `nodes.*.courseName` | String | Course display name |
+| `nodes.*.status` | String | `done` / `in_progress` / `pending` |
+| `nodes.*.updatedAt` | String (ISO 8601) | Last status update timestamp |
 
 ### Error responses
 
 | Status | Condition |
 |---|---|
 | `401 Unauthorized` | Missing or expired access token |
-| `403 Forbidden` | Authenticated student is not enrolled in this `roadmapId` |
+| `403 Forbidden` | Authenticated student does not own this `roadmapId` |
 | `404 Not Found` | `roadmapId` does not exist |
 | `500 Internal Server Error` | Unexpected DB or service failure |
 
@@ -190,7 +196,7 @@ Fired after each successful cache refresh. Payload is the updated summary for th
 
 ```
 event: progress:update
-data: {"roadmapId":"64f1a2b3c4d5e6f7a8b9c0d1","roadmapName":"Frontend Developer","totalNodes":24,"doneNodes":9,"inProgressNodes":2,"pendingNodes":13,"progressPercent":38,"lastActivityDate":"2026-03-11T10:05:00.000Z"}
+data: {"roadmapId":"64f1a2b3c4d5e6f7a8b9c0d1","roadmapName":"Frontend Developer","isPrimary":true,"totalNodes":24,"doneNodes":9,"inProgressNodes":2,"pendingNodes":13,"progressPercent":38,"lastActivityDate":"2026-03-11T10:05:00.000Z"}
 
 ```
 
@@ -241,7 +247,11 @@ When a student taps a node in the detail view, the frontend navigates to:
 /skill-tree/:roadmapId?focus=<nodeId>
 ```
 
-- `:roadmapId` — the `roadmapId` from the current detail view.
+- `:roadmapId` — stable roadmap `_id` from Feature 009.
 - `focus=<nodeId>` — the `nodeId` of the tapped node.
 - The Skill Tree page reads `useSearchParams()` and scrolls/highlights the node matching `focus`.
 - This is a React Router client-side navigation — no backend endpoint. The Skill Tree feature is responsible for reading and honoring the `focus` param.
+
+### Consistency policy note
+
+`refreshCache` failures are treated as soft-fail events because cache is derived data. Skill Tree user action is not failed; cache repair is retried asynchronously (eventual consistency). During repair window, `GET /api/progress/summaries` may return briefly stale values.

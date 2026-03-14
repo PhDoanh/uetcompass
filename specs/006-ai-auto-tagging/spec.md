@@ -29,6 +29,14 @@ Logic: AI phải so sánh skill đó với bộ tag hiện có trong database ho
 - Q: How should the system process skills (synchronous vs asynchronous)? → A: Asynchronous batch processing via queue system
 - Q: How should the system handle LLM API failures during batch processing? → A: Continue processing remaining skills; mark failed skills for retry/manual review
 
+### Canonical Refinement 2026-03-14
+
+- `Skill` and `Tag` are entities of the **tagging/search bounded context** (shared by feature 006 and consumed by feature 008), not `roadmap-core` entities.
+- Canonical `Skill.tags` must be stored as search-ready metadata objects containing at least `tagId`, `normalizedName`, and `confidence`.
+- Re-tagging uses an **overwrite strategy**: latest successful tagging result replaces prior `Skill.tags` snapshot.
+- `Tag` remains the dictionary/management source for lifecycle and deduplication.
+- Output contracts are standardized so feature 008 can consume tagging results directly with no intermediate transformation.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Automatic Skill Tagging (Priority: P1)
@@ -91,14 +99,16 @@ As a data analyst, I want to review tagging accuracy metrics so that I can monit
 - **FR-001**: System MUST accept input consisting of Skill Name, Course Context, and Domain, placing skills into a processing queue.
 - **FR-002**: System MUST process queued skills asynchronously via batch processing and send the data to a managed LLM API service (OpenAI, Anthropic, or Google) for tag generation.
 - **FR-003**: System MUST receive and process tag suggestions from the LLM including confidence scores.
-- **FR-004**: System MUST compare suggested tags with existing database tags and use existing ones when appropriate.
-- **FR-005**: System MUST add new tags to the database when confidence score > 85%.
-- **FR-006**: System MUST output/store a list of assigned tags for each processed skill.
+- **FR-004**: System MUST compare suggested tags with existing database tags and map matches to canonical `Tag` entries.
+- **FR-005**: System MUST add new dictionary tags to the `Tag` store when confidence score > 85%.
+- **FR-006**: System MUST output/store canonical `Skill.tags` metadata for each processed skill with fields `tagId`, `normalizedName`, and `confidence`.
+- **FR-006a**: System MUST apply overwrite strategy on re-tagging, replacing the full `Skill.tags` set with the newest successful tagging output.
 - **FR-007**: System MUST flag skills where LLM confidence is below threshold for manual review.
 - **FR-008**: System MUST support multiple domains (IT, Marketing, etc.) for context-aware tagging.
 - **FR-009**: System MUST implement batch processing via job queue with configurable batch size and scheduling (scheduled or event-driven).
 - **FR-010**: System MUST continue processing remaining skills when LLM API fails for individual items; mark failed skills with error status and add them to a retry queue.
 - **FR-011**: System MUST provide visibility into batch processing status, including counts of successfully tagged, failed, and flagged-for-review skills.
+- **FR-012**: System MUST expose a normalized response contract for downstream search modules (feature 008) to consume directly.
 
 ### Non-Functional Requirements
 
@@ -111,8 +121,8 @@ As a data analyst, I want to review tagging accuracy metrics so that I can monit
 
 ### Key Entities *(include if feature involves data)*
 
-- **Skill**: Represents a competency or ability, with attributes like name, description, source course.
-- **Tag**: Represents a classification label, with attributes like name, category, usage count.
+- **Skill** *(tagging/search bounded context)*: Represents a competency or ability, with attributes like name, description, source course, and canonical `tags` metadata (`tagId`, `normalizedName`, `confidence`).
+- **Tag** *(tagging/search bounded context)*: Represents a dictionary classification label, with attributes like display name, normalized name, category, usage count.
 - **Course**: Represents the learning source, with attributes like title, description, domain.
 
 ## Success Criteria *(mandatory)*

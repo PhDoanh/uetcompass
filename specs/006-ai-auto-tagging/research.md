@@ -69,6 +69,52 @@ not abort the whole batch and simplifies operator visibility.
   degrade throughput.
 - Silently skip failed items: would hide issues from operators.
 
+## Decision: `Skill`/`Tag` ownership in tagging/search bounded context
+
+**Rationale:**  `Skill` and `Tag` used by auto-tagging are canonical to
+tagging/search behavior and must be reused by advanced tag search (feature 008).
+Treating them as `roadmap-core` entities would couple unrelated domains and
+increase translation logic.
+
+**Alternatives considered:**
+- Keep ownership in roadmap-core and map into search indexes: adds repeated
+  transform layers and schema drift risk.
+- Duplicate skill/tag models in each feature: causes inconsistency and
+  maintenance overhead.
+
+## Decision: Canonical `Skill.tags` metadata shape + overwrite re-tagging
+
+**Rationale:**  Persisting `Skill.tags` as canonical metadata
+(`tagId`, `normalizedName`, `confidence`) is optimized for search filtering and
+ranking while preserving dictionary linkage through `tagId`. Re-tagging should
+replace the full tag snapshot to avoid stale mixed states from incremental merges.
+
+**Alternatives considered:**
+- Store only tag ObjectIds: insufficient for direct search and requires joins.
+- Append-only re-tagging: preserves history but makes active-tag reads and
+  confidence interpretation more complex.
+
+## Decision: Keep `Tag` as dictionary/management source
+
+**Rationale:**  The `Tag` entity governs normalization, deduplication,
+category metadata, and lifecycle. `Skill.tags` is the assignment snapshot for
+query/runtime use.
+
+**Alternatives considered:**
+- Flatten tags directly into skills with no dictionary: simpler writes but loses
+  governance and deduplication controls.
+
+## Decision: Standardize output contract for direct feature 008 consumption
+
+**Rationale:**  Returning canonical tag objects in API responses avoids
+intermediate transformation middleware before advanced search ingestion. This
+reduces latency, complexity, and mismatch risk between persisted data and API
+shape.
+
+**Alternatives considered:**
+- Return human-readable strings only and transform later: easier to read but not
+  canonical and insufficient for stable programmatic consumption.
+
 
 All research decisions are now documented and incorporated into the
 specification and plan.

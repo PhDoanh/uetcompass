@@ -2,7 +2,7 @@
 
 **Feature**: `005-account-management`
 **Date**: 2026-03-11
-**Research dependency**: [research.md](research.md) (R-002, R-003, R-004, R-005, R-006, R-007, R-008)
+**Research dependency**: [research.md](research.md) (R-002, R-003, R-004, R-005, R-006, R-007, R-008, R-010)
 
 ---
 
@@ -10,7 +10,7 @@
 
 **MongoDB collection**: `users`
 
-**Purpose**: Primary account document for every UET student. Owns authentication credentials, account status, lockout state, OTP sub-documents, linked Google accounts, and the deletion token. Created at registration (status `pending-verification`); activated after OTP verification.
+**Purpose**: Primary account document for every UET student. Owns authentication credentials, account status, global account preferences (`privacySetting`), identity fields (`displayName` public + `fullName` private/editable), lockout state, OTP sub-documents, linked Google accounts, and the deletion token. Created at registration (status `pending-verification`); activated after OTP verification.
 
 ### Schema
 
@@ -19,7 +19,9 @@
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `email` | String | yes | — | **Unique index**; must end in `@vnu.edu.vn`; lowercased at write | Auth identifier |
 | `passwordHash` | String\|null | no | `null` | bcryptjs hash (12 rounds) | `null` for Google-only accounts |
-| `fullName` | String | yes | — | maxlength: 200; non-empty | |
+| `displayName` | String\|null | no | `null` | maxlength: 120; trimmed; empty string normalized to `null` | Primary public identity field (owner: Feature 005) |
+| `fullName` | String | yes | — | maxlength: 200; non-empty after trim | Editable independently from `displayName` |
+| `privacySetting` | String (enum) | yes | `'identified'` | `identified \| anonymous` | Global account preference (owner: Feature 005) |
 | `avatarUrl` | String\|null | no | `null` | Valid URL or `null` | Stored as URL, not binary |
 | `status` | String (enum) | yes | `'pending-verification'` | `pending-verification \| active \| locked \| deleted` | See state machine below |
 | `failedLoginAttempts` | Number | yes | `0` | ≥ 0; reset to 0 on success | Consecutive wrong-password counter |
@@ -61,6 +63,19 @@
 |---|---|---|---|
 | `_id` (default) | `_id` | Unique | MongoDB default |
 | `email_unique` | `email` | **Unique** | One account per email (across all auth methods) |
+
+### Identity rendering policy (global)
+
+Any user-facing identity rendering MUST follow this order:
+
+1. Valid `displayName` (non-empty after trim, passes name validation)
+2. `fullName`
+3. Sanitized email local-part (substring before `@`, non `[a-zA-Z0-9._-]` chars removed)
+4. Literal fallback `"Student"`
+
+**Notes**:
+- `privacySetting = anonymous` does not delete identity fields; it changes which fields public surfaces may expose directly.
+- API responses may include a server-computed effective display value to guarantee consistent rendering across clients.
 
 ### Account State Machine
 

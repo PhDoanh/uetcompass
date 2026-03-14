@@ -261,3 +261,47 @@ This state is included in the login/token response payload (not in the JWT itsel
 **Alternatives considered**:
 - Separate `GET /api/auth/me` endpoint called on mount (valid, but adds a round-trip; inline in login response is cheaper)
 - Encoding onboarding state in the JWT payload (rejected — JWT is not refreshed on onboarding submission; the flag would become stale until the next login)
+
+---
+
+## R-010: Global Identity Preferences Ownership (displayName/fullName/privacy)
+
+**Decision**: Feature 005 owns global account preferences on `users` by introducing:
+- `privacySetting`: enum `identified | anonymous`, default `identified`
+- `displayName`: primary public identity field
+- `fullName`: separate editable field (independent from `displayName`)
+
+Identity rendering is standardized with one fallback policy used by all clients and API consumers:
+1. valid `displayName`
+2. `fullName`
+3. sanitized local-part of `email`
+4. literal `"Student"`
+
+The backend computes and returns `effectiveDisplayName` in account/profile responses so frontend apps do not diverge in rendering behavior.
+
+**Rationale**: Splitting `displayName` from `fullName` decouples public identity presentation from legal/private naming needs. Storing `privacySetting` on `users` keeps global account preferences in the same ownership boundary as authentication and account lifecycle (Feature 005), avoiding cross-feature coupling. Server-computed fallback output prevents inconsistent UI identity behavior across web surfaces.
+
+**Pattern**:
+```js
+function sanitizeEmailLocalPart(email) {
+  const [local = ''] = String(email || '').split('@');
+  return local.replace(/[^a-zA-Z0-9._-]/g, '').trim();
+}
+
+function isValidDisplayName(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function resolveEffectiveDisplayName({ displayName, fullName, email }) {
+  if (isValidDisplayName(displayName)) return displayName.trim();
+  if (isValidDisplayName(fullName)) return fullName.trim();
+  const localPart = sanitizeEmailLocalPart(email);
+  if (localPart.length > 0) return localPart;
+  return 'Student';
+}
+```
+
+**Alternatives considered**:
+- Keep only `fullName` and derive public display from it (rejected — cannot support independent public identity preferences)
+- Store privacy preferences in a separate `user_preferences` collection (rejected — unnecessary extra read/join for global account fields)
+- Let each frontend implement fallback logic independently (rejected — drift risk and inconsistent UX)

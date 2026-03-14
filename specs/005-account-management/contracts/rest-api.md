@@ -37,6 +37,17 @@ Content-Type: application/json
 | 429 | `RATE_LIMITED` | Too many requests in window |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
 
+### Identity render conventions (global)
+
+`displayName` is the primary public identity field. APIs expose `effectiveDisplayName` (server-computed) to guarantee consistent rendering across clients using fallback order:
+
+1. valid `displayName`
+2. `fullName`
+3. sanitized local-part of `email`
+4. `"Student"`
+
+`privacySetting` is owned by Feature 005 and is stored on `users` with enum `identified | anonymous` (default `identified`).
+
 ---
 
 ## POST /api/auth/register
@@ -49,6 +60,7 @@ Register a new student account. Sends an OTP email and creates a `pending-verifi
 
 ```json
 {
+  "displayName": "NguyenA",
   "fullName": "Nguyễn Văn A",
   "email": "student@vnu.edu.vn",
   "password": "SecurePassword123!"
@@ -57,9 +69,12 @@ Register a new student account. Sends an OTP email and creates a `pending-verifi
 
 | Field | Type | Required | Constraints |
 |---|---|---|---|
+| `displayName` | string | no | 1–120 chars after trim if provided; public display identity |
 | `fullName` | string | yes | 2–200 chars; non-empty after trim |
 | `email` | string | yes | Must end in `@vnu.edu.vn`; lowercased at storage |
 | `password` | string | yes | Minimum 8 chars |
+
+If `displayName` is omitted at registration, backend initializes it from `fullName`.
 
 ### Response — 201 Created
 
@@ -474,7 +489,10 @@ Fetch the authenticated student's account and (if onboarding is complete) profil
 ```json
 {
   "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "displayName": "NguyenA",
   "fullName": "Nguyễn Văn A",
+  "effectiveDisplayName": "NguyenA",
+  "privacySetting": "identified",
   "email": "student@vnu.edu.vn",
   "avatarUrl": null,
   "linkedGoogleAccounts": [],
@@ -488,7 +506,10 @@ Fetch the authenticated student's account and (if onboarding is complete) profil
 ```json
 {
   "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "displayName": "NguyenA",
   "fullName": "Nguyễn Văn A",
+  "effectiveDisplayName": "NguyenA",
+  "privacySetting": "identified",
   "email": "student@vnu.edu.vn",
   "avatarUrl": "https://cdn.example.com/avatar.jpg",
   "linkedGoogleAccounts": [
@@ -521,7 +542,9 @@ Update account info and/or onboarding profile fields. Only provided fields are u
 
 ```json
 {
+  "displayName": "Nguyen Van B",
   "fullName": "Nguyễn Văn B",
+  "privacySetting": "anonymous",
   "avatarUrl": "https://cdn.example.com/new-avatar.jpg",
   "profile": {
     "major": "Software Engineering",
@@ -538,7 +561,9 @@ Update account info and/or onboarding profile fields. Only provided fields are u
 
 | Field | Notes |
 |---|---|
+| `displayName` | Optional; public identity field; maxlength 120 |
 | `fullName` | Optional; maxlength 200 |
+| `privacySetting` | Optional; enum: `identified` \| `anonymous` |
 | `avatarUrl` | Optional; valid URL or `null` |
 | `profile.*` | Only available (and applied) when `onboardingState === 'COMPLETED'`; ignored otherwise |
 

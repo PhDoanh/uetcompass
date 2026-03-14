@@ -5,7 +5,7 @@
 
 ## Summary
 
-Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (profile edits + re-personalization signal → Feature 004, change password, Google link/unlink, hard-delete with email confirmation), and logout. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
+Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (global account preferences + profile edits + re-personalization signal → Feature 004, change password, Google link/unlink, hard-delete with email confirmation), and logout. Feature 005 is the owner of global account preferences on `users`: `privacySetting` (`identified | anonymous`) and identity split (`displayName` as primary public field, `fullName` editable independently). Identity rendering follows a unified fallback policy: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
 
 ## Technical Context
 
@@ -14,7 +14,7 @@ Build the authentication and account-management foundation for UETCompass: email
 - Backend: `express.js`, `mongoose 8`, `jsonwebtoken`, `bcryptjs`, `nodemailer`, `google-auth-library`, `cors`, `cookie-parser`, `helmet`, `express-rate-limit`, `uuid`
 - Frontend: `React 18`, `React Router v6`, `@react-oauth/google` (Google Identity Services wrapper), native `EventSource` (SSE — reused from Feature 001)
 
-**Storage**: MongoDB Atlas free tier — `users` collection (auth + lockout state), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag)
+**Storage**: MongoDB Atlas free tier — `users` collection (auth + lockout state + global identity/privacy preferences: `displayName`, `fullName`, `privacySetting`), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag)
 **Testing**: Jest 29 — unit tests only; MongoDB, `bcryptjs`, `google-auth-library`, `nodemailer` all mocked
 **Target Platform**: Backend → Render (Node.js web service, free tier, cold start ~50s); Frontend → Vercel (React SPA)
 **Project Type**: Web application — React SPA + Node.js/Express REST API (modular monolith)
@@ -28,9 +28,9 @@ Build the authentication and account-management foundation for UETCompass: email
 
 - [x] **Modular Monolithic**: All auth logic is isolated in `backend/src/modules/auth/`. Shared notification delivery lives in `backend/src/modules/notifications/`. The re-personalization signal is written to `student_profiles.repersonalizationPending` via `studentProfileService` (service-layer call only — no direct cross-module import). No microservice split introduced.
 - [x] **UET-First**: `@vnu.edu.vn` domain constraint is hardcoded in both client-side form validation and server-side Google ID token verification. No abstraction for other universities.
-- [x] **Privacy**: Passwords are stored as bcrypt hashes only — never plaintext, never logged. UET portal credentials are not involved in this feature. No password history surfaced to users. Only the minimum account data (name, email, avatar, lockout counters, OTP state) is stored — no grades, transcripts, or credential scraping.
+- [x] **Privacy**: Passwords are stored as bcrypt hashes only — never plaintext, never logged. UET portal credentials are not involved in this feature. No password history surfaced to users. Only the minimum account data (display/public name, legal/full name, privacy preference, email, avatar, lockout counters, OTP state) is stored — no grades, transcripts, or credential scraping.
 - [x] **AI-Assisted**: Gemini API is **not called** in this feature. All validation (email domain, OTP check, password confirmation) is pure code logic. No LLM involved.
-- [x] **Test What Matters**: Unit tests mandatory for: OTP expiry + lockout logic (`auth.service.test.js`), bcrypt hash/verify (`password.service.test.js`), refresh token rotation + reuse detection (`token.service.test.js`), re-personalization change detection (`profileSettings.service.test.js`).
+- [x] **Test What Matters**: Unit tests mandatory for: OTP expiry + lockout logic (`auth.service.test.js`), bcrypt hash/verify (`password.service.test.js`), refresh token rotation + reuse detection (`token.service.test.js`), re-personalization change detection (`profileSettings.service.test.js`), identity fallback + privacy rendering policy (`profileSettings.service.test.js` or dedicated identity policy unit test).
 
 ## Project Structure
 
@@ -40,7 +40,7 @@ Build the authentication and account-management foundation for UETCompass: email
 specs/005-account-management/
 ├── plan.md              ← this file
 ├── spec.md              ← feature requirements
-├── research.md          ← Phase 0: 9 technical decisions resolved
+├── research.md          ← Phase 0: 10 technical decisions resolved
 ├── data-model.md        ← Phase 1: users, refresh_tokens, notifications schemas
 ├── quickstart.md        ← Phase 1: local dev setup + manual test guide
 ├── contracts/
@@ -61,7 +61,7 @@ backend/
 │   │   │   ├── password.service.js        # bcryptjs hash/verify, password reset flow
 │   │   │   ├── google.service.js          # google-auth-library ID token verification
 │   │   │   ├── deletion.service.js        # hard delete cascade, deletion token flow
-│   │   │   ├── profileSettings.service.js # update name/avatar/onboarding fields, re-personalization diff
+│   │   │   ├── profileSettings.service.js # update displayName/fullName/privacySetting/avatar + onboarding fields, re-personalization diff
 │   │   │   ├── auth.controller.js         # Express handlers (thin)
 │   │   │   ├── auth.routes.js             # /api/auth/* routes + middleware
 │   │   │   └── auth.email.js              # OTP and deletion confirmation emails via Nodemailer
@@ -79,7 +79,7 @@ backend/
             ├── auth.service.test.js        # OTP expiry, account lock/unlock, duplicate email
             ├── token.service.test.js       # RT rotation, reuse detection, family revocation
             ├── password.service.test.js    # bcrypt hash, verify, wrong-password counter
-            └── profileSettings.service.test.js  # diff detection, repersonalizationPending flag set
+            └── profileSettings.service.test.js  # diff detection, repersonalizationPending flag set, identity fallback policy
 
 frontend/
 ├── src/
@@ -88,7 +88,7 @@ frontend/
 │   │       ├── LoginPage.jsx              # Email+password form + Google Sign-In button
 │   │       ├── RegisterPage.jsx           # Registration form + OTP verification step
 │   │       ├── ForgotPasswordPage.jsx     # Email input → OTP → new password
-│   │       ├── AccountSettingsPage.jsx    # Profile fields + password change + Google links + delete
+│   │       ├── AccountSettingsPage.jsx    # Identity/privacy prefs + profile fields + password change + Google links + delete
 │   │       ├── useAuth.js                 # Hook: login, logout, silentRefresh (60s timeout + 2 retries)
 │   │       ├── useGoogleAuth.js           # Hook: @react-oauth/google useGoogleLogin wrapper
 │   │       └── auth.api.js                # Fetch wrappers for all /api/auth/* endpoints

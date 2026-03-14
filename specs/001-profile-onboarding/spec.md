@@ -113,6 +113,7 @@ A student whose desired job role or target company type is not in the predefined
 - **FR-012**: The student MUST be able to specify a graduation timeline as a number of semesters remaining or an expected graduation date.
 - **FR-013**: The student MUST be able to enter personal aspirations, constraints, or preferences as free-text.
 - **FR-014**: All optional fields MUST be clearly marked as optional, and the system MUST communicate that omitting them reduces personalisation quality.
+- **FR-014a**: Career-goal payloads MUST preserve `careerGoal` as a nested object. Any downstream `careerGoalRole` projection MUST be derived from `careerGoal.role` (read-only alias, no separate source-of-truth field).
 
 **Validation**
 
@@ -135,6 +136,12 @@ A student whose desired job role or target company type is not in the predefined
 - **FR-025**: The system MUST enforce one profile per student account — duplicate submission attempts MUST be rejected.
 - **FR-026**: If a student submits with all optional fields empty, the system MUST generate a generic roadmap and clearly communicate that personalisation quality is low.
 
+**Canonical Data Contract Alignment**
+
+- **FR-029**: Completed-course identity MUST be canonicalized by the pair (`major`, `courseCode`).
+- **FR-030**: The system MAY persist `courseUnitId` as an optional optimization field for joins/indexed lookups, but identity semantics MUST remain (`major`, `courseCode`).
+- **FR-031**: `privacySetting` MUST NOT be persisted in `StudentProfile`; privacy ownership belongs to `User` (feature 005 account management).
+
 **Session Handling**
 
 - **FR-027**: If a student's session expires while filling in the onboarding panel, the system MUST redirect to the login page.
@@ -156,6 +163,7 @@ A student whose desired job role or target company type is not in the predefined
 ### Key Entities
 
 - **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed course identifiers, target job role (predefined or free-text), target company type (predefined or free-text), graduation timeline, personal aspirations, submission status (draft / submitted), and timestamps for creation and submission.
+- **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed courses canonically identified by (`major`, `courseCode`) with optional `courseUnitId`, nested `careerGoal` object (where downstream `careerGoalRole` is derived from `careerGoal.role`), personal aspirations, submission status (draft / submitted), and timestamps for creation and submission. Does **not** contain `privacySetting`.
 - **OnboardingDraft**: The intermediate state of the onboarding form before submission. Tied 1:1 to a StudentProfile. Overwritten on each real-time save; promoted to submitted status on explicit student confirmation.
 - **Major**: A predefined academic program offered at UET-VNU. Has a unique identifier, a display name, and an associated list of Course entries. Catalog data is pre-seeded by a separate system process.
 - **Course**: An academic course belonging to one or more Majors. Has a unique identifier and display name. Used for completed-course multi-select during onboarding. Catalog data is pre-seeded by a separate system process outside this feature's scope.
@@ -184,6 +192,7 @@ A student whose desired job role or target company type is not in the predefined
 - Students are fully authenticated before reaching the onboarding panel — this feature does not handle login, registration, or account creation.
 - "Real-time" draft saving is interpreted as save-on-change (debounced) or save-on-blur; exact debounce timing is a technical implementation detail.
 - The asynchronous roadmap generation system exists as a separate component; this feature is only responsible for triggering it on submission and displaying its completion or failure notification.
+- Pre-implementation policy: no runtime data migration is required for this feature-alignment update; migration/backfill (if needed) is handled as a separate operational activity.
 
 ---
 

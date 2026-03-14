@@ -268,3 +268,34 @@ async function dispatchNotifications(userId, userEmail, displayName, status) {
 **Alternatives considered**:
 - Server-side notification queue (rejected — YAGNI; Render free tier has no Redis; significant complexity for an edge case)
 - SSE-only, no email (rejected — misses offline students entirely; violates FR-023)
+
+---
+
+## R-009: Canonical Contract Alignment (Profile Shape + Course Identity)
+
+**Decision**:
+1. Keep `careerGoal` as a nested object in persistence and API payloads.
+2. Treat downstream `careerGoalRole` as derived read-model data sourced from `careerGoal.role` only (no duplicate writable field).
+3. Exclude `privacySetting` from `StudentProfile`; ownership remains in `User` domain (feature 005).
+4. Canonicalize completed-course identity by (`major`, `courseCode`), with optional `courseUnitId` stored only as join optimization metadata.
+5. Pre-implementation policy: no runtime migration/backfill in request path for this alignment update.
+
+**Rationale**: This keeps a single source of truth for career goal role, avoids cross-feature ownership leakage for privacy settings, and makes completed-course semantics stable even if `courseUnitId` values evolve. The no-runtime-migration policy reduces risk in hot paths and keeps rollout operationally simple.
+
+**Pattern**:
+```js
+// canonical completed-course payload item
+{
+  major: 'Computer Science',
+  courseCode: 'INT2204',      // canonical identity component
+  courseUnitId: '64a1...'     // optional optimization only
+}
+
+// downstream mapping (read model only)
+const careerGoalRole = profile.careerGoal?.role ?? null;
+```
+
+**Alternatives considered**:
+- Flatten `careerGoalRole` directly in `StudentProfile` (rejected — duplicated source of truth)
+- Canonical identity by `courseUnitId` only (rejected — weaker portability across seed/version changes)
+- Runtime migration in onboarding API handlers (rejected — unnecessary coupling and latency/risk in request path)

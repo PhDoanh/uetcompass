@@ -2,9 +2,42 @@
 
 **Feature**: `008-advanced-tag-search`  
 **Date**: 2026-03-11  
-**Research dependency**: [../research.md](../research.md) (R-001 to R-007)  
+**Research dependency**: [../research.md](../research.md) (R-001 to R-008)  
 **Base URL**: `/api/search`  
 **Auth**: All endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. The user ID is extracted from the JWT payload.
+
+---
+
+## Common Conventions
+
+### Canonical tag normalization
+
+- For `queryType = "tag"`, request may provide:
+  - `query.tagId`, or
+  - `query.tagNormalizedName`, or
+  - both (if consistent)
+- Backend MUST normalize to canonical `resolvedTagId` before executing the search query.
+
+### Error envelope (all non-2xx responses)
+
+```json
+{
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "Human-readable error message",
+    "details": {}
+  }
+}
+```
+
+### Error codes
+
+| HTTP | code | Meaning |
+|---|---|---|
+| 400 | `INVALID_INPUT` | Validation or normalization failed |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT |
+| 404 | `NOT_FOUND` | Resource not found (optional endpoint-specific usage) |
+| 500 | `INTERNAL_ERROR` | Unexpected server/index/cache failure |
 
 ---
 
@@ -21,16 +54,28 @@ Content-Type: application/json
 
 {
   "queryType": "tag" | "keyword",
-  "tagId": "64f1a2b3c4d5e6f7a8b9c0d1",           // required if queryType === "tag"
-  "keyword": "database",                           // required if queryType === "keyword"
+  "query": {
+    "tagId": "64f1a2b3c4d5e6f7a8b9c0d1",           // optional for tag query
+    "tagNormalizedName": "database",               // optional for tag query
+    "keyword": "database"                          // required for keyword query
+  },
   "filters": {
     "levels": ["Beginner", "Intermediate"],       // optional, AND semantics
     "domains": ["Backend"],                        // optional, AND semantics
-    "additionalTags": ["64f1a2b3c4d5e6f..."]      // optional, AND semantics
+    "additionalTagIds": ["64f1a2b3c4d5e6f..."],    // optional, AND semantics
+    "minConfidence": 60                              // optional, 0-100
   },
-  "sortBy": "relevance" | "alphabetical",         // optional, default: "relevance"
-  "page": 1,                                       // optional, default: 1, must be ≥ 1
-  "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2" // optional, for personalization highlighting
+  "sort": {
+    "by": "relevance" | "alphabetical",          // optional, default: relevance
+    "order": "asc" | "desc"                      // optional, default: desc
+  },
+  "pagination": {
+    "page": 1,                                      // optional, default: 1, must be ≥ 1
+    "pageSize": 20                                  // optional, default: 20, range: 1-50
+  },
+  "personalization": {
+    "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2" // optional
+  }
 }
 ```
 
@@ -39,15 +84,20 @@ Content-Type: application/json
 | Field | Type | Required | Constraints | Notes |
 |---|---|---|---|---|
 | `queryType` | String | yes | `"tag"` \| `"keyword"` | Determines search mode |
-| `tagId` | String (ObjectId) | conditional | required if `queryType === "tag"` | MongoDB ObjectId as string |
-| `keyword` | String | conditional | required if `queryType === "keyword"`; 1–100 chars | Free-text search term |
+| `query` | Object | yes | Nested object | Search input payload |
+| `query.tagId` | String (ObjectId) | conditional | required for tag search when `query.tagNormalizedName` absent | Canonical tag identifier |
+| `query.tagNormalizedName` | String | conditional | required for tag search when `query.tagId` absent | Lowercase+trimmed key; backend resolves to `tagId` |
+| `query.keyword` | String | conditional | required if `queryType === "keyword"`; 1–100 chars | Free-text search term |
 | `filters` | Object | no | Nested object with arrays | Optional filtering criteria |
 | `filters.levels` | Array[String] | no | Enum values from courses collection | Multi-select filter (AND semantics) |
 | `filters.domains` | Array[String] | no | Enum values from courses collection | Multi-select filter (AND semantics) |
-| `filters.additionalTags` | Array[String] | no | Array of ObjectIds (as strings) | Additional tag filters (AND with main tag/keyword) |
-| `sortBy` | String | no | `"relevance"` \| `"alphabetical"` | Default: `"relevance"` for keyword search; `"alphabetical"` for fallback |
-| `page` | Number | no | Integer ≥ 1 | Default: 1; each page contains 20 results per section |
-| `enrolledRoadmapId` | String (ObjectId) | no | Optional; ref: `roadmaps._id` | User's enrolled roadmap ID for "Recommended for You" highlighting |
+| `filters.additionalTagIds` | Array[String] | no | Array of ObjectIds (as strings) | Additional canonical tag filters |
+| `filters.minConfidence` | Number | no | 0–100 | Minimum confidence for matched `Skill.tags` |
+| `sort.by` | String | no | `"relevance"` \| `"alphabetical"` | Default: `"relevance"`; forced `"alphabetical"` in fallback |
+| `sort.order` | String | no | `"asc"` \| `"desc"` | Default: `"desc"` |
+| `pagination.page` | Number | no | Integer ≥ 1 | Default: 1 |
+| `pagination.pageSize` | Number | no | Integer in [1,50] | Default: 20 |
+| `personalization.enrolledRoadmapId` | String (ObjectId) | no | Optional; ref: `roadmaps._id` | User's enrolled roadmap ID for highlighting |
 
 ### Response `200 OK`
 
@@ -61,7 +111,10 @@ Content-Type: application/json
       "level": "Beginner",
       "domain": "Backend",
       "description": "Learn SQL basics and database querying.",
-      "relatedTags": ["#Database", "#SQL"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 92 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d9", "normalizedName": "sql", "confidence": 90 }
+      ],
       "relatedSkillCount": 8,
       "highlighted": true,
       "highlightReason": "Part of your Backend Developer roadmap"
@@ -73,7 +126,10 @@ Content-Type: application/json
       "level": "Intermediate",
       "domain": "Backend",
       "description": "Master NoSQL databases with MongoDB.",
-      "relatedTags": ["#Database", "#NoSQL"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 88 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0da", "normalizedName": "nosql", "confidence": 86 }
+      ],
       "relatedSkillCount": 6,
       "highlighted": false,
       "highlightReason": null
@@ -87,12 +143,20 @@ Content-Type: application/json
       "difficulty": "Intermediate",
       "duration": "6 months",
       "courseCount": 12,
-      "relatedTags": ["#Database", "#Backend", "#Server"],
+      "matchedTags": [
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0d1", "normalizedName": "database", "confidence": 91 },
+        { "tagId": "64f1a2b3c4d5e6f7a8b9c0db", "normalizedName": "backend", "confidence": 84 }
+      ],
       "highlightedCourseCount": 3,
       "highlighted": true,
       "highlightReason": "Your enrolled roadmap"
     }
   ],
+  "queryContext": {
+    "queryType": "tag",
+    "input": { "tagNormalizedName": "database" },
+    "resolvedTagId": "64f1a2b3c4d5e6f7a8b9c0d1"
+  },
   "pagination": {
     "currentPage": 1,
     "pageSize": 20,
@@ -106,7 +170,12 @@ Content-Type: application/json
   "appliedFilters": {
     "levels": ["Intermediate"],
     "domains": [],
-    "additionalTags": []
+    "additionalTagIds": [],
+    "minConfidence": 0
+  },
+  "appliedSort": {
+    "by": "relevance",
+    "order": "desc"
   },
   "fallbackMode": false
 }
@@ -118,8 +187,10 @@ Content-Type: application/json
 |---|---|---|
 | `courses` | Array[CourseResult] | List of related courses (max 20 per page); empty if no matches |
 | `roadmaps` | Array[RoadmapResult] | List of related roadmaps (max 20 per page); empty if no matches |
+| `queryContext` | Object | Canonical query context after input normalization |
 | `pagination` | PaginationMeta | Pagination metadata for both sections |
 | `appliedFilters` | Object | Echo of filters sent in request (for UI feedback) |
+| `appliedSort` | Object | Effective sorting strategy used by backend |
 | `fallbackMode` | Boolean | `true` if results served from pre-cached fallback (search index unavailable); `false` if from live index |
 
 **CourseResult fields**:
@@ -128,7 +199,7 @@ Content-Type: application/json
 - `level`: Enum: Beginner, Intermediate, Advanced
 - `domain`: Domain category (Backend, Frontend, Data, etc.)
 - `description`: Short course overview
-- `relatedTags`: Array of tag names matching the search (shows connection)
+- `matchedTags`: Canonical tag metadata array (`tagId`, `normalizedName`, `confidence`)
 - `relatedSkillCount`: Number of skills in this course matching the search
 - `highlighted`: Boolean; `true` if course is part of enrolled roadmap
 - `highlightReason`: String explaining why highlighted
@@ -139,7 +210,7 @@ Content-Type: application/json
 - `difficulty`: Enum: Beginner, Intermediate, Advanced
 - `duration`: Estimated learning duration (e.g., "6 months")
 - `courseCount`: Total courses in this roadmap
-- `relatedTags`: Array of tag names from courses in this roadmap
+- `matchedTags`: Canonical tag metadata aggregated from roadmap courses
 - `highlightedCourseCount`: Number of courses in this roadmap matching the search
 - `highlighted`: Boolean; `true` if this is the user's enrolled roadmap
 - `highlightReason`: String explaining why highlighted
@@ -158,12 +229,9 @@ Content-Type: application/json
 
 | Status | Condition | Response |
 |---|---|---|
-| `400 Bad Request` | `queryType` missing or invalid (not `"tag"` or `"keyword"`)` | `{ "error": "Invalid queryType" }` |
-| `400 Bad Request` | `queryType === "tag"` but `tagId` missing or invalid | `{ "error": "Missing or invalid tagId for tag search" }` |
-| `400 Bad Request` | `queryType === "keyword"` but `keyword` missing or invalid | `{ "error": "Missing or invalid keyword for keyword search" }` |
-| `400 Bad Request` | `page` is < 1 or not an integer | `{ "error": "page must be an integer ≥ 1" }` |
-| `401 Unauthorized` | Missing or expired access token | `{ "error": "Unauthorized" }` |
-| `500 Internal Server Error` | Unexpected DB or index failure | `{ "error": "Search query failed" }` (returns fallback results if available) |
+| `400 Bad Request` | `queryType` missing/invalid, invalid query payload, unresolved/ conflicting tag input, invalid pagination/sort/filter | `{ "error": { "code": "INVALID_INPUT", "message": "Invalid search request", "details": { ... } } }` |
+| `401 Unauthorized` | Missing or expired access token | `{ "error": { "code": "UNAUTHORIZED", "message": "Unauthorized" } }` |
+| `500 Internal Server Error` | Unexpected DB/index/cache failure and no fallback available | `{ "error": { "code": "INTERNAL_ERROR", "message": "Search query failed" } }` |
 
 ### Example requests
 
@@ -174,10 +242,11 @@ curl -X POST http://localhost:4000/api/search/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryType": "tag",
-    "tagId": "64f1a2b3c4d5e6f7a8b9c0d1",
-    "filters": { "levels": ["Intermediate"] },
-    "page": 1,
-    "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2"
+    "query": { "tagNormalizedName": "database" },
+    "filters": { "levels": ["Intermediate"], "minConfidence": 60 },
+    "sort": { "by": "relevance", "order": "desc" },
+    "pagination": { "page": 1, "pageSize": 20 },
+    "personalization": { "enrolledRoadmapId": "74f1a2b3c4d5e6f7a8b9c0d2" }
   }'
 ```
 
@@ -188,14 +257,14 @@ curl -X POST http://localhost:4000/api/search/query \
   -H "Content-Type: application/json" \
   -d '{
     "queryType": "keyword",
-    "keyword": "database",
+    "query": { "keyword": "database" },
     "filters": {
       "levels": ["Intermediate", "Advanced"],
       "domains": ["Backend"],
-      "additionalTags": ["64f1a2b3c4d5e6f..."]
+      "additionalTagIds": ["64f1a2b3c4d5e6f..."]
     },
-    "sortBy": "alphabetical",
-    "page": 1
+    "sort": { "by": "alphabetical", "order": "asc" },
+    "pagination": { "page": 1, "pageSize": 20 }
   }'
 ```
 
@@ -220,18 +289,21 @@ No query parameters. No request body.
 {
   "tags": [
     {
-      "id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "#Database",
+      "tagId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "normalizedName": "database",
+      "displayName": "#Database",
       "count": 42
     },
     {
-      "id": "64f1a2b3c4d5e6f7a8b9c0d2",
-      "name": "#JavaScript",
+      "tagId": "64f1a2b3c4d5e6f7a8b9c0d2",
+      "normalizedName": "javascript",
+      "displayName": "#JavaScript",
       "count": 35
     },
     {
-      "id": "64f1a2b3c4d5e6f7a8b9c0d3",
-      "name": "#Backend",
+      "tagId": "64f1a2b3c4d5e6f7a8b9c0d3",
+      "normalizedName": "backend",
+      "displayName": "#Backend",
       "count": 28
     }
   ],
@@ -259,16 +331,17 @@ No query parameters. No request body.
 | `domains` | Array[String] | Distinct domain values from courses collection |
 
 **TagFilter subtype**:
-- `id`: Tag ID (ObjectId as string)
-- `name`: Tag name (e.g., "#Database")
+- `tagId`: Tag ID (ObjectId as string)
+- `normalizedName`: Canonical key (lowercase + trimmed)
+- `displayName`: UI label (e.g., "#Database")
 - `count`: Number of skills tagged with this tag (optional, for UI badges)
 
 ### Error responses
 
 | Status | Condition | Response |
 |---|---|---|
-| `401 Unauthorized` | Missing or expired access token | `{ "error": "Unauthorized" }` |
-| `500 Internal Server Error` | Unexpected DB failure | `{ "error": "Failed to fetch filters" }` |
+| `401 Unauthorized` | Missing or expired access token | `{ "error": { "code": "UNAUTHORIZED", "message": "Unauthorized" } }` |
+| `500 Internal Server Error` | Unexpected DB failure | `{ "error": { "code": "INTERNAL_ERROR", "message": "Failed to fetch filters" } }` |
 
 ### Example request
 
@@ -324,8 +397,8 @@ No query parameters. No request body.
 
 | Status | Condition | Response |
 |---|---|---|
-| `401 Unauthorized` | Missing or expired access token | `{ "error": "Unauthorized" }` |
-| `500 Internal Server Error` | Unexpected DB failure | `{ "error": "Failed to fetch personalization data" }` |
+| `401 Unauthorized` | Missing or expired access token | `{ "error": { "code": "UNAUTHORIZED", "message": "Unauthorized" } }` |
+| `500 Internal Server Error` | Unexpected DB failure | `{ "error": { "code": "INTERNAL_ERROR", "message": "Failed to fetch personalization data" } }` |
 
 ### Example request
 
@@ -340,7 +413,7 @@ curl -X GET http://localhost:4000/api/search/personalization \
 
 ### Search Engine Failure (Endpoint 1)
 
-If the live search index (MongoDB text index or Elasticsearch) is unavailable:
+If the live search index (MongoDB text index in MVP) is unavailable:
 
 1. The backend catches the index query error
 2. Falls back to the `search_cache` collection (pre-computed fallback data)
@@ -349,7 +422,7 @@ If the live search index (MongoDB text index or Elasticsearch) is unavailable:
 5. Fallback results do **not include personalization highlighting** (limiting to basic discovery)
 
 **Expected client handling**:
-- Disable `sortBy: "relevance"` button when `fallbackMode: true`
+- Disable `sort.by = "relevance"` option when `fallbackMode: true`
 - Show a banner: "Search results are temporarily simplified. Please refresh to update."
 
 ### Filter & Personalization Failure (Endpoints 2 & 3)

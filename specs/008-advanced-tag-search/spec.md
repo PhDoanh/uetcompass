@@ -2,7 +2,8 @@
 
 **Feature Branch**: `008-advanced-tag-search`  
 **Created**: March 11, 2026  
-**Status**: Draft  
+**Updated**: March 14, 2026  
+**Status**: Draft (refined with canonical schema)  
 **Input**: User description: "Advanced Tag-Based Search (feat-advanced-search) - System for advanced search allowing users to discover the ecosystem through AI-generated tags, creating multi-dimensional connections between Roadmap, Course, and Skill. UX flow: Users click on tag #Database -> system shows related courses (SQL, NoSQL) -> displays related roadmaps (Backend Developer, Data Engineer). Acceptance criteria: 2 sections display (related courses and related roadmaps), query latency <500ms for 10,000 skills, support combined filters (Tag + Level)."
 
 ## Clarifications
@@ -14,6 +15,13 @@
 - Q3: Future Scale Expectations → A: Design for up to 50,000 skills in next year
 - Q4: Search Access Control & Permissions → C: Personalization-aware - show all available plus highlight relevant for user's current track
 - Q5: Search Index Failure Handling → A: Graceful degradation - serve cached/pre-filtered results if search index fails; degrade to basic listing without personalization
+
+### Session 2026-03-14 (canonical alignment)
+
+- Q6: Tag search input format → A: Accept both `tagId` and `tagNormalizedName`; backend resolves to canonical `tagId` before query execution.
+- Q7: Skill tag schema source of truth → A: Use Feature 006 canonical `Skill.tags[] = { tagId, normalizedName, confidence }` without local schema variants.
+- Q8: Search infrastructure MVP → A: Lock to MongoDB native text index for MVP; Elasticsearch is explicitly deferred to a future phase.
+- Q9: Contract style → A: Standardize filter/sort/pagination/error contracts into explicit nested objects with a common error envelope.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -96,6 +104,8 @@ As a system administrator, I want search queries to complete quickly even with l
 
 ### Edge Cases
 
+- What if both `tagId` and `tagNormalizedName` are sent but map to different tags? Return `INVALID_INPUT` and skip search execution.
+- What if `tagNormalizedName` cannot resolve to any canonical Tag entry? Return `INVALID_INPUT` with actionable message.
 - What if a tag has no associated courses? System should handle gracefully by showing empty "Related Courses" section.
 - What if a course is associated with multiple skill tags? System should avoid duplicate course entries in results.
 - What if search/filter combinations return 0 results? System should clearly indicate no results found and suggest alternatives.
@@ -107,17 +117,20 @@ As a system administrator, I want search queries to complete quickly even with l
 ### Functional Requirements
 
 - **FR-001**: System MUST provide tag-based search where users can click a tag to see all related courses and roadmaps.
-- **FR-002**: System MUST provide keyword-based search to find courses and roadmaps by text search (searching tag names, course names, roadmap titles, and descriptions).
+- **FR-002**: System MUST provide keyword-based search to find courses and roadmaps by text search (searching canonical tag names, course names, roadmap titles, and descriptions).
 - **FR-003**: System MUST organize search results into two distinct sections: "Related Courses" and "Related Roadmaps".
-- **FR-004**: System MUST display skill tags within course and roadmap results to show the connection.
-- **FR-005**: System MUST support combined filtering with multiple criteria (e.g., Tag + Skill Level + Domain).
+- **FR-004**: System MUST expose matched tag metadata in results using canonical shape from Feature 006 (`tagId`, `normalizedName`, `confidence`).
+- **FR-005**: System MUST support combined filtering with multiple criteria (primary tag/keyword + additional tags + level + domain) using AND semantics.
 - **FR-006**: System MUST implement efficient querying across the Tag -> Skill -> Course -> Roadmap relationship model.
 - **FR-007**: System MUST prevent duplicate courses/roadmaps in result sets even when reached through multiple skills/tags.
 - **FR-008**: System MUST handle cases with no results by clearly indicating this to the user.
-- **FR-009**: System MUST support result sorting with relevance-based sorting as default; users MUST be able to switch to alphabetical sorting.
-- **FR-010**: System MUST paginate search results with 20 results per page; users MUST be able to navigate between pages.
+- **FR-009**: System MUST support sorting contract with default relevance and optional alphabetical ordering.
+- **FR-010**: System MUST paginate search results with contract `{ page, pageSize }` and default `pageSize = 20`.
 - **FR-011**: System MUST show all available courses and roadmaps in search results; results relevant to the user's current track or enrolled roadmap MUST be highlighted or visually distinguished as "Recommended for You" or similar indicator.
 - **FR-012**: System MUST implement graceful degradation: if the search index becomes unavailable, the system MUST serve pre-cached or pre-filtered results (e.g., all courses, all roadmaps, or basic category listings) without personalization rather than returning an error, maintaining discovery functionality at reduced capability.
+- **FR-013**: Search input MUST accept either `tagId` or `tagNormalizedName` (or both if consistent), and backend MUST normalize to canonical `tagId` before querying.
+- **FR-014**: Search module MUST consume canonical `Skill.tags[]` from Feature 006 as read-only source and MUST NOT introduce alternate embedded tag field names.
+- **FR-015**: All API errors MUST use standardized envelope `{ error: { code, message, details? } }`.
 
 ### Non-Functional Requirements
 
@@ -130,7 +143,8 @@ As a system administrator, I want search queries to complete quickly even with l
 ### Key Entities *(include if feature involves data)*
 
 - **Tag**: Classification label created by AI auto-tagging system (e.g., #Database, #JavaScript, #Intermediate).
-- **Skill**: Represents a competency; associated with one or more tags.
+- **SkillTag**: Canonical embedded metadata in `Skill.tags[]` (`tagId`, `normalizedName`, `confidence`).
+- **Skill**: Represents a competency; associated with one or more canonical `SkillTag` entries.
 - **Course**: Learning module containing multiple skills and tagged with relevant topics.
 - **Roadmap**: Learning path containing multiple courses, representing a career/specialization trajectory.
 - **SearchResult**: Container for displaying related courses and roadmaps with their associated skills and tags.
@@ -145,14 +159,16 @@ As a system administrator, I want search queries to complete quickly even with l
 - Support for at least 3 independent filter dimensions (Tag, Level, Domain minimum).
 - Search results pagination with 20 results per page, supporting unlimited result set sizes.
 - Users can switch between relevance and alphabetical sorting without rerunning search.
+- 100% of invalid inputs return standardized error envelope with stable `error.code`.
 
 ## Assumptions
 
 - AI auto-tagging system (FEAT-006) is available and providing tag data.
+- Canonical tag metadata shape from FEAT-006 is available as `Skill.tags[] = { tagId, normalizedName, confidence }`.
 - Courses and Roadmaps are already created with proper relationships to Skills.
 - User skills/level data is available for filtering if personalization is needed (though not required for MVP).
 - User's enrolled roadmap or current track information is available in the system for personalization highlighting.
-- Search will be performed against in-memory search index or optimized database queries.
+- Search is implemented on MongoDB native text index for MVP; Elasticsearch is deferred.
 - Tag and Skill data is relatively stable (not rapidly changing during search execution).
 - System will scale to support up to 50,000 skills within the next year; current design optimized for up to 10,000 skills with plan for optimization review at 50K scale.
 
@@ -160,6 +176,6 @@ As a system administrator, I want search queries to complete quickly even with l
 
 - AI Auto-Tagging System (FEAT-006) for providing skill tags.
 - Existing Course and Roadmap data models.
-- Search indexing infrastructure (Elasticsearch, Solr, database indexes, or similar).
+- MongoDB Atlas text index infrastructure.
 - Frontend UI components for search forms and result display.
 - Query optimization and performance monitoring tools.

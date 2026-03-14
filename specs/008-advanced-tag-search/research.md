@@ -10,13 +10,14 @@
 
 **Question**: Should we use MongoDB's built-in text index or deploy Elasticsearch for the search layer? Trade-off: simplicity vs. performance and scalability.
 
-**Decision**: **MongoDB native text index** for MVP (0–10K skills). Switch to Elasticsearch as an optional Phase 2 optimization when approaching 50K skills.
+**Decision (LOCKED)**: **MongoDB native text index** for MVP (0–10K skills). Elasticsearch is explicitly deferred to a later phase when approaching 50K skills.
 
 **Rationale**:
 - **Simplicity**: MongoDB text index is included free on Atlas M0. Zero infrastructure cost. One less service to manage and monitor in a resource-constrained team.
-- **MVP performance**: MongoDB text index with proper indexing on `skills.tags` and `skills.description` achieves <500ms p95 latency for 10K-skill dataset (Atlas benchmark: single-field text query returns in 20–100ms).
+- **MVP performance**: MongoDB text index with proper indexing on canonical tag/search fields (`skills.tags.tagId`, `skills.tags.normalizedName`, `skills.description`) achieves <500ms p95 latency for 10K-skill dataset (Atlas benchmark: single-field text query returns in 20–100ms).
 - **Graceful degradation built-in**: MongoDB query is already in the code path. When index is unavailable, fallback to pre-computed cache automatically.
 - **Future path**: When data grows to 50K+ skills, re-evaluate. Elasticsearch can be bolted on in Phase 2 without changing the query interface (query builder abstraction hides the backend).
+- **No undecided infrastructure in MVP**: Search backend choice is finalized for implementation.
 
 **Performance estimate** (MongoDB M0 text index):
 - 10K skills, 2–4 tags per skill: 20ms query time (indexed, cached)
@@ -49,7 +50,9 @@
 
 ```js
 // 1. Find skills with tag
-const skills = await Skill.find({ tags: { $in: [tagId] } });
+const skills = await Skill.find({
+  tags: { $elemMatch: { tagId, confidence: { $gte: minConfidence } } },
+});
 const skillIds = skills.map(s => s._id);
 
 // 2. Find courses referencing those skills
@@ -64,7 +67,7 @@ courses.forEach(course => {
 const roadmapMap = new Map(); // roadmapId -> { roadmap, courseIds }
 const roadmaps = await Roadmap.find({ courseIds: { $in: Array.from(courseMap.keys()) } });
 roadmaps.forEach(roadmap => {
-  const relatedCourseIds = roadmap.courseIds.filter(id => courseMap.has(id));
+  const relatedCourseIds = roadmap.courseIds.filter(id => courseMap.has(id.toString()));
   roadmapMap.set(roadmap._id.toString(), { roadmap, courseIds: relatedCourseIds });
 });
 
@@ -174,9 +177,9 @@ async function rebuildSearchCache() {
   const allSkills = await Skill.find({ tags: { $exists: true, $ne: [] } }).lean();
   allSkills.forEach(skill => {
     skill.tags.forEach(tag => {
-      if (!tagCourseMap[tag._id]) tagCourseMap[tag._id] = new Set();
+      if (!tagCourseMap[tag.tagId]) tagCourseMap[tag.tagId] = new Set();
       // Add courses that reference this skill
-      skill.courseIds?.forEach(cid => tagCourseMap[tag._id].add(cid));
+      skill.courseIds?.forEach(cid => tagCourseMap[tag.tagId].add(cid));
     });
   });
 
@@ -207,7 +210,7 @@ setInterval(rebuildSearchCache, SEARCH_CACHE_REFRESH_INTERVAL_MINUTES * 60 * 100
 POST /api/search/query
   ↓
 try {
-  Results ← query indexed search (Mongoose text index or Elasticsearch)
+  Results ← query indexed search (MongoDB text index)
 } catch (err) {
   LogError(err)
   Results ← lookup from search_cache collection (alphabetical, no personalization)
@@ -227,6 +230,7 @@ Return results (either live or fallback)
 | Component | Technology | Version | Rationale |
 |---|---|---|---|
 | **Search Index** | MongoDB native text index | Atlas M0 | Free, built-in, sufficient for 10K skills |
+| **Input normalization** | Canonical tag resolver (`tagId`/`tagNormalizedName` -> `resolvedTagId`) | Node.js service layer | Deterministic query identity and FE flexibility |
 | **Deduplication** | JavaScript (Map/Set) | ES6+ | O(1) lookup, scales to 50K |
 | **Personalization** | React Query + session storage | react-query v5 | Already in project; efficient caching |
 | **Scoring** | MongoDB BM25 (`textScore`) | native | Built-in, no custom implementation needed |
@@ -234,14 +238,37 @@ Return results (either live or fallback)
 
 ---
 
-## R-006: Multi-Dimensional Filtering — How to combine Tag + Level + Domain filters
+## R-006: Search Input Canonicalization — `tagId` vs `tagNormalizedName`
+
+**Question**: FE should support search input from either known tag IDs or normalized tag names. How do we keep backend queries deterministic and indexed?
+
+**Decision**: Accept both `query.tagId` and `query.tagNormalizedName`, then normalize to canonical `resolvedTagId` before executing any tag search.
+
+**Normalization rules**:
+1. If only `tagId` exists: validate and use directly.
+2. If only `tagNormalizedName` exists: normalize (trim + lowercase), lookup in `tags.normalizedName`, resolve `_id`.
+3. If both exist: they must resolve to the same tag.
+4. If unresolved/conflicting: return `INVALID_INPUT` and skip query execution.
+
+**Rationale**:
+- Supports both click-flow and manual/tag-text input.
+- Keeps query planner stable by searching primarily on canonical `tagId`.
+- Aligns with FEAT-006 canonical data (`Tag.normalizedName` unique, `Skill.tags.tagId`).
+
+**Alternatives considered**:
+- Search directly by `tagNormalizedName` only: simpler but weaker identity guarantees. Rejected.
+- Require `tagId` only: strict but harms UX for typed tag interactions. Rejected.
+
+---
+
+## R-007: Multi-Dimensional Filtering — How to combine Tag + Level + Domain filters
 
 **Question**: Users can apply multiple filters simultaneously: Tag + Level + Domain. How are these combined? (AND vs. OR semantics)
 
 **Decision**: **AND semantics**: A course must match ALL chosen filters.
 
 **Query logic**:
-- Tag filter: `skills.tags: { $in: [selectedTagIds] }` — course has at least one selected tag
+- Tag filter: `skills.tags.tagId: { $in: [selectedTagIds] }` — course has at least one selected tag
 - Level filter: `level: { $in: [selectedLevels] }` — course level is in the selected list
 - Domain filter: `domain: { $in: [selectedDomains] }` — course domain is in the selected list
 
@@ -251,7 +278,11 @@ Return results (either live or fallback)
 const query = {};
 
 if (selectedTagIds.length > 0) {
-  query['skills.tags._id'] = { $in: selectedTagIds };
+  query['skills.tags.tagId'] = { $in: selectedTagIds };
+}
+
+if (minConfidence > 0) {
+  query['skills.tags.confidence'] = { $gte: minConfidence };
 }
 
 if (selectedLevels.length > 0) {
@@ -275,7 +306,7 @@ const results = await Course.find(query);
 
 ---
 
-## R-007: Filter Discovery Endpoint — How to fetch available filter values
+## R-008: Filter Discovery Endpoint — How to fetch available filter values
 
 **Question**: The frontend FilterBar needs to populate dropdowns with available Level values, Domain values, and Tag list. Should these be pre-computed or fetched on every page load?
 
@@ -291,8 +322,8 @@ const results = await Course.find(query);
 ```json
 {
   "tags": [
-    { "id": "...", "name": "#Database", "count": 42 },
-    { "id": "...", "name": "#JavaScript", "count": 35 },
+    { "tagId": "...", "normalizedName": "database", "displayName": "#Database", "count": 42 },
+    { "tagId": "...", "normalizedName": "javascript", "displayName": "#JavaScript", "count": 35 },
     ...
   ],
   "levels": ["Beginner", "Intermediate", "Advanced"],

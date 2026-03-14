@@ -1,22 +1,22 @@
 # Data Model: Skill Tree – Personalized Academic Roadmap Tracker
 
 **Phase 1 output** | Branch: `004-skill-tree` | Date: 2026-03-11  
-**Research dependency**: [research.md](research.md) (Decisions 1–8)
+**Research dependency**: [research.md](research.md) (Decisions 1–9)
 
 ---
 
-## MongoDB Collections
+## Data Sources and Persistence
 
-### 1. `skill_node_statuses` *(new — owned by this feature)*
+### 1. `skill_node_statuses` *(canonical progress store — owned by this feature)*
 
-Stores one document per (student, course node) pair. Absent documents imply status `"pending"`.
+Stores one document per (student, roadmap node) pair. `pending` is explicit; missing documents are treated as data drift and reconciled by sync logic.
 
 ```js
 // Mongoose schema: backend/src/modules/skill-tree/skillNodeStatus.model.js
 {
   _id:       ObjectId,          // auto
   studentId: ObjectId,          // required — ref: users (from Feature 001)
-  nodeId:    String,            // required — matches courseCode in student_roadmaps.nodes[].courseCode
+  nodeId:    String,            // required — matches primaryRoadmap.nodes[].nodeId (or courseCode when unified)
   status:    String,            // required — enum: ["pending", "in_progress", "done"]
   updatedAt: Date               // required — set manually on every write
 }
@@ -31,36 +31,40 @@ Stores one document per (student, course node) pair. Absent documents imply stat
 **Business rules** (enforced by service layer, not schema):
 - A status update is rejected (`403 Forbidden`) if computed `isUnlocked(node) === false` for the requesting student.
 - State transitions allowed: `pending → in_progress → done`. No skips, no reversals.
-- `"pending"` is the implicit default — no document = pending; documents with `status: "pending"` may exist after a re-personalization cycle.
+- `"pending"` is explicit — every node in the primary roadmap must have a persisted status row.
+- On primary roadmap refresh, status rows are reconciled: upsert `pending` for newly introduced nodes and remove rows for deleted nodes.
 
 ---
 
-### 2. `student_roadmaps` *(new — owned by personalization job, read by this feature)*
+### 2. Primary roadmap contract *(external — owned by Feature 009, read by this feature)*
 
-One document per student. Written by the onboarding/personalization service (external to this feature). Read on every `GET /api/skill-tree` call.
+Feature 004 does not persist roadmap topology locally. It consumes canonical roadmap data from Feature 009 via `GET /api/primary-roadmap` (or equivalent service-layer adapter).
 
 ```js
-// Read-only from Feature 004's perspective
+// Read-only payload contract consumed by Feature 004
 {
-  _id:           ObjectId,
-  studentId:     ObjectId,          // unique — ref: users
-  careerGoal:    String,            // e.g., "frontend-developer" — used as key for AI prompts
+  roadmapId:      String,
+  roadmapName:    String,
+  careerGoal:     String,
   nodes: [
     {
-      courseCode:    String,        // e.g., "IT3910E" — uniquely identifies the course
-      nameVi:        String,        // Vietnamese name (primary)
-      nameEn:        String,        // English name
-      credits:       Number,
-      prerequisites: [String]       // array of courseCodes in this roadmap
+      nodeId:         String,
+      courseCode:     String,
+      courseName:     String,
+      nameVi:         String,
+      nameEn:         String,
+      credits:        Number,
+      prerequisites:  [String]
     }
   ],
-  generatedAt:   Date               // set when personalization job completes; used for re-personalize flag
+  generatedAt:    Date,
+  repersonalizing:Boolean
 }
 ```
 
 **Access pattern (this feature)**:
-- `findOne({ studentId })` on `GET /api/skill-tree` → returns full roadmap; `null` → 404 (redirect to onboarding)
-- `findOneAndUpdate({ studentId }, { generatedAt: Date.now() })` on `POST /api/skill-tree/repersonalize` (optimistic timestamp update while job runs)
+- `getPrimaryRoadmap(studentId)` on `GET /api/skill-tree` and all node-scoped read/write endpoints.
+- `triggerRepersonalize(studentId)` delegation on `POST /api/skill-tree/repersonalize`.
 
 ---
 
@@ -166,20 +170,20 @@ One document per skill. Contains curated or crawled learning resources (free and
 
 ### `student_profiles` *(maintained by Feature 001)*
 
-Read for the re-personalize flag computation: `findOne({ userId })` → use `updatedAt` field.
+Read for the re-personalize flag computation: `findOne({ userId })` → compare with `primaryRoadmap.generatedAt` from Feature 009.
 
 Relevant fields only:
 ```js
 {
   userId:     ObjectId,
-  updatedAt:  Date,      // compared to student_roadmaps.generatedAt
+  updatedAt:  Date,      // compared to primaryRoadmap.generatedAt
   isDraft:    Boolean    // guard: don't allow skill tree access if true (onboarding not submitted)
 }
 ```
 
 ### `course_units` *(seeded by Feature 002)*
 
-Not directly queried by this feature. Course metadata (`nameVi`, `nameEn`, `credits`, `prerequisites`) is embedded into `student_roadmaps.nodes[]` by the personalization job to avoid a join at render time.
+Not directly queried by this feature. Course metadata (`nameVi`, `nameEn`, `credits`, `prerequisites`) is embedded into Feature 009 primary roadmap nodes to avoid a join at render time in Feature 004.
 
 ---
 
@@ -209,7 +213,8 @@ Not directly queried by this feature. Course metadata (`nameVi`, `nameEn`, `cred
 | `in_progress → pending` | Reversal not permitted | `400 Bad Request` |
 
 **`isUnlocked` computation** (server-side, O(V + E)):
-- Fetch all `skill_node_statuses` for the student.
+- Fetch primary roadmap nodes from Feature 009 and fetch all `skill_node_statuses` for that roadmap/student.
+- Reconcile missing rows first (upsert explicit `pending` status rows for any node without a record).
 - For each node in the roadmap: `isUnlocked = prerequisites.every(prereqCode => status[prereqCode] === 'done')`.
 - Nodes with empty `prerequisites` array are **always unlocked**.
 
@@ -222,8 +227,52 @@ Computed on every `GET /api/skill-tree` response:
 ```js
 const needsRepersonalization =
   studentProfile.isDraft === false &&
-  studentRoadmap !== null &&
-  studentProfile.updatedAt > studentRoadmap.generatedAt;
+  primaryRoadmap !== null &&
+  studentProfile.updatedAt > primaryRoadmap.generatedAt;
 ```
 
 Included in the response body alongside the node array.
+
+---
+
+## Downstream Contract: `getNodesByStatus()`
+
+Service-layer contract exposed by Feature 004 for downstream consumers:
+
+```js
+{
+  roadmapId: String,
+  roadmapName: String,
+  done: [
+    {
+      nodeId: String,
+      courseCode: String,
+      courseName: String,
+      status: "done",
+      updatedAt: Date
+    }
+  ],
+  inProgress: [
+    {
+      nodeId: String,
+      courseCode: String,
+      courseName: String,
+      status: "in_progress",
+      updatedAt: Date
+    }
+  ],
+  pending: [
+    {
+      nodeId: String,
+      courseCode: String,
+      courseName: String,
+      status: "pending",
+      updatedAt: Date
+    }
+  ]
+}
+```
+
+Rules:
+- Always return all three arrays (`done`, `inProgress`, `pending`) even when empty.
+- Node payload shape is uniform across groups: `{ nodeId, courseCode, courseName, status, updatedAt }`.

@@ -120,6 +120,7 @@ GET /api/community/share-links/:token
 ```
 
 **When anonymous**: `owner.displayName` is `"Anonymous"` and `owner.major` is the major group label (e.g., `"CS-related"`).  
+**When identified**: `owner.displayName` prefers `User.displayName`; if missing/blank, apply the system-wide fallback-name policy.  
 **Fields never present**: `supportingSkills`, `careerRelevanceNote`.
 
 ### Error responses
@@ -246,6 +247,7 @@ Authorization: Bearer <accessToken>
 
 `previewNodes` contains the first 3 nodes from the snapshot.  
 **When anonymous**: `owner.displayName` is `"Anonymous"` and `owner.major` is the major group label.  
+**When identified**: `owner.displayName` prefers `User.displayName`; if missing/blank, apply the system-wide fallback-name policy.  
 **Fields never present**: `supportingSkills`, `careerRelevanceNote`.
 
 ### Error responses
@@ -299,6 +301,9 @@ Authorization: Bearer <accessToken>
 
 `viewer.hasLiked` is `true` if the authenticated user has an active `LikeRecord` for this entry.  
 `viewer.isOwner` is `true` if the viewer is the entry owner (fork action must be hidden in this case).
+
+**When anonymous**: `owner.displayName` is `"Anonymous"` and `owner.major` is the major group label.  
+**When identified**: `owner.displayName` prefers `User.displayName`; if missing/blank, apply the system-wide fallback-name policy.
 
 ### Error responses
 
@@ -372,7 +377,7 @@ No request body.
 
 ## Endpoint 10 — POST /api/community/entries/:entryId/fork
 
-Fork a community entry. The community roadmap's course sequence is filtered (remove forking student's completed courses) then sent to Feature 009's acceptance flow. A student cannot fork their own entry.
+Fork a community entry. The community roadmap's full snapshot nodes are first filtered against the forking student's completed courses using canonical identity `(major, courseCode)`, then submitted to Feature 009's fork-consumable acceptance endpoint. A student cannot fork their own entry.
 
 ### Request
 
@@ -389,7 +394,13 @@ No request body.
 {
   "message": "Fork accepted. The roadmap has been saved as your new accepted roadmap.",
   "newRoadmapId": "74f1a2b3c4d5e6f7a8b9c1e0",
-  "filteredNodeCount": 14
+  "filteredNodeCount": 14,
+  "sideEffects": {
+    "notificationDispatched": true,
+    "eligibilityClockReset": true,
+    "auditLogged": true,
+    "progressUpdated": false
+  }
 }
 ```
 
@@ -401,7 +412,7 @@ No request body.
 |---|---|---|
 | `404 Not Found` | `NO_ENTRY` | Entry does not exist |
 | `403 Forbidden` | `CANNOT_FORK_OWN` | Student is trying to fork their own entry |
-| `422 Unprocessable Entity` | `ALL_COMPLETED` | All courses in the roadmap are already in the student's completedCourseIds — nothing to fork |
+| `422 Unprocessable Entity` | `ALL_COMPLETED` | All courses in the roadmap are already completed by the student under canonical key `(major, courseCode)` — nothing to fork |
 | `422 Unprocessable Entity` | `PREREQUISITE_VIOLATION` | Feature 009 prerequisite validation failed; includes `violations[]` array from Feature 009's error payload |
 | `401 Unauthorized` | — | Missing or expired token |
 
@@ -420,3 +431,10 @@ No request body.
   ]
 }
 ```
+
+### Fork contract notes
+
+1. **Order is mandatory**: completed-course filtering executes before prerequisite validation.
+2. Completed-course identity uses **`(major, courseCode)`** consistently.
+3. Feature 010 calls Feature 009's **fork-consumable** endpoint with **full roadmap nodes payload**.
+4. On successful acceptance, side effects are executed: user notification, eligibility-clock reset, audit logging, and progress update when integration exists.

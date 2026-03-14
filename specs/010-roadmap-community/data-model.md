@@ -103,7 +103,7 @@ ShareLink.findOneAndUpdate(
 
 **MongoDB collection**: `community_entries`
 
-**Purpose**: A student's snapshot-based presence in the community feed. At most one active entry per student (unique index on `userId`). Content is fixed at publish time via `snapshotId`. Re-publishing updates `snapshotId` and metadata but never resets `likeCount`. Privacy substitution (identified ↔ anonymous) is applied at response time — raw values are always stored here.
+**Purpose**: A student's snapshot-based presence in the community feed. At most one active entry per student (unique index on `userId`). Content is fixed at publish time via `snapshotId`. Re-publishing updates `snapshotId` and metadata but never resets `likeCount`. Privacy substitution (identified ↔ anonymous) is applied at response time using `User.privacySetting` (Feature 005) — raw values are always stored here.
 
 ### Schema
 
@@ -114,7 +114,7 @@ ShareLink.findOneAndUpdate(
 | `snapshotId` | ObjectId | yes | — | ref: `roadmap_snapshots` | Current published snapshot; updated on re-publish |
 | `exactMajor` | String | yes | — | — | Raw major string; substituted with `majorGroup` at response time when anonymous |
 | `majorGroup` | String | yes | — | From `system_config` major-group mapping | Used for feed filtering and anonymous display |
-| `careerGoalRole` | String | yes | — | From Feature 001 `StudentProfile` | Feed metadata and filter |
+| `careerGoalRole` | String | yes | — | Derived from Feature 001 `StudentProfile.careerGoal.role` | Feed metadata and filter |
 | `personalisationLevel` | String | yes | — | Enum: `'full'` \| `'low'` | From Feature 009 `Roadmap` |
 | `likeCount` | Number | yes | `0` | Integer ≥ 0; atomic `$inc` only | Denormalized counter; **never reset on re-publish** |
 | `publishedAt` | Date | yes | `Date.now()` | Updated on each re-publish | Feed sort secondary key |
@@ -158,6 +158,19 @@ ShareLink.findOneAndUpdate(
 CommunityEntry.deleteOne({ userId })
 LikeRecord.deleteMany({ communityEntryId: entry._id })   ← cascade
 ```
+
+---
+
+## Fork Processing Rules (cross-feature contract alignment)
+
+1. **Canonical course identity** for completed-course filtering is tuple **`(major, courseCode)`**.
+  - `major` comes from node metadata when present; otherwise resolve from course-catalog mapping.
+2. `courseUnitId` is optional metadata only and MUST NOT be the canonical identity key.
+3. Processing order is strict:
+  - filter completed courses from snapshot nodes first,
+  - then call Feature 009 fork-consumable acceptance endpoint for prerequisite validation.
+4. Fork request payload sent to Feature 009 uses **full roadmap nodes**, not `courseCode[]` only.
+5. After a successful fork acceptance, side effects execute: notification dispatch, eligibility clock reset (acceptance semantics), audit log write, and progress-tracking update if Feature 007 integration is present.
 
 ---
 
@@ -222,8 +235,8 @@ This feature caches the value in a module-level variable with a 60-second TTL to
 
 | Entity | Collection | Owner | Fields read by this feature |
 |---|---|---|---|
-| `StudentProfile` | `student_profiles` | Feature 001 | `userId`, `completedCourseIds`, `careerGoalRole`, `major`, `privacySetting` |
+| `StudentProfile` | `student_profiles` | Feature 001 | `userId`, `careerGoal.role`, canonical completed-course records by `(major, courseCode)` (optional `courseUnitId`) |
 | `Roadmap` | `roadmaps` | Feature 009 | `userId`, `acceptedAt`, `nodes[]`, `personalisationLevel` |
-| `User` | `users` | Feature 005 | `_id`, `displayName` |
+| `User` | `users` | Feature 005 | `_id`, `displayName`, `privacySetting`, `major` |
 
 This feature MUST NOT write to any of these collections.

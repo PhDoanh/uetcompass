@@ -15,10 +15,11 @@
 - Q: Who or what surfaces the retry trigger to the student? → A: Both — the in-app error notification carries a retry call-to-action, AND the Skill Tree (Feature 004) exposes a retry action whenever the roadmap status is `failed`.
 - Q: Should `supportingSkills` be deduplicated across the whole roadmap, or scoped independently per node? → A: Each node's `supportingSkills` is independently scoped — the same skill may appear on multiple nodes if it is genuinely relevant to each. Deduplication is a presentation concern owned by Feature 004.
 - Q4 dropped — automatic upgrade of low-personalisation roadmap when profile is enriched is a frontend/rendering concern; not in scope for this backend feature.
-- Decision: All generated roadmaps (initial and re-generation) require explicit student acceptance before being committed to the main roadmap store. The pre-acceptance state (RoadmapPreview) is transient and not persisted in the main collection. One user holds at most one Roadmap document in the main collection at any time.
+- Decision: All generated roadmaps (initial and re-generation) require explicit student acceptance before commit. The pre-acceptance state (RoadmapPreview) remains transient and not persisted in the main collection. A user may hold multiple roadmap documents, but exactly one roadmap is primary at any time.
 - Decision: Re-generation triggered by `repersonalizationPending` uses the student's existing accepted roadmap as additional AI context. The previous roadmap remains active until the student accepts the new preview; it is preserved unchanged if the student rejects the preview.
 - Q: Where does the RoadmapPreview live and does it expire? → A: The preview is held in-memory on the background worker only. It does not survive a worker restart and is not readable cross-session. A worker restart while a preview is pending is treated as a generation failure; the retry mechanism becomes available.
 - Q: If no accepted roadmap exists when `repersonalizationPending` triggers re-generation, what happens? → A: Re-generation proceeds as a fresh initial generation — StudentProfile and DAG are the only inputs; no base roadmap context is provided to the AI. This is not an error.
+- Decision (canonical ownership): Feature 009 is the sole owner of roadmap lifecycle/state-transition rules. All other features consume roadmap data via 009 API/service contract only.
 
 ---
 
@@ -40,7 +41,7 @@ When a student submits their full onboarding profile (including career goal, com
 4. **Given** the course selection is complete, **When** the roadmap nodes are ordered, **Then** every node appears after all of its prerequisite nodes in the sequence, with no exceptions.
 5. **Given** every selected node is ordered, **When** the AI enriches each node, **Then** each node has a gainedSkills list (skills taught by the course), a supportingSkills list (skills NOT in the course but needed in practice for the career goal), a reason, a careerRelevanceNote, and an empty resources array.
 6. **Given** generation completes successfully, **When** the AI output is validated, **Then** a roadmap preview is prepared and the student receives an in-app notification that their roadmap is ready for review.
-7. **Given** the student reviews the roadmap preview, **When** the student accepts it, **Then** the roadmap is committed as the student's active Roadmap document, linked to their userId, replacing any previous document.
+7. **Given** the student reviews the roadmap payload, **When** the student accepts it through the 009 acceptance contract, **Then** the roadmap is committed as a Roadmap document and may become primary according to primary-selection rules.
 8. **Given** the student reviews the roadmap preview, **When** the student rejects it, **Then** the preview is discarded, any existing roadmap remains unchanged, and the retry mechanism becomes available.
 
 ---
@@ -60,7 +61,7 @@ A student submits their onboarding with only the required major field filled in 
 3. **Given** courses are selected in generic mode, **When** each node is enriched, **Then** gainedSkills are still course-specific, but supportingSkills contain only universally applicable best-practice recommendations rather than role-targeted guidance.
 4. **Given** generic generation completes, **When** the roadmap preview is prepared, **Then** it carries a low-personalisation flag.
 5. **Given** the roadmap preview is ready, **When** the student receives their notification, **Then** the notification includes an indication that personalisation quality is limited.
-6. **Given** the student reviews the generic roadmap preview, **When** the student accepts it, **Then** the roadmap is committed as the student's active Roadmap document carrying the low-personalisation flag.
+6. **Given** the student reviews the generic roadmap payload, **When** the student accepts it, **Then** the roadmap is committed carrying the low-personalisation flag and managed under the same primary-selection rules.
 
 ---
 
@@ -77,7 +78,7 @@ Roadmap generation fails due to an AI service error or timeout. The system store
 1. **Given** generation encounters a failure (AI service error, timeout, or malformed AI output), **When** the failure is detected, **Then** the system stores the error state on the Roadmap document without corrupting the student's profile.
 2. **Given** a failed generation state is stored, **When** the system finishes error handling, **Then** the student receives an in-app error notification.
 3. **Given** a failed Roadmap state exists, **When** the student triggers a retry, **Then** generation re-reads the existing StudentProfile and re-runs the full generation lifecycle.
-4. **Given** a retry generation completes successfully, **When** the new Roadmap is stored, **Then** it fully replaces the previous failed state — no residual error data persists.
+4. **Given** a retry generation completes successfully, **When** the accepted roadmap is committed, **Then** canonical transition rules are applied and stale failure state is not exposed as the latest accepted version.
 5. **Given** the student has not resubmitted their profile, **When** they initiate a retry, **Then** the system uses the same StudentProfile as the original attempt.
 
 ---
@@ -95,7 +96,7 @@ After a student updates their career goal in Account Settings, the `repersonaliz
 1. **Given** a student's career goal has been updated and repersonalizationPending is true, **When** re-generation is triggered, **Then** it runs asynchronously without blocking the student, and the existing accepted roadmap is provided to the AI as additional context.
 2. **Given** re-generation is in progress, **When** the AI generates the updated roadmap, **Then** it uses the updated career goal from the current StudentProfile and the existing accepted roadmap as a base; the previous course selections inform but do not constrain the new output.
 3. **Given** re-generation completes successfully, **When** the roadmap preview is ready, **Then** the student receives an in-app notification that their updated roadmap is ready for review.
-4. **Given** the student reviews the updated roadmap preview, **When** the student accepts it, **Then** the preview replaces the previous roadmap as the student's active Roadmap document, and repersonalizationPending is cleared on the StudentProfile.
+4. **Given** the student reviews the updated roadmap payload, **When** the student accepts it, **Then** the accepted roadmap is committed under canonical transition rules, primary assignment is consistent, and repersonalizationPending is cleared on the StudentProfile.
 5. **Given** the student reviews the updated roadmap preview, **When** the student rejects it, **Then** the preview is discarded, the previous roadmap remains the student's active roadmap unchanged, and repersonalizationPending is cleared.
 6. **Given** re-generation fails, **When** the failure is detected, **Then** the same retry mechanism is available as for initial generation failure, and the previous roadmap remains in the database unchanged.
 
@@ -163,8 +164,10 @@ After a student updates their career goal in Account Settings, the `repersonaliz
 **Output Storage**
 
 - **FR-022**: On successful generation, the system MUST create a roadmap preview. The preview MUST NOT be committed to the main roadmap collection until the student explicitly accepts it.
-- **FR-023**: A student MUST have at most one Roadmap document in the main roadmap collection at any time. Only an accepted roadmap preview may be committed as the student's active document, replacing any previous one.
+- **FR-023**: A student MAY have multiple Roadmap documents in the main roadmap collection. Exactly one roadmap per student MUST be marked primary (`isPrimary: true`) at all times.
 - **FR-024**: The Roadmap document stored in the main collection MUST record a `status` field. Valid persisted statuses are: `completed` (accepted and active) and `failed` (generation failure awaiting retry). Transient generation states are not persisted in the main roadmap collection.
+- **FR-024a**: The data model MUST include `isPrimary` and enforce one-primary-per-user with a partial unique index on `{ userId: 1, isPrimary: 1 }` filtered by `{ isPrimary: true }`.
+- **FR-024b**: The data model MUST include a list/query index supporting roadmap timeline retrieval by `{ userId: 1, status: 1, updatedAt: -1 }`.
 
 **Notifications**
 
@@ -175,7 +178,7 @@ After a student updates their career goal in Account Settings, the `repersonaliz
 **Retry Mechanism**
 
 - **FR-028**: On generation failure, the system MUST store the error state on the Roadmap document (status `failed`) so that the failure is readable by any consuming surface.
-- **FR-029**: The system MUST allow the student to trigger a retry of a failed generation without requiring the student to resubmit their profile. The retry action MUST be accessible from two surfaces: (1) any consuming surface that reads the retryable metadata from the failure notification (via FR-027), and (2) any consuming surface that reads `status: failed` from this feature's Roadmap API — including the Skill Tree view (Feature 004). This feature MUST expose the Roadmap `status` field through its API so that consumers can determine whether a retry affordance is appropriate.
+- **FR-029**: The system MUST allow the student to trigger a retry of a failed generation without requiring profile resubmission. Retryable state MUST be discoverable via 009 contracts.
 - **FR-030**: On retry, the system MUST re-read the existing StudentProfile and re-run the full generation lifecycle from the input retrieval step forward.
 
 **Re-Generation**
@@ -186,15 +189,21 @@ After a student updates their career goal in Account Settings, the `repersonaliz
 
 - **FR-032**: Roadmap generation MUST NEVER be blocked by the absence of Feature 003 (Resource Curation) data. The `resources` field on each node remains empty at generation time.
 - **FR-033**: Roadmap generation MUST be triggered entirely by internal system events — no student-facing API endpoint for initiating generation is permitted. The acceptance and rejection of a roadmap preview are student actions and MUST be served by dedicated API endpoints that this feature provides.
+- **FR-033a**: Feature 009 MUST expose canonical read APIs: `GET /api/primary-roadmap`, `GET /api/roadmaps`, and `GET /api/roadmaps/:roadmapId`.
+- **FR-033b**: Feature 009 MUST expose canonical primary-switch API: `PATCH /api/roadmaps/:roadmapId/primary`.
+- **FR-033c**: During migration, `GET /api/roadmap` MAY be kept as a compatibility alias for `GET /api/primary-roadmap` and MUST be documented as deprecated.
 
-**Preview Acceptance**
+**Acceptance / Commit Contract**
 
-- **FR-034**: Upon successful generation, the system MUST make the roadmap preview available for student review by delivering the full preview payload in the generation completion notification response. The preview is held in-memory on the background worker only — it is not persisted to any collection and does not survive a worker restart. If the worker restarts before the student accepts or rejects, the in-memory preview is lost and the generation is treated as failed (FR-028 applies).
-- **FR-035**: The student MUST be able to explicitly accept or reject a roadmap preview via this feature's preview acceptance API endpoints.
-- **FR-036**: On acceptance, the system MUST commit the previewed roadmap as the student's active Roadmap document (status `completed`), replacing any previously stored document in the main collection.
-- **FR-037**: On rejection of an initial generation preview (no previous active roadmap exists), the preview MUST be discarded. The student is left without an active roadmap; the retry mechanism (FR-028–FR-030) MUST remain available.
-- **FR-038**: On rejection of a re-generation preview, the preview MUST be discarded and the student's existing active Roadmap document MUST remain unchanged.
+- **FR-034**: Upon successful generation, the system MUST provide preview payload for review (notification-driven), but canonical acceptance MUST be payload-based and not depend on server-side preview lookup.
+- **FR-035**: The acceptance endpoint MUST receive full roadmap nodes payload from caller.
+- **FR-036**: Acceptance MUST execute mandatory server pipeline: (1) filter completed courses, (2) prerequisite validation, (3) commit roadmap document.
+- **FR-037**: If all submitted nodes are filtered out as completed, acceptance MUST fail with `ALL_COMPLETED`.
+- **FR-038**: If prerequisite or ordering constraints are violated, acceptance MUST fail with `PREREQUISITE_VIOLATION`.
+- **FR-038a**: Lifecycle conflicts (e.g., concurrent generation/primary update/duplicate state operation) MUST return `CONFLICT`.
 - **FR-039**: When re-generation is triggered via `repersonalizationPending`, the system MUST check whether the student has an existing accepted Roadmap document. If one exists, the system MUST supply it to the AI as additional context alongside the updated StudentProfile and full CourseUnit DAG. If no accepted Roadmap document exists (e.g., the student previously rejected all previews), the system MUST proceed as a fresh initial generation — StudentProfile and DAG only — without treating the absence of a base roadmap as an error.
+- **FR-040**: Feature 009 MUST be the only feature that defines and enforces roadmap state transitions.
+- **FR-041**: Acceptance and list/detail/primary APIs MUST use normalized domain error codes: `PREREQUISITE_VIOLATION`, `ALL_COMPLETED`, `CONFLICT`, `ROADMAP_NOT_FOUND`.
 
 ---
 
@@ -211,8 +220,8 @@ After a student updates their career goal in Account Settings, the `repersonaliz
 
 ### Key Entities
 
-- **Roadmap**: The accepted, active learning roadmap for a single student, stored in the main roadmap collection. Contains: `userId` (FK to Feature 005 User), `studentProfileId` (FK to Feature 001 StudentProfile), `personalisationLevel` (`full` | `low`), `status` (`completed` | `failed`), `errorMessage` (set on failure, null otherwise), an ordered array of `RoadmapNode` objects, and creation/acceptance timestamps.
-- **RoadmapPreview**: A transient, in-memory representation of a newly generated roadmap awaiting student acceptance. It is held in-memory on the background worker only — it is NOT stored in any collection and does NOT survive a worker restart. The full preview payload is delivered to Feature 004 (Skill Tree) via the generation completion notification so the student can review it. On acceptance it is committed as the active Roadmap document; on rejection or worker restart it is discarded and treated as a generation failure.
+- **Roadmap**: A roadmap version document owned by Feature 009. Contains: `userId`, `studentProfileId`, `personalisationLevel`, `status`, `isPrimary`, `errorMessage`, ordered `RoadmapNode[]`, and timestamps.
+- **RoadmapPreview**: A transient, in-memory representation for review UX. It is not canonical persistence and not required as acceptance source.
 - **RoadmapNode**: A single enriched course entry within the roadmap's ordered sequence. Contains: `courseCode`, `courseName`, `credits`, `suggestedSemester`, `gainedSkills` (array of strings), `supportingSkills` (array of strings), `reason` (string), `careerRelevanceNote` (string), and `resources` (always an empty array at generation time).
 - **RoadmapGenerationEvent**: The triggering event that initiates a generation run. Carries: `userId`, `studentProfileId`, and `triggerReason` (`profile_submission` | `retry` | `repersonalization`). This event is emitted by Feature 001 on submission and by the retry/repersonalization mechanisms.
 

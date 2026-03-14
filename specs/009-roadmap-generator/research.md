@@ -1,8 +1,8 @@
 # Research: AI-Powered Personalised Roadmap Generator
 
 **Feature**: `009-roadmap-generator`
-**Date**: 2026-03-11
-**Status**: Complete — all unknowns resolved
+**Date**: 2026-03-14
+**Status**: Refined — canonical lifecycle ownership + multi-roadmap model applied
 
 ---
 
@@ -163,7 +163,7 @@ If `validateTopologicalOrder()` throws, `generation.service.js` catches the erro
 
 ## R-003: In-Process Async Generation + Concurrency Guard
 
-**Decision**: Fire-and-forget `async` function from the generation trigger (no `await` at the call site). Concurrency guard = module-level `Set<string>` of active `userId` strings in `generation.service.js`. Add `userId` on generation start; delete in the `finally` block on completion or failure. On new trigger, check `Set` membership before starting — reject with `GENERATION_IN_PROGRESS` if found.
+**Decision**: Fire-and-forget `async` function from the generation trigger (no `await` at the call site). Concurrency guard = module-level `Set<string>` of active `userId` strings in `generation.service.js`. Add `userId` on generation start; delete in the `finally` block on completion or failure. On new trigger, check `Set` membership before starting — reject with canonical `CONFLICT` semantics if found.
 
 **Rationale**: No Redis, no BullMQ — Render free-tier is a single instance with no external queue service (established in Feature 001). An in-memory `Set` is the correct single-instance concurrency guard. The fire-and-forget pattern keeps the HTTP trigger response immediate (202 Accepted) while generation runs in the background.
 
@@ -174,7 +174,7 @@ const activeGenerations = new Set(); // module-level; one entry per userId curre
 
 async function triggerGeneration(userId, studentProfileId, triggerReason) {
   if (activeGenerations.has(userId.toString())) {
-    throw new Error('GENERATION_IN_PROGRESS');
+    throw new Error('CONFLICT');
   }
 
   // Fire and forget — caller returns immediately
@@ -226,11 +226,11 @@ Worker restart recovery: the `finally` block always runs on normal termination. 
 
 ---
 
-## R-004: In-Memory Preview Storage
+## R-004: In-Memory Preview Storage (Transient UX Only)
 
-**Decision**: Module-level `Map<string, PreviewPayload>` in a dedicated `roadmap.preview.store.js` file, mapping `userId.toString()` to the full preview payload. The accept endpoint reads and clears the preview; the reject endpoint clears it without committing. Preview does not survive a worker restart (per FR-034).
+**Decision**: Keep module-level `Map<string, PreviewPayload>` in `roadmap.preview.store.js`, keyed by `userId.toString()`, but treat it as transient UX cache only. Acceptance commit no longer reads from this store as source of truth; fork-consumable acceptance receives full nodes payload directly.
 
-**Rationale**: No `roadmap_previews` MongoDB collection — the spec explicitly mandates in-memory-only preview storage (FR-034). The Map is lightweight, bounded by the number of users with a pending preview (typically very low), and makes accept/reject synchronous O(1) lookups. Extracting the Map to a dedicated module allows `generation.service.js` and `roadmapAcceptance.service.js` to both access it without circular imports.
+**Rationale**: No `roadmap_previews` MongoDB collection — preview remains ephemeral by design. Decoupling acceptance from in-memory preview makes the contract fork-consumable and robust to preview-loss scenarios.
 
 **Pattern**:
 ```js
@@ -257,7 +257,7 @@ function getAllPendingUserIds() {
 module.exports = { storePendingPreview, getPendingPreview, clearPendingPreview, getAllPendingUserIds };
 ```
 
-**Preview payload shape**:
+**Preview payload shape** (unchanged):
 ```js
 {
   nodes: RoadmapNode[],            // AI output with resources: [] appended
@@ -322,3 +322,86 @@ notifyUser(userId, 'roadmap_generation_failed', {
 - Polling endpoint (`GET /api/roadmap/status`) (rejected — SSE is already in place from Feature 001/005; polling adds unnecessary server load)
 - Separate SSE endpoint for roadmap events (rejected — duplicates connection management; Feature 005's notification module is designed for cross-feature consumption)
 - WebSocket (rejected — bidirectional channel is overkill for one-way server→client push)
+
+---
+
+## R-006: Multi-Roadmap Model + Single Primary Invariant
+
+**Decision**: Move from single roadmap per user to multi-roadmap per user, with `isPrimary` boolean and a partial unique index enforcing exactly one primary roadmap per user.
+
+**Rationale**: Multi-roadmap supports version history and forked variants while preserving deterministic consumer behavior (`GET /api/primary-roadmap`).
+
+**Pattern**:
+```js
+// backend/src/modules/roadmap/roadmap.model.js
+roadmapSchema.index(
+  { userId: 1, isPrimary: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isPrimary: true },
+    name: 'primary_per_user_unique',
+  }
+);
+
+roadmapSchema.index(
+  { userId: 1, status: 1, updatedAt: -1 },
+  { name: 'roadmap_list_by_user_status_updatedAt' }
+);
+```
+
+**Alternatives considered**:
+- Keep unique `{ userId: 1 }` (rejected — blocks history/forks)
+- Store primary pointer on `users` collection (rejected — cross-collection consistency overhead)
+
+---
+
+## R-007: Fork-Consumable Acceptance Pipeline (No Preview-Accept Endpoint)
+
+**Decision**: Replace old preview-accept endpoint with payload-based acceptance endpoint receiving full `RoadmapNode[]` from caller. Enforce canonical pipeline: `filterCompletedCourses` → `validatePrerequisites` → `commitRoadmap`.
+
+**Rationale**: Contract becomes reusable by any producer/consumer fork and independent from volatile in-memory preview state.
+
+**Pattern**:
+```js
+// backend/src/modules/roadmap/roadmapAcceptance.service.js
+async function acceptRoadmapPayload(userId, payload) {
+  const filteredNodes = filterCompletedCourses(payload.nodes, payload.completedCourseCodes);
+  if (filteredNodes.length === 0) {
+    throw createDomainError('ALL_COMPLETED', 'All submitted nodes are already completed.');
+  }
+
+  const validation = validatePrerequisites(filteredNodes, payload.courseUnits);
+  if (!validation.ok) {
+    throw createDomainError('PREREQUISITE_VIOLATION', validation.message);
+  }
+
+  return commitAcceptedRoadmap(userId, {
+    ...payload,
+    nodes: filteredNodes,
+  });
+}
+```
+
+**Error normalization**:
+- `PREREQUISITE_VIOLATION`
+- `ALL_COMPLETED`
+- `CONFLICT`
+- `ROADMAP_NOT_FOUND`
+
+**Alternatives considered**:
+- Continue using in-memory preview accept (rejected — not fork-consumable)
+- Client-only validation before commit (rejected — canonical rules must be enforced server-side)
+
+---
+
+## R-008: Canonical Transition Authority in Feature 009
+
+**Decision**: Feature 009 owns lifecycle transition rules and conflict semantics. Other features only call contracts.
+
+**Rationale**: Prevents divergent transition logic between onboarding, skill tree, and account modules.
+
+**Guardrail**:
+```text
+No module outside /modules/roadmap may mutate roadmaps collection directly.
+All mutations must pass roadmap.service.js / roadmapAcceptance.service.js.
+```

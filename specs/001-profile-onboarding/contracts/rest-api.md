@@ -3,7 +3,7 @@
 **Feature**: `001-profile-onboarding`
 **Date**: 2026-03-07
 **Base path**: `/api/onboarding`
-**Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`. The middleware attaches `req.user.userId` (ObjectId) to every request.
+**Authentication**: All non-SSE endpoints require a valid JWT in `Authorization: Bearer <token>`. `GET /api/onboarding/status` uses a short-lived SSE query token (`sseToken`) instead of passing JWT directly in URL.
 
 ---
 
@@ -23,19 +23,23 @@ Content-Type: application/json   (except GET /status — SSE)
 ```json
 {
   "error": {
-    "code": "PROFILE_ALREADY_SUBMITTED",
-    "message": "Human-readable description"
+    "code": "ERROR_CODE",
+    "message": "Human-readable description",
+    "details": {}
   }
 }
 ```
+
+`details` is optional and only included when additional machine-readable context is helpful (e.g., field-level validation metadata).
 
 **Error codes**:
 
 | HTTP | `code` | Meaning |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Request body failed validation (free-text rules, required fields) |
+| 400 | `INVALID_INPUT` | Request body failed validation (free-text rules, required fields) |
 | 401 | `UNAUTHORIZED` | Missing or invalid JWT |
-| 409 | `PROFILE_ALREADY_SUBMITTED` | Submit attempted on an already-submitted profile |
+| 403 | `ONBOARDING_ALREADY_COMPLETED` | Draft access/update is blocked because onboarding is already submitted |
+| 409 | `ONBOARDING_ALREADY_COMPLETED` | Submit attempted on an already-submitted profile |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
 
 ---
@@ -84,8 +88,11 @@ Empty body. Frontend treats this as a blank form (first visit).
 ```json
 {
   "error": {
-    "code": "PROFILE_ALREADY_SUBMITTED",
-    "message": "Onboarding is complete. Use the profile settings page to make changes."
+    "code": "ONBOARDING_ALREADY_COMPLETED",
+    "message": "Onboarding is complete. Use the profile settings page to make changes.",
+    "details": {
+      "isDraft": false
+    }
   }
 }
 ```
@@ -141,8 +148,11 @@ Returns the full updated draft document (same shape as `GET /draft` 200 response
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "careerGoal.role: Must contain at least one letter"
+    "code": "INVALID_INPUT",
+    "message": "careerGoal.role: Must contain at least one letter",
+    "details": {
+      "field": "careerGoal.role"
+    }
   }
 }
 ```
@@ -204,8 +214,11 @@ Profile has been saved as submitted. Roadmap generation has been triggered async
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "major: Major is required to submit your profile"
+    "code": "INVALID_INPUT",
+    "message": "major: Major is required to submit your profile",
+    "details": {
+      "field": "major"
+    }
   }
 }
 ```
@@ -215,8 +228,11 @@ Profile has been saved as submitted. Roadmap generation has been triggered async
 ```json
 {
   "error": {
-    "code": "PROFILE_ALREADY_SUBMITTED",
-    "message": "Profile already submitted"
+    "code": "ONBOARDING_ALREADY_COMPLETED",
+    "message": "Profile already submitted",
+    "details": {
+      "isDraft": false
+    }
   }
 }
 ```
@@ -233,12 +249,10 @@ No body. Standard SSE — opened via the browser's `EventSource` API.
 
 ```js
 // Frontend
-const es = new EventSource('/api/onboarding/status', {
-  headers: { Authorization: `Bearer ${token}` }
-});
+const es = new EventSource(`/api/onboarding/status?sseToken=${sseToken}`);
 ```
 
-> **Note**: Native `EventSource` does not support custom headers in all browsers. The recommended approach is to pass the JWT as a query parameter: `GET /api/onboarding/status?token=<JWT>`. The server validates the query token instead of the `Authorization` header for this endpoint only.
+> **Unified SSE auth policy**: Native `EventSource` does not reliably support custom headers. For consistency and URL hygiene, this endpoint accepts only a **short-lived, purpose-bound query token** (`sseToken`) and does **not** accept raw access JWT in query string. `sseToken` is minted from an authenticated context, expires quickly, and is valid only for onboarding status stream.
 
 ### Server response headers
 
@@ -300,10 +314,10 @@ If the SSE connection is closed when the roadmap job completes, the SSE event is
 
 ### Response — 401 Unauthorized
 
-If the `token` query parameter is missing or invalid, the server closes the SSE stream immediately with:
+If the `sseToken` query parameter is missing, invalid, or expired, the server closes the SSE stream immediately with:
 ```
 event: error
-data: {"code":"UNAUTHORIZED","message":"Invalid or missing token"}
+data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}
 ```
 
 ---

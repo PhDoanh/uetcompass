@@ -7,7 +7,7 @@
 
 ## Summary
 
-Build a backend module that automatically tags newly harvested skills by sending their data to a managed LLM API and storing the resulting labels.  Inputs arrive from the crawler or ingestion service, are enqueued in a MongoDB-backed job queue, and processed in periodic batch jobs that call the LLM (OpenAI/Anthropic/Google) via HTTP.  Tags are de‑duplicated against an existing `tags` collection and new labels are added when confidence exceeds 85%.  Failures for individual items are recorded and retried automatically, while overall batch runs complete within one hour.
+Build a backend module that automatically tags newly harvested skills by sending their data to a managed LLM API and storing the resulting labels in the tagging/search bounded context. Inputs arrive from the crawler or ingestion service, are enqueued in a MongoDB-backed job queue, and processed in periodic batch jobs that call the LLM (OpenAI/Anthropic/Google) via HTTP. Tags are de‑duplicated against a dictionary `tags` collection and new labels are added when confidence exceeds 85%. Skills store canonical search-ready `Skill.tags` metadata (`tagId`, `normalizedName`, `confidence`) and apply overwrite strategy on re-tagging. Failures for individual items are recorded and retried automatically, while overall batch runs complete within one hour. API outputs are normalized for direct consumption by feature 008 (advanced tag search).
 
 ## Technical Context
 
@@ -28,11 +28,14 @@ Build a backend module that automatically tags newly harvested skills by sending
 **Performance Goals**: Process 1k–10k skills/day, complete each batch within 1 hour, maintain <1% per-item failure and <10% manual review rate.
 **Constraints**: No Redis/BullMQ per constitution; queue must run on MongoDB. LLM API rate limits must be observed; budget < $X/month (estimate later). Batch job memory footprint <500MB to fit Render free tier.
 **Scale/Scope**: Single-tenant UET-VNU dataset; few million skills over first year; feature scoped to backend service only (no mobile app).
+
+**Canonical Domain Boundary**: `Skill`/`Tag` in this feature are part of the tagging/search bounded context (shared with feature 008), not `roadmap-core`.
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - **Modular Monolithic**: tagging logic will reside entirely in `backend/src/modules/tagging/` with service-layer interface. No cross-module imports except for shared `db` helper.  ✅
+- **Boundary Consistency**: `Skill`/`Tag` modeling and contracts are owned by tagging/search context and exposed in canonical form for search consumers.  ✅
 - **UET-First**: tags are specific to domains and skills relevant to UET curriculum; no generic external taxonomy required.  ✅
 - **Privacy**: only non-sensitive skill/course metadata is used; no student credentials are involved.  ✅
 - **AI-Assisted**: LLM is invoked solely for tag suggestion.  Human operators may override via manual review interface.  ✅
@@ -87,6 +90,13 @@ frontend/                          # optional admin dashboard
 ```
 
 **Structure Decision**: Option 2 — Web application with a modular monolithic backend. The tagging feature is implemented as a new module (`backend/src/modules/tagging/`) alongside existing services; the queue is MongoDB‑based, avoiding extra infrastructure. Frontend changes are confined to an optional admin dashboard under `frontend/src/features/tagging/`. This keeps the repository layout consistent with prior features.
+
+### Canonical Contract Notes (for Feature 008 interop)
+
+- `Skill.tags` is persisted in canonical search shape with fields: `tagId`, `normalizedName`, `confidence` (optionally enriched with display metadata).
+- Re-tagging overwrites prior `Skill.tags` atomically after a successful job completion.
+- `Tag` collection remains dictionary/management source for normalization, deduplication, and governance.
+- Tagging module response objects mirror persisted canonical shape to avoid downstream transform layers.
 
 ## Complexity Tracking
 

@@ -5,6 +5,8 @@
 **Base path**: `/api/tagging`  
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`. Middleware attaches `req.user.userId` (ObjectId) to every request.  Only users with the `admin` role may access reporting and manual review endpoints; skill ingestion endpoints are open to the internal crawler service via a shared secret header.
 
+**Bounded context**: `Skill`/`Tag` payloads are canonical contracts for the tagging/search context (shared with feature 008), not roadmap-core contracts.
+
 ---
 
 ## Common Conventions
@@ -40,6 +42,23 @@ X-Service-Key: <secret>   # required for ingestion endpoints
 
 ---
 
+## Canonical Tag Object (used across responses)
+
+```json
+{
+  "tagId": "64a9b8c7d6e5f4a3b2c1d0e",
+  "normalizedName": "javascript",
+  "confidence": 92
+}
+```
+
+Notes:
+- `normalizedName` is lowercase + trimmed canonical key for search.
+- Re-tagging follows overwrite strategy: latest successful tagging replaces the previous full tag set.
+- This shape is intentionally stable so feature 008 can consume directly without transform middleware.
+
+---
+
 ## POST /api/tagging/skills
 
 Enqueue a single skill for tagging. Typically invoked by the crawler when a new
@@ -59,7 +78,10 @@ All fields are required except `description` and `sourceCourseId`.
 
 ### Response — 202 Accepted
 ```json
-{ "jobId": "64a9b8c7d6e5f4a3b2c1d0e" }
+{
+  "jobId": "64a9b8c7d6e5f4a3b2c1d0e",
+  "status": "pending"
+}
 ```
 
 ### Response — 409 Conflict
@@ -110,7 +132,11 @@ tags if completed.
   "_id": "64a9b8c7d6e5f4a3b2c1d0e",
   "skillName": "JavaScript",
   "status": "done",
-  "resultTags": ["frontend","javascript","programming"],
+  "resultTags": [
+    { "tagId": "64aaa111d6e5f4a3b2c1d0e", "normalizedName": "frontend", "confidence": 94 },
+    { "tagId": "64aaa222d6e5f4a3b2c1d0e", "normalizedName": "javascript", "confidence": 97 },
+    { "tagId": "64aaa333d6e5f4a3b2c1d0e", "normalizedName": "programming", "confidence": 88 }
+  ],
   "confidence": 92,
   "attempts": 1,
   "createdAt": "2026-03-11T09:00:00Z",
@@ -129,7 +155,10 @@ tags or confidence.
 ```json
 {
   "status": "done",          // or "review" to keep it flagged
-  "resultTags": ["js","web"],
+  "resultTags": [
+    { "tagId": "64aaa222d6e5f4a3b2c1d0e", "normalizedName": "javascript", "confidence": 100 },
+    { "tagId": "64aaa444d6e5f4a3b2c1d0e", "normalizedName": "web", "confidence": 100 }
+  ],
   "confidence": 100
 }
 ```
@@ -156,3 +185,7 @@ Retrieve aggregate statistics for finished batches. Admin-only.
 
 These endpoints provide the minimal contract needed to ingest skills, monitor
 queue progress, and review or override tagging results.
+
+For direct search integration, consumers (feature 008) should read
+`resultTags[].normalizedName` and `resultTags[].confidence` without additional
+mapping.

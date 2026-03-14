@@ -101,9 +101,9 @@ After every successful login — regardless of login method — the system route
 
 ---
 
-### User Story 6 – Update Profile and Trigger Roadmap Re-personalization (Priority: P2)
+### User Story 6 – Update Profile, Identity Preferences, and Trigger Roadmap Re-personalization (Priority: P2)
 
-A student who has completed onboarding opens Account Settings and updates their personal information, including fields originally entered during onboarding. The system detects changed onboarding fields, places a "Re-personalize" button in the roadmap view (Feature 004), and delivers an in-app notification with a direct link to navigate to the roadmap.
+A student who has completed onboarding opens Account Settings and updates their personal information, including identity settings (`displayName`, `fullName`, `privacySetting`) and fields originally entered during onboarding. The system detects changed onboarding fields, places a "Re-personalize" button in the roadmap view (Feature 004), and delivers an in-app notification with a direct link to navigate to the roadmap.
 
 **Why this priority**: Profile updates enable the skill tree and roadmap to reflect the student's current situation, not just their initial snapshot. Without this feedback loop, the learning path becomes stale.
 
@@ -111,10 +111,10 @@ A student who has completed onboarding opens Account Settings and updates their 
 
 **Acceptance Scenarios**:
 
-1. **Given** a student has completed onboarding, **When** they open Account Settings, **Then** they can edit their full name, profile picture, and all onboarding profile fields.
+1. **Given** a student has completed onboarding, **When** they open Account Settings, **Then** they can edit `displayName`, `fullName`, `privacySetting`, profile picture, and all onboarding profile fields.
 2. **Given** the student changes one or more onboarding fields and saves, **When** the save is confirmed, **Then** the system detects the change and places a "Re-personalize" button in the roadmap view.
 3. **Given** the change is saved, **When** the in-app notification is delivered, **Then** it contains a direct link that navigates the student to the roadmap view.
-4. **Given** the student updates only non-onboarding fields (name, avatar), **When** the save is confirmed, **Then** no "Re-personalize" button appears and no re-personalization notification is sent.
+4. **Given** the student updates only non-onboarding fields (`displayName`, `fullName`, `privacySetting`, avatar), **When** the save is confirmed, **Then** no "Re-personalize" button appears and no re-personalization notification is sent.
 5. **Given** a student has not yet completed onboarding, **When** they open Account Settings, **Then** the onboarding profile fields are not shown as editable — only name and profile picture are available.
 
 ---
@@ -163,6 +163,8 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **Account locked by 5 failed logins while also needing a password reset**: The student must wait for the 15-minute lockout to expire before the forgot-password flow becomes usable.
 - **Deletion confirmation link expired or already used**: The student sees a clear error message; no deletion is performed.
 - **"Re-personalize" button ignored by student after profile update**: The button persists in the roadmap view until acted upon — it does not auto-dismiss or reset.
+- **`displayName` is empty/invalid for rendering**: UI MUST apply fallback order: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`.
+- **`privacySetting = anonymous`**: Public-facing surfaces MUST use the fallback render output and MUST NOT expose raw `fullName` unless the viewer is the account owner.
 
 ---
 
@@ -212,11 +214,11 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 
 **Account Settings**
 
-- **FR-026**: A student MUST be able to update their full name and profile picture at any time after account creation.
+- **FR-026**: A student MUST be able to update `displayName`, `fullName`, `privacySetting` (`identified | anonymous`), and profile picture at any time after account creation.
 - **FR-027**: After a student has submitted onboarding, all onboarding profile fields (major, completed courses, target job role, target company type, graduation timeline, personal aspirations) MUST be displayed and editable within Account Settings.
 - **FR-028**: When a student saves changes to one or more onboarding profile fields, the system MUST detect the change and place a "Re-personalize" button in the roadmap view (Feature 004).
 - **FR-029**: Simultaneously with placing the "Re-personalize" button, the system MUST deliver an in-app notification containing a direct link that navigates the student to the roadmap view.
-- **FR-030**: Saving changes to non-onboarding fields (name, avatar) MUST NOT trigger the "Re-personalize" button or any re-personalization notification.
+- **FR-030**: Saving changes to non-onboarding fields (`displayName`, `fullName`, `privacySetting`, avatar) MUST NOT trigger the "Re-personalize" button or any re-personalization notification.
 - **FR-031**: A student MUST be able to change their password by entering their current password and a new password; the current password MUST be verified before the change takes effect.
 - **FR-032**: A student MUST be able to link one or more Google accounts (with a `@vnu.edu.vn` email) as additional sign-in methods.
 - **FR-033**: A student MUST be able to unlink a previously linked Google account; the student's remaining sign-in credentials MUST remain valid after unlinking.
@@ -224,10 +226,17 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **FR-035**: Account deletion MUST only execute after the student clicks the valid confirmation link; clicking the link MUST permanently delete all personal data and mark the email as deleted.
 - **FR-036**: Once an email is marked as deleted, it MUST be eligible for use in a new account registration.
 
+**Global Identity & Privacy Preferences**
+
+- **FR-037**: `displayName` MUST be treated as the primary public identity field, stored on `users`, and editable independently from `fullName`.
+- **FR-038**: The system MUST support `privacySetting` on `users` with enum values `identified | anonymous` and default `identified`.
+- **FR-039**: The system MUST expose and accept `displayName`, `fullName`, and `privacySetting` explicitly in account/profile APIs.
+- **FR-040**: Any UI that renders student identity MUST use unified fallback order: (1) valid `displayName`, (2) `fullName`, (3) sanitized email local-part, (4) `"Student"`.
+
 **Logout**
 
-- **FR-037**: The system MUST terminate the student's session immediately upon logout with no confirmation step required.
-- **FR-038**: After logout, every attempt to access an authenticated route MUST redirect the student to the login page.
+- **FR-041**: The system MUST terminate the student's session immediately upon logout with no confirmation step required.
+- **FR-042**: After logout, every attempt to access an authenticated route MUST redirect the student to the login page.
 
 ---
 
@@ -238,12 +247,13 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **NFR-003 (Privacy)**: No history of previous passwords is surfaced to the user; only internal audit records are maintained.
 - **NFR-004 (Isolation)**: Only the authenticated student may read or modify their own account data — cross-account access by other students MUST NOT be possible.
 - **NFR-005 (Consistency)**: A single `@vnu.edu.vn` email address MUST be associated with at most one student account at any time, regardless of which login method was used to create it.
+- **NFR-006 (Privacy)**: When `privacySetting = anonymous`, public surfaces MUST not disclose personally identifying account fields beyond the defined fallback identity output.
 
 ---
 
 ### Key Entities
 
-- **StudentAccount**: Represents a UET student's account. Key attributes: full name, `@vnu.edu.vn` email, password credential, account status (pending-verification / active / locked / deleted), list of linked Google accounts, creation timestamp, last login timestamp.
+- **StudentAccount**: Represents a UET student's account. Key attributes: `displayName` (public), `fullName` (private/editable), `privacySetting` (`identified | anonymous`), `@vnu.edu.vn` email, password credential, account status (pending-verification / active / locked / deleted), list of linked Google accounts, creation timestamp, last login timestamp.
 - **EmailVerificationToken**: A one-time 4-digit OTP issued at registration. Attributes: code, expiry (2 minutes from issue), owning account reference, status (pending / used / expired).
 - **PasswordResetToken**: A one-time 4-digit OTP issued for password recovery. Attributes: code, expiry (2 minutes from issue), email it was requested for, consecutive wrong-attempt count (resets at 10), status (pending / used / expired).
 - **LoginAttemptRecord**: Tracks consecutive failed login attempts per account, used to enforce the 5-failure lockout and the 15-minute lockout timer.
@@ -263,6 +273,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **SC-005**: Account deletion is only executed after the student clicks the email confirmation link; 100% of personal data is permanently removed and the email is immediately eligible for re-registration.
 - **SC-006**: When onboarding profile fields are updated in Account Settings, the "Re-personalize" button appears in the roadmap view and an in-app notification with a direct roadmap link is delivered within 5 seconds of the save being confirmed.
 - **SC-007**: A student with an incomplete onboarding draft always sees their complete draft restored in the Onboarding Panel on every subsequent login — zero data is lost across sessions or interruptions.
+- **SC-008**: `GET/PATCH /api/account/profile` read/write `displayName`, `fullName`, and `privacySetting` consistently, and identity rendering always resolves with fallback order (`displayName` → `fullName` → sanitized email local-part → `"Student"`).
 
 ---
 

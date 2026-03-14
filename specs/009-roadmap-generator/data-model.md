@@ -1,7 +1,7 @@
 # Data Model: AI-Powered Personalised Roadmap Generator
 
 **Feature**: `009-roadmap-generator`
-**Date**: 2026-03-11
+**Date**: 2026-03-14
 **Research dependency**: [research.md](research.md) (R-001, R-003, R-004)
 
 ---
@@ -10,34 +10,39 @@
 
 **MongoDB collection**: `roadmaps`
 
-**Purpose**: Single document per authenticated student holding their accepted, active learning roadmap — or a failure record awaiting retry. Only an explicitly accepted preview may be committed here. One document per user at all times (enforced by unique index on `userId`).
+**Purpose**: Canonical roadmap store owned by Feature 009. A user may have multiple roadmap documents (history/variants), but exactly one roadmap can be primary at any time.
 
 ### Schema
 
 | Field | Type | Required | Default | Constraints | Notes |
 |---|---|---|---|---|---|
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
-| `userId` | ObjectId | yes | — | **Unique index**; ref: `users` | Foreign key to authenticated user (Feature 005) |
+| `userId` | ObjectId | yes | — | Indexed; ref: `users` | Foreign key to authenticated user (Feature 005) |
+| `isPrimary` | Boolean | yes | `false` | Partial unique index scope (`isPrimary: true`) | Exactly one primary roadmap per user |
 | `studentProfileId` | ObjectId | yes | — | ref: `student_profiles` | The profile snapshot that drove this generation (Feature 001) |
 | `personalisationLevel` | String | yes | — | Enum: `full` \| `low` | `low` when no career goal provided (FR-020) |
 | `status` | String | yes | — | Enum: `completed` \| `failed` | `completed` = accepted and active; `failed` = generation failure awaiting retry (FR-024) |
 | `errorMessage` | String \| null | no | `null` | Set on failure; `null` on completed | Human-readable generation error stored for internal debugging (FR-028) |
 | `nodes` | RoadmapNode[] | yes | `[]` | Ordered array; see embedded doc below | Empty array is valid (e.g., all courses completed) |
 | `createdAt` | Date | auto | `Date.now()` | Set on first insert (`$setOnInsert`) | |
-| `acceptedAt` | Date \| null | no | `null` | Set on acceptance; never overwritten | `null` on `failed` documents |
+| `acceptedAt` | Date \| null | no | `null` | Set on acceptance | `null` on `failed` documents |
+| `updatedAt` | Date | auto | `Date.now()` | Indexed via list index | Timeline/list ordering |
 
 ### Indexes
 
 | Name | Fields | Type | Enforces |
 |---|---|---|---|
 | `_id` (default) | `_id` | Unique | MongoDB default |
-| `userId_unique` | `{ userId: 1 }` | **Unique** | One roadmap document per student (FR-023); fast lookup by auth token |
+| `primary_per_user_unique` | `{ userId: 1, isPrimary: 1 }` with `partialFilterExpression: { isPrimary: true }` | **Unique (partial)** | At most one primary roadmap per user |
+| `roadmap_list_by_user_status_updatedAt` | `{ userId: 1, status: 1, updatedAt: -1 }` | Non-unique | Fast listing by user with optional status filter and recency sort |
+| `roadmap_detail_by_user_id` | `{ userId: 1, _id: 1 }` | Non-unique | Auth-scoped detail lookup |
 
 ### Validation rules applied at service layer
 
 - `personalisationLevel` is derived from the `StudentProfile` before the Gemini call — it is NOT set from user input.
-- `status` transitions are controlled exclusively by the generation lifecycle and acceptance services — no direct client-provided status is accepted.
+- `status` transitions are controlled exclusively by Feature 009 generation/acceptance services — no direct client-provided status is accepted.
 - `errorMessage` is set only on generation failure (never on acceptance); it is cleared (set to `null`) when the document is updated to `completed` via `upsertCompleted`.
+- `isPrimary` assignment is controlled only by Feature 009 primary-switch rules (`PATCH /api/roadmaps/:roadmapId/primary`) and acceptance commit policy.
 
 ---
 
@@ -65,7 +70,7 @@
 
 ---
 
-## State Machine: Roadmap Document
+## State Machine: Roadmap Document (Canonical Rules)
 
 ```text
                     ┌──────────────────────────────────────────┐
@@ -74,20 +79,21 @@
 
   [non-existent]
        │
-       │  generation completes → student accepts preview
+       │  accepted payload commit (filter→validate→commit)
        ▼
-  [completed]  { status: 'completed', nodes: [...], acceptedAt: Date, errorMessage: null }
+  [completed, isPrimary=true|false]
        │
-       ├─── re-generation completes → student accepts new preview
-       │    ──────────────────────────────────────────────────────────────────────▶ [completed]  (document replaced in-place)
+       ├── generation fails
+       │   ▼
+       │ [failed, isPrimary unchanged]
        │
-       └─── generation fails (Gemini error / topo violation / parse error / restart)
-            ▼
-       [failed]  { status: 'failed', errorMessage: string, nodes: [...prev or []] }
-            │
-            │  student triggers /api/roadmap/retry → generation completes → student accepts
-            ▼
-       [completed]  (document replaced in-place)
+       ├── PATCH /api/roadmaps/:roadmapId/primary
+       │   ▼
+       │ [completed, isPrimary=true] + previous primary -> isPrimary=false
+       │
+       └── new accepted commit
+           ▼
+         [completed, new version document]
 ```
 
 **Initial failure path** (no prior accepted roadmap exists):
@@ -96,7 +102,7 @@
        │  initial generation fails
        ▼
   [failed]  (created on first failure)
-       │  retry succeeds + student accepts
+       │  retry succeeds + accepted payload commit
        ▼
   [completed]
 ```
@@ -105,20 +111,32 @@
 
 | From | To | Guard | Failure response |
 |---|---|---|---|
-| non-existent | completed | `findOneAndUpdate({ userId }, ..., { upsert: true })` on acceptance | — |
-| non-existent | failed | `findOneAndUpdate({ userId }, ..., { upsert: true })` on generation failure | — |
-| completed | completed | Student accepts new preview; `upsertCompleted` replaces document in-place | — |
-| completed | failed | Re-generation fails; `upsertFailed` updates `status` and `errorMessage` | Previous `nodes` retained for display; only `status` and `errorMessage` change |
-| failed | completed | Student triggers retry → generation succeeds → student accepts | 409 if generation already in-progress |
-| any | any | No direct client-provided status update is permitted | Controller returns 400 if `status` is in request body |
+| non-existent | completed | Acceptance payload passes completed-filter + prerequisite validation | `ALL_COMPLETED` or `PREREQUISITE_VIOLATION` |
+| any | failed | Generation failure in lifecycle | Stored as failed with error message |
+| failed | completed | Retry + acceptance payload passes validation | `CONFLICT` if generation already in progress |
+| completed | completed | New accepted roadmap committed as new document version | `CONFLICT` on primary race |
+| completed/failed | primary switched | `PATCH /api/roadmaps/:roadmapId/primary` transactional demote/promote | `ROADMAP_NOT_FOUND` / `CONFLICT` |
+| any | any | No direct client-provided status transition allowed | 400 |
 
-**Re-generation failure note**: When a re-generation fails while the student has an existing `completed` roadmap, the `status` is updated to `failed` and `errorMessage` is set, but the `nodes` array from the previous accepted generation is preserved. Feature 004 can continue rendering the previous course sequence while showing the "generation failed — retry available" state. On retry success and acceptance, the document is fully replaced with the new `nodes`.
+**Re-generation failure note**: On re-generation failure, Feature 009 records a failed roadmap state per canonical lifecycle rules. Existing completed roadmap versions remain queryable; primary selection is unaffected unless explicitly switched.
 
 ---
 
-## In-Memory Entity: RoadmapPreview Store
+## Primary Selection Invariant
 
-**Not a MongoDB collection** — lives only in the Node.js process heap. Lost on Render restart (this is the designed behaviour per FR-034). The generation lifecycle stores a preview here after a successful Gemini call; the acceptance/rejection endpoints look it up and clear it.
+For each `userId`, the system invariant is:
+
+$$
+\sum\_{r \in \text{Roadmaps}(userId)} [r.isPrimary = true] = 1
+$$
+
+Feature 009 enforces this invariant using a partial unique index and transaction-safe demote/promote logic.
+
+---
+
+## In-Memory Entity: RoadmapPreview Store (Transient)
+
+**Not a MongoDB collection** — lives only in the Node.js process heap. Lost on Render restart. The generation lifecycle may store preview payload for notification/review UX. Acceptance commit no longer depends on this store as source of truth.
 
 | Property | Value |
 |---|---|
@@ -126,7 +144,7 @@
 | Key | `userId.toString()` |
 | Value | `{ nodes, personalisationLevel, triggerReason, studentProfileId }` |
 | Max entries | One per user with a pending review (typically low) |
-| Cleanup | `clearPendingPreview(userId)` called on accept, reject, or generation failure |
+| Cleanup | `clearPendingPreview(userId)` called on superseded preview, explicit discard, or generation failure |
 | Restart handling | `SIGTERM` handler iterates all keys, calls `upsertFailed`, clears all entries |
 
 **See**: [research.md R-004](research.md) for implementation pattern and SIGTERM handler.
@@ -139,7 +157,7 @@
 
 **MongoDB collection**: `student_profiles`
 **Owned by**: Feature 001 (Profile Onboarding)
-**Access from this feature**: `findOne({ _id: studentProfileId })` to retrieve profile for generation input. `findOneAndUpdate({ userId }, { $set: { repersonalizationPending: false } })` to clear the flag after re-generation preview accept/reject (FR-031). No other writes.
+**Access from this feature**: `findOne({ _id: studentProfileId })` to retrieve profile for generation input. `findOneAndUpdate({ userId }, { $set: { repersonalizationPending: false } })` to clear the flag after canonical acceptance/discard handling (FR-031). No other writes.
 
 | Field | Type | Notes |
 |---|---|---|

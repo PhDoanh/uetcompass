@@ -1,8 +1,8 @@
 # REST API Contract: Roadmap Module
 
 **Feature**: `009-roadmap-generator`
-**Date**: 2026-03-11
-**Base path**: `/api/roadmap`
+**Date**: 2026-03-14
+**Base path**: `/api`
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`. The middleware attaches `req.user.userId` (ObjectId) to every request.
 
 ---
@@ -30,17 +30,21 @@ Content-Type: application/json
 | HTTP | `code` | Meaning |
 |---|---|---|
 | 401 | `UNAUTHORIZED` | Missing or invalid JWT |
-| 404 | `ROADMAP_NOT_FOUND` | No roadmap document exists for this user |
-| 404 | `PREVIEW_NOT_FOUND` | No in-memory preview is pending for this user |
-| 409 | `GENERATION_IN_PROGRESS` | A generation is already running for this user |
-| 409 | `NO_FAILED_ROADMAP` | Retry attempted but no `status: failed` roadmap exists for this user |
+| 404 | `ROADMAP_NOT_FOUND` | Roadmap does not exist (or does not belong to authenticated user) |
+| 409 | `CONFLICT` | Conflict with current lifecycle state (generation in progress / primary switch race / duplicate transition) |
+| 422 | `PREREQUISITE_VIOLATION` | Submitted roadmap nodes violate prerequisite constraints |
+| 422 | `ALL_COMPLETED` | All submitted nodes were filtered out because they are already completed |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
 
 ---
 
-## GET /api/roadmap
+## GET /api/primary-roadmap
 
-Retrieve the authenticated student's active roadmap document from the `roadmaps` collection. Returns the full document (including all nodes and metadata). Used by Feature 004 (Skill Tree) to render the roadmap and to determine whether a retry affordance is appropriate (`status: failed`).
+Retrieve the authenticated student's current primary roadmap document.
+
+### Compatibility note
+
+`GET /api/roadmap` is deprecated and maintained only as a compatibility alias to this endpoint during migration.
 
 ### Request
 
@@ -70,7 +74,9 @@ No body.
     }
   ],
   "createdAt": "2026-03-11T08:00:00.000Z",
-  "acceptedAt": "2026-03-11T08:05:00.000Z"
+  "isPrimary": true,
+  "acceptedAt": "2026-03-11T08:05:00.000Z",
+  "updatedAt": "2026-03-14T06:05:00.000Z"
 }
 ```
 
@@ -85,21 +91,144 @@ No body.
 }
 ```
 
-**Note on `status: failed`**: When the roadmap exists but `status` is `failed`, the endpoint still returns 200 with the document — `errorMessage` will be non-null and `acceptedAt` will be `null`. Feature 004 uses this to determine whether to show a retry affordance (FR-029).
-
 ---
 
-## POST /api/roadmap/preview/accept
+## GET /api/roadmaps
 
-Accept the pending in-memory roadmap preview. Commits the preview as the student's active Roadmap document (status `completed`), replacing any previously stored document. Clears the in-memory preview after commit. If the generation was triggered by `repersonalization`, also clears `repersonalizationPending` on the `StudentProfile` (FR-031).
+List roadmap documents for the authenticated user.
 
-### Request
+### Query parameters
 
-No body. The preview is identified by `req.user.userId`.
+- `status` (optional): `completed` | `failed`
+- `page` (optional, default `1`)
+- `limit` (optional, default `20`, max `100`)
 
 ### Response — 200 OK
 
-Returns the newly committed Roadmap document.
+```json
+{
+  "items": [
+    {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+      "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
+      "personalisationLevel": "full",
+      "status": "completed",
+      "isPrimary": true,
+      "errorMessage": null,
+      "updatedAt": "2026-03-14T06:05:00.000Z",
+      "acceptedAt": "2026-03-11T08:05:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1
+  }
+}
+```
+
+---
+
+## GET /api/roadmaps/:roadmapId
+
+Get roadmap detail by ID (auth-scoped to requester).
+
+### Response — 200 OK
+
+Returns the full roadmap document.
+
+### Response — 404 Not Found
+
+```json
+{
+  "error": {
+    "code": "ROADMAP_NOT_FOUND",
+    "message": "Roadmap not found."
+  }
+}
+```
+
+---
+
+## PATCH /api/roadmaps/:roadmapId/primary
+
+Set a specific roadmap as primary for the authenticated user. The previous primary is demoted atomically.
+
+### Request
+
+No body.
+
+### Response — 200 OK
+
+```json
+{
+  "message": "Primary roadmap updated successfully.",
+  "roadmapId": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "isPrimary": true
+}
+```
+
+### Response — 404 Not Found
+
+```json
+{
+  "error": {
+    "code": "ROADMAP_NOT_FOUND",
+    "message": "Roadmap not found."
+  }
+}
+```
+
+### Response — 409 Conflict
+
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Primary roadmap update conflicted with another in-flight operation. Please retry."
+  }
+}
+```
+
+---
+
+## POST /api/roadmaps/accept
+
+Fork-consumable acceptance endpoint. The caller submits full roadmap nodes payload. Server performs canonical acceptance pipeline:
+
+1. Filter completed courses,
+2. Validate prerequisite constraints/topological order,
+3. Commit a roadmap document and apply primary policy.
+
+This endpoint does not depend on old preview-accept lookup.
+
+### Request
+
+```json
+{
+  "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
+  "personalisationLevel": "full",
+  "isPrimary": true,
+  "nodes": [
+    {
+      "courseCode": "INT2204",
+      "courseName": "Object-Oriented Programming",
+      "credits": 3,
+      "suggestedSemester": 2,
+      "gainedSkills": ["OOP principles", "Java fundamentals"],
+      "supportingSkills": ["SOLID principles"],
+      "reason": "Foundation for software engineering.",
+      "careerRelevanceNote": "Useful for backend development at product companies.",
+      "resources": []
+    }
+  ]
+}
+```
+
+### Response — 200 OK
+
+Returns the committed roadmap document.
 
 ```json
 {
@@ -108,49 +237,44 @@ Returns the newly committed Roadmap document.
   "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
   "personalisationLevel": "full",
   "status": "completed",
+  "isPrimary": true,
   "errorMessage": null,
-  "nodes": [ /* … same shape as GET /api/roadmap response … */ ],
+  "nodes": [ /* … same shape as primary roadmap response … */ ],
   "createdAt": "2026-03-11T08:00:00.000Z",
-  "acceptedAt": "2026-03-11T08:05:12.000Z"
+  "acceptedAt": "2026-03-11T08:05:12.000Z",
+  "updatedAt": "2026-03-14T06:05:12.000Z"
 }
 ```
 
-### Response — 404 Not Found (no pending preview)
+### Response — 422 Unprocessable Entity (`ALL_COMPLETED`)
 
 ```json
 {
   "error": {
-    "code": "PREVIEW_NOT_FOUND",
-    "message": "No pending roadmap preview found. The preview may have expired due to a server restart."
+    "code": "ALL_COMPLETED",
+    "message": "All submitted roadmap nodes are already completed by this student."
   }
 }
 ```
 
----
-
-## POST /api/roadmap/preview/reject
-
-Reject and discard the pending in-memory roadmap preview. The existing active roadmap (if any) remains unchanged. If the generation was triggered by `repersonalization`, also clears `repersonalizationPending` on the `StudentProfile` (FR-031, FR-038). For initial generation rejections, the student is left without an active roadmap — the retry mechanism remains available (FR-037).
-
-### Request
-
-No body. The preview is identified by `req.user.userId`.
-
-### Response — 200 OK
-
-```json
-{
-  "message": "Preview rejected. Your existing roadmap is unchanged."
-}
-```
-
-### Response — 404 Not Found (no pending preview)
+### Response — 422 Unprocessable Entity (`PREREQUISITE_VIOLATION`)
 
 ```json
 {
   "error": {
-    "code": "PREVIEW_NOT_FOUND",
-    "message": "No pending roadmap preview found."
+    "code": "PREREQUISITE_VIOLATION",
+    "message": "Ordering violation: INT3101 appears before prerequisite INT2204."
+  }
+}
+```
+
+### Response — 409 Conflict
+
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Roadmap acceptance conflicted with an in-flight lifecycle operation. Please retry."
   }
 }
 ```
@@ -180,7 +304,7 @@ No body.
 ```json
 {
   "error": {
-    "code": "GENERATION_IN_PROGRESS",
+    "code": "CONFLICT",
     "message": "A roadmap generation is already running for this user. Please wait for it to complete."
   }
 }
@@ -191,7 +315,7 @@ No body.
 ```json
 {
   "error": {
-    "code": "NO_FAILED_ROADMAP",
+    "code": "CONFLICT",
     "message": "No failed roadmap generation found. Retry is only available after a generation failure."
   }
 }
@@ -207,4 +331,10 @@ Generation is triggered internally by two system events (FR-033):
 
 2. **Repersonalization** — emitted by Feature 005's account settings handler after setting `repersonalizationPending: true` on the `StudentProfile`. The roadmap module exports `triggerGeneration(userId, studentProfileId, 'repersonalization')` called via the service layer.
 
-Neither trigger is exposed as a REST endpoint. The `GENERATION_IN_PROGRESS` error is handled internally — if generation is already running when either trigger fires, the call is silently dropped (the in-progress generation will complete and notify the student).
+Neither trigger is exposed as a REST endpoint. Internal generation conflicts map to canonical `CONFLICT` semantics — if generation is already running when either trigger fires, the call is silently dropped (the in-progress generation will complete and notify the student).
+
+---
+
+## Lifecycle Ownership Rule
+
+Feature 009 is the canonical owner of roadmap transitions and persistence semantics. Other features must consume roadmap state through the contracts above and must not write `roadmaps` directly.

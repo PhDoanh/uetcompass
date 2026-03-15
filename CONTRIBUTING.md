@@ -37,14 +37,25 @@ specs/NNN-feature-name/
 
 > **AI Agent dùng trong dự án:** GitHub Copilot (files tại `.github/agents/`). Tất cả lệnh dùng PowerShell scripts tại `.specify/scripts/powershell/`.
 
-## 2. Cách Tiếp Cận A — Tuần Tự (Mặc Định của Spec-Kit)
+## 2. Nhánh Chính & Chiến Lược Git
+
+Dự án sử dụng mô hình **2 nhánh dài hạn**:
+
+| Nhánh | Vai trò | Ai merge vào? |
+|---|---|---|
+| `dev` | Nhánh tích hợp chính — mọi hoạt động phát triển đều hướng về đây | Feature branches, bug fix branches |
+| `main` | Nhánh ổn định — chỉ nhận merge từ `dev` khi sẵn sàng release | `dev` (qua PR, do project owner quyết định) |
+
+> **Lý do tách `dev` và `main`:** `main` là nguồn sự thật cho release-please — mọi merge vào `main` đều có thể trigger version bump và cập nhật `CHANGELOG.md` tự động. Không bao giờ commit hay merge trực tiếp vào `main` ngoại trừ PR từ `dev`.
+
+## 3. Cách Tiếp Cận A — Tuần Tự (Mặc Định của Spec-Kit)
 
 **Phù hợp khi:** Đóng góp một feature độc lập, không phụ thuộc nhiều vào feature khác đang trong giai đoạn spec.
 
 **Luồng đầy đủ từ spec đến code:**
 
 ```
-main
+dev
  │
  ├─► /speckit.specify "Mô tả tính năng"   ← Tạo branch NNN-feat-name + spec.md
  │      └─► /speckit.clarify              ← (Khuyến nghị) Làm rõ trước khi plan
@@ -56,7 +67,7 @@ main
  │
  ├─► git add . && git commit
  ├─► git push origin NNN-feat-name
- └─► Tạo PR → Review → Merge vào main
+ └─► Tạo PR → Review → Merge vào dev
 ```
 
 ### Quy Trình Git Chi Tiết
@@ -64,8 +75,8 @@ main
 #### Bước 1 — Chuẩn bị
 
 ```bash
-git checkout main
-git pull origin main
+git checkout dev
+git pull origin dev
 ```
 
 #### Bước 2 — Tạo spec (Spec-Kit tự tạo branch)
@@ -77,7 +88,7 @@ Mở GitHub Copilot Chat, chạy:
 ```
 
 Spec-Kit sẽ tự động:
-- Tạo branch `NNN-ten-feature` (ví dụ: `011-study-reminder`)
+- Tạo branch `NNN-ten-feature` (ví dụ: `011-study-reminder`) từ `dev`
 - Tạo thư mục `specs/011-study-reminder/`
 - Tạo file `spec.md` với nội dung được AI sinh
 
@@ -130,29 +141,29 @@ git commit -m "feat(011-study-reminder): implement study reminder with notificat
 git push origin 011-study-reminder
 ```
 
-Tạo Pull Request trên GitHub với base branch là `main`. Yêu cầu **ít nhất 1 reviewer** trước khi merge (theo Constitution).
+Tạo Pull Request trên GitHub với **base branch là `dev`**. Yêu cầu **ít nhất 1 reviewer** trước khi merge (theo Constitution).
 
-## 3. Cách Tiếp Cận B — Song Song nhiều Spec (Trước Khi Implement)
+## 4. Cách Tiếp Cận B — Song Song nhiều Spec (Trước Khi Implement)
 
 **Phù hợp khi:** Cần thiết kế nhiều feature cùng lúc để thấy toàn cảnh kiến trúc, phát hiện xung đột data model sớm (ví dụ: feature A và B cùng sử dụng `users` collection theo cách khác nhau).
 
 > **Tại sao cần tiếp cận này?**  
-> Spec-Kit mặc định tạo branch ngay khi `/speckit.specify` được gọi. Nếu chạy feat-B liền sau feat-A mà không merge, branch của feat-B sẽ được tạo **từ branch feat-A** (không phải từ `main`), gây ra dependency chain không mong muốn và AI không thấy được context của feat-A khi đặc tả feat-B.
+> Spec-Kit mặc định tạo branch ngay khi `/speckit.specify` được gọi. Nếu chạy feat-B liền sau feat-A mà không merge, branch của feat-B sẽ được tạo **từ branch feat-A** (không phải từ `dev`), gây ra dependency chain không mong muốn và AI không thấy được context của feat-A khi đặc tả feat-B.
 
 **Luồng tổng quát:**
 
 ```
-main ──► specify feat-A ──► plan feat-A ──► commit ──► PR ──► merge vào main
+dev ──► specify feat-A ──► plan feat-A ──► commit ──► PR ──► merge vào dev
           └────────────────────────────────────────────────────────────────┘
-main ──► specify feat-B ──► plan feat-B ──► commit ──► PR ──► merge vào main
+dev ──► specify feat-B ──► plan feat-B ──► commit ──► PR ──► merge vào dev
           └────────────────────────────────────────────────────────────────┘
-main ──► specify feat-C ──► plan feat-C ──► commit ──► PR ──► merge vào main
+dev ──► specify feat-C ──► plan feat-C ──► commit ──► PR ──► merge vào dev
 
-[Review toàn bộ backlog spec trên main — kiểm tra data model consistency]
+[Review toàn bộ backlog spec trên dev — kiểm tra data model consistency]
 
-main ──► checkout branch 001-feat-a ──► merge main ──► tasks ──► implement ──► PR
-main ──► checkout branch 002-feat-b ──► merge main ──► tasks ──► implement ──► PR
-main ──► checkout branch 003-feat-c ──► merge main ──► tasks ──► implement ──► PR
+dev ──► checkout branch 001-feat-a ──► merge dev ──► tasks ──► implement ──► PR
+dev ──► checkout branch 002-feat-b ──► merge dev ──► tasks ──► implement ──► PR
+dev ──► checkout branch 003-feat-c ──► merge dev ──► tasks ──► implement ──► PR
 ```
 
 ### Quy Trình Git Chi Tiết
@@ -162,9 +173,9 @@ main ──► checkout branch 003-feat-c ──► merge main ──► tasks �
 Lặp lại cho **mỗi feature** theo thứ tự:
 
 ```bash
-# Đảm bảo bắt đầu từ main mới nhất
-git checkout main
-git pull origin main
+# Đảm bảo bắt đầu từ dev mới nhất
+git checkout dev
+git pull origin dev
 
 # Spec-Kit tự tạo branch NNN-feat-name và checkout vào đó
 # (chạy trong Copilot Chat)
@@ -174,15 +185,15 @@ git pull origin main
 
 # Commit artifacts đặc tả (KHÔNG có code)
 git add specs/
-git commit -m "spec(NNN-feat-x): add spec and plan for feature X"
+git commit -m "docs(NNN-feat-x): add spec and plan for feature X"
 git push origin NNN-feat-x
 
-# Tạo PR → Merge vào main → Pull
+# Tạo PR → Merge vào dev → Pull
 # (có thể self-merge nếu là phase spec thuần túy)
-git checkout main
-git pull origin main
+git checkout dev
+git pull origin dev
 
-# Bắt đầu feature tiếp theo từ main đã có spec của feat-x
+# Bắt đầu feature tiếp theo từ dev đã có spec của feat-x
 ```
 
 > **Tại sao không có conflict khi merge?**  
@@ -190,15 +201,15 @@ git pull origin main
 
 #### Phase 2 — Review backlog spec tổng thể
 
-Sau khi tất cả spec đã merge vào `main`, review cross-feature để kiểm tra:
+Sau khi tất cả spec đã merge vào `dev`, review cross-feature để kiểm tra:
 
 - **Data model consistency**: Ví dụ `users` collection được dùng như thế nào ở Feature 005 (account-management) và Feature 001 (profile-onboarding)?
 - **API boundary**: Endpoint nào overlap? Module nào cần share?
 - **Dependency order**: Feature nào phải implement trước?
 
 ```bash
-git checkout main
-git pull origin main
+git checkout dev
+git pull origin dev
 # Đọc toàn bộ specs/NNN-*/data-model.md và contracts/
 ```
 
@@ -214,8 +225,8 @@ Có thể dùng lệnh này để phân tích:
 # Checkout lại branch đã tạo từ Phase 1
 git checkout 001-profile-onboarding
 
-# Cập nhật với context đầy đủ từ main (bao gồm spec của tất cả feature khác)
-git merge main
+# Cập nhật với context đầy đủ từ dev (bao gồm spec của tất cả feature khác)
+git merge dev
 
 # Sinh tasks và implement
 # /speckit.tasks
@@ -224,7 +235,7 @@ git merge main
 git add .
 git commit -m "feat(001-profile-onboarding): implement profile onboarding feature"
 git push origin 001-profile-onboarding
-# Tạo PR → Review → Merge
+# Tạo PR → Review → Merge vào dev
 ```
 
 ### Ưu Điểm & Hạn Chế
@@ -234,12 +245,12 @@ git push origin 001-profile-onboarding
 | Phát hiện xung đột data model sớm | ❌ Chỉ thấy sau khi implement | ✅ Thấy ngay khi review backlog |
 | Tốc độ bắt đầu code | ✅ Nhanh hơn | ❌ Chậm hơn (spec xong rồi mới code) |
 | Phù hợp team | Solo dev / feature độc lập | Team nhiều người / nhiều feature liên quan |
-| Git overhead | Thấp | Trung bình (thêm bước merge spec vào main) |
+| Git overhead | Thấp | Trung bình (thêm bước merge spec vào dev) |
 | AI có đủ context | ❌ Mỗi feature spec riêng lẻ | ✅ Feature sau thấy spec của feature trước |
 
 ---
 
-## 4. Lựa Chọn Cách Tiếp Cận
+## 5. Lựa Chọn Cách Tiếp Cận
 
 ```
 Bạn đang đóng góp feature mới?
@@ -252,11 +263,11 @@ Bạn đang đóng góp feature mới?
             └─► Xem phần Refine Artifacts bên dưới
 ```
 
-## 5. Refine Artifacts Đã Tồn Tại
+## 6. Refine Artifacts Đã Tồn Tại
 
 Khi cần chỉnh sửa các artifacts đã được Spec-Kit tạo ra (không phải tạo mới), **không nên chạy lại lệnh Spec-Kit từ đầu** vì sẽ ghi đè toàn bộ nội dung.
 
-### 5.1. Refine `spec.md` (Đặc Tả Yêu Cầu)
+### 6.1. Refine `spec.md` (Đặc Tả Yêu Cầu)
 
 **Khi nào cần refine:** Yêu cầu thay đổi sau khi spec đã được tạo, phát hiện inconsistency, hoặc reviewer yêu cầu làm rõ.
 
@@ -279,7 +290,7 @@ Lệnh `clarify` sẽ:
 - Đảm bảo thuật ngữ nhất quán (xem `## Terminology & Consistency` trong spec)
 - Commit với message: `docs(NNN-feat): refine spec - clarify [tên requirement]`
 
-### 5.2. Refine `plan.md`, `data-model.md`, `contracts/`, `research.md`
+### 6.2. Refine `plan.md`, `data-model.md`, `contracts/`, `research.md`
 
 **Khi nào cần refine:** Phát hiện lỗi kỹ thuật, thay đổi tech stack, hoặc review phát hiện design issue sau khi spec đã được cập nhật.
 
@@ -299,7 +310,7 @@ Lệnh `clarify` sẽ:
 
 > **Nguyên Tắc I — Modular Monolithic**: Mọi thay đổi ở `plan.md` liên quan đến kiến trúc phải đảm bảo không tách service khi chưa cần thiết. Violation phải được ghi vào `## Complexity Tracking`.
 
-### 5.3. Refine `tasks.md`
+### 6.3. Refine `tasks.md`
 
 **Khi nào cần refine:** Sau khi implement một phần và phát hiện task bị thiếu, hoặc spec thay đổi kéo theo scope thay đổi.
 
@@ -317,7 +328,7 @@ Lệnh sẽ sinh lại `tasks.md` dựa trên các artifacts mới nhất.
 - Số task phải theo thứ tự liên tiếp
 - Đánh dấu task đã hoàn thành bằng `[X]` (không xóa)
 
-### 5.4. Refine `checklists/`
+### 6.4. Refine `checklists/`
 
 **Cách làm — Tái sinh checklist:**
 
@@ -330,7 +341,7 @@ Lệnh sẽ sinh lại `tasks.md` dựa trên các artifacts mới nhất.
 - Thêm ghi chú inline nếu có vấn đề phát hiện
 - Không xóa item đã fail — comment lý do giải quyết thay vì xóa
 
-### 5.5. Refine `constitution.md`
+### 6.5. Refine `constitution.md`
 
 Constitution là tài liệu quan trọng nhất và **phải dùng lệnh Spec-Kit để sửa** — không sửa trực tiếp thủ công:
 
@@ -346,7 +357,7 @@ Lệnh sẽ:
 
 > Thay đổi Constitution yêu cầu approval của **project owner** trước khi merge.
 
-## 6. Quy Tắc Commit Convention
+## 7. Quy Tắc Commit Convention
 
 Dự án tuân thủ **[Conventional Commits](https://www.conventionalcommits.org/)** — tiêu chuẩn quốc tế giúp tự động sinh CHANGELOG và semantic versioning.
 
@@ -362,27 +373,28 @@ Dự án tuân thủ **[Conventional Commits](https://www.conventionalcommits.or
 
 ### Các Type Được Dùng
 
-| Type | Ý nghĩa | Ví dụ |
-|---|---|---|
-| `feat` | Tính năng mới | `feat(005-account-management): add JWT refresh token rotation` |
-| `fix` | Sửa bug | `fix(001-profile-onboarding): resolve draft not persisting on session expiry` |
-| `docs` | Thay đổi tài liệu | `docs(002-seed-ctdt-dag): update data-model with TTL index decision` |
-| `spec` | Tạo/cập nhật artifact đặc tả | `spec(011-study-reminder): add spec and plan` |
-| `refactor` | Tái cấu trúc không thay đổi behavior | `refactor(auth): extract token validation to shared middleware` |
-| `test` | Thêm/sửa test | `test(002-seed-ctdt-dag): add cycle detection unit tests` |
-| `chore` | Công việc build, dependency... | `chore: update mongoose to 8.x` |
-| `perf` | Cải thiện hiệu suất | `perf(009-roadmap-generator): optimize DAG traversal algorithm` |
-| `ci` | Thay đổi CI/CD | `ci: add lint check to PR workflow` |
-| `style` | Format code (không ảnh hưởng logic) | `style: fix trailing whitespace in auth module` |
+| Type | Ý nghĩa | Trigger version bump? | Ví dụ |
+|---|---|---|---|
+| `feat` | Tính năng mới | ✅ minor | `feat(005-account-management): add JWT refresh token rotation` |
+| `fix` | Sửa bug | ✅ patch | `fix(001-profile-onboarding): resolve draft not persisting on session expiry` |
+| `perf` | Cải thiện hiệu suất | ✅ patch | `perf(009-roadmap-generator): optimize DAG traversal algorithm` |
+| `refactor` | Tái cấu trúc không thay đổi behavior | ❌ | `refactor(auth): extract token validation to shared middleware` |
+| `docs` | Thay đổi tài liệu — bao gồm spec artifacts | ❌ | `docs(002-seed-ctdt-dag): update data-model with TTL index decision` |
+| `test` | Thêm/sửa test | ❌ | `test(002-seed-ctdt-dag): add cycle detection unit tests` |
+| `chore` | Công việc build, dependency... | ❌ | `chore: update mongoose to 8.x` |
+| `ci` | Thay đổi CI/CD | ❌ | `ci: add lint check to PR workflow` |
+| `style` | Format code (không ảnh hưởng logic) | ❌ | `style: fix trailing whitespace in auth module` |
+
+> **Lưu ý:** Artifacts đặc tả (`spec.md`, `plan.md`, `data-model.md`...) dùng type `docs` — không còn type `spec` riêng để tránh duplicate với `docs` và đảm bảo tương thích với release-please.
 
 ### Scope
 
-Scope là tên thư mục feature (không bắt buộc có số prefix):
+Scope là tên thư mục feature hoặc module:
 
-- `001-profile-onboarding` → `spec(001-profile-onboarding):`
+- `001-profile-onboarding` → `docs(001-profile-onboarding):`
 - `auth` → `fix(auth):`
 - `constitution` → `docs(constitution):`
-- `global` hoặc bỏ trống → khi thay đổi ảnh hưởng toàn dự án
+- bỏ trống → khi thay đổi ảnh hưởng toàn dự án
 
 ### Short Description
 
@@ -404,8 +416,8 @@ Migration script available at scripts/migrate-refresh-tokens.js
 ### Ví Dụ Thực Tế Từ UETCompass
 
 ```bash
-# Khi tạo spec mới (Phase spec)
-spec(011-study-reminder): add feature specification and technical plan
+# Khi tạo spec mới (Phase spec) — dùng docs thay vì spec
+docs(011-study-reminder): add feature specification and technical plan
 
 # Khi triển khai code
 feat(005-account-management): implement OTP verification with 2-minute expiry
@@ -422,16 +434,16 @@ chore: bump @google/generative-ai to 0.21.0
 ci: add pre-commit hook for conventional commit validation
 ```
 
-## 7. Quy Tắc Chung Cho Mọi Đóng Góp
+## 8. Quy Tắc Chung Cho Mọi Đóng Góp
 
-### 7.1. Trước Khi Bắt Đầu
+### 8.1. Trước Khi Bắt Đầu
 
 - [ ] **Đọc Constitution** tại `.specify/memory/constitution.md` — đây là tài liệu bắt buộc
 - [ ] **Kiểm tra Issues** để tránh làm trùng việc đang có người làm
 - [ ] **Fork nếu là external contributor** — team member thì clone trực tiếp
 - [ ] **Cấu hình AI Agent**: Mở repo bằng VS Code, đảm bảo GitHub Copilot extension đã active
 
-### 7.2. Trong Quá Trình Đóng Góp
+### 8.2. Trong Quá Trình Đóng Góp
 
 **Về đặc tả (spec):**
 
@@ -451,13 +463,15 @@ ci: add pre-commit hook for conventional commit validation
 **Về code:**
 
 - Không hardcode secrets — dùng environment variables
-- Backend: Node.js 20 LTS + Express.js (JavaScript).
+- Backend: Node.js 20 LTS + Express.js (JavaScript)
 - Frontend: React 18
-- Database: MongoDB Atlas (Mongoose) — tuân theo naming convention của các collections hiện tại
+- Testing: Jest 29 — unit tests only; mock tất cả external services (`@google/generative-ai`, Playwright, Mongoose)
+- Database: MongoDB Atlas (Mongoose 8) — tuân theo naming convention và ownership boundary của các collections hiện tại
 - Free tier Render có cold start ~50s — frontend phải handle loading state gracefully
 
-### 7.3. Pull Request
+### 8.3. Pull Request
 
+- **Base branch**: luôn là **`dev`** — không bao giờ mở PR trực tiếp vào `main`
 - **Title**: Theo Conventional Commits format: `feat(scope): short description`
 - **Description**: Mô tả rõ WHAT và WHY (không cần HOW chi tiết — đã có trong `plan.md`)
 - **Link Issue**: Dùng `Closes #XX` hoặc `Refs #XX` trong description
@@ -469,7 +483,7 @@ ci: add pre-commit hook for conventional commit validation
   - [ ] `copilot-instructions.md` đã được cập nhật (script `update-agent-context.ps1` chạy tự động trong `/speckit.plan`)
 - **Reviewer**: Yêu cầu **ít nhất 1 reviewer** (theo Constitution). Với thay đổi Constitution: bắt buộc reviewer là project owner
 
-### 7.4. Review Checklist (Dành Cho Reviewer)
+### 8.4. Review Checklist (Dành Cho Reviewer)
 
 - [ ] Spec có vi phạm Constitution không?
 - [ ] Data model có conflict với các feature khác không? (Kiểm tra `copilot-instructions.md` — Active Technologies section)
@@ -477,53 +491,65 @@ ci: add pre-commit hook for conventional commit validation
 - [ ] Có secrets hardcode không?
 - [ ] Gemini output có được validate schema không?
 
-## 8. Kiến Trúc & Technology Stack Tham Chiếu
+## 9. Kiến Trúc & Technology Stack Tham Chiếu
 
-Dựa trên `specs/*/plan.md` và `.github/agents/copilot-instructions.md`:
+Dựa trên `specs/*/plan.md`:
 
 ```
-backend/          ← Node.js 20 LTS + Express.js (JavaScript)
+backend/                    ← Node.js 20 LTS + Express.js (JavaScript)
   src/
     modules/
-      auth/       ← Feature 005 (Account Management)
-      curriculum/ ← Feature 002 (Seed CTDT DAG)
-      roadmap/    ← Feature 009 (Roadmap Generator)
-      scraping/   ← Feature 003 (Resource Curation)
-      recommendation/ ← Feature 004 (Skill Tree logic)
+      onboarding/           ← Feature 001 (Profile Onboarding)
+      curriculum/           ← Feature 002 (Seed CTDT DAG)
+      resources/            ← Feature 003 (Resource Curation)
+      skillTree/            ← Feature 004 (Skill Tree)
+      auth/                 ← Feature 005 (Account Management)
+      tagging/              ← Feature 006 (AI Auto-Tagging)
+      progress/             ← Feature 007 (Progress Tracking)
+      search/               ← Feature 008 (Advanced Tag Search)
+      roadmap/              ← Feature 009 (Roadmap Generator)
+      community/            ← Feature 010 (Roadmap Community)
+    middleware/
+      auth.middleware.js    ← JWT verify — shared across modules
+    app.js                  ← Express bootstrap + route mounting
 
-frontend/         ← React 18
+frontend/                   ← React 18 + React Router v6
   src/
     features/
-      onboarding/ ← Feature 001
-      progress/   ← Feature 007
-      resources/  ← Feature 003
+      onboarding/           ← Feature 001
+      resources/            ← Feature 003
+      skillTree/            ← Feature 004
+      auth/                 ← Feature 005
+      progress/             ← Feature 007
+      roadmap/              ← Feature 009
+      community/            ← Feature 010
+    guards/                 ← React Router route guards
+    services/               ← Fetch wrappers per module
 
 tests/
-  unit/           ← Unit tests cho complex business logic
+  unit/                     ← Jest 29 unit tests (complex logic + side effects only)
 ```
 
-**Database Collections (MongoDB Atlas):**
+**Database Collections (MongoDB Atlas — Mongoose 8):**
 
-| Collection | Owner Feature |
-|---|---|
-| `users` | 005-account-management |
-| `refresh_tokens` | 005-account-management |
-| `student_profiles` | 001-profile-onboarding |
-| `course_units` | 002-seed-ctdt-dag |
-| `skills` | Roadmap module |
-| `roadmap_nodes` / `student_roadmaps` | 004-skill-tree |
-| `roadmap_progress_cache` | 007-progress-tracking |
-| `learning_resources` | 003-resource-curation |
-| `academic_documents` | 003-resource-curation |
-| `skill_trend_snapshots` | 003-resource-curation |
-| `roadmap_snapshots` / `share_links` / `community_entries` | 010-roadmap-community |
+| Collection | Owner Feature | Ghi chú |
+|---|---|---|
+| `users` | 005-account-management | Auth credentials, account status, privacySetting |
+| `refresh_tokens` | 005-account-management | Hashed RT, TTL index tự purge |
+| `notifications` | 005-account-management | In-app notifications — SSE delivery |
+| `deleted_emails` | 005-account-management | Audit trail cho hard-deleted accounts |
+| `student_profiles` | 001-profile-onboarding | Academic profile + career goals; field `repersonalizationPending` do Feature 005 write |
+| `course_units` | 002-seed-ctdt-dag | CTDT DAG — read-only với tất cả feature khác |
+| `roadmaps` | 009-roadmap-generator | Multi-roadmap per user; partial unique index cho `isPrimary` |
+
+> Collections của Feature 003, 004, 006, 007, 008, 010 sẽ được bổ sung vào bảng này khi `data-model.md` của từng feature được hoàn thiện.
 
 **Deployment:**
 - Frontend → **Vercel**
 - Backend → **Render** (free tier, cold start ~50s)
 - Database → **MongoDB Atlas** (free tier)
 
-## 9. Tài Nguyên Tham Khảo
+## 10. Tài Nguyên Tham Khảo
 
 | Tài liệu | Đường dẫn |
 |---|---|

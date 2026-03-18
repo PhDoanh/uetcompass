@@ -48,7 +48,7 @@ specs/001-profile-onboarding/
 ├── quickstart.md        ← Phase 1: local dev setup + manual test guide
 ├── contracts/
 │   └── rest-api.md      ← Phase 1: all 4 API endpoint contracts
-└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
+└── tasks.md             ← Phase 2 output (/speckit.tasks)
 ```
 
 ### Source Code (repository root)
@@ -63,6 +63,7 @@ backend/
 │   │       ├── onboarding.controller.js   # Express handlers (thin — delegates to service)
 │   │       ├── onboarding.routes.js       # Express Router + auth middleware applied
 │   │       ├── onboarding.validation.js   # validateFreeText() — pure, no LLM
+│   │       ├── onboarding.errors.js       # Error mapping + standardized API error envelope
 │   │       ├── onboarding.sse.js          # SSE connection store (Map) + notifyUser()
 │   │       └── onboarding.email.js        # sendRoadmapReadyEmail() via Nodemailer
 │   ├── middleware/
@@ -72,7 +73,8 @@ backend/
     └── unit/
         └── onboarding/
             ├── validation.test.js          # validateFreeText: 8 edge-case scenarios
-            └── stateMachine.test.js        # draft→submitted: 5 state transition tests
+            ├── stateMachine.test.js        # draft→submitted: state transition tests
+            └── draftPersistence.test.js    # atomic upsert + restore behavior tests
 
 frontend/
 ├── src/
@@ -88,7 +90,8 @@ frontend/
 │   ├── guards/
 │   │   └── OnboardingGuard.jsx            # React Router guard: redirect to / if profile submitted
 │   └── services/
-│       └── onboarding.api.js              # Fetch wrappers: getDraft, putDraft, postSubmit
+│       ├── onboarding.api.js              # Fetch wrappers: getDraft, putDraft, postSubmit
+│       └── roadmap.api.js                 # Retry trigger wrapper (POST /api/roadmap/retry only)
 ```
 
 **Structure Decision**: Option 2 — Web application. Modular monolith backend with onboarding logic isolated in `modules/onboarding/`. Feature-folder structure on frontend mirrors the backend module boundary. Communication from `onboarding` to `roadmap` passes through the service layer only — no direct cross-module import.

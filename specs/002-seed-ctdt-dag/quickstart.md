@@ -122,10 +122,20 @@ A log file is also written to `backend/logs/seed-ctdt.log` (created automaticall
 {"level":"error","event":"URL_SKIP","url":"https://...","stage":"tavily","reason":"Request failed with status 429"}
 ```
 
+**If all URLs fail**, final status remains `PARTIAL_FAILURE` (no successful upserts):
+```
+{"level":"info","event":"JOB_COMPLETE","exitStatus":"PARTIAL_FAILURE","successCount":0,"failCount":2}
+```
+
 **If a cycle is detected**:
 ```
 {"level":"warn","event":"CYCLE_DETECTED","major":"CNTT","cycles":[{"from":"INT2210","to":"INT2215"}]}
 {"level":"info","event":"JOB_COMPLETE","exitStatus":"FAILED","cyclesDetected":1}
+```
+
+**If prerequisites are unresolved** (dangling references), a warning is emitted and the run continues:
+```
+{"level":"warn","event":"UNRESOLVED_PREREQUISITE","major":"CNTT","code":"INT2201","prerequisite":"INT9999"}
 ```
 
 ---
@@ -199,3 +209,14 @@ PASS  tests/unit/curriculum/bulkWrite.upsert.test.js
 | `NODE_ENV` | `backend/.env` | yes | `development` enables `npm run seed:ctdt` |
 
 > All secrets via environment variables only — never hardcoded. See Constitution §Deployment & Environment.
+
+---
+
+## 9. Validation log (2026-03-18)
+
+- Ran backend unit tests with curriculum module included.
+- Result: all test suites passed, including:
+  - `tests/unit/curriculum/seed.pipeline.test.js`
+  - `tests/unit/curriculum/cycle.detector.test.js`
+  - `tests/unit/curriculum/bulkWrite.upsert.test.js`
+  - `tests/unit/curriculum/seed.job.test.js`

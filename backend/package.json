@@ -7,14 +7,18 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
-    "seed:mock": "node src/seed-mock.js"
+    "seed:mock": "node src/seed-mock.js",
+    "seed:ctdt": "node -e \"require('./src/modules/curriculum/seed.job').runManualCli()\""
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@tavily/core": "^0.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
+    "node-cron": "^4.2.1",
     "nodemailer": "^6.10.1"
   },
   "devDependencies": {

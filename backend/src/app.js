@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
+const { registerCronJob } = require('./modules/curriculum/seed.job');
 
 const app = express();
 
@@ -27,6 +28,8 @@ app.use((err, req, res, next) => {
 	const message = err?.message || 'Unexpected server error';
 	res.status(status).json({ error: { code, message } });
 });
+
+registerCronJob();
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

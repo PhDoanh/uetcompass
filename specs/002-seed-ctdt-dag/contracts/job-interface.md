@@ -91,6 +91,7 @@ All events are written to console (`stdout`/`stderr`) and appended to `backend/l
 | `URL_START` | `info` | Processing begins for a single URL |
 | `URL_SUCCESS` | `info` | URL fully processed and CourseUnits upserted |
 | `URL_SKIP` | `error` | URL skipped due to failure; includes `stage` and `reason` |
+| `UNRESOLVED_PREREQUISITE` | `warn` | Course references prerequisite code not present in current major subgraph |
 | `CYCLE_CLEAN` | `info` | Per-major DFS completed with no cycles found |
 | `CYCLE_DETECTED` | `warn` | Cycle found in a major's graph; includes `cycles` array |
 | `JOB_COMPLETE` | `info` | Job finished; includes `exitStatus`, counts of success/fail |
@@ -130,6 +131,9 @@ All events are written to console (`stdout`/`stderr`) and appended to `backend/l
   "cyclesDetected": 0
 }
 ```
+
+**Status note**:
+- If all configured URLs fail, final status is still `PARTIAL_FAILURE` (`successCount = 0`, `failCount = totalUrls`).
 
 ---
 

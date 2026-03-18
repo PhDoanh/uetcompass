@@ -19,7 +19,7 @@ A first-time student logs into UETCompass and is greeted by the onboarding panel
 
 **Acceptance Scenarios**:
 
-1. **Given** a student logs in for the first time, **When** the homepage loads, **Then** the onboarding panel appears prominently on the page without blocking navigation.
+1. **Given** a student logs in for the first time, **When** the homepage loads, **Then** the onboarding panel is visible above the homepage main content (without scrolling on a 1366x768 viewport) and remains non-blocking for navigation.
 2. **Given** the onboarding panel is open, **When** the student selects a major, **Then** the completed-courses multi-select list is filtered to show only courses belonging to that major.
 3. **Given** the student has filled in at least the required major field, **When** the student clicks Submit, **Then** the system accepts the submission, closes the onboarding panel permanently, and triggers roadmap generation asynchronously.
 4. **Given** roadmap generation has been triggered, **When** generation completes, **Then** the student receives an in-app notification indicating the roadmap is ready to view.
@@ -37,7 +37,7 @@ A student begins filling out the onboarding panel but closes it (or their sessio
 
 **Acceptance Scenarios**:
 
-1. **Given** a student has partially filled the onboarding panel, **When** the student closes the panel or navigates away, **Then** all entered data is saved server-side immediately.
+1. **Given** a student has partially filled the onboarding panel, **When** the student closes the panel or navigates away, **Then** all entered data is saved server-side within 1 second after the last input change.
 2. **Given** a student's session expires mid-fill, **When** the session expires, **Then** the student is redirected to the login page.
 3. **Given** the student re-logs in after session expiry, **When** the homepage loads, **Then** the onboarding panel reopens with the draft data fully restored.
 4. **Given** a student dismisses the panel without submitting, **When** the student logs in again later, **Then** the panel reappears with the previously saved draft.
@@ -56,7 +56,7 @@ A student submits the onboarding form with only the required major field filled 
 
 1. **Given** the student has selected a major but left all optional fields empty, **When** the student clicks Submit, **Then** the system does not block submission and accepts the profile.
 2. **Given** optional fields are empty at submission, **When** the system processes the submission, **Then** it triggers roadmap generation in generic mode.
-3. **Given** a generic roadmap has been generated, **When** the student views the completion notification or their roadmap, **Then** the system clearly communicates that personalisation quality is low and points the student to Settings to enrich their profile.
+3. **Given** a generic roadmap has been generated, **When** the student views the completion notification or their roadmap, **Then** the system shows a low-personalisation notice with a Settings CTA and at least one example optional field the student can add.
 
 ---
 
@@ -93,7 +93,7 @@ A student whose desired job role or target company type is not in the predefined
 
 **Onboarding Panel Display**
 
-- **FR-001**: The system MUST display the onboarding panel prominently on the homepage on a student's first login if they have not yet submitted their profile.
+- **FR-001**: The system MUST display the onboarding panel on first login above the homepage main content and visible without scrolling on a 1366x768 viewport if the student has not yet submitted their profile.
 - **FR-002**: The onboarding panel MUST be non-blocking — the student MUST be able to dismiss it and navigate the rest of the system freely.
 - **FR-003**: The system MUST allow a dismissed panel to be reopened by the student at any time before submission.
 - **FR-004**: Once a profile has been submitted, the system MUST permanently prevent the onboarding panel from reappearing.
@@ -112,7 +112,7 @@ A student whose desired job role or target company type is not in the predefined
 - **FR-011**: The student MUST be able to select a target company type from a predefined list (Startup, Outsource, Product company, Japanese company, Big Tech) OR enter a custom free-text value.
 - **FR-012**: The student MUST be able to specify a graduation timeline as a number of semesters remaining or an expected graduation date.
 - **FR-013**: The student MUST be able to enter personal aspirations, constraints, or preferences as free-text.
-- **FR-014**: All optional fields MUST be clearly marked as optional, and the system MUST communicate that omitting them reduces personalisation quality.
+- **FR-014**: All optional fields MUST be clearly marked as optional, and the system MUST communicate that omitting them reduces personalisation quality with a visible Settings CTA.
 - **FR-014a**: Career-goal payloads MUST preserve `careerGoal` as a nested object. Any downstream `careerGoalRole` projection MUST be derived from `careerGoal.role` (read-only alias, no separate source-of-truth field).
 
 **Validation**
@@ -123,7 +123,7 @@ A student whose desired job role or target company type is not in the predefined
 
 **Draft Persistence**
 
-- **FR-018**: All onboarding form inputs MUST be saved server-side in real time as the student fills them in, tied to the student's authenticated account.
+- **FR-018**: All onboarding form inputs MUST be saved server-side using debounced auto-save (target 800ms, maximum 1 second after the last input change), tied to the student's authenticated account.
 - **FR-019**: If the student closes the panel, navigates away, or experiences a session expiry before submitting, the draft MUST be fully preserved server-side.
 - **FR-020**: On the student's next login after any interruption, the onboarding panel MUST reopen with all draft data pre-filled.
 
@@ -134,7 +134,7 @@ A student whose desired job role or target company type is not in the predefined
 - **FR-023**: The system MUST deliver an in-app notification to the student when their roadmap generation completes successfully.
 - **FR-024**: If roadmap generation fails, the system MUST display an error notification and provide a retry mechanism without requiring the student to resubmit their profile.
 - **FR-025**: The system MUST enforce one profile per student account — duplicate submission attempts MUST be rejected.
-- **FR-026**: If a student submits with all optional fields empty, the system MUST generate a generic roadmap and clearly communicate that personalisation quality is low.
+- **FR-026**: If a student submits with all optional fields empty, the system MUST generate a generic roadmap and display a low-personalisation notice with a Settings CTA.
 
 **Canonical Data Contract Alignment**
 
@@ -156,13 +156,12 @@ A student whose desired job role or target company type is not in the predefined
 - **NFR-003 (Security)**: Only the authenticated student may read or modify their own onboarding draft and submitted profile — no cross-account access is permitted.
 - **NFR-004 (Privacy)**: No grade, GPA, or transcript data is collected during onboarding; the system MUST NOT prompt for such data.
 - **NFR-005 (Validation Safety)**: Free-text input validation MUST be performed without invoking an LLM to avoid latency, cost, and unpredictability in the form validation path.
-- **NFR-006 (UX Clarity)**: The system MUST communicate the consequence of leaving optional fields empty (reduced personalisation quality) in a way that is actionable and not anxiety-inducing.
+- **NFR-006 (UX Clarity)**: The low-personalisation message MUST include: (a) plain-language explanation, (b) Settings CTA, and (c) at least one concrete optional field example to improve recommendations.
 
 ---
 
 ### Key Entities
 
-- **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed course identifiers, target job role (predefined or free-text), target company type (predefined or free-text), graduation timeline, personal aspirations, submission status (draft / submitted), and timestamps for creation and submission.
 - **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed courses canonically identified by (`major`, `courseCode`) with optional `courseUnitId`, nested `careerGoal` object (where downstream `careerGoalRole` is derived from `careerGoal.role`), personal aspirations, submission status (draft / submitted), and timestamps for creation and submission. Does **not** contain `privacySetting`.
 - **OnboardingDraft**: The intermediate state of the onboarding form before submission. Tied 1:1 to a StudentProfile. Overwritten on each real-time save; promoted to submitted status on explicit student confirmation.
 - **Major**: A predefined academic program offered at UET-VNU. Has a unique identifier, a display name, and an associated list of Course entries. Catalog data is pre-seeded by a separate system process.
@@ -180,7 +179,7 @@ A student whose desired job role or target company type is not in the predefined
 - **SC-003**: A student who submits with only the major field filled still receives a roadmap — the system never returns an error or prevents submission due to empty optional fields.
 - **SC-004**: Re-accessing the onboarding URL after submission results in a redirect to the homepage 100% of the time — the panel is never displayed post-submission.
 - **SC-005**: Roadmap generation can be retried after failure without requiring the student to re-enter or resubmit their profile data.
-- **SC-006**: The onboarding panel loads and becomes interactive on first login with no perceptible delay attributable to the panel itself.
+- **SC-006**: On first login, the onboarding panel becomes visible within 1 second after homepage render and remains interactive while draft auto-save requests are in flight.
 - **SC-007**: Students who receive a low-personalisation notice can identify at least one specific optional field to complete in order to improve their roadmap — the notice is actionable, not merely informational.
 
 ---
@@ -190,7 +189,7 @@ A student whose desired job role or target company type is not in the predefined
 - The course catalog for all available majors is pre-seeded into the system before any student attempts onboarding (separate feature, out of scope here).
 - The predefined lists for job roles and company types are maintained by a system administrator and are available at onboarding time; their content and management are outside the scope of this feature.
 - Students are fully authenticated before reaching the onboarding panel — this feature does not handle login, registration, or account creation.
-- "Real-time" draft saving is interpreted as save-on-change (debounced) or save-on-blur; exact debounce timing is a technical implementation detail.
+- "Real-time" draft saving is implemented as debounced save-on-change with target 800ms and maximum 1 second after the last input change.
 - The asynchronous roadmap generation system exists as a separate component; this feature is only responsible for triggering it on submission and displaying its completion or failure notification.
 - Pre-implementation policy: no runtime data migration is required for this feature-alignment update; migration/backfill (if needed) is handled as a separate operational activity.
 

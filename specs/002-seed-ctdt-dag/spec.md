@@ -71,7 +71,7 @@ A developer can manually trigger the seed job on a development environment to te
 
 ### Edge Cases
 
-- What happens when **all** configured URLs fail? The job logs all errors and exits with status `TOTAL_FAILURE`; no data is written or modified.
+- What happens when **all** configured URLs fail? The job logs all errors and exits with status `PARTIAL_FAILURE`; no data is written or modified.
 - What happens when the URL configuration list is empty? The job exits immediately with a log warning and `SUCCESS` status — nothing to process is a valid no-op.
 - What happens when the same course code + major appears successfully in multiple URLs within a single run? The last successful upsert within the batch wins (last-write-wins per batch).
 - What happens when cycle detection itself fails at runtime (unexpected error)? The error is logged and the job exits with `FAILED`; existing data in the store is preserved.
@@ -88,7 +88,7 @@ A developer can manually trigger the seed job on a development environment to te
 - **FR-005**: If processing fails for any URL at any stage, the job MUST log the failure with URL, stage, and reason; skip that URL; and continue processing the remaining URLs without interruption.
 - **FR-006**: After all upserts complete, the job MUST run cycle detection across the full prerequisite graph in the persistent data store.
 - **FR-007**: If a cycle is detected, the job MUST log a warning identifying all nodes involved; the stored data MUST NOT be rolled back.
-- **FR-008**: The job MUST be triggered automatically on a configurable recurring schedule.
+- **FR-008**: The job MUST be triggered automatically on a recurring schedule, configurable via the `SEED_CRON_SCHEDULE` environment variable (falling back to `0 0 1 3,8 *` if unset).
 - **FR-009**: A manual trigger mechanism MUST be available on the development environment.
 - **FR-010**: All job events — errors, warnings, results, and final status — MUST be written to both console output and a persistent log file.
 
@@ -119,6 +119,6 @@ A developer can manually trigger the seed job on a development environment to te
 
 - The list of curriculum URLs is stable enough to be maintained in a configuration file; dynamic URL discovery is out of scope for this feature.
 - Course code + major is a sufficient unique identifier for a CourseUnit within the system.
-- A cycle in the prerequisite graph is treated as a data quality warning, not a blocking error — data is preserved and the issue is surfaced rather than causing a rollback.
+- A cycle in the prerequisite graph results in a `FAILED` job status to signal invalid graph state, but data is preserved (no rollback) to allow manual correction.
 - The development environment is identifiable by the system at runtime to gate manual trigger availability.
 - Running the seed job on an already-populated data store is expected behavior; overwrite semantics (via upsert) apply at all times.

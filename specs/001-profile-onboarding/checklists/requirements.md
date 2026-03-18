@@ -38,3 +38,39 @@
 - All four user stories are independently testable and deliverable as slices of value.
 - Zero [NEEDS CLARIFICATION] markers were needed — the feature description provided sufficient detail for all decisions; reasonable defaults covered the remaining gaps (documented in Assumptions).
 - **Status**: ✅ All items pass. Specification is ready for `/speckit.plan`.
+
+---
+
+## Manual Acceptance Execution Log (T036)
+
+**Executed on**: 2026-03-15  
+**Executor**: GitHub Copilot  
+**Scope**: US1, US2, US3, US4 end-to-end implementation conformance against `spec.md` + `contracts/rest-api.md`
+
+### Environment & Method
+
+- Method used: static/manual verification from implemented source code, API contract alignment, and editor diagnostics.
+- Editor diagnostics: no active Problems for implemented files.
+- Runtime automation note: root workspace currently has no `test` script in [package.json](../../../package.json), so `npm test` at workspace root is not available.
+
+### Story-Level Outcomes
+
+- [x] **US1 — Complete onboarding + async notification**
+	- Evidence: [backend/src/modules/onboarding/onboarding.controller.js](../../../backend/src/modules/onboarding/onboarding.controller.js), [backend/src/modules/onboarding/onboarding.service.js](../../../backend/src/modules/onboarding/onboarding.service.js), [backend/src/modules/onboarding/onboarding.sse.js](../../../backend/src/modules/onboarding/onboarding.sse.js), [backend/src/modules/onboarding/onboarding.email.js](../../../backend/src/modules/onboarding/onboarding.email.js), [frontend/src/features/onboarding/OnboardingPanel.jsx](../../../frontend/src/features/onboarding/OnboardingPanel.jsx), [frontend/src/features/onboarding/useRoadmapStatus.js](../../../frontend/src/features/onboarding/useRoadmapStatus.js)
+- [x] **US2 — Draft persistence + restore + session-expiry redirect**
+	- Evidence: [backend/src/modules/onboarding/onboarding.controller.js](../../../backend/src/modules/onboarding/onboarding.controller.js), [backend/src/modules/onboarding/onboarding.service.js](../../../backend/src/modules/onboarding/onboarding.service.js), [frontend/src/features/onboarding/useOnboardingDraft.js](../../../frontend/src/features/onboarding/useOnboardingDraft.js), [frontend/src/features/onboarding/useRoadmapStatus.js](../../../frontend/src/features/onboarding/useRoadmapStatus.js)
+- [x] **US3 — Major-only submit + low-personalisation + retry wiring**
+	- Evidence: [backend/src/modules/onboarding/onboarding.service.js](../../../backend/src/modules/onboarding/onboarding.service.js), [frontend/src/features/onboarding/OnboardingPanel.jsx](../../../frontend/src/features/onboarding/OnboardingPanel.jsx), [frontend/src/services/roadmap.api.js](../../../frontend/src/services/roadmap.api.js)
+- [x] **US4 — Free-text validation on client + server**
+	- Evidence: [backend/src/modules/onboarding/onboarding.validation.js](../../../backend/src/modules/onboarding/onboarding.validation.js), [frontend/src/features/onboarding/FreeTextField.jsx](../../../frontend/src/features/onboarding/FreeTextField.jsx), [frontend/src/features/onboarding/CareerGoalForm.jsx](../../../frontend/src/features/onboarding/CareerGoalForm.jsx)
+
+### Contract/Data Consistency Outcomes
+
+- [x] Nested `careerGoal` preserved in persistence + API path.
+- [x] Canonical completed-course identity by (`major`, `courseCode`) with optional `courseUnitId`.
+- [x] `privacySetting` not included in onboarding profile schema.
+
+### Final T036 Decision
+
+- [x] Manual acceptance checklist executed and outcomes recorded.
+- **Result**: ✅ T036 accepted.

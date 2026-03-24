@@ -1,10 +1,13 @@
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
 import OnboardingGuard from './guards/OnboardingGuard';
+import AuthGuard from './guards/AuthGuard';
+import { AuthProvider, useAuth } from './providers/AuthProvider';
 
-export default function App() {
-	const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('token') || '' : '';
-	const sseToken = typeof window !== 'undefined' ? window.localStorage.getItem('sseToken') || '' : '';
+function AppContent() {
+	const { accessToken, onboardingState } = useAuth();
+	const authToken = accessToken || '';
+	const sseToken = accessToken || '';
 	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 
 	const handleUnauthorized = () => {
@@ -27,8 +30,20 @@ export default function App() {
 	return (
 		<OnboardingGuard>
 			<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-				<OnboardingPanel authToken={authToken} sseToken={sseToken} onUnauthorized={handleUnauthorized} />
+				{onboardingState !== 'COMPLETED' ? (
+					<OnboardingPanel authToken={authToken} sseToken={sseToken} onUnauthorized={handleUnauthorized} />
+				) : null}
 			</main>
 		</OnboardingGuard>
+	);
+}
+
+export default function App() {
+	return (
+		<AuthProvider>
+			<AuthGuard>
+				<AppContent />
+			</AuthGuard>
+		</AuthProvider>
 	);
 }

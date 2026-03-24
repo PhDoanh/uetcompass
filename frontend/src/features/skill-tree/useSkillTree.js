@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { useSkillTreeStore } from '../stores/skillTreeStore';
-import * as skillTreeApi from '../services/skillTree.api';
+import { useSkillTreeStore } from '../../stores/skillTreeStore';
+import * as skillTreeApi from '../../services/skillTree.api';
 
 /**
  * T016: Create polling hook with visibility pause/resume

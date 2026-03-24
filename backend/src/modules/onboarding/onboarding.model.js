@@ -32,6 +32,7 @@ const StudentProfileSchema = new mongoose.Schema(
 		completedCourses: { type: [CompletedCourseSchema], default: [] },
 		careerGoal: { type: CareerGoalSchema, default: () => ({}) },
 		personalAspirations: { type: String, default: null, maxlength: 1000, trim: true },
+		repersonalizationPending: { type: Boolean, required: true, default: false },
 		submittedAt: { type: Date, default: null },
 	},
 	{

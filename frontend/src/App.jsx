@@ -1,15 +1,28 @@
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
+import SkillTreePage from './features/skill-tree/SkillTreePage';
 import OnboardingGuard from './guards/OnboardingGuard';
 
 export default function App() {
 	const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('token') || '' : '';
 	const sseToken = typeof window !== 'undefined' ? window.localStorage.getItem('sseToken') || '' : '';
+	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 
 	const handleUnauthorized = () => {
 		if (typeof window !== 'undefined') {
 			window.location.assign('/login');
 		}
 	};
+
+	// Route to Skill Tree if pathname includes /skill-tree
+	if (pathname.includes('/skill-tree')) {
+		return (
+			<OnboardingGuard>
+				<main style={{ maxWidth: 1400, margin: '0 auto', height: '100vh' }}>
+					<SkillTreePage />
+				</main>
+			</OnboardingGuard>
+		);
+	}
 
 	return (
 		<OnboardingGuard>

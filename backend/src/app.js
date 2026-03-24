@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
+const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/onboarding', onboardingRouter);
+app.use('/api/skill-tree', skillTreeRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

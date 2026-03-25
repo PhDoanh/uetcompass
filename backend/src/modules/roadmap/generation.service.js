@@ -108,6 +108,9 @@ Instructions:
    in practice for the career goal that the course does NOT teach), reason, and careerRelevanceNote.
    Each skill string must be a single atomic concept (e.g. "Encapsulation", "Polymorphism", "SQL joins").
    Do NOT combine multiple concepts into one string (e.g. WRONG: "OOP principles (encapsulation, inheritance)").
+   Skills MUST include relevant technologies, protocols, and important CS concepts the course covers
+   (e.g. "HTTPS", "TCP", "UDP", "REST", "Git", "Docker", "Express.js", "Django", "MongoDB").
+   Mix both theoretical concepts and practical technologies — do not list only abstract concepts.
 6. supportingSkills must NOT repeat skills already listed in gainedSkills for the same node.
 7. Do NOT include a resources field — the system will append an empty array after parsing.`;
 

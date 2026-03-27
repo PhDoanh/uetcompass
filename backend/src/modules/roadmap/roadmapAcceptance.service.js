@@ -6,7 +6,7 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
 
 async function acceptRoadmap(userId, { studentProfileId, personalisationLevel, isPrimary, nodes }) {
-	const profile = await StudentProfile.findById(studentProfileId);
+	const profile = await StudentProfile.findOne({ _id: studentProfileId, userId });
 	if (!profile) {
 		const err = new Error('Student profile not found.');
 		err.code = 'ROADMAP_NOT_FOUND';
@@ -39,7 +39,7 @@ async function acceptRoadmap(userId, { studentProfileId, personalisationLevel, i
 
 	try {
 		await StudentProfile.findOneAndUpdate(
-			{ _id: studentProfileId },
+			{ _id: studentProfileId, userId },
 			{ $set: { repersonalizationPending: false } }
 		);
 	} catch {

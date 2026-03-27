@@ -21,6 +21,22 @@ function mapError(err, res) {
 	return res.status(status).json({ error: { code, message: err.message } });
 }
 
+function parsePositiveIntQuery(rawValue, fieldName) {
+	if (rawValue == null || rawValue === '') {
+		return undefined;
+	}
+
+	const parsed = Number.parseInt(rawValue, 10);
+	if (!Number.isInteger(parsed) || parsed < 1) {
+		const err = new Error(`${fieldName} must be a positive integer.`);
+		err.code = 'INVALID_PAYLOAD';
+		err.status = 400;
+		throw err;
+	}
+
+	return parsed;
+}
+
 async function getPrimaryRoadmap(req, res) {
 	try {
 		const roadmap = await roadmapService.getPrimaryByUser(req.user.userId);
@@ -43,8 +59,8 @@ async function listRoadmaps(req, res) {
 		const { status, page, limit } = req.query;
 		const result = await roadmapService.listByUser(req.user.userId, {
 			status,
-			page: page ? parseInt(page, 10) : undefined,
-			limit: limit ? parseInt(limit, 10) : undefined,
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
 		});
 		return res.json(result);
 	} catch (err) {

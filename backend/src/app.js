@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
-const { authRoutes } = require('./modules/auth');
+const { authRouter, accountRouter } = require('./modules/auth');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 
 const app = express();
@@ -48,7 +48,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
-app.use('/api', authRoutes);
+app.use('/api/auth', authRouter);
+app.use('/api/account', accountRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

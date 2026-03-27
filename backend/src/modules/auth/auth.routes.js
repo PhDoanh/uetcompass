@@ -2,7 +2,8 @@ const express = require('express');
 const controller = require('./auth.controller');
 const { requireAuth } = require('../../middleware/auth.middleware');
 
-const router = express.Router();
+const authRouter = express.Router();
+const accountRouter = express.Router();
 
 function requireBody(fields = []) {
   return (req, res, next) => {
@@ -34,30 +35,32 @@ function requireBody(fields = []) {
   };
 }
 
-router.post('/auth/register', requireBody(['fullName', 'email', 'password']), controller.register);
-router.post('/auth/verify-email', requireBody(['email', 'otp']), controller.verifyEmail);
-router.post('/auth/resend-otp', requireBody(['email']), controller.resendOtp);
-router.post('/auth/login', requireBody(['email', 'password']), controller.login);
-router.post('/auth/google', requireBody(['credential']), controller.googleLogin);
-router.post('/auth/refresh', controller.refresh);
-router.post('/auth/logout', controller.logout);
-router.post('/auth/forgot-password', requireBody(['email']), controller.forgotPassword);
-router.post('/auth/verify-reset-otp', requireBody(['email', 'otp']), controller.verifyResetOtp);
-router.post('/auth/reset-password', requireBody(['resetToken', 'newPassword']), controller.resetPassword);
-router.get('/account/confirm-deletion', controller.confirmDeletion);
+authRouter.post('/register', requireBody(['fullName', 'email', 'password']), controller.register);
+authRouter.post('/verify-email', requireBody(['email', 'otp']), controller.verifyEmail);
+authRouter.post('/resend-otp', requireBody(['email']), controller.resendOtp);
+authRouter.post('/login', requireBody(['email', 'password']), controller.login);
+authRouter.post('/google', requireBody(['credential']), controller.googleLogin);
+authRouter.post('/refresh', controller.refresh);
+authRouter.post('/logout', controller.logout);
+authRouter.post('/forgot-password', requireBody(['email']), controller.forgotPassword);
+authRouter.post('/verify-reset-otp', requireBody(['email', 'otp']), controller.verifyResetOtp);
+authRouter.post('/reset-password', requireBody(['resetToken', 'newPassword']), controller.resetPassword);
+authRouter.get('/sse/notifications', controller.notificationsSse);
 
-router.get('/auth/sse/notifications', controller.notificationsSse);
+accountRouter.get('/confirm-deletion', controller.confirmDeletion);
 
-router.use(requireAuth);
+accountRouter.use(requireAuth);
 
-router.get('/account/profile', controller.getProfile);
-router.patch('/account/profile', controller.patchProfile);
-router.post('/account/change-password', requireBody(['currentPassword', 'newPassword']), controller.changePassword);
-router.post('/account/link-google', requireBody(['credential']), controller.linkGoogle);
-router.delete('/account/link-google/:googleId', controller.unlinkGoogle);
-router.post('/account/request-deletion', controller.requestDeletion);
+accountRouter.get('/profile', controller.getProfile);
+accountRouter.patch('/profile', controller.patchProfile);
+accountRouter.post('/change-password', requireBody(['currentPassword', 'newPassword']), controller.changePassword);
+accountRouter.post('/link-google', requireBody(['credential']), controller.linkGoogle);
+accountRouter.delete('/link-google/:googleId', controller.unlinkGoogle);
+accountRouter.post('/request-deletion', controller.requestDeletion);
+accountRouter.get('/notifications', controller.getNotifications);
+accountRouter.patch('/notifications/:id/read', controller.markNotificationRead);
 
-router.get('/notifications', controller.getNotifications);
-router.patch('/notifications/:id/read', controller.markNotificationRead);
-
-module.exports = router;
+module.exports = {
+  authRouter,
+  accountRouter,
+};

@@ -9,7 +9,6 @@ const RoadmapNodeSchema = new mongoose.Schema(
 		gainedSkills:        { type: [String], default: [] },
 		supportingSkills:    { type: [String], default: [] },
 		reason:              { type: String, required: true },
-		careerRelevanceNote: { type: String, required: true },
 		resources:           { type: [mongoose.Schema.Types.Mixed], default: [] },
 	},
 	{ _id: false }

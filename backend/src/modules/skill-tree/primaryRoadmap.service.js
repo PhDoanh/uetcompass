@@ -1,5 +1,5 @@
 // Adapter for Feature 009 primary roadmap
-// In production, this would call GET /api/roadmaps/primary
+// In production, this would call GET /api/primary-roadmap
 // For testing, this can be mocked
 
 let mockFetch = null;
@@ -25,7 +25,7 @@ function __resetMock() {
 }
 
 async function triggerRepersonalize(studentId) {
-  // Delegates to Feature 009 POST /api/roadmaps/retry
+  // Delegates to Feature 009 POST /api/primary-roadmap/regenerate
   throw new Error('Feature 009 integration not implemented');
 }
 

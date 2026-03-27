@@ -1,11 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
+const roadmapRouter = require('./modules/roadmap/roadmap.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
-const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
 const app = express();
@@ -14,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Database connection
+const mongoose = require('mongoose');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uetcompass';
 mongoose.connect(MONGODB_URI)
 	.then(() => console.log('Connected to MongoDB'))

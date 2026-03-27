@@ -62,7 +62,6 @@ const mockGeminiNodes = [
 		gainedSkills: ['OOP principles'],
 		supportingSkills: ['SOLID'],
 		reason: 'Foundation.',
-		careerRelevanceNote: 'Used daily.',
 	},
 	{
 		courseCode: 'INT2201',

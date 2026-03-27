@@ -23,7 +23,7 @@ const completedRoadmap = {
 	personalisationLevel: 'full',
 	status: 'completed',
 	errorMessage: null,
-	nodes: [{ courseCode: 'INT2204', courseName: 'OOP', credits: 3, gainedSkills: [], supportingSkills: [], reason: 'r', careerRelevanceNote: 'c', resources: [] }],
+	nodes: [{ courseCode: 'INT2204', courseName: 'OOP', credits: 3, gainedSkills: [], supportingSkills: [], reason: 'r', resources: [] }],
 	acceptedAt: new Date(),
 	createdAt: new Date(),
 	updatedAt: new Date(),

@@ -26,7 +26,6 @@ const mockNodes = [
 		gainedSkills: ['OOP'],
 		supportingSkills: ['SOLID'],
 		reason: 'Foundation.',
-		careerRelevanceNote: 'Backend daily.',
 		resources: [],
 	},
 	{
@@ -67,7 +66,7 @@ const mockCommittedRoadmap = {
 beforeEach(() => {
 	jest.clearAllMocks();
 	validateTopologicalOrder.mockReturnValue(undefined);
-	StudentProfile.findById = jest.fn().mockResolvedValue({ ...mockProfile });
+	StudentProfile.findOne = jest.fn().mockResolvedValue({ ...mockProfile });
 	StudentProfile.findOneAndUpdate = jest.fn().mockResolvedValue(null);
 	CourseUnit.find = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockCourseUnits) });
 	roadmapService.commitAccepted = jest.fn().mockResolvedValue(mockCommittedRoadmap);
@@ -193,7 +192,7 @@ describe('roadmapAcceptance.service — happy path', () => {
 
 describe('roadmapAcceptance.service — US4 repersonalizationPending clear', () => {
 	test('clears repersonalizationPending flag on StudentProfile after successful commit', async () => {
-		StudentProfile.findById = jest.fn().mockResolvedValue({
+		StudentProfile.findOne = jest.fn().mockResolvedValue({
 			...mockProfile,
 			repersonalizationPending: true,
 		});
@@ -206,7 +205,7 @@ describe('roadmapAcceptance.service — US4 repersonalizationPending clear', () 
 		});
 
 		expect(StudentProfile.findOneAndUpdate).toHaveBeenCalledWith(
-			{ _id: 'profileId1' },
+			{ _id: 'profileId1', userId: 'userId1' },
 			{ $set: { repersonalizationPending: false } }
 		);
 	});

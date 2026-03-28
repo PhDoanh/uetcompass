@@ -83,26 +83,27 @@ Transition a course node to the next state.
 - `GET /api/skill-tree/nodes/:courseCode/why` — AI-generated explanation
 - `GET /api/skill-tree/nodes/:courseCode/market-skills` — Ranked skills from job data
 - `GET /api/skill-tree/skills/:skillName/learning-resources` — Free/paid learning resources
-- `POST /api/skill-tree/repersonalize` — Trigger roadmap regeneration
+
+**Note**: Repersonalization is handled by Feature 005 (Account Management) which calls Feature 009 endpoint directly: `POST /api/roadmaps/primary/regenerate`. Skill Tree fetches the updated roadmap via `GET /api/skill-tree` after Feature 009 completes generation.
 
 ## Data Models
 
 ### `skill_node_statuses` Collection
 
-Stores explicit progress for each (student, roadmap node) pair.
+Stores explicit progress for each (student, course) pair.
 
 ```javascript
 {
   _id: ObjectId,
   studentId: ObjectId,      // Reference to users
-  nodeId: String,           // Course code or node identifier
+  courseCode: String,       // Course code identifier (e.g., "IT1010")
   status: String,           // "pending" | "in_progress" | "done"
   updatedAt: Date           // Manual update only, set by service
 }
 ```
 
 **Indexes**:
-- `{ studentId: 1, nodeId: 1 }` — Compound unique index
+- `{ studentId: 1, courseCode: 1 }` — Compound unique index
 
 ### `course_ai_contexts` Collection
 

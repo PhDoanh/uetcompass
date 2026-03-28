@@ -41,6 +41,7 @@ describe('profile settings diff detection', () => {
     });
     StudentProfile.findOne.mockResolvedValueOnce({
       userId: 'u1',
+      isDraft: false,
       major: 'Computer Science',
       completedCourses: [{ courseCode: 'INT2204' }],
       careerGoal: { role: 'SE', companyType: 'Product', graduationTimeline: '2027' },
@@ -55,7 +56,18 @@ describe('profile settings diff detection', () => {
 
     expect(StudentProfile.updateOne).toHaveBeenCalledWith(
       { userId: 'u1' },
-      { $set: { repersonalizationPending: true } }
+      {
+        $set: expect.objectContaining({
+          major: 'Information Systems',
+          repersonalizationPending: true,
+          careerGoal: {
+            role: null,
+            companyType: null,
+            graduationTimeline: null,
+          },
+          personalAspirations: null,
+        }),
+      }
     );
     expect(notificationService.createRepersonalizeNotification).toHaveBeenCalled();
   });
@@ -77,6 +89,7 @@ describe('profile settings diff detection', () => {
     });
     StudentProfile.findOne.mockResolvedValueOnce({
       userId: 'u1',
+      isDraft: false,
       major: 'Computer Science',
       completedCourses: [{ courseCode: 'INT2204' }],
       careerGoal: { role: 'SE', companyType: 'Product', graduationTimeline: '2027' },

@@ -39,6 +39,59 @@ function normalizeDraftProfile(profile) {
   };
 }
 
+function normalizeCompletedCourseIds(completedCourseIds = []) {
+  const ids = Array.isArray(completedCourseIds) ? completedCourseIds : [];
+  const uniqueIds = [];
+  const seen = new Set();
+
+  ids.forEach((item) => {
+    const next = String(item || '').trim();
+    if (!next || seen.has(next)) {
+      return;
+    }
+    seen.add(next);
+    uniqueIds.push(next);
+  });
+
+  return uniqueIds;
+}
+
+function mapCompletedCourses(completedCourseIds, major, currentProfile) {
+  const ids = normalizeCompletedCourseIds(completedCourseIds);
+  const current = Array.isArray(currentProfile?.completedCourses) ? currentProfile.completedCourses : [];
+  const byIdentity = new Map();
+
+  current.forEach((item) => {
+    const identity = String(item?.courseUnitId || item?.courseCode || '').trim();
+    if (!identity) {
+      return;
+    }
+    byIdentity.set(identity, item);
+  });
+
+  return ids
+    .map((id) => {
+      const existing = byIdentity.get(id);
+      if (existing) {
+        return {
+          major: existing.major,
+          courseCode: existing.courseCode,
+          ...(existing.courseUnitId ? { courseUnitId: existing.courseUnitId } : {}),
+        };
+      }
+
+      if (!major) {
+        return null;
+      }
+
+      return {
+        major,
+        courseCode: id,
+      };
+    })
+    .filter(Boolean);
+}
+
 function hasOnboardingDiff(currentProfile, nextDraft) {
   const current = {
     major: currentProfile?.major || null,
@@ -116,10 +169,37 @@ async function updateProfile(userId, payload = {}) {
 
   const currentStudentProfile = await StudentProfile.findOne({ userId });
   if (profile && typeof profile === 'object') {
-    const nextDraft = normalizeDraftProfile(profile);
+    if (!currentStudentProfile || currentStudentProfile.isDraft !== false) {
+      throw buildError(409, 'ONBOARDING_NOT_COMPLETED', 'Complete onboarding before editing profile fields in settings.');
+    }
 
-    if (hasOnboardingDiff(currentStudentProfile, nextDraft)) {
-      await StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: true } });
+    const nextDraft = normalizeDraftProfile(profile);
+    const nextMajor = nextDraft.major || currentStudentProfile.major || null;
+    const completedCourses = mapCompletedCourses(nextDraft.completedCourseIds, nextMajor, currentStudentProfile);
+    const shouldTriggerRepersonalize = hasOnboardingDiff(currentStudentProfile, {
+      ...nextDraft,
+      major: nextMajor,
+      completedCourseIds: completedCourses.map((item) => item.courseUnitId || item.courseCode),
+    });
+
+    const now = new Date();
+    const updatePayload = {
+      major: nextMajor,
+      completedCourses,
+      careerGoal: nextDraft.careerGoal,
+      personalAspirations: nextDraft.personalAspirations,
+      updatedAt: now,
+      ...(shouldTriggerRepersonalize ? { repersonalizationPending: true } : {}),
+    };
+
+    await StudentProfile.updateOne(
+      { userId },
+      {
+        $set: updatePayload,
+      }
+    );
+
+    if (shouldTriggerRepersonalize) {
       await notificationService.createRepersonalizeNotification(userId);
     }
   }

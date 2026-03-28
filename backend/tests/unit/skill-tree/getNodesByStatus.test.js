@@ -32,10 +32,10 @@ describe('getNodesByStatus', () => {
 
   test('groups statuses correctly', () => {
     const statuses = [
-      { nodeId: 'IT1010', status: 'done' },
-      { nodeId: 'IT3910E', status: 'pending' },
-      { nodeId: 'IT2010', status: 'in_progress' },
-      { nodeId: 'IT4409', status: 'done' },
+      { courseCode: 'IT1010', status: 'done' },
+      { courseCode: 'IT3910E', status: 'pending' },
+      { courseCode: 'IT2010', status: 'in_progress' },
+      { courseCode: 'IT4409', status: 'done' },
     ];
 
     const result = groupByStatus(statuses);
@@ -44,16 +44,16 @@ describe('getNodesByStatus', () => {
     expect(result.inProgress.length).toBe(1);
     expect(result.pending.length).toBe(1);
 
-    expect(result.done[0].nodeId).toBe('IT1010');
-    expect(result.done[1].nodeId).toBe('IT4409');
-    expect(result.inProgress[0].nodeId).toBe('IT2010');
-    expect(result.pending[0].nodeId).toBe('IT3910E');
+    expect(result.done[0].courseCode).toBe('IT1010');
+    expect(result.done[1].courseCode).toBe('IT4409');
+    expect(result.inProgress[0].courseCode).toBe('IT2010');
+    expect(result.pending[0].courseCode).toBe('IT3910E');
   });
 
   test('always preserves contract shape even with all one status', () => {
     const statuses = [
-      { nodeId: 'IT1010', status: 'done' },
-      { nodeId: 'IT2010', status: 'done' },
+      { courseCode: 'IT1010', status: 'done' },
+      { courseCode: 'IT2010', status: 'done' },
     ];
 
     const result = groupByStatus(statuses);
@@ -65,12 +65,12 @@ describe('getNodesByStatus', () => {
 
   test('preserves node data in grouped results', () => {
     const statuses = [
-      { nodeId: 'IT1010', status: 'done', updatedAt: new Date('2026-03-01') },
+      { courseCode: 'IT1010', status: 'done', updatedAt: new Date('2026-03-01') },
     ];
 
     const result = groupByStatus(statuses);
 
-    expect(result.done[0].nodeId).toBe('IT1010');
+    expect(result.done[0].courseCode).toBe('IT1010');
     expect(result.done[0].updatedAt).toBeDefined();
   });
 });

@@ -24,7 +24,7 @@ const profileSettingsService = require('../../../src/modules/auth/profileSetting
 describe('profile settings diff detection', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('sets repersonalizationPending when onboarding fields change', async () => {
+  test('updates onboarding profile fields without repersonalization side effects', async () => {
     User.findById.mockResolvedValueOnce({
       _id: 'u1',
       email: 'a@vnu.edu.vn',
@@ -59,7 +59,6 @@ describe('profile settings diff detection', () => {
       {
         $set: expect.objectContaining({
           major: 'Information Systems',
-          repersonalizationPending: true,
           careerGoal: {
             role: null,
             companyType: null,
@@ -69,7 +68,7 @@ describe('profile settings diff detection', () => {
         }),
       }
     );
-    expect(notificationService.createRepersonalizeNotification).toHaveBeenCalled();
+    expect(notificationService.createRepersonalizeNotification).not.toHaveBeenCalled();
   });
 
   test('does not trigger repersonalization for identity-only updates', async () => {

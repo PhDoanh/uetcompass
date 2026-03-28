@@ -95,7 +95,7 @@ export async function getLearningResources(authToken, skillName) {
 
 export async function repersonalize(authToken) {
   try {
-    const response = await client.post('/skill-tree/repersonalize', {}, {
+    const response = await client.post('/roadmaps/primary/regenerate', {}, {
       headers: { Authorization: `Bearer ${authToken}` },
     });
     return response.data;

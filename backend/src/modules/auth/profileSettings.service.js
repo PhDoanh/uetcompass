@@ -1,16 +1,8 @@
 const { User } = require('./user.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { resolvePublicIdentity } = require('./identity.policy');
-const notificationService = require('../notifications/notification.service');
 const passwordService = require('./password.service');
 const { SecurityAudit } = require('./securityAudit.model');
-
-const ONBOARDING_FIELDS = [
-  'major',
-  'completedCourseIds',
-  'careerGoal',
-  'personalAspirations',
-];
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -92,19 +84,6 @@ function mapCompletedCourses(completedCourseIds, major, currentProfile) {
     .filter(Boolean);
 }
 
-function hasOnboardingDiff(currentProfile, nextDraft) {
-  const current = {
-    major: currentProfile?.major || null,
-    completedCourseIds: Array.isArray(currentProfile?.completedCourses)
-      ? currentProfile.completedCourses.map((item) => item?.courseUnitId || item?.courseCode).filter(Boolean)
-      : [],
-    careerGoal: normalizeCareerGoal(currentProfile?.careerGoal),
-    personalAspirations: currentProfile?.personalAspirations || null,
-  };
-
-  return ONBOARDING_FIELDS.some((field) => JSON.stringify(current[field]) !== JSON.stringify(nextDraft[field]));
-}
-
 async function getProfile(userId) {
   const user = await User.findById(userId);
   if (!user) {
@@ -176,11 +155,6 @@ async function updateProfile(userId, payload = {}) {
     const nextDraft = normalizeDraftProfile(profile);
     const nextMajor = nextDraft.major || currentStudentProfile.major || null;
     const completedCourses = mapCompletedCourses(nextDraft.completedCourseIds, nextMajor, currentStudentProfile);
-    const shouldTriggerRepersonalize = hasOnboardingDiff(currentStudentProfile, {
-      ...nextDraft,
-      major: nextMajor,
-      completedCourseIds: completedCourses.map((item) => item.courseUnitId || item.courseCode),
-    });
 
     const now = new Date();
     const updatePayload = {
@@ -189,7 +163,6 @@ async function updateProfile(userId, payload = {}) {
       careerGoal: nextDraft.careerGoal,
       personalAspirations: nextDraft.personalAspirations,
       updatedAt: now,
-      ...(shouldTriggerRepersonalize ? { repersonalizationPending: true } : {}),
     };
 
     await StudentProfile.updateOne(
@@ -198,10 +171,6 @@ async function updateProfile(userId, payload = {}) {
         $set: updatePayload,
       }
     );
-
-    if (shouldTriggerRepersonalize) {
-      await notificationService.createRepersonalizeNotification(userId);
-    }
   }
 
   return {

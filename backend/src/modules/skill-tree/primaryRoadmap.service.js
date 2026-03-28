@@ -33,7 +33,6 @@ async function getPrimaryRoadmap(studentId) {
     // Normalize roadmap structure for Skill Tree consumption
     // Feature 009 stores prerequisites in CourseUnit, Skill Tree will compute from DAG
     return {
-      _id: roadmap._id.toString(),
       roadmapId: roadmap._id.toString(),
       userId: roadmap.userId.toString(),
       studentProfileId: roadmap.studentProfileId?.toString() || null,

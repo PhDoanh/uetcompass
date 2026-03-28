@@ -3,7 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
+const roadmapRouter = require('./modules/roadmap/roadmap.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
+const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
 const app = express();
 
@@ -23,6 +25,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
+app.use('/api/roadmaps', roadmapRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;
@@ -32,6 +35,7 @@ app.use((err, req, res, next) => {
 });
 
 registerCronJob();
+registerSigtermHandler();
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

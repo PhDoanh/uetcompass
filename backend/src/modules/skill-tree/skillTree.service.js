@@ -20,8 +20,8 @@ function isUnlocked(node, statusMap) {
   }
 
   // All prerequisites must be "done"
-  return node.prerequisites.every((prereqId) => {
-    const prereqStatus = statusMap[prereqId];
+  return node.prerequisites.every((prereqCode) => {
+    const prereqStatus = statusMap[prereqCode];
     return prereqStatus && prereqStatus.status === 'done';
   });
 }
@@ -44,17 +44,17 @@ async function ensurePendingReconciliation(studentId, roadmapNodes) {
   const statuses = await SkillNodeStatus.find({ studentId });
   const statusMap = {};
   statuses.forEach((s) => {
-    statusMap[s.nodeId] = s;
+    statusMap[s.courseCode] = s;
   });
 
   // Upsert missing pending records
-  const roadmapNodeIds = roadmapNodes.map((n) => n.nodeId);
-  const missingNodes = roadmapNodeIds.filter((nId) => !statusMap[nId]);
+  const roadmapCourseCodes = roadmapNodes.map((n) => n.courseCode);
+  const missingNodes = roadmapCourseCodes.filter((code) => !statusMap[code]);
 
   if (missingNodes.length > 0) {
-    const newRecords = missingNodes.map((nodeId) => ({
+    const newRecords = missingNodes.map((courseCode) => ({
       studentId,
-      nodeId,
+      courseCode,
       status: 'pending',
       updatedAt: new Date(),
     }));
@@ -65,7 +65,7 @@ async function ensurePendingReconciliation(studentId, roadmapNodes) {
   const allStatuses = await SkillNodeStatus.find({ studentId });
   const updated = {};
   allStatuses.forEach((s) => {
-    updated[s.nodeId] = s;
+    updated[s.courseCode] = s;
   });
   return updated;
 }
@@ -87,11 +87,13 @@ async function getSkillTree(studentId) {
     // 4. Attach current status to each node
     const nodesWithStatus = nodesWithUnlock.map((node) => ({
       ...node,
-      status: statusMap[node.nodeId]?.status || 'pending',
+      status: statusMap[node.courseCode]?.status || 'pending',
     }));
 
-    // 5. Compute re-personalize flag (needs mock for studentProfile.updatedAt)
-    const needsRepersonalization = false; // Mock: would compare with studentProfile.updatedAt
+    // 5. Repersonalization is handled by Feature 005 (Account Management)
+    // Feature 004 (Skill Tree) only displays current roadmap from Feature 009
+    // needsRepersonalization flag is determined by Feature 005, not by Skill Tree
+    const needsRepersonalization = false;
 
     return {
       roadmapId: roadmap.roadmapId,
@@ -109,7 +111,7 @@ async function getSkillTree(studentId) {
 /**
  * Update node status with guard and persistence
  */
-async function updateNodeStatus(studentId, nodeId, requestedStatus) {
+async function updateNodeStatus(studentId, courseCode, requestedStatus) {
   try {
     // 1. Validate status
     const validation = validateStatus(requestedStatus);
@@ -119,16 +121,16 @@ async function updateNodeStatus(studentId, nodeId, requestedStatus) {
 
     // 2. Get current roadmap to check prerequisites
     const roadmap = await primaryRoadmapService.getPrimaryRoadmap(studentId);
-    const node = roadmap.nodes.find((n) => n.nodeId === nodeId);
+    const node = roadmap.nodes.find((n) => n.courseCode === courseCode);
     if (!node) {
-      throw createServiceError(404, 'NODE_NOT_FOUND', `Node ${nodeId} not found in roadmap`);
+      throw createServiceError(404, 'NODE_NOT_FOUND', `Course ${courseCode} not found in roadmap`);
     }
 
     // 3. Get status map and check unlock
     const statuses = await SkillNodeStatus.find({ studentId });
     const statusMap = {};
     statuses.forEach((s) => {
-      statusMap[s.nodeId] = s;
+      statusMap[s.courseCode] = s;
     });
 
     if (!isUnlocked(node, statusMap)) {
@@ -137,7 +139,7 @@ async function updateNodeStatus(studentId, nodeId, requestedStatus) {
 
     // 4. Persist update
     const updated = await SkillNodeStatus.findOneAndUpdate(
-      { studentId, nodeId },
+      { studentId, courseCode },
       { status: requestedStatus, updatedAt: new Date() },
       { new: true, upsert: true }
     );

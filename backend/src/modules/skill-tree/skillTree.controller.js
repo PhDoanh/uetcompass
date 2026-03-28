@@ -8,6 +8,9 @@ const { validateCourseCode } = require('./skillTree.validation');
 /**
  * T011: Create base controller with error mapping and response helpers
  * T041: Implement all endpoint handlers
+ *
+ * Note: Repersonalization is handled by Feature 005 (Account Management)
+ * Skill Tree only displays the current roadmap from Feature 009
  */
 
 async function getTree(req, res, next) {
@@ -66,7 +69,7 @@ async function getNodeWhy(req, res, next) {
 
     // Get roadmap to find course data
     const roadmap = await primaryRoadmapService.getPrimaryRoadmap(userId);
-    const courseData = roadmap.nodes.find((n) => n.nodeId === courseCode || n.courseCode === courseCode);
+    const courseData = roadmap.nodes.find((n) => n.courseCode === courseCode);
 
     if (!courseData) {
       return res.status(404).json({ error: 'COURSE_NOT_FOUND' });
@@ -110,25 +113,6 @@ async function getSkillLearningResources(req, res, next) {
 
     const resources = await marketSkillService.getLearningResources(decodeURIComponent(skillName));
     res.json(resources);
-  } catch (err) {
-    handleError(err, res);
-  }
-}
-
-async function postRepersonalize(req, res, next) {
-  try {
-    const userId = req.user.userId;
-
-    // Check if repersonalization is already in progress
-    const tree = await skillTreeService.getSkillTree(userId);
-    if (tree.repersonalizing) {
-      return res.status(409).json({ error: 'REPERSONALIZATION_IN_PROGRESS' });
-    }
-
-    // Delegate to Feature 009
-    await primaryRoadmapService.triggerRepersonalize(userId);
-
-    res.json({ repersonalizing: true });
   } catch (err) {
     handleError(err, res);
   }

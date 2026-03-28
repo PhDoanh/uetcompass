@@ -7,9 +7,10 @@ const skillNodeStatusSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    nodeId: {
+    courseCode: {
       type: String,
       required: true,
+      trim: true,
     },
     status: {
       type: String,
@@ -26,7 +27,7 @@ const skillNodeStatusSchema = new mongoose.Schema(
   { timestamps: false }
 );
 
-// Compound unique index for (studentId, nodeId)
-skillNodeStatusSchema.index({ studentId: 1, nodeId: 1 }, { unique: true });
+// Compound unique index for (studentId, courseCode)
+skillNodeStatusSchema.index({ studentId: 1, courseCode: 1 }, { unique: true });
 
 module.exports = mongoose.model('SkillNodeStatus', skillNodeStatusSchema, 'skill_node_statuses');

@@ -93,13 +93,8 @@ export async function getLearningResources(authToken, skillName) {
   }
 }
 
-export async function repersonalize(authToken) {
-  try {
-    const response = await client.post('/skill-tree/repersonalize', {}, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
-}
+/**
+ * Note: Repersonalization is handled by Feature 005 (Account Management)
+ * Feature 005 calls Feature 009 endpoint directly: POST /api/roadmaps/primary/regenerate
+ * Skill Tree does not trigger repersonalization anymore
+ */

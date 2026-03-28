@@ -3,7 +3,7 @@
 /**
  * Unit tests for roadmapAcceptance.service.js
  * Tests: completed-course filter, prerequisite validation, all-completed guard,
- * happy-path commit, repersonalizationPending clear (US4).
+ * happy-path commit, roadmap acceptance.
  */
 
 jest.mock('../../../src/modules/roadmap/roadmapValidation.service');
@@ -52,7 +52,6 @@ const mockProfile = {
 	userId: 'userId1',
 	completedCourses: [{ courseCode: 'INT2202', major: 'CS' }],
 	careerGoal: { role: 'Backend Engineer', companyType: 'Product' },
-	repersonalizationPending: false,
 };
 
 const mockCommittedRoadmap = {
@@ -190,40 +189,7 @@ describe('roadmapAcceptance.service — happy path', () => {
 	});
 });
 
-describe('roadmapAcceptance.service — US4 repersonalizationPending clear', () => {
-	test('clears repersonalizationPending flag on StudentProfile after successful commit', async () => {
-		StudentProfile.findOne = jest.fn().mockResolvedValue({
-			...mockProfile,
-			repersonalizationPending: true,
-		});
-
-		await roadmapAcceptanceService.acceptRoadmap('userId1', {
-			studentProfileId: 'profileId1',
-			personalisationLevel: 'full',
-			isPrimary: true,
-			nodes: mockNodes,
-		});
-
-		expect(StudentProfile.findOneAndUpdate).toHaveBeenCalledWith(
-			{ _id: 'profileId1', userId: 'userId1' },
-			{ $set: { repersonalizationPending: false } }
-		);
-	});
-
-	test('does not throw if repersonalizationPending clear fails', async () => {
-		StudentProfile.findOneAndUpdate = jest.fn().mockRejectedValue(new Error('DB error'));
-
-		// Should not propagate the error — acceptance is already committed
-		await expect(
-			roadmapAcceptanceService.acceptRoadmap('userId1', {
-				studentProfileId: 'profileId1',
-				personalisationLevel: 'full',
-				isPrimary: true,
-				nodes: mockNodes,
-			})
-		).resolves.toBeTruthy();
-	});
-});
+// repersonalizationPending logic removed: no longer tested or required.
 
 // ---------------------------------------------------------------------------
 // Gap-1: input validation in controller (acceptRoadmapHandler)

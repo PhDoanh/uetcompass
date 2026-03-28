@@ -130,30 +130,6 @@ async function switchPrimaryHandler(req, res) {
 async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
-
-		if (isGenerating(userId)) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
-				},
-			});
-		}
-
-		const failedRoadmap = await Roadmap.findOne({ userId, status: 'failed' })
-			.sort({ updatedAt: -1 })
-			.lean();
-
-		if (!failedRoadmap) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'No failed roadmap generation found. Retry is only available after a generation failure.',
-				},
-			});
-		}
-
-		const profileExists = await StudentProfile.exists({ _id: failedRoadmap.studentProfileId });
 		if (!profileExists) {
 			return res.status(404).json({
 				error: {
@@ -165,9 +141,20 @@ async function retryGeneration(req, res) {
 
 		await triggerGeneration(userId, failedRoadmap.studentProfileId.toString(), 'retry');
 
-		return res.status(202).json({
-			message: 'Roadmap generation retry started. You will be notified when it completes.',
-		});
+		if (isGenerating(userId)) {
+			return res.status(409).json({
+				error: {
+					code: 'CONFLICT',
+					message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
+				},
+			});
+		}
+
+		   await triggerGeneration(userId, studentProfileId.toString(), 'on-demand');
+
+		   return res.status(202).json({
+			   message: 'Roadmap generation started. You will be notified when it completes.',
+		   });
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -177,18 +164,7 @@ async function rejectRoadmap(req, res) {
 	try {
 		const userId = req.user.userId;
 		const previewStore = require('./roadmap.preview.store');
-
 		previewStore.clearPendingPreview(userId);
-
-		try {
-			await StudentProfile.findOneAndUpdate(
-				{ userId },
-				{ $set: { repersonalizationPending: false } }
-			);
-		} catch {
-			// Ignore — preview is already cleared
-		}
-
 		return res.json({ message: 'Roadmap preview rejected.' });
 	} catch (err) {
 		return mapError(err, res);

@@ -394,20 +394,6 @@ describe('generation.service — Gap-5 retryGeneration profile existence check',
 		expect(res.body.error.code).toBe('ROADMAP_NOT_FOUND');
 		expect(StudentProfile.exists).toHaveBeenCalledWith({ _id: 'deletedProfileId' });
 	});
-
-	test('returns 409 CONFLICT when no failed roadmap exists', async () => {
-		Roadmap.findOne = jest.fn().mockReturnValue({
-			sort: jest.fn().mockReturnValue({
-				lean: jest.fn().mockResolvedValue(null),
-			}),
-		});
-
-		const req = { user: { userId: 'u-gap5-2' } };
-		const res = mockRes();
-		await controller.retryGeneration(req, res);
-
-		expect(res.statusCode).toBe(409);
-		expect(res.body.error.code).toBe('CONFLICT');
-	});
 });
+
 

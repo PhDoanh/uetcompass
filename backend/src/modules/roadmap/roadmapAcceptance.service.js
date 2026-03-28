@@ -37,16 +37,7 @@ async function acceptRoadmap(userId, { studentProfileId, personalisationLevel, i
 		nodes: filteredNodes,
 	});
 
-	try {
-		await StudentProfile.findOneAndUpdate(
-			{ _id: studentProfileId, userId },
-			{ $set: { repersonalizationPending: false } }
-		);
-	} catch {
-		// Best-effort — acceptance already committed
-	}
-
-	return committed;
+	   return committed;
 }
 
 module.exports = {

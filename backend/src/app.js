@@ -25,7 +25,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
-app.use('/api/roadmap', roadmapRouter);
+app.use('/api/roadmaps', roadmapRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

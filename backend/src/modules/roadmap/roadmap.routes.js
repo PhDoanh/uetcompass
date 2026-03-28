@@ -9,17 +9,10 @@ const roadmapRouter = express.Router();
 
 roadmapRouter.use(requireAuth);
 
-// Canonical primary-roadmap endpoint
 roadmapRouter.get('/primary', controller.getPrimaryRoadmap);
-
-// Retry roadmap generation
-roadmapRouter.post('/retry', controller.retryGeneration);
-
-// Accept a generated roadmap preview
-roadmapRouter.post('/accept', controller.acceptRoadmapHandler);
-roadmapRouter.post('/reject', controller.rejectRoadmap);
-
-// Collection endpoints
+roadmapRouter.post('/primary/regenerate', controller.retryGeneration);
+roadmapRouter.post('/primary/accept', controller.acceptRoadmapHandler);
+roadmapRouter.post('/primary/reject', controller.rejectRoadmap);
 roadmapRouter.get('/', controller.listRoadmaps);
 roadmapRouter.get('/:roadmapId', controller.getRoadmapById);
 roadmapRouter.patch('/:roadmapId/primary', controller.switchPrimaryHandler);

@@ -177,7 +177,7 @@ Only documents linked to an active skill are returned (FR-020).
 
 ## Endpoint 3 — GET /api/market/trends
 
-Returns the Market Insight ranked list — one entry per active skill in the catalog, ordered by `jobCount` descending. Data is served from the most recent `skill_trend_snapshots` document for each skill — no real-time aggregation.
+Returns the Market Insight ranked list — one entry per active skill in the catalog, ordered by `jobCount` descending. Data is served from the most recent `skill_trend_snapshots` document for each skill — no real-time aggregation. **Snapshots include personalization context** (major, career role, company type) showing what student profile factors influenced the trend data collection.
 
 ### Request
 
@@ -203,21 +203,24 @@ No query parameters. No request body.
         "max": 35000000,
         "currency": "VND"
       },
-      "trendDirection": "increasing"
+      "trendDirection": "increasing",
+      "personalizationContext": {
+        "major": "Computer Science",
+        "careerRole": "Frontend Developer",
+        "companyType": "Startup"
+      }
     },
     {
       "skillId": "74f1a2b3c4d5e6f7a8b9c0d2",
       "skillName": "Docker",
       "jobCount": 890,
       "averageSalaryRange": null,
-      "trendDirection": "stable"
-    },
-    {
-      "skillId": "84f1a2b3c4d5e6f7a8b9c0d3",
-      "skillName": "COBOL",
-      "jobCount": 0,
-      "averageSalaryRange": null,
-      "trendDirection": "stable"
+      "trendDirection": "stable",
+      "personalizationContext": {
+        "major": "Computer Science",
+        "careerRole": "DevOps Engineer",
+        "companyType": "Enterprise"
+      }
     }
   ]
 }
@@ -231,12 +234,13 @@ No query parameters. No request body.
 | `trends` | Array | All active skills, sorted by `jobCount` descending; skills with `jobCount = 0` rank last (FR-019) |
 | `trends[].skillId` | String (ObjectId) | Skill identity |
 | `trends[].skillName` | String | Human-readable skill name |
-| `trends[].jobCount` | Number | Total job postings found across contributing sources on the snapshot date |
+| `trends[].jobCount` | Number | Total job postings found via Tavily Search API on the snapshot date, filtered by personalization context |
 | `trends[].averageSalaryRange` | Object\|null | `null` when no salary data available (shown as "not specified" in UI) |
 | `trends[].averageSalaryRange.min` | Number | Lower bound of salary range |
 | `trends[].averageSalaryRange.max` | Number | Upper bound |
 | `trends[].averageSalaryRange.currency` | String | `"VND"` or `"USD"` |
 | `trends[].trendDirection` | String | Enum: `increasing` \| `stable` \| `decreasing` (FR-016) |
+| `trends[].personalizationContext` | Object | StudentProfile-derived context used in Tavily query (audit trail); includes `major`, `careerRole`, `companyType` |
 
 ### Implementation note
 
@@ -251,6 +255,8 @@ SkillTrendSnapshot.aggregate([
 ```
 
 This runs in O(N) with the compound index `skillId_date_desc_idx` — no per-skill query loop.
+
+**Tavily Query Construction**: Each snapshot's `personalizationContext` (StudentProfile-derived: major, careerRole, companyType) is stored for audit trail. During market tracking, Tavily Search API is queried with: `"<courseName> skills job market <major> <careerRole> <companyType>"`.
 
 ### Error responses
 

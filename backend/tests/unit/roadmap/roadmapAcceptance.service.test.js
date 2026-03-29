@@ -18,27 +18,24 @@ const { CourseUnit } = require('../../../src/modules/curriculum/courseUnit.model
 const roadmapAcceptanceService = require('../../../src/modules/roadmap/roadmapAcceptance.service');
 
 const mockNodes = [
-	{
-		courseCode: 'INT2204',
-		courseName: 'OOP',
-		credits: 3,
-		suggestedSemester: 2,
-		gainedSkills: ['OOP'],
-		supportingSkills: ['SOLID'],
-		reason: 'Foundation.',
-		resources: [],
-	},
-	{
-		courseCode: 'INT2201',
-		courseName: 'DSA',
-		credits: 3,
-		suggestedSemester: 3,
-		gainedSkills: ['Algorithms'],
-		supportingSkills: ['Big-O'],
-		reason: 'Core skill.',
-		careerRelevanceNote: 'Backend systems.',
-		resources: [],
-	},
+  {
+    courseCode: 'INT2204',
+    courseName: 'OOP',
+    credits: 3,
+    suggestedSemester: 2,
+    skills: [],
+    reason: 'Foundation.',
+    resources: [],
+  },
+  {
+    courseCode: 'INT2201',
+    courseName: 'DSA',
+    credits: 3,
+    suggestedSemester: 3,
+    skills: [],
+    reason: 'Core skill.',
+    resources: [],
+  },
 ];
 
 const mockCourseUnits = [
@@ -55,11 +52,11 @@ const mockProfile = {
 };
 
 const mockCommittedRoadmap = {
-	_id: 'roadmapId1',
-	userId: 'userId1',
-	status: 'completed',
-	isPrimary: true,
-	nodes: mockNodes,
+  _id: 'roadmapId1',
+  userId: 'userId1',
+  status: 'completed',
+  isPrimary: true,
+  nodes: mockNodes,
 };
 
 beforeEach(() => {
@@ -74,18 +71,16 @@ beforeEach(() => {
 describe('roadmapAcceptance.service — completed-course filter', () => {
 	test('removes nodes whose courseCode is in completedCourses', async () => {
 		const nodesWithCompleted = [
-			...mockNodes,
-			{
-				courseCode: 'INT2202',
-				courseName: 'Completed',
-				credits: 3,
-				suggestedSemester: 1,
-				gainedSkills: [],
-				supportingSkills: [],
-				reason: 'Done.',
-				careerRelevanceNote: 'N/A',
-				resources: [],
-			},
+		  ...mockNodes,
+		  {
+		    courseCode: 'INT2202',
+		    courseName: 'Completed',
+		    credits: 3,
+		    suggestedSemester: 1,
+		    skills: [],
+		    reason: 'Done.',
+		    resources: [],
+		  },
 		];
 
 		await roadmapAcceptanceService.acceptRoadmap('userId1', {
@@ -110,17 +105,15 @@ describe('roadmapAcceptance.service — completed-course filter', () => {
 describe('roadmapAcceptance.service — ALL_COMPLETED guard', () => {
 	test('throws ALL_COMPLETED when all submitted nodes are completed', async () => {
 		const allCompletedNodes = [
-			{
-				courseCode: 'INT2202',
-				courseName: 'Completed',
-				credits: 3,
-				suggestedSemester: 1,
-				gainedSkills: [],
-				supportingSkills: [],
-				reason: 'Done.',
-				careerRelevanceNote: 'N/A',
-				resources: [],
-			},
+		  {
+		    courseCode: 'INT2202',
+		    courseName: 'Completed',
+		    credits: 3,
+		    suggestedSemester: 1,
+		    skills: [],
+		    reason: 'Done.',
+		    resources: [],
+		  },
 		];
 
 		await expect(

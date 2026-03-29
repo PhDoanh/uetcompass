@@ -3,27 +3,23 @@
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const roadmapNodeSchema = {
-	type: SchemaType.ARRAY,
-	items: {
-		type: SchemaType.OBJECT,
-		properties: {
-			courseCode:          { type: SchemaType.STRING },
-			courseName:          { type: SchemaType.STRING },
-			credits:             { type: SchemaType.NUMBER },
-			suggestedSemester:   { type: SchemaType.NUMBER },
-			gainedSkills:        { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-			supportingSkills:    { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-			reason:              { type: SchemaType.STRING },
-		},
-		required: [
-			'courseCode',
-			'courseName',
-			'credits',
-			'gainedSkills',
-			'supportingSkills',
-			'reason',
-		],
-	},
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: {
+      courseCode:        { type: SchemaType.STRING },
+      courseName:        { type: SchemaType.STRING },
+      credits:           { type: SchemaType.NUMBER },
+      suggestedSemester: { type: SchemaType.NUMBER },
+      reason:            { type: SchemaType.STRING },
+    },
+    required: [
+      'courseCode',
+      'courseName',
+      'credits',
+      'reason',
+    ],
+  },
 };
 
 function buildGeminiModel() {
@@ -66,8 +62,6 @@ Instructions:
 3. Return selected nodes in valid topological order: each node MUST appear after all its prerequisites.
 4. If no career goal is provided, include all required-type courses in topological order.
 5. For each node, populate:
-	- gainedSkills: skills the course teaches
-	- supportingSkills: skills needed in practice for the career goal that the course does NOT teach
 	- reason: a clear, explicit explanation of why this course is included for this student's career goal. 
 	The reason MUST directly mention the student's target role and company type (e.g. "Backend Engineer at a Tech Startup") and explain why the course is a stepping stone or required for that specific career. 
 	Avoid generic statements; always justify the course's relevance to the stated career goal.
@@ -78,15 +72,12 @@ Instructions:
 	Bad reason example:
 	- "This course is useful for your career."
    Do NOT combine multiple concepts into one string (e.g. WRONG: "OOP principles (encapsulation, inheritance)").
-   Skills MUST include relevant technologies, protocols, and important CS concepts the course covers
-   (e.g. "HTTPS", "TCP", "UDP", "REST", "Git", "Docker", "Express.js", "Django", "MongoDB").
    Mix both theoretical concepts and practical technologies — do not list only abstract concepts.
-6. supportingSkills must NOT repeat skills already listed in gainedSkills for the same node.
-7. Do NOT include a resources field — the system will append an empty array after parsing.`;
+6. Do NOT include a skills or resources field — the system will append both as empty arrays after parsing.`;
 
 	const result = await buildGeminiModel().generateContent(prompt);
 	const nodes = JSON.parse(result.response.text());
-	return nodes.map((node) => ({ ...node, resources: [] }));
+	return nodes.map((node) => ({ ...node, skills: [], resources: [] }));
 }
 
 module.exports = { callGemini };

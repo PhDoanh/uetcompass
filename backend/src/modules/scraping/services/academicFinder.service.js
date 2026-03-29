@@ -14,12 +14,18 @@ const nodesCatalog = require('./nodesCatalog.service');
  * @return {string} sourceType enum: 'uet_official' | 'github' | 'external'
  */
 function classifySourceType(url) {
-  if (url.includes('uet.vnu.edu.vn') || url.includes('github.com/uet')) {
+  const urlLower = url.toLowerCase();
+  
+  // UET official sources: uet.vnu.edu.vn, uet.edu.vn, github.com/uet* repos (uet-, uet_, uet/)
+  if (/uet\.(vnu\.)?edu\.vn|github\.com\/uet[\/-_]*/i.test(urlLower)) {
     return 'uet_official';
   }
-  if (url.includes('github.com')) {
+  
+  // GitHub (non-UET)
+  if (urlLower.includes('github.com')) {
     return 'github';
   }
+  
   return 'external';
 }
 
@@ -32,19 +38,28 @@ function classifySourceType(url) {
 function detectDocumentType(url, title) {
   const combined = `${url} ${title}`.toLowerCase();
   
-  if (/slide|\.pptx|\.key|presentation/i.test(combined)) {
+  // Slide: .pptx, .key, .odp or keywords
+  if (/slide|presentation|\.pptx|\.key|\.odp|powerpoint/i.test(combined)) {
     return 'slide';
   }
-  if (/note|lecture|lecture_note/i.test(combined)) {
+  
+  // Lecture notes: specific keywords and file types
+  if (/lecture.*note|note.*lecture|\blecture\b|\bnote\b|\blec\b|\bln\b|lecture.*outline|\.notes/i.test(combined)) {
     return 'lecture_note';
   }
-  if (/syllabus|giáo trình|curriculum^\+/i.test(combined)) {
+  
+  // Syllabus: course curriculum documents
+  if (/syllabus|giáo\s+trình|curriculum|course\s+outline|course\s+guide/i.test(combined)) {
     return 'syllabus';
   }
-  if (/homework|exercise|bài tập|\.zip|\.rar/i.test(combined)) {
+  
+  // Exercises: homework, assignments, work samples
+  if (/homework|exercise|bài\s+tập|assignment|\bex\b|workshop|\.(zip|rar|7z)$/i.test(combined)) {
     return 'exercise';
   }
-  if (/code|github|repo|\.java|\.js|\.py/i.test(combined)) {
+  
+  // Code samples: GitHub, source code indicators (require code-related keywords or file extensions)
+  if (/\bcode\b|github.*\b(code|example|repo)\b|\.(java|js|py|cpp|csharp|ts|jsx)\b/i.test(combined)) {
     return 'code_sample';
   }
   

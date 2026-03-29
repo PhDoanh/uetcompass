@@ -38,15 +38,31 @@ describe('Academic Finder Service', () => {
   });
 
   describe('classifySourceType', () => {
-    it('should classify UET official URLs', () => {
+    it('should classify UET official URLs (uet.vnu.edu.vn)', () => {
       const result1 = academicFinder.classifySourceType('https://uet.vnu.edu.vn/slides.pdf');
       expect(result1).toBe('uet_official');
 
-      const result2 = academicFinder.classifySourceType('https://github.com/uet-dev/web-course');
+      const result2 = academicFinder.classifySourceType('http://uet.vnu.edu.vn/courses/web');
       expect(result2).toBe('uet_official');
     });
 
-    it('should classify GitHub URLs', () => {
+    it('should classify UET official URLs (uet.edu.vn)', () => {
+      const result = academicFinder.classifySourceType('https://uet.edu.vn/resources/notes');
+      expect(result).toBe('uet_official');
+    });
+
+    it('should classify UET GitHub repos (github.com/uet-*, github.com/uet_*)', () => {
+      const result1 = academicFinder.classifySourceType('https://github.com/uet-dev/web-course');
+      expect(result1).toBe('uet_official');
+
+      const result2 = academicFinder.classifySourceType('https://github.com/uet_courses/database-design');
+      expect(result2).toBe('uet_official');
+
+      const result3 = academicFinder.classifySourceType('https://github.com/uet/java-basics');
+      expect(result3).toBe('uet_official');
+    });
+
+    it('should classify GitHub (non-UET) URLs', () => {
       const result = academicFinder.classifySourceType('https://github.com/someuser/web-tutorial');
       expect(result).toBe('github');
     });
@@ -55,38 +71,75 @@ describe('Academic Finder Service', () => {
       const result = academicFinder.classifySourceType('https://example.com/lecture-notes.pdf');
       expect(result).toBe('external');
     });
+
+    it('should handle uppercase URLs correctly', () => {
+      const result = academicFinder.classifySourceType('HTTPS://UET.VNU.EDU.VN/SLIDES.PDF');
+      expect(result).toBe('uet_official');
+    });
   });
 
   describe('detectDocumentType', () => {
-    it('should detect slide documents', () => {
-      const result1 = academicFinder.detectDocumentType('https://course.com/slides.pptx', 'Chapter 1 Slides');
+    it('should detect slide documents (.pptx, .key, .odp, keywords)', () => {
+      const result1 = academicFinder.detectDocumentType('https://course.com/slides.pptx', 'Chapter 1');
       expect(result1).toBe('slide');
 
-      const result2 = academicFinder.detectDocumentType('https://course.com/presentation.key', 'Part 2');
+      const result2 = academicFinder.detectDocumentType('https://course.com/presentation.key', 'Week 2 Slides');
       expect(result2).toBe('slide');
+
+      const result3 = academicFinder.detectDocumentType('https://course.com/class.odp', 'Intro');
+      expect(result3).toBe('slide');
+
+      const result4 = academicFinder.detectDocumentType('https://course.com/lecture', 'PowerPoint Presentation');
+      expect(result4).toBe('slide');
     });
 
-    it('should detect lecture notes', () => {
-      const result = academicFinder.detectDocumentType('https://course.com/notes.pdf', 'Lecture Notes Week 1');
-      expect(result).toBe('lecture_note');
+    it('should detect lecture notes (various patterns)', () => {
+      const result1 = academicFinder.detectDocumentType('https://course.com/notes.pdf', 'Lecture Notes Week 1');
+      expect(result1).toBe('lecture_note');
+
+      const result2 = academicFinder.detectDocumentType('https://course.com/chapter.pdf', 'Lecture Outline');
+      expect(result2).toBe('lecture_note');
+
+      const result3 = academicFinder.detectDocumentType('https://course.com/w1.txt', 'Note on Algorithms');
+      expect(result3).toBe('lecture_note');
     });
 
-    it('should detect syllabus documents', () => {
+    it('should detect syllabus documents (Vietnamese & English)', () => {
       const result1 = academicFinder.detectDocumentType('https://course.com/syllabus.pdf', 'Course Syllabus');
       expect(result1).toBe('syllabus');
 
       const result2 = academicFinder.detectDocumentType('https://course.com/giáo_trình.pdf', 'Giáo trình môn học');
       expect(result2).toBe('syllabus');
+
+      const result3 = academicFinder.detectDocumentType('https://course.com/outline.pdf', 'Course Outline');
+      expect(result3).toBe('syllabus');
     });
 
     it('should detect exercise/homework documents', () => {
-      const result = academicFinder.detectDocumentType('https://course.com/homework.zip', 'Bài tập tuần 3');
-      expect(result).toBe('exercise');
+      const result1 = academicFinder.detectDocumentType('https://course.com/homework.zip', 'Bài tập tuần 3');
+      expect(result1).toBe('exercise');
+
+      const result2 = academicFinder.detectDocumentType('https://course.com/assignment.rar', 'Exercise');
+      expect(result2).toBe('exercise');
+
+      const result3 = academicFinder.detectDocumentType('https://course.com/practice.pdf', 'Workshop');
+      expect(result3).toBe('exercise');
     });
 
-    it('should detect code samples', () => {
-      const result = academicFinder.detectDocumentType('https://github.com/course/examples', 'Example code');
-      expect(result).toBe('code_sample');
+    it('should detect code samples (source files, GitHub)', () => {
+      const result1 = academicFinder.detectDocumentType('https://github.com/course/examples', 'Example code');
+      expect(result1).toBe('code_sample');
+
+      const result2 = academicFinder.detectDocumentType('https://repo.com/src/main.java', 'Java Example');
+      expect(result2).toBe('code_sample');
+
+      const result3 = academicFinder.detectDocumentType('https://gist.com/algo.py', 'Python source');
+      expect(result3).toBe('code_sample');
+    });
+
+    it('should fallback to "other" for unknown types', () => {
+      const result = academicFinder.detectDocumentType('https://example.com/random', 'Some content');
+      expect(result).toBe('other');
     });
   });
 

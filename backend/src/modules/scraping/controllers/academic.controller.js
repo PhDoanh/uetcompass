@@ -14,17 +14,32 @@ async function getAcademicByNode(req, res) {
   try {
     const { roadmapNodeId } = req.params;
 
-    // Query visible documents only, sorted by sourceType priority
+    // Query visible documents only
     const documents = await AcademicDocument
       .find({
         roadmapNodeId,
         isVisible: true
       })
-      .sort({
-        sourceType: 1, // uet_official < github < external (alphabetical)
-        createdAt: -1 // newest first within each source type
-      })
       .lean();
+
+    // Sort by sourceType priority: uet_official (0) > github (1) > external (2)
+    // Then by createdAt descending (newest first within each priority)
+    const SOURCE_PRIORITY = {
+      'uet_official': 0,
+      'github': 1,
+      'external': 2
+    };
+
+    documents.sort((a, b) => {
+      const priorityA = SOURCE_PRIORITY[a.sourceType] ?? 999;
+      const priorityB = SOURCE_PRIORITY[b.sourceType] ?? 999;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB; // Lower priority number first
+      }
+      
+      return new Date(b.createdAt) - new Date(a.createdAt); // Newest first
+    });
 
     // Get the course name from first document (if available)
     const courseName = documents.length > 0 ? documents[0].courseName : null;

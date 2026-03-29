@@ -17,8 +17,8 @@ let scheduledJobs = [];
  * Called on server startup
  */
 function register() {
-  if (process.env.NODE_ENV === 'test') {
-    console.log('[ScrapingJobs] Skipping job registration in test environment');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[ScrapingJobs] Skipping job registration (only runs in production)');
     return;
   }
 

@@ -1,8 +1,71 @@
 # Research: Resource Curation
 
 **Feature**: `003-resource-curation`  
-**Date**: 2026-03-11  
-**Feeds into**: [plan.md](plan.md), [data-model.md](data-model.md), [contracts/rest-api.md](contracts/rest-api.md)
+**Date**: 2026-03-28 (revised)  
+**Feeds into**: [plan.md](plan.md), [data-model.md](data-model.md), [contracts/rest-api.md](contracts/rest-api.md)  
+**Architecture Dependency**: Feature 009 (RoadmapNodeSchema)
+
+---
+
+## R-007: Architecture dependency on RoadmapNodeSchema (Feature 009)
+
+**Question**: Feature 003 needs to crawl courses and discover resources per course. Should it depend on the Skill catalog, or on the Roadmap's course nodes?
+
+**Decision**: Depend on **RoadmapNodeSchema** from Feature 009, NOT on the Skill catalog. The three-tier hierarchy is:
+
+1. **RoadmapNodeSchema** (from Feature 009) provides `courseName` (e.g., "Phát triển ứng dụng web")
+2. **AcademicDocument** and **SkillTrendSnapshot** crawl using RoadmapNode's `courseName` + Regex keywords
+3. **LearningResource** crawls using SkillTrendSnapshot's extracted `skillName`
+
+**Key changes**:
+- **AcademicDocument**: FK to roadmapNodeId (not skillId); crawls academic materials for a course
+- **SkillTrendSnapshot**: FK to roadmapNodeId; stores both job market signal AND `skillName` (extracted from jobs)
+- **LearningResource**: FK to skillTrendSnapshotId; crawls based on skillName
+
+**Rationale**:
+- Course-centric organization aligns with student roadmaps — the primary navigation context in UETCompass
+- Extracting trending skills per course (not globally) provides market-aligned, contextual insights
+- Chaining crawls (course → skills → resources) enables a natural, efficient data pipeline
+- Avoids dependency on Skill catalog bloat; works even if a trending skill isn't yet defined in the Skill collection
+
+**Dependency contract with Feature 009**:
+RoadmapNodeSchema must provide:
+- `_id` (ObjectId): roadmap node identifier
+- `courseName` (String): the course/node title (e.g., "Phát triển ứng dụng web")
+- `isActive` (Boolean): whether to crawl this node
+
+If Field names differ, only `nodesCatalog.service.js` updates — all three crawlers remain unchanged.
+
+---
+
+## R-008: Web search API for unified resource discovery — Tavily integration
+
+**Question**: Features need to crawl academic materials (by course name), trending skills (by course + personalization), and learning resources (by skill name). Should each use dedicated APIs, or a unified search platform?
+
+**Decision**: Use **Tavily Search API** for all three crawl capabilities — unified, efficient, no Playwright needed.
+
+- **Tavily API**: Free tier (100 searches/month), REST endpoint `https://api.tavily.com/search`. Returns structured search results (title, url, content snippet, source). No rate-limit blocking for academic/research use. Supports semantic search with context.
+
+**Input hierarchy** (critical for correct integration):
+- **AcademicDocument crawl**: Input = RoadmapNodeSchema.`courseName` **only** (generic materials for all students). Search query: `"<courseName> slides lecture notes UET education"`. Returns URLs to slides, notes, syllabi. **NO StudentProfile involvement.**
+- **SkillTrendSnapshot crawl**: Input = RoadmapNodeSchema.`courseName` **PLUS StudentProfile** (major, careerGoal.role, careerGoal.companyType) — **THE ONLY capability using StudentProfile**. Combined query: e.g., `"web development skills job market <major> <role> <companyType>"` → extracts trending skills + job market demand personalized to career goals.
+- **LearningResource crawl**: Input = SkillTrendSnapshot.`skillName` **only** (generic resources for all students). Search query: `"learn <skillName> tutorial course free paid"`. Returns learning resources. **NO StudentProfile involvement, NO courseName.**
+
+**Rationale**:
+- Single integration eliminates maintaining N different API clients.
+- Semantic search (Tavily) handles Vietnamese course names + personalization context naturally.
+- Free tier sufficient: 3 capabilities × (50–150 nodes/skills) per week ≈ 150–450 searches, well under 100/month limit.
+- Tavily deduplication + ranking prevents duplicate URLs in results.
+- Personalization via StudentProfile makes SkillTrendSnapshot highly relevant to individual student goals.
+
+**Tavily API key management**:
+- Store `TAVILY_API_KEY` in `backend/.env`.
+- Adapter: `backend/src/modules/scraping/adapters/tavily.adapter.js` handles all three crawl types via an overloaded search method.
+
+**Integration with Feature 001 (Onboarding)**:
+- SkillTrendSnapshot crawl queries StudentProfile collection for each student to fetch major, careerGoal.role, careerGoal.companyType.
+- Personalized search results rank skills relevant to the student's declared goals + major.
+- If StudentProfile incomplete (draft), crawl uses course name only (fallback to non-personalized mode).
 
 ---
 

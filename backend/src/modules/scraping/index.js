@@ -5,20 +5,18 @@
  */
 
 // Routes - needed by app.js for endpoint registration
-const academicRoutes = require('./routes/academic.routes');
-const trendsRoutes = require('./routes/trends.routes');
-const resourcesRoutes = require('./routes/resources.routes');
+const academicRouter = require('./routes/academic.routes');
+const trendsRouter = require('./routes/trends.routes');
+const resourcesRouter = require('./routes/resources.routes');
 
 // Job registration - needed by app.js for background task management
 const scrapingJob = require('./scraping.job');
 
 module.exports = {
-	// Public API: Routes
-	routes: {
-		academic: academicRoutes,
-		trends: trendsRoutes,
-		resources: resourcesRoutes,
-	},
+	// Public API: Routes (Router suffix follows naming convention)
+	academicRouter,
+	trendsRouter,
+	resourcesRouter,
 
 	// Public API: Job registration
 	scrapingJob,

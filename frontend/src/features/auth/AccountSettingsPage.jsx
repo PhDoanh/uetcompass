@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import authApi from './auth.api';
 import { useAuth } from '../../providers/AuthProvider';
+import { regeneratePrimaryRoadmap } from '../../services/roadmap.api';
 
 const EMPTY_PROFILE = {
   major: '',
@@ -13,14 +14,44 @@ const EMPTY_PROFILE = {
   personalAspirations: '',
 };
 
+function normalizeProfileForm(profile) {
+  return {
+    major: (profile?.major || '').trim(),
+    completedCourseIdsText: (profile?.completedCourseIdsText || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(', '),
+    careerGoal: {
+      role: (profile?.careerGoal?.role || '').trim(),
+      companyType: (profile?.careerGoal?.companyType || '').trim(),
+      graduationTimeline: (profile?.careerGoal?.graduationTimeline || '').trim(),
+    },
+    personalAspirations: (profile?.personalAspirations || '').trim(),
+  };
+}
+
 export default function AccountSettingsPage() {
   const { accessToken, handleAccountDeleted } = useAuth();
   const [form, setForm] = useState({ displayName: '', fullName: '', privacySetting: 'identified' });
   const [profileForm, setProfileForm] = useState(EMPTY_PROFILE);
+  const [initialProfileForm, setInitialProfileForm] = useState(EMPTY_PROFILE);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [notifications, setNotifications] = useState([]);
+  const [isSavingOnboardInfo, setIsSavingOnboardInfo] = useState(false);
+  const [isRegeneratingRoadmap, setIsRegeneratingRoadmap] = useState(false);
+  const [showRegenerateRoadmap, setShowRegenerateRoadmap] = useState(false);
+
+  const isOnboardingDirty =
+    JSON.stringify(normalizeProfileForm(profileForm)) !== JSON.stringify(normalizeProfileForm(initialProfileForm));
+
+  useEffect(() => {
+    if (isOnboardingDirty) {
+      setShowRegenerateRoadmap(false);
+    }
+  }, [isOnboardingDirty]);
 
   useEffect(() => {
     if (!accessToken) {
@@ -39,7 +70,7 @@ export default function AccountSettingsPage() {
         const profileData = profile.profile || {};
         const completedCourseIds = Array.isArray(profileData.completedCourseIds) ? profileData.completedCourseIds : [];
         const careerGoal = profileData.careerGoal || {};
-        setProfileForm({
+        const nextProfileForm = {
           major: profileData.major || '',
           completedCourseIdsText: completedCourseIds.join(', '),
           careerGoal: {
@@ -48,7 +79,10 @@ export default function AccountSettingsPage() {
             graduationTimeline: careerGoal.graduationTimeline || '',
           },
           personalAspirations: profileData.personalAspirations || '',
-        });
+        };
+        setProfileForm(nextProfileForm);
+        setInitialProfileForm(nextProfileForm);
+        setShowRegenerateRoadmap(false);
       })
       .catch((err) => setError(err.message || 'Failed to load profile.'));
 
@@ -94,6 +128,63 @@ export default function AccountSettingsPage() {
         return;
       }
       setError(err.message || 'Failed to update profile.');
+    }
+  }
+
+  async function saveOnboardingInfo() {
+    if (!isOnboardingDirty || !accessToken) {
+      return;
+    }
+
+    setError('');
+    setMessage('');
+    setIsSavingOnboardInfo(true);
+
+    const profilePayload = {
+      major: profileForm.major.trim(),
+      completedCourseIds: profileForm.completedCourseIdsText
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+      careerGoal: {
+        role: profileForm.careerGoal.role.trim(),
+        companyType: profileForm.careerGoal.companyType.trim(),
+        graduationTimeline: profileForm.careerGoal.graduationTimeline.trim(),
+      },
+      personalAspirations: profileForm.personalAspirations.trim(),
+    };
+
+    try {
+      await authApi.patchProfile(accessToken, {
+        ...form,
+        profile: profilePayload,
+      });
+      setInitialProfileForm(profileForm);
+      setShowRegenerateRoadmap(true);
+      setMessage('Onboarding info saved.');
+    } catch (err) {
+      setError(err.message || 'Failed to save onboarding info.');
+    } finally {
+      setIsSavingOnboardInfo(false);
+    }
+  }
+
+  async function regenerateRoadmap() {
+    if (!accessToken) {
+      return;
+    }
+
+    setError('');
+    setMessage('');
+    setIsRegeneratingRoadmap(true);
+
+    try {
+      await regeneratePrimaryRoadmap(accessToken);
+      setMessage('Roadmap regeneration triggered successfully.');
+    } catch (err) {
+      setError(err.message || 'Failed to regenerate roadmap.');
+    } finally {
+      setIsRegeneratingRoadmap(false);
     }
   }
 
@@ -260,6 +351,17 @@ export default function AccountSettingsPage() {
             rows={4}
             style={{ width: '100%', marginBottom: 12 }}
           />
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={saveOnboardingInfo} disabled={!isOnboardingDirty || isSavingOnboardInfo}>
+              {isSavingOnboardInfo ? 'Saving...' : 'Save onboarding info'}
+            </button>
+            {showRegenerateRoadmap ? (
+              <button type="button" onClick={regenerateRoadmap} disabled={isRegeneratingRoadmap}>
+                {isRegeneratingRoadmap ? 'Regenerating...' : 'Regenerate Roadmap'}
+              </button>
+            ) : null}
+          </div>
         </section>
       </form>
 

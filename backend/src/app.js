@@ -7,6 +7,7 @@ const taggingWorker = require('./modules/tagging/tagging.worker');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
 const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
+const searchRouter = require('./modules/search/search.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
@@ -26,6 +27,7 @@ app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/roadmaps', roadmapRouter);
 app.use('/api/tagging', taggingRouter);
+app.use('/api/search', searchRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

@@ -1,5 +1,6 @@
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
+import SearchPage from './features/search/SearchPage';
 import OnboardingGuard from './guards/OnboardingGuard';
 
 export default function App() {
@@ -24,9 +25,24 @@ export default function App() {
 		);
 	}
 
+	// Route to Search if pathname includes /search
+	if (pathname.includes('/search')) {
+		return (
+			<OnboardingGuard>
+				<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+					<SearchPage />
+				</main>
+			</OnboardingGuard>
+		);
+	}
+
 	return (
 		<OnboardingGuard>
 			<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+				<div style={{ marginBottom: 12 }}>
+					<a href="/search" style={{ marginRight: 12 }}>Search</a>
+					<a href="/skill-tree">Skill Tree</a>
+				</div>
 				<OnboardingPanel authToken={authToken} sseToken={sseToken} onUnauthorized={handleUnauthorized} />
 			</main>
 		</OnboardingGuard>

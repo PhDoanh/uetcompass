@@ -16,31 +16,31 @@ const roadmapId = 'roadmap001';
 const profileId = 'profile001';
 
 const completedRoadmap = {
-	_id: roadmapId,
-	userId,
-	isPrimary: true,
-	studentProfileId: profileId,
-	personalisationLevel: 'full',
-	status: 'completed',
-	errorMessage: null,
-	nodes: [{ courseCode: 'INT2204', courseName: 'OOP', credits: 3, gainedSkills: [], supportingSkills: [], reason: 'r', resources: [] }],
-	acceptedAt: new Date(),
-	createdAt: new Date(),
-	updatedAt: new Date(),
+  _id: roadmapId,
+  userId,
+  isPrimary: true,
+  studentProfileId: profileId,
+  personalisationLevel: 'full',
+  status: 'completed',
+  errorMessage: null,
+  nodes: [{ courseCode: 'INT2204', courseName: 'OOP', credits: 3, skills: [], reason: 'r', resources: [] }],
+  acceptedAt: new Date(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 const failedRoadmap = {
-	_id: 'roadmap002',
-	userId,
-	isPrimary: false,
-	studentProfileId: profileId,
-	personalisationLevel: 'full',
-	status: 'failed',
-	errorMessage: 'Gemini timeout',
-	nodes: [],
-	acceptedAt: null,
-	createdAt: new Date(),
-	updatedAt: new Date(),
+  _id: 'roadmap002',
+  userId,
+  isPrimary: false,
+  studentProfileId: profileId,
+  personalisationLevel: 'full',
+  status: 'failed',
+  errorMessage: 'Gemini timeout',
+  nodes: [],
+  acceptedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 beforeEach(() => {

@@ -1,17 +1,16 @@
 const mongoose = require('mongoose');
 
 const RoadmapNodeSchema = new mongoose.Schema(
-	{
-		courseCode:          { type: String, required: true, trim: true },
-		courseName:          { type: String, required: true, trim: true },
-		credits:             { type: Number, required: true, min: 1 },
-		suggestedSemester:   { type: Number, min: 1, default: null },
-		gainedSkills:        { type: [String], default: [] },
-		supportingSkills:    { type: [String], default: [] },
-		reason:              { type: String, required: true },
-		resources:           { type: [mongoose.Schema.Types.Mixed], default: [] },
-	},
-	{ _id: false }
+  {
+    courseCode:        { type: String, required: true, trim: true },
+    courseName:        { type: String, required: true, trim: true },
+    credits:           { type: Number, required: true, min: 1 },
+    suggestedSemester: { type: Number, min: 1, default: null },
+    reason:            { type: String, required: true },
+	skills:            { type: [String], default: [] }, // Enriched by Feature 003
+    resources:         { type: [mongoose.Schema.Types.Mixed], default: [] }, // Enriched by Feature 003
+  },
+  { _id: false }
 );
 
 const RoadmapSchema = new mongoose.Schema(

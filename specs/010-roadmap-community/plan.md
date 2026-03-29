@@ -1,94 +1,120 @@
-# Implementation Plan: Roadmap Community
+# Implementation Plan: [FEATURE]
 
-**Branch**: `010-roadmap-community` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/010-roadmap-community/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
-Feature 010 adds social sharing to accepted student roadmaps via two snapshot-based mechanisms: (1) a public `ShareLink` that captures the roadmap at generation time and serves it unauthenticated via a UUID token; and (2) a `CommunityEntry` that captures the roadmap at publish time and is discoverable by authenticated peers in a filtered, major-relevance-ordered feed. Both mechanisms store their node content in an immutable `RoadmapSnapshot` document (separate collection, only public fields). Community entries support likes (atomic `$inc` counter + `LikeRecord` collection) and forks (filter completed courses by canonical key `(major, courseCode)` → call Feature 009 fork-consumable endpoint with full nodes payload → save accepted roadmap). Privacy substitution reads from `User.privacySetting` (Feature 005) and applies response-time substitution only; in identified mode UI prefers `displayName` and falls back via system-wide name policy when missing. Fork success triggers post-acceptance side effects (notification, eligibility-clock reset, audit log, optional progress update). The Y-day time-gate is stored as a `system_config` DB document to allow runtime changes without redeployment. No AI calls in this feature.
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
-**Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-**Primary Dependencies**:
-- Backend: `express.js`, `mongoose 8`, `crypto` (built-in — `randomUUID()` for share tokens) — no new packages;
-- Frontend: `React 18`, `React Router v6`, existing fetch utilities
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
 
-**Storage**: MongoDB Atlas free tier — new collections: `roadmap_snapshots`, `share_links`, `community_entries`, `like_records`; reads (read-only): `student_profiles` (Feature 001), `roadmaps` (Feature 009), `users` (Feature 005); shared: `system_config` (Y-day config)
-**Testing**: Jest 29 — unit tests for business logic; MongoDB mocked via `jest.fn()`; no external services required locally
-**Target Platform**: Backend → Render (Node.js web service, free tier); Frontend → Vercel (React SPA)
-**Project Type**: Web application — React SPA + Node.js/Express REST API (modular monolith)
-**Performance Goals**: Share-link serve (Endpoint 3) < 100ms p95 — single RoadmapSnapshot read by token; Feed browse (Endpoint 6) < 200ms — aggregation pipeline on ≤ 500 entries; SC-005 (filtered feed within 2s) met by indexed `majorGroup` + `careerGoalRole` fields
-**Constraints**: No Redis; no background jobs — snapshots created synchronously; no AI calls; `supportingSkills` and `careerRelevanceNote` excluded at snapshot capture time (never stored, never in any response); privacy substitution at response time only (never alter stored data); Y config readable without redeployment (DB doc + 60s in-process cache)
-**Scale/Scope**: UET-VNU students only; expected ≤ 500 community entries at launch; ≤ 50 roadmap nodes per snapshot
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design — all items pass.*
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- [x] **Modular Monolithic (Principle I)**: All community logic is isolated in `backend/src/modules/community/`. Cross-module interactions go through the service layer: `community.service.js` calls `studentProfileService.getByUserId()`, `userService.getById()` (privacy/display), and Feature 009 fork-consumable acceptance service via injected references — no direct cross-module model access. No microservice split introduced.
-- [x] **UET-First (Principle II)**: No abstraction for other institutions. Major group label mapping is UET-specific config. All student context (major, career goal, canonical completed-course records) is UET-specific. Nothing is parameterised for other universities.
-- [x] **Privacy by Minimalism (Principle III)**: `RoadmapSnapshot` stores only `courseCode`, `courseName`, `gainedSkills`, `reason` — `supportingSkills` and `careerRelevanceNote` are excluded at capture time. Privacy mode is read from `User.privacySetting` (owner Feature 005). `CommunityEntry` stores `exactMajor` and `userId` (needed for identified mode) but never exposes raw identity fields when anonymous. No credentials stored.
-- [x] **AI-Assisted, Human-Controlled (Principle IV)**: No Gemini API calls in this feature. All logic (snapshot capture, fork filtering, like counting, feed ordering, privacy substitution) is pure code. Feature 009's acceptance flow is a deterministic validation step, not an AI call.
-- [x] **Test What Matters (Principle V)**: Unit tests mandatory for: eligibility check (time-gate boundary conditions including `daysUntilEligible` computation), snapshot capture (field exclusion — confirm `supportingSkills` absent), fork filter by canonical `(major, courseCode)` + empty-sequence guard, strict ordering (filter-before-validation), anonymous substitution (identified vs anonymous output), identified-name fallback policy, like atomic operations (increment/decrement, duplicate guard), feed ordering (same-major-group-first sort), and fork success side effects (notification/audit/progress hook). All tests run locally with mocked MongoDB via `jest.fn()`.
+**Gates from Constitution:**
 
-## Project Structure
+- Modular Monolithic: All modules (auth, curriculum, roadmap, community, etc.) must be part of a single deployable backend; no microservices. Service boundaries enforced via service layer, not cross-imports.
+- UET-First Scope: All schemas, business logic, and UI are UET-specific; no abstraction for other universities.
+- Privacy by Minimalism: No student credentials stored; only minimal data (course list, grades, roadmap, likes, etc.) retained. All secrets via env vars. No personal info outside scope.
+- AI-Assisted, Human-Controlled: LLMs (Gemini) only for parsing/transform, not for business logic or decision-making. All LLM output validated before use. No LLM calls for logic that can be handled in code.
+- Test What Matters: Unit tests required for roadmap logic, skill mapping, scraping, and LLM parsing. No full coverage required; focus on side effects and complex business logic. All tests must run locally without external services (mock Gemini, Playwright).
+
+**Additional Constraints:**
+- Backend: Render (free tier), Frontend: Vercel, DB: MongoDB Atlas (free tier)
+- Free tier cold start must be handled gracefully in UX
+- Curriculum data is a DAG, mapped to skills
+- Self-report is primary data input for MVP
+- All PRs require review; constitution overrides individual/team conventions
+
+**Gate Status:**
+- All gates are currently satisfied by the planned technical approach and constraints. No violations detected.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/010-roadmap-community/
-├── plan.md              ← this file
-├── spec.md              ← feature requirements
-├── research.md          ← Phase 0: 7 technical decisions (R-001 through R-007)
-├── data-model.md        ← Phase 1: 4 owned collections + referenced entities
-├── quickstart.md        ← Phase 1: local dev setup + 5 manual test scenarios
-├── contracts/
-│   └── rest-api.md          ← Phase 1: 10 REST endpoints with request/response shapes
-└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
-│   ├── modules/
-│   │   └── community/
-│   │       ├── roadmapSnapshot.model.js     # Mongoose schema: roadmap_snapshots collection
-│   │       ├── shareLink.model.js           # Mongoose schema: share_links; partial unique index on userId (active)
-│   │       ├── communityEntry.model.js      # Mongoose schema: community_entries; unique index on userId
-│   │       ├── likeRecord.model.js          # Mongoose schema: like_records; unique compound index
-│   │       ├── community.service.js         # all business logic: eligibility, snapshot capture, fork, like, feed ordering, privacy substitution
-│   │       ├── community.controller.js      # thin Express handlers — delegates to service
-│   │       └── community.routes.js          # mounts all 10 endpoints under /api/community
-│   └── app.js                           # require community models + mount community.routes (two lines)
+│   ├── models/
+│   ├── services/
+│   └── api/
 └── tests/
-    └── unit/
-        └── community/
-            └── community.service.test.js    # eligibility boundary, snapshot field exclusion, fork filter, anonymous substitution, like atomicity, feed ordering
 
 frontend/
-└── src/
-    └── features/
-        └── community/
-            ├── pages/
-            │   ├── CommunityFeed.jsx            # /community — feed with filter controls + major-relevance ordering
-            │   └── CommunityDetailView.jsx      # /community/:entryId — full node list + like + fork buttons
-            ├── components/
-            │   ├── CommunityEntryCard.jsx       # feed card: owner, major, career goal, node count, like count, preview nodes
-            │   ├── ShareLinkPanel.jsx           # student's own share link UI: generate, copy, revoke
-            │   ├── LikeButton.jsx               # like/unlike toggle with optimistic count update
-            │   └── ForkButton.jsx               # fork action with prerequisite violation error display
-            └── community.api.js             # fetch wrappers for all 10 endpoints
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Option 2 — Web application. Modular monolith backend with community logic isolated in `modules/community/`. Same structure as Feature 007 (progress module). Frontend uses feature-folder structure mirroring the backend module boundary. Cross-module service calls go through injected service references — no direct cross-module model access.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
-No Constitution violations — complexity tracking table not required.
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

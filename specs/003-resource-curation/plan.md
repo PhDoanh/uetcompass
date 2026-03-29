@@ -7,7 +7,7 @@
 
 Build the Resource Curation subsystem as a new `scraping` module in the backend monolith. The module runs three scheduled background jobs via `node-cron`, all using **Tavily Search API** as the unified web discovery layer: 
 
-1. **Academic Material Finder** (Cap.1): Crawls each active RoadmapNode's `courseName` via Tavily (course name only — **NO StudentProfile**). Stores results with Gemini-inferred optional skill associations in `academic_documents`. Results are identical for all students.
+1. **Academic Material Finder** (Cap.1): Crawls each active RoadmapNode's `courseName` via Tavily (course name only — **NO StudentProfile**). Stores results in `academic_documents`. Results are identical for all students.
 
 2. **Market Trend Tracker** (Cap.2): Queries Tavily using RoadmapNode.`courseName` COMBINED WITH StudentProfile personalization data (major, careerGoal.role, careerGoal.companyType) — **ONLY this capability uses StudentProfile**. Extracts trending skill mentions, stores daily snapshots in `skill_trend_snapshots` with jobCount + trend direction + `skillName`. Results are personalized per student's career goals.
 
@@ -40,8 +40,8 @@ Three read-only REST endpoints expose the collected data to the React frontend w
 - [x] **Modular Monolithic**: All new code lives in `backend/src/modules/scraping/` — the `scraping` module is a first-class domain boundary. No cross-module direct imports: the `scraping` module reads `roadmap_nodes` collection via its own `nodesCatalog.service.js` accessor; does not import from the `roadmap` module (Feature 009).
 - [x] **UET-First**: Academic Finder targets UET-VNU official sources exclusively (FR-003); Vietnamese job boards (TopDev, ITviec, JobOKO) are prioritized; roadmap structure is UET-specific. No abstraction for other universities introduced.
 - [x] **Privacy by Minimalism**: This feature collects only public external data — no student credentials, no grades, no roadmap progress tracking. `AcademicDocument`, `SkillTrendSnapshot`, and `LearningResource` contain zero student PII. Privacy principle fully satisfied.
-- [x] **AI-Assisted, Human-Controlled**: Gemini is used only for skill inference on academic documents (parse/transform role). Gemini output is validated against strict JSON schema before persistence — no blind trust. Free/paid classification uses deterministic per-source rules with no Gemini involvement (R-004).
-- [x] **Test What Matters**: Unit tests mandatory for: skill-extraction-from-job-postings logic (Regex patterns), crawl pipeline partial-failure handling, trend ±10% computation, and per-source free/paid classifiers. All external APIs (job boards, learning platforms, Gemini) are mocked in tests.
+- [x] **AI-Assisted, Human-Controlled**: Skill inference is performed using Regex pattern matching on academic documents. Free/paid classification uses deterministic per-source rules (R-004).
+- [x] **Test What Matters**: Unit tests mandatory for: skill-extraction-from-job-postings logic (Regex patterns), crawl pipeline partial-failure handling, trend ±10% computation, and per-source free/paid classifiers. All external APIs (job boards, learning platforms) are mocked in tests.
 
 ## Project Structure
 
@@ -76,10 +76,10 @@ backend/
 │           │       # - trendSearch(courseName, personalizationContext) → SkillJobData for SkillTrendSnapshot
 │           │       # - resourceSearch(skillName) → LearningResource[]
 │           ├── services/
-│           │   ├── academicFinder.service.js     # Cap.1: per-RoadmapNode Tavily academic search, Gemini inference
+│           │   ├── academicFinder.service.js     # Cap.1: per-RoadmapNode Tavily academic search, store results
 │           │   ├── marketTracker.service.js      # Cap.2: per-RoadmapNode Tavily trend search (with personalization), skill extraction
 │           │   ├── resourceCrawler.service.js    # Cap.3: per-SkillTrendSnapshot Tavily resource search, dedup & upsert
-│           │   ├── skillInference.service.js     # Gemini/Regex skill extraction + schema validation
+│           │   ├── skillInference.service.js     # Regex skill extraction + schema validation
 │           │   ├── personalizationContext.service.js  # NEW: Enrich Tavily queries with StudentProfile data (major, careerRole, companyType)
 │           │   └── studentCatalog.service.js     # NEW: Fetch StudentProfile by studentId for personalization context
 │           ├── routes/
@@ -92,7 +92,7 @@ backend/
 │           │   └── resources.controller.js       # Thin handlers for resources endpoints
 │           ├── nodesCatalog.service.js           # getActiveRoadmapNodes() — reads roadmap_nodes collection
            ├── scraping.job.js                   # node-cron registrations: Cap.1 (weekly academic Tavily) → Cap.2 (weekly trend Tavily + personalization) → Cap.3 (daily resource Tavily)
-           └── scraping.config.js                # TAVILY_API_KEY, Gemini API key, schedule strings
+           └── scraping.config.js                # TAVILY_API_KEY, schedule strings
 └── tests/
     └── unit/
         └── scraping/

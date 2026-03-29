@@ -49,14 +49,14 @@ RoadmapNodeSchema.courseName
 |---|---|---|---|---|---|
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `roadmapNodeId` | ObjectId | yes | — | ref: `roadmap_nodes` (Feature 009) | FK to the RoadmapNode being processed |
-| `skillId` | ObjectId\|null | yes | — | ref: `skills`; `null` only when Gemini confidence is `low` | Inferred skill association (optional) |
+| `skillId` | ObjectId\|null | yes | — | ref: `skills`; always `null` for Feature 003 | Optional skill association (not used) |
 | `title` | String | yes | — | maxlength: 500; trimmed | Display title of the document |
 | `url` | String | yes | — | Valid URL; unique per collection | Direct link to the document |
 | `sourceType` | String | yes | — | Enum: `"uet_official"` \| `"github"` \| `"external"` | Determines display order (UET priority) |
 | `documentType` | String | yes | — | Enum: `"slide"` \| `"lecture_note"` \| `"syllabus"` \| `"exercise"` \| `"code_sample"` | Nature of academic content |
 | `courseName` | String | yes | — | maxlength: 200 | Original RoadmapNode course name used for crawling |
 | `crawlReason` | String | yes | — | Enum: `"course_name_match"` \| `"keyword_extracted"` | Why this document was matched to the node |
-| `inferenceConfidence` | String | yes | `"medium"` | Enum: `"high"` \| `"medium"` \| `"low"` | Gemini's confidence (R-003); `low` = not student-visible |
+| `inferenceConfidence` | String | yes | `"medium"` | Enum: `"high"` \| `"medium"` \| `"low"` | Always "medium" (not used for filtering) |
 | `isVisible` | Boolean | yes | `true` | `false` when `inferenceConfidence === "low"` | Controls student visibility |
 | `lastCrawledAt` | Date | yes | — | Updated on every upsert | Timestamp of collection |
 | `createdAt` | Date | auto | `Date.now()` | Set once on first insert | |
@@ -87,8 +87,8 @@ For each active RoadmapNode with `courseName`:
    - "note" / "lecture" → `documentType: "lecture_note"`
    - "syllabus" / "giáo trình" → `documentType: "syllabus"`
    - ".pdf" + homework context → `documentType: "exercise"`
-5. **Infer skillId** (optional): If Tavily snippet or document title suggests a skill (e.g., "React: Build Web Apps"), send to Gemini for confidence check; store only if confidence ≥ medium
-6. **Upsert**: One document per unique `{ url, roadmapNodeId }` pair; mark `isVisible: true` unless confidence is low
+5. **No skill inference** (optional skillId field reserved for future use; always `null` in current implementation)
+6. **Upsert**: One document per unique `{ url, roadmapNodeId }` pair; mark `isVisible: true` for all documents
 
 ---
 

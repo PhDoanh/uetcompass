@@ -162,7 +162,7 @@ No query parameters. No request body.
 
 ### Filter
 
-Only documents with `isVisible: true` (i.e., Gemini confidence `high` or `medium`) are returned.  
+Only documents with `isVisible: true` are returned.  
 Only documents linked to an active skill are returned (FR-020).
 
 ### Error responses

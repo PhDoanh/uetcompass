@@ -65,7 +65,7 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 
 ## Phase 2: User Story 1 — Academic Material Finder (Priority P1)
 
-**Capability 1**: For each course (RoadmapNode), crawl UET-related academic materials via Tavily, classify source type, link to skills via Gemini inference.
+**Capability 1**: For each course (RoadmapNode), crawl UET-related academic materials via Tavily, classify source type, store academic documents.
 
 **Goal**: Display academic materials (lecture slides, notes, syllabi, exercises) organized by course to all students uniformly.
 
@@ -74,7 +74,6 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 - [x] Each material shows title, source type (UET official / GitHub / external), document type badge (slide/note/syllabus/exercise)
 - [x] Source ranking applied correctly (UET official prioritized first)
 - [x] No duplicate material URLs appear in list
-- [x] Optional skill labels shown if Gemini inferred with medium+ confidence
 - [x] Empty state message shown if no materials collected yet
 
 ### US1 — Backend Implementation
@@ -92,9 +91,9 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
     - "syllabus" / "giáo trình" / "curriculum" → "syllabus"
     - "homework" / "exercise" / "bài tập" → "exercise"
     - Default: "other"
-  - Call Gemini to infer optional skill association: send document {title, URL, snippet}; store skillId only if confidence ≥ "medium", set isVisible = true; if confidence < medium, set isVisible = false
+  - Mark all documents as `isVisible: true` (no skill inference required; all materials visible regardless of skill)
   - Deduplicate by {url, roadmapNodeId} using upsert (idempotent, timestamp updated on re-crawl)
-  - Handle errors gracefully: if Tavily fails, skip node and continue; if Gemini fails, store without skillId but isVisible still true
+  - Handle errors gracefully: if Tavily fails, skip node and continue
   - Return summary: `{roadmapNodeId, courseName, documentsFound: count}`
 - [x] T014 [P] [US1] Create `backend/src/modules/scraping/controllers/academic.controller.js` with endpoint:
   - `getAcademicByNode(req, res)` — GET handler returning academic materials for a course node
@@ -108,9 +107,9 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 - [x] T016 [P] [US1] Create `backend/src/modules/scraping/__tests__/academicFinder.service.test.js` with unit tests:
   - Verify sourceType classification: UET official domains detected correctly, GitHub detected, external mapped
   - Verify documentType detection from URLs and titles (exact keyword matching)
-  - Verify Gemini skill inference with confidence thresholds (medium+ visible, low hidden)
+  - Verify all documents marked as isVisible: true
   - Verify deduplication by {url, roadmapNodeId} (same material crawled twice = stored once, timestamp updated)
-  - Verify partial failure handling: Tavily succeeds + Gemini fails → document stored without skillId but isVisible = true
+  - Verify partial failure handling: Tavily fails for one node → skip node and continue
   - Verify error recovery (node without results doesn't crash loop)
 - [x] T017 [P] [US1] Create `backend/src/modules/scraping/__tests__/academic.routes.test.js` with integration tests:
   - GET /api/academic/node/{nodeId} returns visible documents only, sorted by sourceType priority
@@ -188,7 +187,6 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 - [x] T026 [P] [US2] Create `backend/src/modules/scraping/services/skillInference.service.js` with methods:
   - `extractSkillsFromJobPostings(tavilySnippet, jobBoardContext)` → uses Regex patterns `/(React|Vue|Node\.?js|Express|MongoDB|PostgreSQL|Python|Java|…)/gi` to extract skill mentions
   - Build frequency histogram; keep skills with ≥3 occurrences in results
-  - Send extracted skills ± context to Gemini for confidence validation (optional: only if >3 skills extracted)
   - Return validated skill list per R-003
 - [x] T027 [P] [US2] Create `backend/src/modules/scraping/services/marketTracker.service.js` with crawl logic:
   - `crawlMarketTrendsPerNode(roadmapNodes, studentProfiles)` loops over nodes
@@ -352,12 +350,11 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
   - Add error logging: `console.error('Crawl job failed:', error)` with timestamp
   - Document schedule in code: "Tasks run in sequence; allow 10 min total runtime per spec"
 - [ ] T051 Create `backend/src/modules/scraping/scraping.config.js`:
-  - Export schedule strings, API keys (TAVILY_API_KEY, GEMINI_API_KEY)
+  - Export schedule strings, API keys (TAVILY_API_KEY)
   - Export Tavily API base URL: `https://api.tavily.com/search`
-  - Export Gemini model ID and inference config
 - [ ] T052 Create `backend/src/modules/scraping/index.js` to export all services/adapters for use by other modules (if needed; follows modular boundary)
 - [ ] T053 Create `backend/src/modules/scraping/__tests__/scraping.integration.test.js` with end-to-end tests:
-  - Mock all external APIs (Tavily, Gemini, Feature 009 roadmap, Feature 001 profiles)
+  - Mock all external APIs (Tavily, Feature 009 roadmap, Feature 001 profiles)
   - Test crawl sequence: AcademicDocument → SkillTrendSnapshot → LearningResource
   - Verify data flows correctly through the pipeline
   - Verify all three crawl jobs complete without errors
@@ -433,7 +430,7 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 ### Cross-Story
 
 - [x] All three crawl jobs run on schedule without errors
-- [x] Partial failure in one job doesn't block others (e.g., Gemini unavailable ≠ abandon AcademicDocument crawl)
+- [x] Partial failure in one job doesn't block others (e.g., Tavily unavailable for one capability ≠ abandon other capabilities)
 - [x] All endpoints require valid auth token
 - [x] All endpoint responses match rest-api.md contract
 - [x] Database indexes present and performant (p95 < 150ms per endpoint)
@@ -482,7 +479,7 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 | Risk | Mitigation |
 |------|-----------|
 | Tavily API quota exhausted (100/mo free) | Monitor usage weekly; current estimate 150–450 searches/mo may exceed; escalate if needed |
-| Gemini skill inference confidence/cost | Test Regex-only approach first; use Gemini only if needed for accuracy; cost: ~$0 on free tier |
+| Regex skill extraction accuracy | Test with diverse job postings; maintain keyword list; extend patterns as new skills emerge |
 | Feature 001 (StudentProfile) delayed | Build Cap.2 (marketTracker) to work without personalization initially; add StudentProfile integration when Feature 001 ready |
 | Feature 009 (RoadmapNodeSchema) API change | **Only nodesCatalog.service.js needs update**; all three crawlers remain unchanged (isolated adapter pattern) |
 | Job board data stale / URLs rot quickly | Plan re-crawl frequency; implement isAvailable flag; suppress broken links from UI |

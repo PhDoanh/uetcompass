@@ -13,8 +13,6 @@
 | Node.js | 20 LTS | `node --version` |
 | npm | ≥ 10 | `npm --version` |
 | MongoDB Atlas URI | M0 free | env var `MONGODB_URI` |
-| Google Gemini API key | Free tier | env var `GEMINI_API_KEY` |
-| YouTube Data API v3 key | Free tier | env var `YOUTUBE_API_KEY` |
 | Feature 009 (Roadmap) | running | `roadmap_nodes` collection populated with ≥1 active node |
 | Skill catalog (optional) | — | `skills` collection (not required; used for convenience lookup) |
 
@@ -29,9 +27,6 @@ This feature introduces one new environment variable. Add it to `backend/.env`:
 MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/uetcompass
 JWT_ACCESS_SECRET=<same secret used by auth.middleware.js>
 PORT=4000
-
-# Already required by Feature 002
-GEMINI_API_KEY=<your Gemini API key>
 
 # NEW — required by Feature 003
 TAVILY_API_KEY=<your Tavily Search API key>

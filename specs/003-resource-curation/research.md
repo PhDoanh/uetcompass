@@ -126,44 +126,49 @@ If Field names differ, only `nodesCatalog.service.js` updates — all three craw
 
 **Question**: FR-011 requires automatic inference of skill association for each academic document from course name, title, and content signals. What technology should perform this inference?
 
-**Decision**: Gemini API in "parse/transform" role — consistent with Constitution Principle IV. The academic document's title, snippet (first 200 chars of text content if available), and the queried course name are sent to Gemini. Gemini returns a single object `{ skillId: "<id>", confidence: "high|medium|low" }`. Only `high` and `medium` confidence results are persisted; `low` confidence documents are stored with a `pendingReview` flag but excluded from student display.
+**Decision**: Regex pattern matching on document titles and snippets. No Gemini involvement. Academic documents are displayed to all students regardless of skill association (`isVisible: true` for all). Skill extraction uses deterministic keyword patterns (150+ tech skills: React, Python, Node.js, PostgreSQL, etc.) matched against job postings ONLY — not academic documents.
 
-**Prompt design** (token-minimized per constitution):
-```
-Given the UETCompass skill list (JSON array of {id, name}):
-{{SKILL_CATALOG_JSON}}
-
-This academic document belongs to UET course "{{COURSE_NAME}}":
-Title: "{{DOC_TITLE}}"
-Snippet: "{{DOC_SNIPPET}}"
-
-Return JSON: {"skillId": "<id from list or null>", "confidence": "high|medium|low"}
-Rules: null if no strong match. Do not invent skill IDs.
-```
-
-**Schema validation** (mandatory per constitution Principle IV):
+**Skill Extraction Approach**:
 ```js
-const schema = {
-  type: 'object',
-  required: ['skillId', 'confidence'],
-  properties: {
-    skillId: { type: ['string', 'null'] },
-    confidence: { enum: ['high', 'medium', 'low'] }
-  },
-  additionalProperties: false
-};
-```
-If validation fails, the document is skipped and logged — no blind trust.
+// Regex patterns for 150+ tech skills
+const SKILL_PATTERNS = [
+  /\breact\b/gi,
+  /\bpython\b/gi,
+  /\bnode\.?js\b/gi,
+  /\bexpress\b/gi,
+  /\bmongodb\b/gi,
+  // ... 145 more patterns
+];
 
-**Token budget**: Skill catalog JSON (~50–150 skills × ~30 bytes/skill = ~1.5–4.5 KB). Plus title + snippet (~300 bytes). Total ~2–5K tokens per call. Running once per document per weekly crawl — volume is manageable on Gemini free tier.
+// Applied to job postings (Market Tracker), NOT academic documents
+function extractSkillsFromJobPostings(snippet) {
+  const matches = {};
+  SKILL_PATTERNS.forEach(pattern => {
+    const found = snippet.match(pattern);
+    if (found) matches[pattern.source] = found.length;
+  });
+  return matches;
+}
+```
+
+**Academic Documents**:
+- NO skill inference performed
+- ALL documents marked as `isVisible: true`
+- `skillId` field reserved for future use but always `null`
+- No Gemini calls; no token cost
+
+**Token budget**: $0 (Regex patterns only)
 
 **Rationale**:
-- Pure keyword matching (no Gemini) would use `skill.name.toLowerCase().includes(word)` logic — works for exact matches but fails for "Lập trình hướng đối tượng" → "Object-Oriented Programming" (Vietnamese/English mismatch) or course naming variations. Gemini handles this naturally.
-- Gemini is already in the stack (Feature 002); no new dependency introduced.
+- Skill inference requirement (FR-011) applies to ESTABLISHING skill trends from job market data — NOT to academic documents
+- Academic documents should be shown to students regardless of skill association
+- Regex approach is simple, testable, requires no external APIs, and has zero cost
+- Gemini is used by Feature 002 for CourseUnit structure parsing (different purpose); not needed for Feature 003
 
 **Alternatives considered**:
-- Manual admin mapping: Rejected — spec and FR-011 explicitly prohibit it.
-- Pure keyword/fuzzy matching: Insufficient for Vietnamese ↔ English cross-lingual skill inference. Rejected as sole strategy; may be used as a pre-filter before Gemini to reduce API calls.
+- Gemini skill inference: Rejected — adds cost and complexity; academic documents shown unconditionally; market trends (not academic docs) drive skill associations
+- Manual admin mapping: Rejected — spec and FR-011 explicitly prohibit it
+- Fuzzy matching: Not needed — Regex patterns sufficient for market trend extraction
 
 ---
 
@@ -171,7 +176,7 @@ If validation fails, the document is skipped and logged — no blind trust.
 
 **Question**: Each platform exposes price/enrollment data differently. How is the free/paid flag determined consistently across sources?
 
-**Decision**: Per-source classification rules, evaluated deterministically before any Gemini involvement:
+**Decision**: Per-source classification rules, evaluated deterministically:
 
 | Source | Free indicator | Paid indicator | Missing → default |
 |---|---|---|---|
@@ -220,7 +225,7 @@ If validation fails, the document is skipped and logged — no blind trust.
 
 ## R-006: Skill catalog interface — what collection and fields does the scraping module read?
 
-**Question**: The scraping module needs to iterate over all skills in the catalog (to crawl resources per skill, to build the Gemini prompt, and to anchor job trend data). Where does the skill catalog live?
+**Question**: The scraping module needs to iterate over all skills in the catalog (to crawl resources per skill, and to anchor job trend data). Where does the skill catalog live?
 
 **Decision**: Declare a **forward-compatible interface contract** with the Skill/Roadmap module. The scraping module reads from a `skills` collection (working name — Roadmap planner may rename) via a thin `skillCatalog.service.js` accessor. Only the minimum fields needed are declared:
 
@@ -228,7 +233,7 @@ If validation fails, the document is skipped and logged — no blind trust.
 // Minimum shape required from skills collection
 {
   _id: ObjectId,       // Linked skill ID referenced in all three new collections
-  name: String,        // Used for search queries and Gemini prompts
+  name: String,        // Used for resource search queries (resourceSearch, trendSearch)
   isActive: Boolean    // true = include in crawl; false = skip (FR-020)
 }
 ```

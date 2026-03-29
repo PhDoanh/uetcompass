@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 
 const academicDocumentSchema = new mongoose.Schema(
   {
-    roadmapNodeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'RoadmapNode',
-      required: true
+    courseCode: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    courseName: {
+      type: String,
+      required: true,
+      maxlength: 200,
+      trim: true
     },
     skillId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,11 +38,6 @@ const academicDocumentSchema = new mongoose.Schema(
       type: String,
       enum: ['slide', 'lecture_note', 'syllabus', 'exercise', 'code_sample'],
       required: true
-    },
-    courseName: {
-      type: String,
-      required: true,
-      maxlength: 200
     },
     crawlReason: {
       type: String,
@@ -74,8 +75,8 @@ const academicDocumentSchema = new mongoose.Schema(
 
 // Indexes as per data-model.md
 academicDocumentSchema.index({ url: 1 }, { unique: true });
-academicDocumentSchema.index({ roadmapNodeId: 1, sourceType: 1 });
-academicDocumentSchema.index({ roadmapNodeId: 1, isVisible: 1 });
+academicDocumentSchema.index({ courseCode: 1, sourceType: 1 });
+academicDocumentSchema.index({ courseCode: 1, isVisible: 1 });
 academicDocumentSchema.index({ skillId: 1 });
 
 module.exports = mongoose.model('AcademicDocument', academicDocumentSchema);

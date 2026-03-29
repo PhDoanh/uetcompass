@@ -6,18 +6,18 @@
 const AcademicDocument = require('../models/academicDocument.model');
 
 /**
- * GET /api/academic/node/:roadmapNodeId
- * Returns academic materials for a specific course node, sorted by source priority
- * Only visible documents (confidence >= medium) are returned
+ * GET /api/academic/course/:courseCode
+ * Returns academic materials for a specific course, sorted by source priority
+ * Only visible documents are returned
  */
-async function getAcademicByNode(req, res) {
+async function getAcademicByCourse(req, res) {
   try {
-    const { roadmapNodeId } = req.params;
+    const { courseCode } = req.params;
 
     // Query visible documents only
     const documents = await AcademicDocument
       .find({
-        roadmapNodeId,
+        courseCode,
         isVisible: true
       })
       .lean();
@@ -56,7 +56,7 @@ async function getAcademicByNode(req, res) {
     }));
 
     res.json({
-      roadmapNodeId,
+      courseCode,
       courseName,
       documentCount: formattedDocs.length,
       documents: formattedDocs
@@ -72,5 +72,5 @@ async function getAcademicByNode(req, res) {
 }
 
 module.exports = {
-  getAcademicByNode
+  getAcademicByCourse
 };

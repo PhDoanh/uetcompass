@@ -48,13 +48,13 @@ RoadmapNodeSchema.courseName
 | Field | Type | Required | Default | Constraints | Notes |
 |---|---|---|---|---|---|
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
-| `roadmapNodeId` | ObjectId | yes | — | ref: `roadmap_nodes` (Feature 009) | FK to the RoadmapNode being processed |
+| `courseCode` | String | yes | — | Non-empty; matches RoadmapNode.courseCode (Feature 009) | Identifier for the course (e.g., "INT2204") — embedded RoadmapNode has no _id |
+| `courseName` | String | yes | — | maxlength: 200; trimmed | Display name from RoadmapNode.courseName used for crawling |
 | `skillId` | ObjectId\|null | yes | — | ref: `skills`; always `null` for Feature 003 | Optional skill association (not used) |
 | `title` | String | yes | — | maxlength: 500; trimmed | Display title of the document |
 | `url` | String | yes | — | Valid URL; unique per collection | Direct link to the document |
 | `sourceType` | String | yes | — | Enum: `"uet_official"` \| `"github"` \| `"external"` | Determines display order (UET priority) |
 | `documentType` | String | yes | — | Enum: `"slide"` \| `"lecture_note"` \| `"syllabus"` \| `"exercise"` \| `"code_sample"` | Nature of academic content |
-| `courseName` | String | yes | — | maxlength: 200 | Original RoadmapNode course name used for crawling |
 | `crawlReason` | String | yes | — | Enum: `"course_name_match"` \| `"keyword_extracted"` | Why this document was matched to the node |
 | `inferenceConfidence` | String | yes | `"medium"` | Enum: `"high"` \| `"medium"` \| `"low"` | Always "medium" (not used for filtering) |
 | `isVisible` | Boolean | yes | `true` | `false` when `inferenceConfidence === "low"` | Controls student visibility |
@@ -68,13 +68,13 @@ RoadmapNodeSchema.courseName
 |---|---|---|---|
 | `_id` (default) | `_id` | Unique | MongoDB default |
 | `url_unique` | `url` | **Unique** | Deduplication across all academic documents |
-| `roadmapNodeId_source_idx` | `roadmapNodeId: 1, sourceType: 1` | Standard | Fast lookup by node + source priority |
-| `roadmapNodeId_visible_idx` | `roadmapNodeId: 1, isVisible: 1` | Standard | Fast student query (visible only) |
+| `courseCode_source_idx` | `courseCode: 1, sourceType: 1` | Standard | Fast lookup by course + source priority |
+| `courseCode_visible_idx` | `courseCode: 1, isVisible: 1` | Standard | Fast student query (visible only) |
 | `skillId_idx` | `skillId: 1` | Standard | Lookup by inferred skill if needed |
 
 ### Crawl Logic (Tavily-based)
 
-For each active RoadmapNode with `courseName`:
+For each active RoadmapNode with `courseCode` and `courseName`:
 
 1. **Query Tavily**: Call `tavily.adapter.search()` with query: `"<courseName> slides lecture notes UET education"`
 2. **Filter results**: Keep only URLs from UET official domains (uet.vnu.edu.vn, github.com/uet-*), GitHub, and reputable education sites
@@ -88,7 +88,7 @@ For each active RoadmapNode with `courseName`:
    - "syllabus" / "giáo trình" → `documentType: "syllabus"`
    - ".pdf" + homework context → `documentType: "exercise"`
 5. **No skill inference** (optional skillId field reserved for future use; always `null` in current implementation)
-6. **Upsert**: One document per unique `{ url, roadmapNodeId }` pair; mark `isVisible: true` for all documents
+6. **Upsert**: One document per unique `url`; deduplication across all courses; mark `isVisible: true` for all documents
 
 ---
 

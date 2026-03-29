@@ -71,7 +71,7 @@ function detectDocumentType(url, title) {
 /**
  * Main crawl logic: process all active RoadmapNodes
  * @param {Array} roadmapNodes - Optional array of nodes to process (defaults to all active)
- * @return {Promise<Array>} Array of {roadmapNodeId, courseName, documentsFound}
+ * @return {Promise<Array>} Array of {courseCode, courseName, documentsFound}
  */
 async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
   try {
@@ -85,9 +85,9 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
 
     for (const node of roadmapNodes) {
       try {
-        const { _id: nodeId, courseName } = node;
+        const { courseCode, courseName } = node;
 
-        console.log(`[AcademicFinder] Crawling node: "${courseName}" (${nodeId})`);
+        console.log(`[AcademicFinder] Crawling node: "${courseName}" (${courseCode})`);
 
         // Search Tavily for academic materials
         const tavilyResults = await tavilyAdapter.academicSearch(courseName);
@@ -105,18 +105,18 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
             // No skill inference - all documents visible
             const isVisible = true;
 
-            // Upsert: one document per unique (url, roadmapNodeId) pair
+            // Upsert: one document per unique URL (deduplication across all courses)
             // If same URL is crawled again, timestamp is updated
             const upsertResult = await AcademicDocument.findOneAndUpdate(
-              { url, roadmapNodeId: nodeId },
+              { url },
               {
                 title,
                 url,
-                roadmapNodeId: nodeId,
+                courseCode,
+                courseName,
                 skillId: null,
                 sourceType,
                 documentType,
-                courseName,
                 crawlReason: 'course_name_match',
                 inferenceConfidence: null,
                 isVisible,
@@ -135,7 +135,7 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
         }
 
         results.push({
-          roadmapNodeId: nodeId,
+          courseCode,
           courseName,
           documentsFound
         });
@@ -144,7 +144,7 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
         console.error(`[AcademicFinder] Failed to process node "${node.courseName}":`, nodeError.message);
         // Continue with next node - don't crash the entire crawl
         results.push({
-          roadmapNodeId: node._id,
+          courseCode: node.courseCode,
           courseName: node.courseName,
           documentsFound: 0,
           error: nodeError.message

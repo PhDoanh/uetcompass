@@ -9,14 +9,14 @@ const academicController = require('../controllers/academic.controller');
 const { verifyToken } = require('../../../middleware/auth.middleware');
 
 /**
- * GET /api/academic/node/:roadmapNodeId
- * Returns academic materials for a course node
+ * GET /api/resources/academic/:courseCode
+ * Returns academic materials for a course
  * Authorization required: Bearer token
  */
 router.get(
-  '/node/:roadmapNodeId',
+  '/academic/:courseCode',
   verifyToken,
-  academicController.getAcademicByNode
+  academicController.getAcademicByCourse
 );
 
 module.exports = router;

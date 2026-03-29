@@ -1,120 +1,134 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Roadmap Community
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Branch**: `010-roadmap-community` | **Date**: 2026-03-29 | **Spec**: `specs/010-roadmap-community/spec.md`
+**Input**: Feature specification from `specs/010-roadmap-community/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Deliver a snapshot-first Roadmap Community that supports share-link access-mode switching and authenticated community discovery/forking, while preserving immutable community post content and immutable roadmap snapshots. The design enforces one `SharedRoadmap` per `RoadmapSnapshot` (student can own many snapshots), keeps `likeCount` attached to `CommunityPost`, applies privacy at read time from Feature 005, and uses onboarding/profile major directly for display and feed filtering (including anonymous mode).
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: JavaScript (Node.js 20 LTS backend, React 18 + Vite frontend)
+**Primary Dependencies**: Express, Mongoose, JWT auth middleware, React Query/HTTP service layer (existing frontend services)
+**Storage**: MongoDB Atlas (existing monolithic backend DB)
+**Testing**: Jest (backend unit/integration), frontend component/service tests (existing Vite test stack), API contract tests under backend test suites
+**Target Platform**: Web app (Render backend + Vercel frontend)
+**Project Type**: Modular monolith web application
+**Performance Goals**: Feed filtering/render response <= 2s at up to 500 posts; share revoke/unpublish effect visible <= 5s
+**Constraints**:
+- Snapshot content is immutable once captured.
+- Community post content is immutable (no edit flow).
+- Link token is stable across access-mode changes.
+- Feature 010 consumes Feature 009 fork-acceptance contract and does not own prerequisite logic.
+- No storage/use of student credentials (constitution privacy principle).
+**Scale/Scope**: Authenticated UET users, one active `CommunityPost` per student, many historical snapshots/posts over time.
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Gates from Constitution:**
+### Pre-Phase 0 Gate
 
-- Modular Monolithic: All modules (auth, curriculum, roadmap, community, etc.) must be part of a single deployable backend; no microservices. Service boundaries enforced via service layer, not cross-imports.
-- UET-First Scope: All schemas, business logic, and UI are UET-specific; no abstraction for other universities.
-- Privacy by Minimalism: No student credentials stored; only minimal data (course list, grades, roadmap, likes, etc.) retained. All secrets via env vars. No personal info outside scope.
-- AI-Assisted, Human-Controlled: LLMs (Gemini) only for parsing/transform, not for business logic or decision-making. All LLM output validated before use. No LLM calls for logic that can be handled in code.
-- Test What Matters: Unit tests required for roadmap logic, skill mapping, scraping, and LLM parsing. No full coverage required; focus on side effects and complex business logic. All tests must run locally without external services (mock Gemini, Playwright).
+1. **I. Modular Monolithic - Keep It Simple**: PASS
+- Keep implementation inside existing backend/frontend modules; no new service split.
 
-**Additional Constraints:**
-- Backend: Render (free tier), Frontend: Vercel, DB: MongoDB Atlas (free tier)
-- Free tier cold start must be handled gracefully in UX
-- Curriculum data is a DAG, mapped to skills
-- Self-report is primary data input for MVP
-- All PRs require review; constitution overrides individual/team conventions
+2. **II. UET-First Scope**: PASS
+- Major/career logic remains UET-specific and sourced from existing onboarding/profile/account data.
 
-**Gate Status:**
-- All gates are currently satisfied by the planned technical approach and constraints. No violations detected.
+3. **III. Privacy by Minimalism**: PASS
+- No credential persistence introduced.
+- Anonymous rendering hides only display name per confirmed decision C2; major remains from onboarding/profile source.
+
+4. **IV. AI-Assisted, Human-Controlled**: PASS
+- No new AI decision paths introduced in this feature.
+
+5. **V. Test What Matters**: PASS WITH REQUIRED PLAN COVERAGE
+- Add measurable validation for NFR outcomes (C3): latency, revoke/unpublish propagation, and consistency checks.
+
+No constitution violations requiring exception.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+specs/010-roadmap-community/
+|-- plan.md
+|-- research.md
+|-- data-model.md
+|-- quickstart.md
+|-- contracts/
+|   |-- rest-api.md
+|-- tasks.md
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+|-- src/
+|   |-- app.js
+|   |-- middleware/
+|   |-- modules/
+|       |-- roadmap/
+|           |-- community/               # to be added/extended for feature 010
+|-- tests/
+    |-- unit/
+        |-- roadmap/
+            |-- community/               # unit/contract tests for API + domain rules
 
 frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+|-- src/
+|   |-- features/
+|   |   |-- roadmap-community/           # to be added/extended for feed/detail/publish/share controls
+|   |-- guards/
+|   |-- services/
+|       |-- roadmapCommunity.api.js      # to be added/extended
+|-- tests/
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Use current monolith structure with a dedicated roadmap community module and tests colocated under existing backend/frontend patterns.
+
+## Phase 0: Research Plan
+
+Research resolved all material ambiguities and produced explicit decisions in `research.md`:
+
+1. Clarify snapshot semantics consistently across share links and community posts.
+2. Formalize access-mode switching semantics (same token, state changes only).
+3. Resolve ownership/cardinality: one `SharedRoadmap` per snapshot; student can own many snapshots.
+4. Replace major-group mapping in this feature with direct major usage from onboarding/profile/account source for display/filter.
+5. Define measurable non-functional validation strategy for SC-002/SC-003/SC-004 style outcomes.
+
+## Phase 1: Design and Contracts
+
+Design outputs are generated in:
+
+- `data-model.md`: immutable `RoadmapSnapshot`, `SharedRoadmap`, immutable `CommunityPost`, and `CommunityPostLike`.
+- `contracts/rest-api.md`: publish/unpublish/feed/detail/share/fork/like contracts with stable token + immutable post semantics.
+- `quickstart.md`: implementation and verification flow, including measurable NFR checks.
+
+Agent context update is executed via:
+
+- `.specify/scripts/powershell/update-agent-context.ps1 -AgentType copilot`
+
+## Post-Phase 1 Constitution Re-Check
+
+1. **I. Modular Monolithic - Keep It Simple**: PASS
+- Data model and API remain within existing backend/frontend boundaries.
+
+2. **II. UET-First Scope**: PASS
+- Filtering/display behavior explicitly tied to UET onboarding/profile/account fields.
+
+3. **III. Privacy by Minimalism**: PASS
+- Anonymous mode only changes rendered identity; no duplicated anonymized storage required.
+
+4. **IV. AI-Assisted, Human-Controlled**: PASS
+- No AI policy changes.
+
+5. **V. Test What Matters**: PASS
+- Plan explicitly includes contract tests, domain behavior tests, and measurable NFR validation steps.
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+No constitution exceptions requested.

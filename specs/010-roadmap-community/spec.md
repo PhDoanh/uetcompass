@@ -34,38 +34,39 @@ Both sharing actions are time-gated: a student must have held their current acce
 Authenticated UETCompass users can also **like** a CommunityPost (a simple interest signal displayed as a count) and **fork** a published roadmap — sending fork-consumable payload to Feature 009's acceptance flow (including prerequisite validation). Before validation is executed, courses the forking student has already completed are filtered out using canonical identity `(major, courseCode)`. If the filtered payload passes validation, it becomes the forking student's new accepted roadmap and triggers standard post-acceptance side effects (notification, eligibility reset, audit log, optional progress update). Both actions require authentication and apply only to community feed posts, not to share link snapshots.
 
 This feature depends on Feature 009's prerequisite compatibility validation being in place at the acceptance endpoint. That validation is specified and owned by Feature 009; this feature consumes it (fork triggers it) but does not define it.
--Sharing & Snapshots
+
+Sharing & Snapshots
+
 Snapshot & Link Rule:
 
-Each accepted roadmap snapshot can have only one share link; no duplicate snapshots/links are permitted for the same roadmap content.
-To create a new link, a new snapshot (with different content) must be generated; the system must prevent duplicate snapshots for the same roadmap state.
-Uniqueness is enforced by computing a hash of all `courseCode` and `skills` fields in the roadmap; if a new snapshot's hash matches an existing one, creation is blocked.
+Each RoadmapSnapshot has exactly one SharedRoadmap (one share URL/token bound to one immutable snapshot). A student can own many snapshots over time.
+To create a new link for updated roadmap content, a new snapshot must be generated.
+
 Share Link Modes:
 
 Share links have access modes: private, users-only, public.
-Only links with public access can appear in the community feed; toggling access to non-public removes feed eligibility.
-If the access mode is changed to non-public, the system will prompt the user to delete the CommunityPost; otherwise, the post remains public and visible in the feed.
-On fork prerequisite failure, the error message will list all violating courses.
-Community feed entries (CommunityPost) are references (pointers) to existing public snapshot share links.
+The Share Link object persists across mode switches and always keeps the same URL/token.
+Users-only mode enforces an explicit ACL of allowed user IDs. Only ACL members can view the shared snapshot.
+Only links currently set to public are eligible to be published to the community feed.
+
 Feed Listing and Deletion:
 
-To remove an entry from the community feed, the CommunityPost must be deleted.
-Unpublishing a community post deletes the CommunityPost object, but the underlying SharedRoadmap/snapshot or share link may persist unless explicitly revoked.
-Feed and Snapshot Relationship:
+To remove an entry from the community feed, the CommunityPost must be deleted (unpublish).
+Unpublishing deletes the CommunityPost object, but the underlying SharedRoadmap/snapshot may persist unless explicitly revoked.
 
-The CommunityPost reveals an existing shared snapshot; no snapshot duplication is allowed.
-Eligibility & Time Gates
-Y-Day Time Gate:
+Eligibility & Time Gates:
+
 The minimum-hold period (Y days, system-configurable) to share or publish applies per user and per new accepted roadmap, regardless of how the roadmap was accepted (including forks).
-Privacy & Identity
-Display Name & Privacy Behavior:
+
+Privacy & Identity:
 
 Privacy is determined by User.privacySetting.
-If anonymous, display name and exact major are not shown; instead, “Anonymous” and the major group label are displayed.
-If identified, the current display name is shown—updates to the display name are reflected immediately (or at least on page refresh).
+If anonymous, only the display name is hidden and rendered as "Anonymous"; major remains visible from authoritative profile/account/onboarding data.
+If identified, the current display name is shown and updates are reflected on the next render/refresh.
+
 Change Propagation:
 
-Privacy setting changes are reflected “as soon as possible” in all relevant UIs, with no need to republish or regenerate links.
+Privacy setting changes are reflected within one page refresh in all relevant UIs, with no need to republish or regenerate links.
 
 **What this feature does NOT do:**
 
@@ -73,7 +74,7 @@ Privacy setting changes are reflected “as soon as possible” in all relevant 
 - Does not include admin moderation tools for published roadmaps.
 - Does not specify or modify Feature 009's prerequisite validation logic — that is Feature 009's responsibility.
 - Does not determine the value of Y (treated as a configurable system parameter).
-- Does not define the exact major group label mapping (treated as a system configuration, not a specification concern).
+- Does not define or change onboarding/profile/account major source-of-truth rules from Features 001 and 005.
 ---
 
 ## Clarifications
@@ -84,7 +85,7 @@ Privacy setting changes are reflected “as soon as possible” in all relevant 
 - Q: Does User Story 1 (prerequisite validation on roadmap acceptance) belong to this feature or Feature 009? → A: It belongs to Feature 009. This feature depends on it but does not own it.
 - Q: What does fork produce — a read-only reference copy, a re-personalised template via Feature 009, or a direct import through Feature 009's standard acceptance flow? → A: Fork sends filtered full-node payload through Feature 009's fork-consumable acceptance contract (with prerequisite checking). If it passes, the forked roadmap becomes the forking student's new accepted roadmap.
 - Q: Can a student have multiple simultaneous active share links, or only one? → A: A student can have multiple active SharedRoadmap records, each representing a different snapshot/version of their roadmap. Each snapshot is managed independently and can have its own access mode and revocation state.
-- Q: What is the default sort order of the community feed — publication date, like count, or something else? → A: Entries are ordered by relevance to the viewing student's major: entries from the same or related major group appear first.
+- Q: What is the default sort order of the community feed — publication date, like count, or something else? → A: Entries are ordered by relevance to the viewing student's major (same major first), then by publication date (most recent first).
 
 ### Session 2026-03-11 (Pre-plan)
 
@@ -108,22 +109,24 @@ Privacy setting changes are reflected “as soon as possible” in all relevant 
 ### User Story 1 – Check Eligibility and Share via Snapshot Link (Priority: P1)
 
 
-An eligible student (whose accepted roadmap has been held for at least Y days) opens their roadmap and chooses to generate a public read-only link. **At the moment the student clicks "share", the system captures an immutable snapshot of the roadmap and binds it to a unique Share Link URL/token.** This snapshot will never change, even if the student later accepts a new roadmap or makes further edits. The existing snapshot link always serves the original content until explicitly revoked. The student can revoke the link at any time, after which the URL returns an invalid/not-found response.
+An eligible student (whose accepted roadmap has been held for at least Y days) opens their roadmap and chooses to generate a read-only share link. **At the moment the student clicks "share", the system captures an immutable snapshot of the roadmap and binds it to a unique Share Link URL/token.** This snapshot will never change, even if the student later accepts a new roadmap or makes further edits. The existing snapshot link always serves the original content until explicitly revoked.
 
-**Why this priority**: Link sharing is the simplest, most direct sharing path and requires no community infrastructure. The snapshot semantic — where the link captures a moment in time and survives roadmap changes — distinguishes this from the live CommunityPost and is essential to specify correctly.
+**Why this priority**: Link sharing is the simplest, most direct sharing path and requires no community infrastructure. The snapshot semantic — where the link captures a moment in time and survives roadmap changes — is essential to specify correctly.
 
-**Independent Test**: Can be fully tested by generating a share link, visiting it unauthenticated to verify the snapshot renders, then accepting a new roadmap, visiting the link again and verifying it still serves the original snapshot, then revoking the link and confirming the URL is now invalid.
+**Independent Test**: Can be fully tested by generating a share link, switching access modes while confirming the same URL/token is retained, verifying mode-based access behavior, then accepting a new roadmap and verifying the existing link still serves the original snapshot.
 
 **Acceptance Scenarios**:
 
 1. **Given** a student's accepted roadmap has been held for fewer than Y days, **When** they view the roadmap page, **Then** the "Share via link" action is unavailable (disabled or hidden) and the UI communicates how many days remain before eligibility.
 2. **Given** a student's accepted roadmap has been held for exactly Y days or more, **When** they view the roadmap page, **Then** the "Share via link" action is available.
 3. **Given** an eligible student activates "Share via link", **When** the action is confirmed, **Then** a unique shareable URL is generated and displayed to the student; the URL captures the roadmap's current node content as an immutable snapshot.
-4. **Given** a valid share link exists, **When** an unauthenticated visitor opens the URL, **Then** a read-only snapshot of the roadmap is displayed — showing all nodes with `courseCode`, `courseName`, `skills`, and `reason` — with no edit actions available.
-5. **Given** a valid share link exists, **When** an authenticated UETCompass student opens the URL, **Then** the same read-only snapshot is displayed.
-6. **Given** a student has an active share link and then accepts a new roadmap, **When** a visitor opens the existing link, **Then** the link continues to serve the snapshot captured at generation time — it is NOT invalidated by the roadmap change.
-7. **Given** a student has an active share link and then accepts a new roadmap, **When** the student attempts to generate a new share link, **Then** the "Share via link" action is unavailable until the new roadmap has been held for Y days — the time-gate has reset for new link generation.
-8. **Given** a student revokes an existing share link, **When** the revoke action is confirmed, **Then** the previously generated URL immediately returns an invalid/not-found response for any visitor.
+4. **Given** a valid share link exists in public mode, **When** an unauthenticated visitor opens the URL, **Then** a read-only snapshot of the roadmap is displayed — showing all nodes with `courseCode`, `courseName`, `skills`, and `reason` — with no edit actions available.
+5. **Given** a valid share link exists in users-only mode, **When** an authenticated user who is not in the link ACL opens the URL, **Then** access is denied.
+6. **Given** a valid share link exists in users-only mode, **When** an authenticated user in the link ACL opens the URL, **Then** the snapshot is displayed.
+7. **Given** a share link exists and the owner changes its access mode, **When** the change is saved, **Then** the same URL/token remains valid and access behavior follows the new mode immediately.
+8. **Given** a student has an active share link and then accepts a new roadmap, **When** a visitor opens the existing link, **Then** the link continues to serve the snapshot captured at generation time — it is NOT invalidated by the roadmap change.
+9. **Given** a student has an active share link and then accepts a new roadmap, **When** the student attempts to generate a new share link, **Then** the "Share via link" action is unavailable until the new roadmap has been held for Y days — the time-gate has reset for new link generation.
+10. **Given** a student revokes an existing share link, **When** the revoke action is confirmed, **Then** the previously generated URL immediately returns an invalid/not-found response for any visitor.
 
 ---
 
@@ -139,48 +142,48 @@ An eligible student publishes their accepted roadmap to the community feed as a 
 
 1. **Given** a student's accepted roadmap has been held for fewer than Y days and they have no existing CommunityPost, **When** they view the roadmap page, **Then** the "Publish to community" action is unavailable and the UI communicates how many days remain before eligibility.
 2. **Given** an eligible student activates "Publish to community", **When** the action is confirmed, **Then** their roadmap post appears in the community feed visible to all authenticated users.
-3. **Given** a CommunityPost is displayed, **When** a viewer inspects its metadata, **Then** they see: owner's display name (or "Anonymous"), major identity (exact major when identified; major group label when anonymous), career goal role, number of roadmap nodes, publication date, and a preview of the first few nodes.
+3. **Given** a CommunityPost is displayed, **When** a viewer inspects its metadata, **Then** they see: owner's display name (or "Anonymous"), major, career goal role, number of roadmap nodes, publication date, and a preview of the first few nodes.
 4. **Given** a published roadmap, **When** any authenticated user views the full roadmap detail from the community, **Then** they see all nodes with `courseCode`, `courseName`, `skills`, and `reason`.
 5. **Given** a student has an active CommunityPost and then accepts a new roadmap, **When** another student views the community feed, **Then** the CommunityPost still shows the snapshot captured at the time of the original publication — it is NOT automatically updated by the roadmap change.
 6. **Given** a student has an active CommunityPost and later publishes again (after accepting a new roadmap and satisfying the Y-day hold), **When** the new publication is confirmed, **Then** the existing CommunityPost is replaced with a fresh snapshot of the new roadmap.
 7. **Given** a student publishes their roadmap, **When** they later activate "Unpublish", **Then** the post is removed from the community feed immediately and is no longer discoverable.
 8. **Given** a student who previously unpublished wants to republish after accepting a new roadmap, **When** they attempt to publish, **Then** the Y-day hold on the current roadmap applies — they must wait until eligible.
-9. **Given** a student has no share link generated but has published to the community, **When** another student visits the community detail view, **Then** the detail renders a no access — share link and community publication are dependent.
+9. **Given** a student has no active share link but has an active CommunityPost, **When** another authenticated student opens the community detail view, **Then** the detail still renders normally — community publication is independent from share-link availability.
 
 ---
 
-### User Story 3 – Control Privacy (Display Name and Major Identity) (Priority: P2)
+### User Story 3 – Control Privacy (Display Name Visibility) (Priority: P2)
 
-Before or after generating a share link or publishing to the community, a student can choose to appear identified (real display name + exact major) or anonymous ("Anonymous" + major group label). Privacy mode is read from `User.privacySetting` (Feature 005). In identified mode, the UI prefers `User.displayName`; when it is missing/blank, the system-wide fallback-name policy is applied. When anonymous, the exact major is replaced with a general major group label to reduce re-identification risk in small cohorts. This choice can be changed at any time and takes effect immediately.
+Before or after generating a share link or publishing to the community, a student can choose to appear identified (display name shown) or anonymous (display name hidden as "Anonymous"). Privacy mode is read from `User.privacySetting` (Feature 005). In identified mode, the UI prefers `User.displayName`; when it is missing/blank, the system-wide fallback-name policy is applied. Major remains visible in both modes from authoritative onboarding/profile/account data. This choice can be changed at any time and is reflected within one page refresh.
 
-**Why this priority**: Privacy control is critical in a small-cohort university context where even a general description combined with a career goal could re-identify a student. The major group obfuscation is key to making anonymous mode meaningfully private. It is P2 because the feature works with a default of identified mode and this story adds user control.
+**Why this priority**: Privacy control is critical in a small-cohort university context and lets students choose whether their display name is shown. It is P2 because the feature works with a default of identified mode and this story adds user control.
 
-**Independent Test**: Can be fully tested by publishing a roadmap in anonymous mode, verifying the entry shows "Anonymous" and a major group label (not the exact major), then switching to identified mode and verifying the real name and exact major appear — without re-publishing.
+**Independent Test**: Can be fully tested by publishing a roadmap in anonymous mode, verifying the entry shows "Anonymous" while major remains visible, then switching to identified mode and verifying the display name appears — without re-publishing.
 
 **Acceptance Scenarios**:
 
 1. **Given** a student has not yet made a privacy choice, **When** they initiate a share or publish action, **Then** the system defaults to identified mode — showing their real display name and exact major.
-2. **Given** a student switches their privacy setting to anonymous, **When** another authenticated user views the community feed, **Then** the entry shows "Anonymous" and the student's major group label — not the real name or exact major — immediately; the student does not need to re-publish.
-3. **Given** a student's share link is active and they switch to anonymous, **When** an unauthenticated visitor opens the share link, **Then** the snapshot shows "Anonymous" and the major group label — not the real name or exact major.
-4. **Given** a student switches from anonymous back to identified, **When** the community feed is viewed, **Then** the entry correctly shows the student's real display name and exact major — confirming the reversal works.
+2. **Given** a student switches their privacy setting to anonymous, **When** another authenticated user views the community feed, **Then** the entry shows "Anonymous" while still showing the student's major immediately; the student does not need to re-publish.
+3. **Given** a student's share link is active and they switch to anonymous, **When** an allowed viewer opens the share link, **Then** the snapshot shows "Anonymous" while still showing major.
+4. **Given** a student switches from anonymous back to identified, **When** the community feed is viewed, **Then** the entry correctly shows the student's display name and major.
 5. **Given** a student changes their display name in their account settings (Feature 005), **When** they look at the community feed or share link in identified mode, **Then** the roadmap entry reflects the updated display name.
 6. **Given** identified mode is active and `displayName` is missing/blank, **When** the community feed or share link is rendered, **Then** the display name is populated by the standard system-wide fallback-name policy.
-7. **Given** two students share the same major group label, **When** one is anonymous and one is identified, **Then** the anonymous entry shows only the group label while the identified entry shows the exact major — both remain in the feed without conflict.
+7. **Given** two students share the same major, **When** one is anonymous and one is identified, **Then** both entries show the same major while only the identified entry shows the student's display name.
 
 ---
 
 ### User Story 4 – Browse and Filter the Community Feed (Priority: P2)
 
-An authenticated student opens the community feed to discover roadmaps shared by peers. They can filter by major group, career goal role, or personalisation level. Each feed entry shows enough metadata to decide whether to open the full detail view.
+An authenticated student opens the community feed to discover roadmaps shared by peers. They can filter by major, career goal role, or personalisation level. Each feed entry shows enough metadata to decide whether to open the full detail view.
 
-**Why this priority**: Browsability transforms the community feed from a publishing utility into a discovery tool. Filtering by major group — rather than exact major — works consistently whether entries are anonymous or identified. It is P2 because the feed is useful for discovery even without filters; filters improve the experience at scale.
+**Why this priority**: Browsability transforms the community feed from a publishing utility into a discovery tool. Major and career-goal filtering improve relevance at scale. It is P2 because the feed is useful for discovery even without filters.
 
-**Independent Test**: Can be fully tested by publishing roadmaps from students across at least two different major groups and two career goals, then applying each filter individually and in combination, verifying only matching entries appear for both anonymous and identified entries.
+**Independent Test**: Can be fully tested by publishing roadmaps from students across at least two majors and two career goals, then applying each filter individually and in combination, verifying only matching entries appear.
 
 **Acceptance Scenarios**:
 
-1. **Given** there are published community roadmaps, **When** an authenticated student opens the community feed, **Then** entries are ordered by relevance to the viewing student's major: entries from the same or related major group appear first; entries from other major groups appear after.
-2. **Given** the community feed is open, **When** the student filters by major group, **Then** only entries belonging to that major group are shown — this works for both anonymous entries (showing the group label) and identified entries (whose exact major belongs to that group).
+1. **Given** there are published community roadmaps, **When** an authenticated student opens the community feed, **Then** entries are ordered by relevance to the viewing student's major (same major first), then by publication date (most recent first).
+2. **Given** the community feed is open, **When** the student filters by major, **Then** only entries belonging to that major are shown.
 3. **Given** the community feed is open, **When** the student filters by career goal role, **Then** only entries whose career goal role matches the selected role are shown.
 4. **Given** the community feed is open, **When** the student filters by personalisation level (full or low), **Then** only entries with the matching personalisation level are shown.
 5. **Given** multiple filters are applied simultaneously, **When** the feed renders, **Then** only entries matching all active filters are shown.
@@ -201,12 +204,12 @@ An authenticated student browsing the community feed clicks an entry to open the
 
 1. **Given** a community entry is shown in the feed, **When** the student clicks it, **Then** the full roadmap detail opens in a read-only view.
 2. **Given** the full detail view is open, **When** the student inspects each node, **Then** they see `courseCode`, `courseName`, `skills`, and `reason` for every node.
-4. **Given** the student is viewing a community detail and the owner unpublishes the roadmap while they are reading it, **When** the student navigates away and attempts to return to the same URL, **Then** the page shows a not-found or unavailable state, not the old content.
+3. **Given** the student is viewing a community detail and the owner unpublishes the roadmap while they are reading it, **When** the student navigates away and attempts to return to the same URL, **Then** the page shows a not-found or unavailable state, not the old content.
 ---
 
 ### User Story 6 – Like a Community Post (Priority: P3)
 
-An authenticated student browsing the community feed or viewing a roadmap detail can "like" the entry as a simple signal of interest. The like count is visible on the feed card and on the detail view. The student can remove their like at any time. The like count persists even if the entry owner updates their roadmap.
+An authenticated student browsing the community feed or viewing a roadmap detail can "like" the entry as a simple signal of interest. The like count is visible on the feed card and on the detail view. The student can remove their like at any time. The like count is attached to the CommunityPost.
 
 **Why this priority**: Liking adds lightweight social signal to the feed without requiring complex interactions. It is P3 because the feed and detail view deliver full value without it — likes are additive.
 
@@ -218,7 +221,7 @@ An authenticated student browsing the community feed or viewing a roadmap detail
 2. **Given** an authenticated student activates the like action on an entry they have not yet liked, **When** the action is confirmed, **Then** the like count for that entry increments by 1 and the like action is shown as active (indicating the student has liked it).
 3. **Given** an authenticated student has already liked an entry, **When** they activate the like action again (un-like), **Then** the like count decrements by 1 and the like action returns to its inactive state.
 4. **Given** an entry has been liked by multiple students, **When** any authenticated student views the entry, **Then** the displayed like count reflects the total number of distinct likes across all students.
-5. **Given** a community entry owner accepts a new roadmap (live update), **When** the entry updates to reflect the new roadmap content, **Then** the existing like count is preserved — likes are not reset by roadmap updates.
+5. **Given** a community entry owner accepts a new roadmap, **When** they do not publish again, **Then** the existing CommunityPost and its like count remain unchanged.
 6. **Given** an unauthenticated visitor opens a share link snapshot, **When** they view the snapshot, **Then** no like action is shown — liking is only available to authenticated users on community entries, not on share link snapshots.
 
 ---
@@ -248,7 +251,7 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 - **Roadmap replaced while community entry is published**: The community entry is NOT automatically updated — it continues to show the snapshot captured at the time of the original publication. The student must explicitly publish again (subject to the Y-day hold on the new roadmap) to update their community presence.
 - **Ineligible for new sharing but existing snapshots persist**: After the Y-day clock resets, the student cannot generate a new share link or publish a new community entry, but their existing snapshot share links and any active community entry remain valid until explicitly revoked or unpublished.
 - **Y-day threshold at exact boundary**: A student whose roadmap acceptance timestamp is exactly Y days old at the moment they view the page sees sharing actions as available (inclusive boundary).
-- **Anonymous student in a small cohort**: The major group label (not the exact major) is displayed, reducing re-identification risk even when few students share the same major.
+- **Anonymous student in a small cohort**: The display name is hidden as "Anonymous" while major remains visible in feed/detail/share-link views.
 - **Student revokes share link while a visitor is viewing it**: The URL becomes invalid immediately; the viewer receives a not-found response if they refresh or navigate.
 - **Student unpublishes community entry**: The entry is removed from the feed immediately; any direct link to the community detail view returns a not-found response.
 - **Fork attempt fails prerequisite validation**: A student forks a community roadmap whose filtered course sequence violates their prerequisite constraints. Feature 009 blocks the acceptance and returns a clear error identifying the violating courses. The forking student's existing accepted roadmap, share links, and community entry are unaffected.
@@ -271,65 +274,61 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 
 **Share via Link (Snapshot)**
 
-- **FR-004**: Once eligible, a student MUST be able to generate a unique public read-only share link. The link MUST capture the roadmap's current node content as an immutable snapshot at the moment of generation. At most one active share link MAY exist per accepted roadmap; a student MUST revoke any existing link before generating a new one for the same roadmap.
-- **FR-005**: The share link MUST be accessible without authentication.
-- **FR-006**: The share link view MUST display all roadmap nodes with `courseCode`, `courseName`, `skills`, and `reason`.
-- **FR-007**: When a student accepts a new roadmap, existing snapshot share links MUST NOT be invalidated — they MUST continue to serve the snapshot content captured at generation time.
-- **FR-008**: When a student accepts a new roadmap, the Y-day eligibility clock MUST reset for new share link generation.
-- **FR-009**: A student MUST be able to revoke their active share link at any time, after which the URL MUST immediately return an invalid/not-found response. Once revoked, the student may generate a new link (subject to the Y-day eligibility check on any newly accepted roadmap).
+- **FR-004**: Once eligible, a student MUST be able to generate a unique read-only share link bound to an immutable roadmap snapshot captured at generation time.
+- **FR-005**: Share links MUST support `private`, `users-only`, and `public` access modes. Switching modes MUST keep the same URL/token and update access behavior immediately.
+- **FR-006**: In `users-only` mode, the system MUST enforce an ACL of allowed user IDs; users not in the ACL MUST be denied access.
+- **FR-007**: The share link view MUST display all roadmap nodes with `courseCode`, `courseName`, `skills`, and `reason`.
+- **FR-008**: When a student accepts a new roadmap, existing snapshot share links MUST NOT be invalidated — they MUST continue to serve the snapshot content captured at generation time.
+- **FR-009**: When a student accepts a new roadmap, the Y-day eligibility clock MUST reset for new share link generation.
+- **FR-010**: A student MUST be able to revoke their active share link at any time, after which the URL MUST immediately return an invalid/not-found response. Once revoked, the student may generate a new link (subject to the Y-day eligibility check on any newly accepted roadmap).
 
-**Publish to Community Feed (Live)**
+**Publish to Community Feed (Snapshot)**
 
-- **FR-010**: Once eligible, a student MUST be able to publish their current accepted roadmap to the community feed as a snapshot entry. Publishing captures the roadmap's node content at the moment of publication as an immutable snapshot.
-- **FR-011**: A community entry is snapshot-based — it MUST NOT be automatically updated when the student accepts a new roadmap. The published content remains fixed until the student explicitly publishes again or unpublishes.
-- **FR-012**: A new publication by a student MUST replace their existing community entry (if one exists). At most one active community entry per student is permitted at any time.
-- **FR-013**: A student MUST be able to unpublish their community entry at any time; the entry MUST be removed from the feed immediately.
-- **FR-014**: Publishing (whether initial, after an unpublish, or replacing an existing entry) is subject to the Y-day hold on the student's current accepted roadmap.
-- **FR-015**: The community feed MUST be accessible only to authenticated UETCompass users.
+- **FR-011**: Once eligible, a student MUST be able to publish their current accepted roadmap to the community feed as a snapshot entry. Publishing captures the roadmap's node content at the moment of publication as an immutable snapshot.
+- **FR-012**: A CommunityPost is immutable after publish — it MUST NOT be automatically updated when the student accepts a new roadmap, and there is no edit flow for published content.
+- **FR-013**: A new publication by a student MUST replace their existing CommunityPost (if one exists). At most one active CommunityPost per student is permitted at any time.
+- **FR-014**: A student MUST be able to unpublish their CommunityPost at any time; the post MUST be removed from the feed immediately.
+- **FR-015**: Publishing (whether initial, after an unpublish, or replacing an existing post) is subject to the Y-day hold on the student's current accepted roadmap.
+- **FR-016**: The community feed MUST be accessible only to authenticated UETCompass users.
 
 **Community Feed Browsing**
 
-- **FR-016**: Each entry in the community feed MUST display: owner's display name (or "Anonymous"), major identity (exact major when identified; major group label when anonymous), career goal role, number of roadmap nodes, publication date, and a preview of the first few roadmap nodes.
-- **FR-017**: The community feed MUST support filtering by: major group, career goal role, and personalisation level (full / low). Filtering by major group MUST work for both anonymous entries (showing the group label) and identified entries (whose exact major belongs to that group). The default feed ordering MUST rank entries from the viewing student's own major group first, followed by entries from other major groups.
+- **FR-017**: Each entry in the community feed MUST display: owner's display name (or "Anonymous"), major, career goal role, number of roadmap nodes, publication date, and a preview of the first few roadmap nodes.
+- **FR-018**: The community feed MUST support filtering by: major, career goal role, and personalisation level (full / low). Default feed ordering MUST be: same-major entries first, then publication date descending.
 
 **Community Detail View**
 
-- **FR-018**: The community detail view MUST display all roadmap nodes with `courseCode`, `courseName`, `skills`, and `reason`.
+- **FR-019**: The community detail view MUST display all roadmap nodes with `courseCode`, `courseName`, `skills`, and `reason`.
 
 **Privacy Controls**
 
-- **FR-019**: A student MUST be able to set their sharing identity to either identified (real display name + exact major) or anonymous ("Anonymous" + major group label). The default is identified. Privacy source of truth is `User.privacySetting` (Feature 005).
-- **FR-020**: A privacy setting change MUST apply immediately to all active share links and published community entries without requiring re-generation or re-publication.
-- **FR-021A**: In identified mode, rendering MUST prefer `User.displayName`; if missing/blank, rendering MUST apply the standard system-wide fallback-name policy.
-- **FR-021**: The major group label used for anonymous entries MUST be determined by a system-level configuration mapping that does not require a code deployment to change.
+- **FR-020**: A student MUST be able to set their sharing identity to either identified (display name shown) or anonymous (display name rendered as "Anonymous"). The default is identified. Privacy source of truth is `User.privacySetting` (Feature 005).
+- **FR-021**: A privacy setting change MUST be reflected within one page refresh across all active share links and published community entries without requiring re-generation or re-publication.
+- **FR-022**: In identified mode, rendering MUST prefer `User.displayName`; if missing/blank, rendering MUST apply the standard system-wide fallback-name policy.
+- **FR-023**: Major displayed in share/community views MUST come from authoritative onboarding/profile/account data and MUST remain visible in both identified and anonymous modes.
 
 **Like**
 
-- **FR-022**: An authenticated user MUST be able to like a community entry. The like MUST be recorded per user per entry — a user cannot like the same entry more than once.
-- **FR-022**: An authenticated user MUST be able to like a community entry. The like MUST be recorded per user per entry — a user cannot like the same entry more than once. For MVP, race conditions or inaccurate counts may occur and are accepted.
-- **FR-023**: An authenticated user MUST be able to remove a like from a community entry they have previously liked.
-- **FR-024**: The like count for a community entry MUST be visible on both the feed card and the detail view.
-- **FR-025**: The like count MUST NOT reset when the entry owner accepts a new roadmap and the community entry auto-updates.
-- **FR-026**: The like action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
+- **FR-024**: An authenticated user MUST be able to like a CommunityPost. The like MUST be recorded per user per CommunityPost — a user cannot like the same post more than once.
+- **FR-025**: An authenticated user MUST be able to remove a like from a CommunityPost they have previously liked.
+- **FR-026**: The like count for a CommunityPost MUST be visible on both the feed card and the detail view.
+- **FR-027**: Like count state MUST be attached to CommunityPost. Accepting a new roadmap without re-publishing MUST NOT change the existing CommunityPost like count.
+- **FR-028**: The like action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
 
 **Fork**
 
-- **FR-027**: An authenticated user MUST be able to fork a community roadmap entry. A student MUST NOT be able to fork their own community entry.
-- **FR-028**: A fork action MUST filter completed courses first using canonical identity `(major, courseCode)`, then submit the filtered full-node payload to Feature 009's fork-consumable acceptance endpoint, which performs prerequisite validation.
-- **FR-029**: If Feature 009's acceptance flow succeeds, the filtered sequence MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying.
-- **FR-030**: If Feature 009's acceptance flow fails prerequisite validation, the fork MUST be blocked. Feature 009's error message identifying the violating courses MUST be surfaced to the forking student. The forking student's existing accepted roadmap, share links, and community entry MUST remain unchanged.
-- **FR-031**: The fork action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
-- **FR-032**: After successful fork acceptance, the system MUST execute post-success side effects: user notification, eligibility-clock reset, audit log write, and progress-tracking update when Feature 007 integration is enabled.
+- **FR-029**: An authenticated user MUST be able to fork a community roadmap entry. A student MUST NOT be able to fork their own community entry.
+- **FR-030**: A fork action MUST filter completed courses first using canonical identity `(major, courseCode)`, then submit the filtered full-node payload to Feature 009's fork-consumable acceptance endpoint, which performs prerequisite validation.
+- **FR-031**: If Feature 009's acceptance flow succeeds, the filtered sequence MUST become the forking student's new accepted roadmap, with all consequences of a new acceptance applying.
+- **FR-032**: If Feature 009's acceptance flow fails prerequisite validation, the fork MUST be blocked. Feature 009's error message identifying the violating courses MUST be surfaced to the forking student. The forking student's existing accepted roadmap, share links, and community entry MUST remain unchanged.
+- **FR-033**: The fork action MUST NOT be available to unauthenticated visitors or on share link snapshot views.
+- **FR-034**: After successful fork acceptance, the system MUST execute post-success side effects: user notification, eligibility-clock reset, audit log write, and progress-tracking update when Feature 007 integration is enabled.
 
 ### Key Entities
 
-- **SharedRoadmap**: A unified entity for both sharing via link and publishing to the community feed. When a student clicks "share", the system creates an immutable snapshot of the roadmap nodes at that exact moment (`courseCode`, `courseName`, `skills`, `reason`) and binds it to a unique Share Link URL/token. This snapshot is never updated or changed, even if the student later modifies or replaces their roadmap. Privacy rendering for link responses is derived at read-time from `User.privacySetting` (Feature 005). At most one active SharedRoadmap exists per accepted roadmap snapshot. Not invalidated by subsequent roadmap changes; persists until explicitly revoked.
-	- `accessMode` controls who can view the link:
-		- `private`: Only the owner can view the link.
-		- `link-only`: Only those with the link can view (not discoverable/searchable/on community).
-		- `users-only`: Only specific users (by userId) can view, either by search on community or link.
-		- `public`: Anyone can view (searchable on community and by link).
-- **RoadmapSnapshot**: An immutable point-in-time export of a student's roadmap nodes captured when a ShareLink is generated. Contains only the fields exposed publicly (`courseCode`, `courseName`, `skills`, `reason`). Distinct from a CommunityEntry, which is live rather than snapshot-based.
+- **RoadmapSnapshot**: An immutable point-in-time export of a student's roadmap nodes (`courseCode`, `courseName`, `skills`, `reason`) captured when a share link is generated.
+- **SharedRoadmap**: A persistent share-link object bound to exactly one RoadmapSnapshot. Each RoadmapSnapshot has exactly one SharedRoadmap; each student can own many RoadmapSnapshots/SharedRoadmaps over time. Access mode can switch between `private`, `users-only`, and `public` without changing the URL/token. In `users-only` mode, an ACL of allowed user IDs is enforced.
+- **CommunityPost**: A community-feed publication object that references one SharedRoadmap currently in `public` mode. CommunityPost content is immutable after publish. A student can have at most one active CommunityPost at a time (new publish replaces old). `likeCount` and per-user likes are attached to CommunityPost.
 
 ---
 
@@ -342,7 +341,8 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 - **SC-003**: An unpublish action removes the community entry within 5 seconds — the entry is no longer visible to any peer browsing the feed within that window.
 - **SC-004**: The community feed, with up to 500 published entries, displays filtered results within 2 seconds of the filter being applied.
 - **SC-005**: A privacy setting change (identified ↔ anonymous) is reflected in the community feed and any active share link views within one page refresh — no manual re-publish or re-generation required.
-- **SC-007**: Zero instances of an anonymous student's exact major being exposed in any share link or community feed view when anonymous mode is active (verified by audit).
+- **SC-006**: Switching a share link between `private`, `users-only`, and `public` updates effective access within 5 seconds while keeping the same URL/token.
+- **SC-007**: Zero instances where anonymous mode reveals the owner's display name in any share link or community feed view (verified by audit).
 
 ---
 
@@ -354,8 +354,8 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 - **Single accepted roadmap per student**: Each student has at most one accepted roadmap at a time. All sharing and eligibility rules apply to that single active roadmap.
 - **Feature 009 defines roadmap structure**: The node fields (`courseCode`, `courseName`, `skills`, `reason`, `supportingSkills`, `careerRelevanceNote`) are defined and owned by Feature 009. This feature treats them as read-only inputs.
 - **Display name source**: The student's display name is stored in Feature 005 (Account Management), populated during Feature 001 (Profile Onboarding). Updates are reflected in identified community entries and share link views.
-- **Major group mapping**: The mapping of exact majors to major group labels (e.g., "Computer Science" → "CS-related") is a system configuration. This feature does not define the mapping contents.
-- **Feed ordering default**: The community feed defaults to major-relevance order — entries from the viewing student's own major group appear first, followed by entries from other major groups. Within each group, secondary ordering is by publication date (most recent first). No user-controlled sort switching is required for this iteration.
+- **Major source of truth**: Major used in share/community display and filtering comes from onboarding/profile/account-owned data (Features 001 and 005).
+- **Feed ordering default**: The community feed defaults to major-relevance order (same major first), then publication date descending. No user-controlled sort switching is required for this iteration.
 - **Personalisation level definition**: "Full" and "low" personalisation levels are properties attached to the generated roadmap by Feature 009. This feature reads them as-is for filtering and display.
 - **One community entry per student**: Each student can have at most one active community entry at any time (reflecting their current accepted roadmap).
 
@@ -363,11 +363,10 @@ An authenticated student viewing a community roadmap detail activates “Fork th
 
 
 ## Feed Ordering
-## Feed Ordering
 
 - **Ordering**:
-	- Feed entries are ordered by relevance to the viewer’s major group.
-	- Within a major group, entries are ordered by the number of likes (most liked first). If there is a tie, the most recent post appears first.
+	- Feed entries are ordered by relevance to the viewer's major (same major first).
+	- Within the same relevance tier, entries are ordered by publication date (most recent first).
 
 ## Dependencies
 

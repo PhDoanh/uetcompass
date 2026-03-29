@@ -29,6 +29,14 @@ Logic: AI phải so sánh skill đó với bộ tag hiện có trong database ho
 - Q: How should the system process skills (synchronous vs asynchronous)? → A: Asynchronous batch processing via queue system
 - Q: How should the system handle LLM API failures during batch processing? → A: Continue processing remaining skills; mark failed skills for retry/manual review
 
+### Session 2026-03-24
+
+- Q: Which LLM provider? → A: **Google Gemini API** (cost-optimal: ~$0.075/1M tokens; no budget constraints)
+- Q: Where do initial Skill entities come from (skill ingestion source)? → A: **Flexible dual-source approach**:
+  - **Primary**: Feature 003 crawler provides skills alongside resource crawl results  
+  - **Fallback**: Manual admin import via API endpoint for ad-hoc skill addition
+  - System accepts skills from either source and queues them uniformly for tagging
+
 ### Canonical Refinement 2026-03-14
 
 - `Skill` and `Tag` are entities of the **tagging/search bounded context** (shared by feature 006 and consumed by feature 008), not `roadmap-core` entities.
@@ -90,14 +98,14 @@ As a data analyst, I want to review tagging accuracy metrics so that I can monit
 - What if a batch partially fails (some skills succeed, some fail)? System completes all possible tagging, reports results for successful skills, and isolates failed ones for manual review or retry.
 - How does system handle skills in non-IT domains like Marketing? Should still generate appropriate tags based on domain context.
 - What if course context is missing or incomplete? System should still attempt tagging based on skill name and domain.
-- How to handle multilingual skills or courses? Assume English for now, but system should be extensible.
+- How to handle multilingual skills or courses? Assume English for now, but system should be extensible for future i18n support.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: System MUST accept input consisting of Skill Name, Course Context, and Domain, placing skills into a processing queue.
-- **FR-002**: System MUST process queued skills asynchronously via batch processing and send the data to a managed LLM API service (OpenAI, Anthropic, or Google) for tag generation.
+- **FR-002**: System MUST process queued skills asynchronously via batch processing and send the data to Google Gemini API for tag generation.
 - **FR-003**: System MUST receive and process tag suggestions from the LLM including confidence scores.
 - **FR-004**: System MUST compare suggested tags with existing database tags and map matches to canonical `Tag` entries.
 - **FR-005**: System MUST add new dictionary tags to the `Tag` store when confidence score > 85%.
@@ -136,16 +144,18 @@ As a data analyst, I want to review tagging accuracy metrics so that I can monit
 
 ## Assumptions
 
-- Managed LLM API service (OpenAI, Anthropic, or Google) has 99%+ uptime SLA.
-- Existing tag database is initialized with common tags.
-- Input data is in English.
-- LLM confidence scores returned by the API are reliable and calibrated.
-- API rate limits and costs are within project budget.
+- Google Gemini API has 99%+ uptime SLA and reliable cost model (~$0.075/1M input tokens).
+- Skills arrive from either Feature 003 crawler or manual admin import; system treats both sources uniformly.
+- Existing tag database is initialized with common tags before first batch processing.
+- Input data is in English (multilingual support is out of scope; system assumes English-only inputs with extensibility for future i18n).
+- Gemini confidence scores returned by the API are reliable and calibrated (>85% threshold validated through early runs).
+- API rate limits (within Google's free tier allocation) and costs are within project budget.
 
 ## Dependencies
 
-- Managed LLM API service (OpenAI API, Anthropic Claude API, or Google Vertex AI).
-- API credentials and billing setup for chosen managed service.
-- Job queue/task scheduling system (e.g., Celery, RabbitMQ, or cloud-native job queue).
-- Database for storing tags, skills, and tagging results.
+- Google Gemini API (via Google Vertex AI or Google AI Studio)
+- API key and billing setup for Google Gemini (free tier eligible for 1k-10k skills/day at ~$4-40/month)
+- Job queue/task scheduling system (MongoDB-backed queue; no external Redis required per constitution)
+- Database for storing tags, skills, and tagging results
+- Skill ingestion from Feature 003 crawler OR manual admin API endpoint (both supported)
 - Batch job scheduler for triggering tagging jobs (scheduled or event-driven).

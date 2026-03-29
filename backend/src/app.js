@@ -1,9 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { connectDB } = require('./lib/db');
+const taggingRouter = require('./modules/tagging/tagging.routes');
+const taggingWorker = require('./modules/tagging/tagging.worker');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
-const roadmapRouter = require('./modules/roadmap/roadmap.routes');
+const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
@@ -13,11 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Database connection
-const mongoose = require('mongoose');
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uetcompass';
-mongoose.connect(MONGODB_URI)
-	.then(() => console.log('Connected to MongoDB'))
-	.catch(err => console.error('MongoDB connection error:', err));
+connectDB();
 
 app.get('/health', (req, res) => {
 	res.status(200).json({ ok: true });
@@ -26,6 +25,7 @@ app.get('/health', (req, res) => {
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/roadmaps', roadmapRouter);
+app.use('/api/tagging', taggingRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;
@@ -36,6 +36,9 @@ app.use((err, req, res, next) => {
 
 registerCronJob();
 registerSigtermHandler();
+
+// Start tagging worker
+taggingWorker.start();
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

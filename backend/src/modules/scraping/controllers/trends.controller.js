@@ -66,15 +66,15 @@ async function getAllTrends(req, res) {
 }
 
 /**
- * GET /api/market/trends/:roadmapNodeId
- * Returns trends filtered to a specific node
+ * GET /api/market/trends/course/:courseName
+ * Returns trends filtered to a specific course
  */
-async function getTrendsByNode(req, res) {
+async function getTrendsByCourse(req, res) {
   try {
-    const { roadmapNodeId } = req.params;
+    const { courseName } = req.params;
 
     const snapshots = await SkillTrendSnapshot
-      .find({ roadmapNodeId })
+      .find({ courseName })
       .sort({ snapshotDate: -1, jobCount: -1 })
       .lean();
 
@@ -99,7 +99,7 @@ async function getTrendsByNode(req, res) {
       }));
 
     res.json({
-      roadmapNodeId,
+      courseName,
       lastRefreshedAt: snapshots[0]?.snapshotDate || null,
       trends
     });
@@ -115,5 +115,5 @@ async function getTrendsByNode(req, res) {
 
 module.exports = {
   getAllTrends,
-  getTrendsByNode
+  getTrendsByCourse
 };

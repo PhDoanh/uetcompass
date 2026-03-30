@@ -5,7 +5,6 @@
 
 const SkillTrendSnapshot = require('../models/skillTrendSnapshot.model');
 const tavilyAdapter = require('../adapters/tavily.adapter');
-const nodesCatalog = require('./nodesCatalog.service');
 const studentCatalog = require('./studentCatalog.service');
 const personalizationContext = require('./personalizationContext.service');
 const skillInference = require('./skillInference.service');
@@ -57,13 +56,12 @@ function calculateTrendDirection(currentJobCount, previousJobCount) {
  * Main crawl logic: process all nodes with personalization
  * @param {Array} roadmapNodes - Nodes to process
  * @param {Array} studentProfiles - Student profiles for personalization
- * @returns {Promise<Array>} Results
+ * @returns {Promise<object>} {results, snapshots}
  */
-async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = null) {
+async function crawlMarketTrendsPerNode(roadmapNodes = [], studentProfiles = null) {
   try {
-    // Get active nodes if not provided
-    if (!roadmapNodes) {
-      roadmapNodes = await nodesCatalog.getActiveRoadmapNodes();
+    if (!Array.isArray(roadmapNodes) || roadmapNodes.length === 0) {
+      throw new Error('roadmapNodes must be a non-empty array from Feature 009 trigger');
     }
 
     // Get student profiles if not provided (optional: can be null for generic crawl)
@@ -76,11 +74,16 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
     }
 
     const results = [];
+    const snapshots = [];
     console.log(`[MarketTracker] Processing ${roadmapNodes.length} nodes with ${studentProfiles.length} student profiles...`);
 
     for (const node of roadmapNodes) {
       try {
-        const { _id: nodeId, courseName } = node;
+        const { courseName } = node;
+
+        if (!courseName) {
+          throw new Error('Missing required field: courseName');
+        }
 
         // Crawl per node per student profile (if profiles exist)
         const profilesToUse = studentProfiles.length > 0 ? studentProfiles : [null];
@@ -94,12 +97,9 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
               companyType: profile.careerGoal?.companyType
             } : null;
 
-            const enrichedQuery = personalizationContext.enrichQueryWithPersonalization(
-              courseName,
-              personalizationCtx
-            );
+            personalizationContext.enrichQueryWithPersonalization(courseName, personalizationCtx);
 
-            console.log(`[MarketTracker] Crawling: "${courseName}" (node: ${nodeId}) with personalization...`);
+            console.log(`[MarketTracker] Crawling: "${courseName}" with personalization...`);
 
             // Search Tavily
             const tavilyResults = await tavilyAdapter.trendSearch(
@@ -123,7 +123,7 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
                 // Get previous snapshot for trend comparison
                 const previousSnapshot = await SkillTrendSnapshot.findOne(
                   {
-                    roadmapNodeId: nodeId,
+                    courseName,
                     skillName,
                     snapshotDate: { $lt: snapshotDate }
                   },
@@ -138,10 +138,10 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
                 const salaryRange = parseSalaryRange(snippetText);
 
                 // Upsert snapshot
-                await SkillTrendSnapshot.findOneAndUpdate(
-                  { roadmapNodeId: nodeId, skillName, snapshotDate },
+                const savedSnapshot = await SkillTrendSnapshot.findOneAndUpdate(
+                  { courseName, skillName, snapshotDate },
                   {
-                    roadmapNodeId: nodeId,
+                    courseName,
                     skillName,
                     jobCount: frequency,
                     jobCountTrend,
@@ -153,13 +153,14 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
                   },
                   { upsert: true, new: true }
                 );
+
+                snapshots.push(savedSnapshot);
               } catch (skillError) {
                 console.error(`[MarketTracker] Failed to process skill "${skill.skillName}":`, skillError.message);
               }
             }
 
             results.push({
-              roadmapNodeId: nodeId,
               courseName,
               skillsFound: extractedSkills.length,
               studentId: profile?._id
@@ -173,7 +174,6 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
       } catch (nodeError) {
         console.error(`[MarketTracker] Failed to process node "${node.courseName}":`, nodeError.message);
         results.push({
-          roadmapNodeId: node._id,
           courseName: node.courseName,
           skillsFound: 0,
           error: nodeError.message
@@ -182,7 +182,7 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
     }
 
     console.log('[MarketTracker] Crawl complete:', results);
-    return results;
+  return { results, snapshots };
 
   } catch (error) {
     console.error('[MarketTracker] Crawl failed:', error.message);
@@ -191,7 +191,7 @@ async function crawlMarketTrendsPerNode(roadmapNodes = null, studentProfiles = n
 }
 
 async function runMarketTracker() {
-  return crawlMarketTrendsPerNode();
+  throw new Error('Periodic run disabled. Use trigger endpoint from Feature 009.');
 }
 
 module.exports = {

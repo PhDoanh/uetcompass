@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import ResourceCard from './ResourceCard';
-import { getSkillResources } from './resources.api';
+import { getSkillResources } from '../../services/resources.api';
 
 function SkillResources({ skillName }) {
   const [resources, setResources] = useState([]);
@@ -18,12 +18,11 @@ function SkillResources({ skillName }) {
       setIsLoading(true);
       setError(null);
 
-      const result = await getSkillResources(skillName);
-
-      if (result.error) {
-        setError(result.error);
-      } else {
+      try {
+        const result = await getSkillResources(skillName);
         setResources(result.resources || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load resources');
       }
 
       setIsLoading(false);

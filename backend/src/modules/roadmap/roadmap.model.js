@@ -7,7 +7,7 @@ const RoadmapNodeSchema = new mongoose.Schema(
     credits:           { type: Number, required: true, min: 1 },
     suggestedSemester: { type: Number, min: 1, default: null },
     reason:            { type: String, required: true },
-	skills:            { type: [String], default: [] }, // Enriched by Feature 003
+		skills:            { type: [String], default: [] }, // Enriched by Feature 003
     resources:         { type: [mongoose.Schema.Types.Mixed], default: [] }, // Enriched by Feature 003
   },
   { _id: false }

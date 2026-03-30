@@ -13,19 +13,19 @@ const { verifyToken } = require('../../../middleware/auth.middleware'); // Adjus
  * Returns all active market trends
  */
 router.get(
-  '/',
+  '/trends',
   verifyToken,
   trendsController.getAllTrends
 );
 
 /**
- * GET /api/market/trends/:roadmapNodeId
- * Returns trends for a specific node
+ * GET /api/market/trends/course/:courseName
+ * Returns trends for a specific course
  */
 router.get(
-  '/:roadmapNodeId',
+  '/trends/course/:courseName',
   verifyToken,
-  trendsController.getTrendsByNode
+  trendsController.getTrendsByCourse
 );
 
 module.exports = router;

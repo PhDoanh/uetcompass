@@ -9,12 +9,12 @@ const academicController = require('../controllers/academic.controller');
 const { verifyToken } = require('../../../middleware/auth.middleware');
 
 /**
- * GET /api/resources/academic/:courseCode
+ * GET /api/resources/academic/:courseName
  * Returns academic materials for a course
  * Authorization required: Bearer token
  */
 router.get(
-  '/academic/:courseCode',
+  '/academic/:courseName',
   verifyToken,
   academicController.getAcademicByCourse
 );

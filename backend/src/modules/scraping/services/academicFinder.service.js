@@ -6,7 +6,6 @@
 
 const AcademicDocument = require('../models/academicDocument.model');
 const tavilyAdapter = require('../adapters/tavily.adapter');
-const nodesCatalog = require('./nodesCatalog.service');
 
 /**
  * Classify source type based on URL domain
@@ -70,14 +69,13 @@ function detectDocumentType(url, title) {
 
 /**
  * Main crawl logic: process all active RoadmapNodes
- * @param {Array} roadmapNodes - Optional array of nodes to process (defaults to all active)
- * @return {Promise<Array>} Array of {courseCode, courseName, documentsFound}
+ * @param {Array} roadmapNodes - Array of nodes to process (must include courseName)
+ * @return {Promise<Array>} Array of {courseName, documentsFound}
  */
-async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
+async function crawlAcademicMaterialsPerNode(roadmapNodes = []) {
   try {
-    // Get active roadmap nodes if not provided
-    if (!roadmapNodes) {
-      roadmapNodes = await nodesCatalog.getActiveRoadmapNodes();
+    if (!Array.isArray(roadmapNodes) || roadmapNodes.length === 0) {
+      throw new Error('roadmapNodes must be a non-empty array from Feature 009 trigger');
     }
 
     const results = [];
@@ -85,9 +83,13 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
 
     for (const node of roadmapNodes) {
       try {
-        const { courseCode, courseName } = node;
+        const { courseName } = node;
 
-        console.log(`[AcademicFinder] Crawling node: "${courseName}" (${courseCode})`);
+        if (!courseName) {
+          throw new Error('Missing required field: courseName');
+        }
+
+        console.log(`[AcademicFinder] Crawling course: "${courseName}"`);
 
         // Search Tavily for academic materials
         const tavilyResults = await tavilyAdapter.academicSearch(courseName);
@@ -105,14 +107,13 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
             // No skill inference - all documents visible
             const isVisible = true;
 
-            // Upsert: one document per unique URL (deduplication across all courses)
+            // Upsert: one document per unique (url, courseName)
             // If same URL is crawled again, timestamp is updated
             const upsertResult = await AcademicDocument.findOneAndUpdate(
-              { url },
+              { url, courseName },
               {
                 title,
                 url,
-                courseCode,
                 courseName,
                 skillId: null,
                 sourceType,
@@ -135,7 +136,6 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
         }
 
         results.push({
-          courseCode,
           courseName,
           documentsFound
         });
@@ -144,7 +144,6 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
         console.error(`[AcademicFinder] Failed to process node "${node.courseName}":`, nodeError.message);
         // Continue with next node - don't crash the entire crawl
         results.push({
-          courseCode: node.courseCode,
           courseName: node.courseName,
           documentsFound: 0,
           error: nodeError.message
@@ -165,7 +164,7 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = null) {
  * Run the crawl - callable by job scheduler or HTTP trigger
  */
 async function runAcademicFinder() {
-  return crawlAcademicMaterialsPerNode();
+  throw new Error('Periodic run disabled. Use trigger endpoint from Feature 009.');
 }
 
 module.exports = {

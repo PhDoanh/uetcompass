@@ -24,7 +24,7 @@ async function academicSearch(courseName) {
     const query = `${courseName} slides lecture notes UET education`;
     
     const response = await client.search(query, {
-      include_raw_content: true,
+      include_raw_content: false,
       max_results: 10,
       include_images: false,
       include_answer: false
@@ -34,7 +34,7 @@ async function academicSearch(courseName) {
     return (response.results || []).map(result => ({
       title: result.title,
       url: result.url,
-      snippet: result.content,
+      snippet: result.content || result.title || '',
       source: result.source
     }));
   } catch (error) {
@@ -65,7 +65,7 @@ async function trendSearch(courseName, personalizationContext = null) {
     }
 
     const response = await client.search(query, {
-      include_raw_content: true,
+      include_raw_content: false,
       max_results: 15,
       include_images: false,
       include_answer: false
@@ -75,7 +75,7 @@ async function trendSearch(courseName, personalizationContext = null) {
     return (response.results || []).map(result => ({
       title: result.title,
       url: result.url,
-      snippet: result.content,
+      snippet: result.content || result.title || '',
       source: result.source
     }));
   } catch (error) {
@@ -97,7 +97,7 @@ async function resourceSearch(skillName) {
     const query = `learn ${skillName} course tutorial free paid`;
     
     const response = await client.search(query, {
-      include_raw_content: true,
+      include_raw_content: false,
       max_results: 10,
       include_images: false,
       include_answer: false
@@ -107,7 +107,7 @@ async function resourceSearch(skillName) {
     return (response.results || []).map(result => ({
       title: result.title,
       url: result.url,
-      snippet: result.content,
+      snippet: result.content || result.title || '',
       source: result.source
     }));
   } catch (error) {

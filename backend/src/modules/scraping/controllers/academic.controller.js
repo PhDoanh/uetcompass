@@ -6,18 +6,19 @@
 const AcademicDocument = require('../models/academicDocument.model');
 
 /**
- * GET /api/academic/course/:courseCode
+ * GET /api/resources/academic/:courseName
  * Returns academic materials for a specific course, sorted by source priority
  * Only visible documents are returned
  */
 async function getAcademicByCourse(req, res) {
   try {
-    const { courseCode } = req.params;
+    const { courseName } = req.params;
+    const requestedCourseName = decodeURIComponent(courseName);
 
     // Query visible documents only
     const documents = await AcademicDocument
       .find({
-        courseCode,
+        courseName: requestedCourseName,
         isVisible: true
       })
       .lean();
@@ -42,7 +43,7 @@ async function getAcademicByCourse(req, res) {
     });
 
     // Get the course name from first document (if available)
-    const courseName = documents.length > 0 ? documents[0].courseName : null;
+    const resolvedCourseName = documents.length > 0 ? documents[0].courseName : requestedCourseName;
 
     // Transform response format per rest-api.md contract
     const formattedDocs = documents.map(doc => ({
@@ -56,8 +57,7 @@ async function getAcademicByCourse(req, res) {
     }));
 
     res.json({
-      courseCode,
-      courseName,
+      courseName: resolvedCourseName,
       documentCount: formattedDocs.length,
       documents: formattedDocs
     });

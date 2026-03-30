@@ -13,9 +13,8 @@ const learningResourceSchema = new mongoose.Schema(
       maxlength: 100,
       trim: true
     },
-    roadmapNodeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'RoadmapNode',
+    courseName: {
+      type: String,
       required: true
     },
     title: {
@@ -81,7 +80,7 @@ const learningResourceSchema = new mongoose.Schema(
 // Indexes as per data-model.md
 learningResourceSchema.index({ skillTrendSnapshotId: 1, url: 1 }, { unique: true });
 learningResourceSchema.index({ skillTrendSnapshotId: 1, isAvailable: 1 });
-learningResourceSchema.index({ roadmapNodeId: 1, skillName: 1 });
+learningResourceSchema.index({ courseName: 1, skillName: 1 });
 learningResourceSchema.index({ skillName: 1, isAvailable: 1 });
 
 module.exports = mongoose.model('LearningResource', learningResourceSchema);

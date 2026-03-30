@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import authApi from './auth.api';
+import authApi from '../../services/auth.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { retryPrimaryRoadmap } from '../../services/roadmap.api';
 
@@ -32,7 +32,7 @@ function normalizeProfileForm(profile) {
 }
 
 export default function AccountSettingsPage() {
-  const { accessToken, handleAccountDeleted } = useAuth();
+  const { accessToken, onboardingState, handleAccountDeleted } = useAuth();
   const [form, setForm] = useState({ displayName: '', fullName: '', privacySetting: 'identified' });
   const [profileForm, setProfileForm] = useState(EMPTY_PROFILE);
   const [initialProfileForm, setInitialProfileForm] = useState(EMPTY_PROFILE);
@@ -46,6 +46,7 @@ export default function AccountSettingsPage() {
 
   const isOnboardingDirty =
     JSON.stringify(normalizeProfileForm(profileForm)) !== JSON.stringify(normalizeProfileForm(initialProfileForm));
+  const hasCompletedOnboarding = onboardingState === 'COMPLETED';
 
   useEffect(() => {
     if (isOnboardingDirty) {
@@ -113,18 +114,15 @@ export default function AccountSettingsPage() {
 
     const payload = {
       ...form,
-      profile: profilePayload,
+      ...(hasCompletedOnboarding ? { profile: profilePayload } : {}),
     };
 
     try {
       await authApi.patchProfile(accessToken, payload);
-      setMessage('Profile updated successfully.');
+      setMessage('Personal info updated successfully.');
     } catch (err) {
       if (err?.code === 'ONBOARDING_NOT_COMPLETED') {
-        setError('Please complete onboarding from the onboarding panel first. Redirecting...');
-        if (typeof window !== 'undefined') {
-          setTimeout(() => window.location.assign('/'), 600);
-        }
+        setError('Please complete onboarding first to update onboarding information.');
         return;
       }
       setError(err.message || 'Failed to update profile.');
@@ -271,98 +269,117 @@ export default function AccountSettingsPage() {
 
         <button type="submit">Save profile</button>
 
-        <section style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #ddd' }}>
-          <h2 style={{ marginTop: 0 }}>Learning profile</h2>
-          <label htmlFor="major">Major</label>
-          <input
-            id="major"
-            value={profileForm.major}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                major: event.target.value,
-              }))
-            }
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <label htmlFor="completedCourseIds">Completed courses (comma separated)</label>
-          <input
-            id="completedCourseIds"
-            value={profileForm.completedCourseIdsText}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                completedCourseIdsText: event.target.value,
-              }))
-            }
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <label htmlFor="careerRole">Target role</label>
-          <input
-            id="careerRole"
-            value={profileForm.careerGoal.role}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                careerGoal: { ...prev.careerGoal, role: event.target.value },
-              }))
-            }
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <label htmlFor="companyType">Target company type</label>
-          <input
-            id="companyType"
-            value={profileForm.careerGoal.companyType}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                careerGoal: { ...prev.careerGoal, companyType: event.target.value },
-              }))
-            }
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <label htmlFor="graduationTimeline">Graduation timeline</label>
-          <input
-            id="graduationTimeline"
-            value={profileForm.careerGoal.graduationTimeline}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                careerGoal: { ...prev.careerGoal, graduationTimeline: event.target.value },
-              }))
-            }
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <label htmlFor="personalAspirations">Personal aspirations</label>
-          <textarea
-            id="personalAspirations"
-            value={profileForm.personalAspirations}
-            onChange={(event) =>
-              setProfileForm((prev) => ({
-                ...prev,
-                personalAspirations: event.target.value,
-              }))
-            }
-            rows={4}
-            style={{ width: '100%', marginBottom: 12 }}
-          />
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" onClick={saveOnboardingInfo} disabled={!isOnboardingDirty || isSavingOnboardInfo}>
-              {isSavingOnboardInfo ? 'Saving...' : 'Save onboarding info'}
+        {!hasCompletedOnboarding ? (
+          <section style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #ddd' }}>
+            <h2 style={{ marginTop: 0 }}>Learning profile</h2>
+            <p>Please complete onboarding to edit learning profile information.</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.assign('/');
+                }
+              }}
+            >
+              Go to onboarding
             </button>
-            {showRegenerateRoadmap ? (
-              <button type="button" onClick={regenerateRoadmap} disabled={isRegeneratingRoadmap}>
-                {isRegeneratingRoadmap ? 'Regenerating...' : 'Regenerate Roadmap'}
-              </button>
-            ) : null}
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #ddd' }}>
+            <h2 style={{ marginTop: 0 }}>Learning profile</h2>
+            <label htmlFor="major">Major</label>
+            <input
+              id="major"
+              value={profileForm.major}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  major: event.target.value,
+                }))
+              }
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <label htmlFor="completedCourseIds">Completed courses (comma separated)</label>
+            <input
+              id="completedCourseIds"
+              value={profileForm.completedCourseIdsText}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  completedCourseIdsText: event.target.value,
+                }))
+              }
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <label htmlFor="careerRole">Target role</label>
+            <input
+              id="careerRole"
+              value={profileForm.careerGoal.role}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  careerGoal: { ...prev.careerGoal, role: event.target.value },
+                }))
+              }
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <label htmlFor="companyType">Target company type</label>
+            <input
+              id="companyType"
+              value={profileForm.careerGoal.companyType}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  careerGoal: { ...prev.careerGoal, companyType: event.target.value },
+                }))
+              }
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <label htmlFor="graduationTimeline">Graduation timeline</label>
+            <input
+              id="graduationTimeline"
+              value={profileForm.careerGoal.graduationTimeline}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  careerGoal: { ...prev.careerGoal, graduationTimeline: event.target.value },
+                }))
+              }
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <label htmlFor="personalAspirations">Personal aspirations</label>
+            <textarea
+              id="personalAspirations"
+              value={profileForm.personalAspirations}
+              onChange={(event) =>
+                setProfileForm((prev) => ({
+                  ...prev,
+                  personalAspirations: event.target.value,
+                }))
+              }
+              rows={4}
+              style={{ width: '100%', marginBottom: 12 }}
+            />
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              {isOnboardingDirty ? (
+                <button type="button" onClick={saveOnboardingInfo} disabled={isSavingOnboardInfo}>
+                  {isSavingOnboardInfo ? 'Saving...' : 'Save onboarding info'}
+                </button>
+              ) : null}
+              {showRegenerateRoadmap ? (
+                <button type="button" onClick={regenerateRoadmap} disabled={isRegeneratingRoadmap}>
+                  {isRegeneratingRoadmap ? 'Regenerating...' : 'Regenerate Roadmap'}
+                </button>
+              ) : null}
+            </div>
+          </section>
+        )}
       </form>
 
       <section style={{ marginTop: 24 }}>

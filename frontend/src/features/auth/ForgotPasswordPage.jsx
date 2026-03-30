@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import authApi from './auth.api';
+import authApi from '../../services/auth.api';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState('request');

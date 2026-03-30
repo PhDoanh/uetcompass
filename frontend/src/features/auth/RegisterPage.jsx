@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import authApi from './auth.api';
+import authApi from '../../services/auth.api';
 
 function isVnuEmail(value) {
   return /@vnu\.edu\.vn$/i.test(String(value || '').trim());

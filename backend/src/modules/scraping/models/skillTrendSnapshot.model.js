@@ -2,9 +2,8 @@ const mongoose = require('mongoose');
 
 const skillTrendSnapshotSchema = new mongoose.Schema(
   {
-    roadmapNodeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'RoadmapNode',
+    courseName: {
+      type: String,
       required: true
     },
     skillName: {
@@ -19,13 +18,12 @@ const skillTrendSnapshotSchema = new mongoose.Schema(
       default: null
     },
     personalizationContext: {
-      type: Object,
+      type: {
+        major: String,
+        careerRole: String,
+        companyType: String
+      },
       default: null
-    },
-    personalizationContext: {
-      major: String,
-      careerRole: String,
-      companyType: String
     },
     jobCount: {
       type: Number,
@@ -76,8 +74,8 @@ const skillTrendSnapshotSchema = new mongoose.Schema(
 );
 
 // Indexes as per data-model.md
-skillTrendSnapshotSchema.index({ roadmapNodeId: 1, skillName: 1, snapshotDate: 1 }, { unique: true });
-skillTrendSnapshotSchema.index({ roadmapNodeId: 1, snapshotDate: -1 });
+skillTrendSnapshotSchema.index({ courseName: 1, skillName: 1, snapshotDate: 1 }, { unique: true });
+skillTrendSnapshotSchema.index({ courseName: 1, snapshotDate: -1 });
 skillTrendSnapshotSchema.index({ skillId: 1 });
 // TTL index for automatic expiration
 skillTrendSnapshotSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

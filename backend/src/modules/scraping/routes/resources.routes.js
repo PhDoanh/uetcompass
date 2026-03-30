@@ -18,4 +18,14 @@ router.get(
   resourcesController.getResourcesBySkillName
 );
 
+/**
+ * POST /api/resources/crawl/trigger
+ * Trigger crawl-and-store sequence from Feature 009
+ */
+router.post(
+  '/crawl/trigger',
+  verifyToken,
+  resourcesController.triggerCurationFromRoadmap
+);
+
 module.exports = router;

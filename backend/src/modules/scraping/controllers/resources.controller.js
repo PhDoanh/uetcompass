@@ -4,6 +4,7 @@
  */
 
 const LearningResource = require('../models/learningResource.model');
+const curationPipeline = require('../services/curationPipeline.service');
 
 /**
  * GET /api/resources/skills/:skillName
@@ -48,6 +49,38 @@ async function getResourcesBySkillName(req, res) {
   }
 }
 
+/**
+ * POST /api/resources/crawl/trigger
+ * Trigger Feature 003 pipeline from Feature 009 notification
+ */
+async function triggerCurationFromRoadmap(req, res) {
+  try {
+    const { nodes, studentProfileId = null, sourceFeature = '009-roadmap-generator' } = req.body || {};
+
+    const pipelineResult = await curationPipeline.runTriggeredPipeline({
+      nodes,
+      studentProfileId
+    });
+
+    return res.status(200).json({
+      sourceFeature,
+      ...pipelineResult
+    });
+  } catch (error) {
+    console.error('[ResourcesController] Triggered curation failed:', error.message);
+    return res.status(400).json({
+      status: 'failed',
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      error: {
+        code: 'CURATION_TRIGGER_FAILED',
+        message: error.message
+      }
+    });
+  }
+}
+
 module.exports = {
-  getResourcesBySkillName
+  getResourcesBySkillName,
+  triggerCurationFromRoadmap
 };

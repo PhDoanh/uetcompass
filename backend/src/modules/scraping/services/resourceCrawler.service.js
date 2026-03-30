@@ -117,11 +117,10 @@ function detectResourceType(url, title) {
  * @param {Array} skillTrendSnapshots - Snapshots to process
  * @returns {Promise<Array>} Results
  */
-async function crawlResourcesForSkills(skillTrendSnapshots = null) {
+async function crawlResourcesForSkills(skillTrendSnapshots = []) {
   try {
-    if (!skillTrendSnapshots) {
-      // Could fetch from DB if needed
-      skillTrendSnapshots = [];
+    if (!Array.isArray(skillTrendSnapshots) || skillTrendSnapshots.length === 0) {
+      throw new Error('skillTrendSnapshots must be a non-empty array from market tracker output');
     }
 
     const results = [];
@@ -129,7 +128,7 @@ async function crawlResourcesForSkills(skillTrendSnapshots = null) {
 
     for (const snapshot of skillTrendSnapshots) {
       try {
-        const { _id: snapshotId, skillName, roadmapNodeId } = snapshot;
+        const { _id: snapshotId, skillName, courseName } = snapshot;
 
         console.log(`[ResourceCrawler] Crawling resources for skill: "${skillName}"`);
 
@@ -154,7 +153,7 @@ async function crawlResourcesForSkills(skillTrendSnapshots = null) {
               {
                 skillTrendSnapshotId: snapshotId,
                 skillName,
-                roadmapNodeId,
+                courseName,
                 title,
                 url,
                 sourcePlatform,
@@ -203,7 +202,7 @@ async function crawlResourcesForSkills(skillTrendSnapshots = null) {
 }
 
 async function runResourceCrawler() {
-  return crawlResourcesForSkills();
+  throw new Error('Periodic run disabled. Use trigger endpoint from Feature 009.');
 }
 
 module.exports = {

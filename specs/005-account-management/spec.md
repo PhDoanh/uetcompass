@@ -87,7 +87,7 @@ A student who has forgotten their password requests a reset. The system sends a 
 
 After every successful login — regardless of login method — the system routes the student to the appropriate experience based on their onboarding state: first-time visitor, draft in progress, or onboarding completed.
 
-**Why this priority**: This connects Feature 004 (Account Management) with Feature 001 (Profile Onboarding), ensuring a coherent, uninterrupted end-to-end experience for every student.
+**Why this priority**: This connects Feature 005 (Account Management) with Feature 001 (Profile Onboarding), ensuring a coherent, uninterrupted end-to-end experience for every student.
 
 **Independent Test**: Can be fully tested using three distinct accounts — one that has never touched onboarding, one with a saved draft, and one that has submitted — and verifying each triggers the correct post-login behavior.
 
@@ -160,7 +160,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **Account locked due to OTP timeout at registration**: The account remains locked indefinitely until the student requests a new OTP. The account is never automatically deleted.
 - **Duplicate email across login methods**: A `@vnu.edu.vn` email can belong to at most one account, regardless of how it was registered. Attempting to create a second account with the same email is always rejected.
 - **Forgot-password request for unregistered email**: The system always shows a generic response regardless of email existence — account enumeration is never possible.
-- **Account locked by 5 failed logins while also needing a password reset**: The student must wait for the 15-minute lockout to expire before the forgot-password flow becomes usable.
+- **Account locked by 5 failed logins while also needing a password reset**: The student MAY initiate the forgot-password flow during the 15-minute lockout. The lockout applies only to password login attempts, not to reset initiation.
 - **Deletion confirmation link expired or already used**: The student sees a clear error message; no deletion is performed.
 - **"Re-personalize" button ignored by student after profile update**: The button persists in the roadmap view until acted upon — it does not auto-dismiss or reset.
 - **`displayName` is empty/invalid for rendering**: UI MUST apply fallback order: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`.
@@ -231,7 +231,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **FR-037**: `displayName` MUST be treated as the primary public identity field, stored on `users`, and editable independently from `fullName`.
 - **FR-038**: The system MUST support `privacySetting` on `users` with enum values `identified | anonymous` and default `identified`.
 - **FR-039**: The system MUST expose and accept `displayName`, `fullName`, and `privacySetting` explicitly in account/profile APIs.
-- **FR-040**: Any UI that renders student identity MUST use unified fallback order: (1) valid `displayName`, (2) `fullName`, (3) sanitized email local-part, (4) `"Student"`.
+- **FR-040**: Any UI that renders student identity MUST use unified fallback order: (1) valid `displayName`, (2) `fullName`, (3) sanitized email local-part, (4) `"Student"`. For rendering purposes, a valid `displayName` is a non-empty string after trim with length 1-120.
 
 **Logout**
 
@@ -244,7 +244,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 
 - **NFR-001 (Security)**: Student passwords MUST be protected such that they cannot be recovered or read back in plaintext by anyone, including system administrators.
 - **NFR-002 (Security)**: The forgot-password response MUST be indistinguishable regardless of whether the email exists, to prevent account enumeration attacks.
-- **NFR-003 (Privacy)**: No history of previous passwords is surfaced to the user; only internal audit records are maintained.
+- **NFR-003 (Privacy)**: No history of previous passwords is surfaced to the user; only internal audit records are maintained for security events `PASSWORD_CHANGED` and `PASSWORD_RESET_COMPLETED`.
 - **NFR-004 (Isolation)**: Only the authenticated student may read or modify their own account data — cross-account access by other students MUST NOT be possible.
 - **NFR-005 (Consistency)**: A single `@vnu.edu.vn` email address MUST be associated with at most one student account at any time, regardless of which login method was used to create it.
 - **NFR-006 (Privacy)**: When `privacySetting = anonymous`, public surfaces MUST not disclose personally identifying account fields beyond the defined fallback identity output.
@@ -272,7 +272,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - **SC-004**: On every first-ever login, the Onboarding Panel opens automatically on the homepage; the student can dismiss it without losing any progress and can reopen it from Account Settings at any time before submission.
 - **SC-005**: Account deletion is only executed after the student clicks the email confirmation link; 100% of personal data is permanently removed and the email is immediately eligible for re-registration.
 - **SC-006**: When onboarding profile fields are updated in Account Settings, the "Re-personalize" button appears in the roadmap view and an in-app notification with a direct roadmap link is delivered within 5 seconds of the save being confirmed.
-- **SC-007**: A student with an incomplete onboarding draft always sees their complete draft restored in the Onboarding Panel on every subsequent login — zero data is lost across sessions or interruptions.
+- **SC-007**: A student with an incomplete onboarding draft always sees key onboarding fields restored on every subsequent login — `major`, `completedCourseIds`, `careerGoal` (`role`, `companyType`, `graduationTimeline`), and `personalAspirations` — with zero data loss across sessions or interruptions.
 - **SC-008**: `GET/PATCH /api/account/profile` read/write `displayName`, `fullName`, and `privacySetting` consistently, and identity rendering always resolves with fallback order (`displayName` → `fullName` → sanitized email local-part → `"Student"`).
 
 ---
@@ -286,6 +286,7 @@ A logged-in student chooses to log out. The session is terminated immediately wi
 - Google Sign-In relies on the Google account selection panel to surface accounts already signed in on the student's device; the list of accounts shown is determined by the student's browser or device state, not by this system.
 - No two-factor authentication (2FA) beyond OTP-based email verification is required at this time.
 - A "session" ends when the student explicitly logs out or when the system detects expiry; the exact session lifetime is a deployment configuration detail outside this spec's scope.
+- Constitution Principle III alignment for account/profile data storage is still pending governance review; implementation may proceed with this documented risk note and without modifying `constitution.md` in this feature.
 
 ---
 

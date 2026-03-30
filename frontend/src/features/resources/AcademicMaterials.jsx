@@ -6,9 +6,9 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import AcademicDocumentCard from './AcademicDocumentCard';
-import { getAcademicMaterials } from './resources.api';
+import { getAcademicMaterials } from '../../services/resources.api';
 
-function AcademicMaterials({ roadmapNodeId, courseName }) {
+function AcademicMaterials({ courseName, authToken }) {
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,21 +18,20 @@ function AcademicMaterials({ roadmapNodeId, courseName }) {
       setIsLoading(true);
       setError(null);
 
-      const result = await getAcademicMaterials(roadmapNodeId);
-
-      if (result.error) {
-        setError(result.error);
-      } else {
+      try {
+        const result = await getAcademicMaterials(courseName, authToken);
         setDocuments(result.documents || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load academic materials');
       }
 
       setIsLoading(false);
     };
 
-    if (roadmapNodeId) {
+    if (courseName) {
       fetchMaterials();
     }
-  }, [roadmapNodeId]);
+  }, [courseName, authToken]);
 
   if (isLoading) {
     return (
@@ -107,12 +106,12 @@ const styles = {
 };
 
 AcademicMaterials.propTypes = {
-  roadmapNodeId: PropTypes.string.isRequired,
-  courseName: PropTypes.string
+  courseName: PropTypes.string.isRequired,
+  authToken: PropTypes.string
 };
 
 AcademicMaterials.defaultProps = {
-  courseName: 'Course'
+  authToken: ''
 };
 
 export default AcademicMaterials;

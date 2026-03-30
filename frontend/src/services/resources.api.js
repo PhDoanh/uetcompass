@@ -47,34 +47,48 @@ async function request(path, options = {}) {
 	return payload;
 }
 
+function resolveAuthToken(authToken) {
+	if (authToken) return authToken;
+
+	try {
+		return localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
+	} catch {
+		return '';
+	}
+}
+
 /**
  * Get learning resources for a specific skill
- * @param {string} skillId - Skill ID
+ * @param {string} skillName - Skill name
  * @param {string} authToken - JWT access token
- * @returns {Promise<object>} Learning resources response with skillId, skillName, resources array
+ * @returns {Promise<object>} Learning resources response with skillName, resources array
  * @throws {Error} Error with status, code, and details if request fails
  */
-export async function getSkillResources(skillId, authToken) {
-	return request(`/resources/skills/${skillId}`, {
+export async function getSkillResources(skillName, authToken) {
+  const token = resolveAuthToken(authToken);
+
+	return request(`/resources/skills/${encodeURIComponent(skillName)}`, {
 		method: 'GET',
 		headers: {
-			Authorization: `Bearer ${authToken}`,
+			Authorization: `Bearer ${token}`,
 		},
 	});
 }
 
 /**
- * Get academic materials for a specific skill
- * @param {string} skillId - Skill ID
+ * Get academic materials for a specific course
+ * @param {string} courseName - Course name
  * @param {string} authToken - JWT access token
- * @returns {Promise<object>} Academic materials response with skillId, documents array
+ * @returns {Promise<object>} Academic materials response with courseName, documents array
  * @throws {Error} Error with status, code, and details if request fails
  */
-export async function getAcademicMaterials(skillId, authToken) {
-	return request(`/resources/academic/${skillId}`, {
+export async function getAcademicMaterials(courseName, authToken) {
+  const token = resolveAuthToken(authToken);
+
+	return request(`/resources/academic/${encodeURIComponent(courseName)}`, {
 		method: 'GET',
 		headers: {
-			Authorization: `Bearer ${authToken}`,
+			Authorization: `Bearer ${token}`,
 		},
 	});
 }
@@ -86,10 +100,35 @@ export async function getAcademicMaterials(skillId, authToken) {
  * @throws {Error} Error with status, code, and details if request fails
  */
 export async function getMarketTrends(authToken) {
+	const token = resolveAuthToken(authToken);
+
 	return request('/market/trends', {
 		method: 'GET',
 		headers: {
-			Authorization: `Bearer ${authToken}`,
+			Authorization: `Bearer ${token}`,
 		},
+	});
+}
+
+/**
+ * Trigger crawl pipeline from Feature 009
+ * @param {Array<{courseName: string}>} nodes - Course nodes from roadmap
+ * @param {string|null} studentProfileId - Optional profile for personalization
+ * @param {string} authToken - JWT access token
+ * @returns {Promise<object>} Trigger response with status and summary
+ */
+export async function triggerResourceCuration(nodes, studentProfileId = null, authToken) {
+	const token = resolveAuthToken(authToken);
+
+	return request('/resources/crawl/trigger', {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${token}`
+		},
+		body: JSON.stringify({
+			sourceFeature: '009-roadmap-generator',
+			nodes,
+			studentProfileId
+		})
 	});
 }

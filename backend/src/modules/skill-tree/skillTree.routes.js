@@ -25,7 +25,8 @@ router.get('/nodes/:courseCode/market-skills', controller.getNodeMarketSkills);
 // US4 — Skill drill-down resources
 router.get('/skills/:skillName/learning-resources', controller.getSkillLearningResources);
 
-// US5 — Repersonalize
-router.post('/repersonalize', controller.postRepersonalize);
+// Note: Repersonalize is handled by Feature 005 (Account Management)
+// which calls Feature 009 endpoint directly: POST /api/roadmaps/primary/regenerate
+// Skill Tree fetches updated roadmap via GET /api/skill-tree after 009 completes
 
 module.exports = router;

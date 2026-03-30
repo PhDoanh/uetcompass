@@ -2,7 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
-**Updated**: 2026-03-14  
+**Updated**: 2026-03-30  
 **Research dependency**: [research.md](research.md) (R-002, R-004)  
 **Base URL**: `/api/progress`  
 **Auth**: All non-SSE endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. SSE uses short-lived query token `?sseToken=<token>` (see endpoint 3).

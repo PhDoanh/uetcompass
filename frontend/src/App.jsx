@@ -1,4 +1,5 @@
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
+import ProgressDashboard from './features/progress/ProgressDashboard';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
 import AccountSettingsPage from './features/auth/AccountSettingsPage';
 import OnboardingGuard from './guards/OnboardingGuard';
@@ -34,6 +35,14 @@ function AppContent() {
 				<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
 					<AccountSettingsPage />
 				</main>
+			</OnboardingGuard>
+		);
+	}
+
+	if (pathname.includes('/progress')) {
+		return (
+			<OnboardingGuard>
+				<ProgressDashboard />
 			</OnboardingGuard>
 		);
 	}

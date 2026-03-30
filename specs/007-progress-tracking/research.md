@@ -28,7 +28,7 @@
 
 ## R-002: SSE Architecture — dedicated module or reuse existing notification channel?
 
-**Question**: Should Progress Tracking push `progress:update` events through the existing `notification.sse.js` channel (Feature 005) or create a dedicated `progress.sse.js`?
+**Question**: Should Progress Tracking push `progress:updated` events through the existing `notification.sse.js` channel (Feature 005) or create a dedicated `progress.sse.js`?
 
 **Decision**: Create a dedicated `progress.sse.js` module following exactly the same Map-based pattern used by `onboarding.sse.js` and `notification.sse.js`.
 
@@ -39,7 +39,7 @@
 
 **Connection survival**: 15-second heartbeat comment line (`: heartbeat\n\n`) matches all other SSE modules. Beats Render's ~30-second idle connection close.
 
-**Auth on SSE endpoint**: Token passed as `?token=<JWT>` query param — EventSource cannot send custom headers. Auth errors are returned as `event: error` SSE frames (not HTTP 401) so the browser's EventSource does not enter an infinite reconnect loop.
+**Auth on SSE endpoint**: Token passed as `?sseToken=<JWT>` query param — EventSource cannot send custom headers. Auth errors are returned as `event: error` SSE frames (not HTTP 401) so the browser's EventSource does not enter an infinite reconnect loop.
 
 **Alternatives considered**:
 - WebSocket: Rejected — constitution already established SSE as the real-time primitive; no WebSocket infrastructure exists.

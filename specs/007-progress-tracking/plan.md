@@ -19,7 +19,7 @@ A read-only Progress Dashboard page (`/progress`) that gives students a cross-ro
 **Target Platform**: Backend → Render (Node.js web service, free tier); Frontend → Vercel (React SPA)
 **Project Type**: Web application — React SPA + Node.js/Express REST API (modular monolith)
 **Performance Goals**: Dashboard `GET /api/progress/summaries` served from pre-computed cache → single `find({ userId })` → p95 < 100ms; SC-001 (< 2s on 4G) met by cache design. SSE push within 200ms of node write on Atlas M0; SC-004 (< 5s) met comfortably.
-**Constraints**: No Redis — cache stored in MongoDB; read-only REST API (no write endpoints in this module); SSE auth via `?token=<JWT>` query param (EventSource cannot send headers); `refreshCache` soft-fail + eventual-consistency retry/repair; no new npm packages introduced
+**Constraints**: No Redis — cache stored in MongoDB; read-only REST API (no write endpoints in this module); SSE auth via `?sseToken=<JWT>` query param (EventSource cannot send headers); `refreshCache` soft-fail + eventual-consistency retry/repair; no new npm packages introduced
 **Scale/Scope**: UET-VNU students only; multi-roadmap ownership from Feature 009 (typically up to 10 completed roadmaps in dashboard scope); tens to low hundreds of nodes per roadmap
 
 ## Constitution Check
@@ -61,7 +61,7 @@ backend/
 │   │   │   ├── progress.controller.js         # Express handlers — thin, delegates to service
 │   │   │   ├── progress.routes.js             # GET /api/progress/summaries, /summaries/:id/nodes, /sse
 │   │   │   └── progress.sse.js                # Map-based SSE store: addClient, removeClient, notifyUser
-│   │   └── skillTree/                         # Owned by Feature 004 — calls progressService.refreshCache after node writes
+│   │   └── skill-tree/                        # Owned by Feature 004 — calls progressService.refreshCache after node writes
 │   ├── middleware/
 │   │   └── auth.middleware.js                 # Shared — JWT verify → req.user.userId (no changes needed)
 │   └── app.js                                 # Mount progress.routes (one new line)
@@ -78,8 +78,9 @@ frontend/
 │   │       ├── RoadmapCard.jsx                 # Summary card: name, %, Done/InProgress/Pending counts, last activity
 │   │       ├── RoadmapDetailView.jsx           # Node-by-status breakdown; three labeled groups with empty states
 │   │       ├── NodeListItem.jsx                # Tappable node entry → React Router Link to /skill-tree/:id?focus=<nodeId>
-│   │       ├── useProgressSSE.js               # EventSource hook: connects /api/progress/sse, merges progress:update into state
-│   │       └── progress.api.js                 # Fetch wrappers: getSummaries(), getRoadmapNodes(roadmapId)
+│   │       ├── useProgressSSE.js               # EventSource hook: connects /api/progress/sse, merges progress:updated into state
+│   ├── services/
+│   │   └── progress.api.js                     # Fetch wrappers: getSummaries(), getRoadmapNodes(roadmapId)
 │   └── guards/
 │       └── AuthGuard.jsx                       # Shared — wraps /progress route (no changes needed)
 ```

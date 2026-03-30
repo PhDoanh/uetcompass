@@ -137,7 +137,7 @@ Student updates node on Skill Tree
          │   on error: soft-fail + eventual-consistency retry
          ▼
   Progress Dashboard (open tab)
-         │   receives SSE event: progress:update
+         │   receives SSE event: progress:updated
          │   merges updated RoadmapProgressSummary into React state
          ▼
   Card re-renders with new %, counts, lastActivityDate

@@ -58,7 +58,7 @@ After seeing the overview, a student selects one roadmap card and is shown a det
 1. **Given** the overview dashboard is shown, **When** the student taps or clicks a roadmap card, **Then** a detail view opens (same page or expanded section) showing that roadmap's nodes organized under three labeled groups: Done, In Progress, and Pending.
 2. **Given** the detail view is open, **When** the student counts the nodes shown, **Then** the total matches the `total_nodes` value shown on the summary card.
 3. **Given** a student has 5 Done nodes, 2 In Progress, and 8 Pending on a roadmap, **When** they open the detail view, **Then** each group header shows the correct count (Done: 5, In Progress: 2, Pending: 8).
-4. **Given** a group contains no nodes (e.g., In Progress has 0), **When** the detail view is shown, **Then** that group is either hidden or shows an empty state message — it does not show a blank section that might confuse the student.
+4. **Given** a group contains no nodes (e.g., In Progress has 0), **When** the detail view is shown, **Then** that group shows a clear empty state message — it does not show a blank section that might confuse the student.
 5. **Given** the student navigates back to the overview, **When** they return to the dashboard, **Then** all roadmap cards are still visible and the state of the page is preserved.
 
 ---

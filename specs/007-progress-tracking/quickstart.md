@@ -57,7 +57,7 @@ app.use('/api/progress', progressRoutes);
 
 ### 3.3 Wire the cache refresh call in Skill Tree
 
-In `backend/src/modules/skillTree/skillTree.service.js`, inject the progress service and add the refresh call:
+In `backend/src/modules/skill-tree/skillTree.service.js`, inject the progress service and add the refresh call:
 
 ```js
 const progressService = require('../progress/progress.service');
@@ -209,3 +209,20 @@ Key test cases covered:
 - `getAll`: returns empty array when no cache documents exist for userId
 - `getRoadmapDetail`: delegates to Skill Tree service, groups nodes by status
 - `getRoadmapDetail`: returns empty arrays (not null) for status groups with 0 nodes
+
+---
+
+## 8. Phase 7 Validation Notes
+
+- **SC-001 (<=2s on 4G, up to 10 roadmaps)**
+  - Device/profile: _fill in during validation_
+  - Network throttle profile: _fill in during validation_
+  - Measured load time: _fill in during validation_
+  - Result: PASS/FAIL
+
+- **SC-002 (Progress percent parity with Skill Tree within ±1pp)**
+  - Fixture user/roadmap: _fill in during validation_
+  - Dashboard percent: _fill in during validation_
+  - Skill Tree percent: _fill in during validation_
+  - Delta: _fill in during validation_
+  - Result: PASS/FAIL

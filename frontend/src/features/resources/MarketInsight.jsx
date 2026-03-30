@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import SkillTrendItem from './SkillTrendItem';
-import { getMarketTrends } from './resources.api';
+import { getMarketTrends } from '../../services/resources.api';
 
 function MarketInsight() {
   const [trends, setTrends] = useState([]);
@@ -18,13 +18,12 @@ function MarketInsight() {
       setIsLoading(true);
       setError(null);
 
-      const result = await getMarketTrends();
-
-      if (result.error) {
-        setError(result.error);
-      } else {
+      try {
+        const result = await getMarketTrends();
         setTrends(result.trends || []);
         setLastRefreshedAt(result.lastRefreshedAt);
+      } catch (err) {
+        setError(err.message || 'Failed to load market trends');
       }
 
       setIsLoading(false);

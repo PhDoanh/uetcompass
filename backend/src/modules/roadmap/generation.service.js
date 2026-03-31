@@ -7,24 +7,7 @@ const { callGemini } = require('./roadmap.gemini.service');
 const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
-
 const activeGenerations = new Set();
-
-// Enrich roadmap nodes with skills (Feature 003, phase 1)
-async function enrichNode(nodes, userId) {
-	// Example: Call Feature 003 for skill enrichment only
-	const axios = require('axios');
-	try {
-		const response = await axios.post(
-			process.env.FEATURE_003_ENRICH_SKILLS_URL || 'http://localhost:3001/api/skill-enrich',
-			{ nodes, userId }
-		);
-		return response.data.nodes; // Expecting { nodes: [...] }
-	} catch (err) {
-		console.error('[enrichNode] Skill enrichment failed:', err.message);
-		throw new Error('Skill enrichment failed (Feature 003)');
-	}
-}
 
 async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 	let personalisationLevel = 'full';
@@ -45,9 +28,6 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 		}
 
 		const nodes = await callGemini(profile, courseUnits, existingRoadmap);
-
-		// const skillEnrichedNodes = await enrichNode(nodes, userId);
-
 		const completedCourseCodes = new Set(
 			(profile.completedCourses ?? []).map((c) => c.courseCode)
 		);

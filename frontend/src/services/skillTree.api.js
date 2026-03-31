@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = process.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta?.env?.VITE_API_BASE_URL ||
+	(typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 const client = axios.create({ baseURL: API_BASE });
 
 // Track auth token from localStorage or context
@@ -98,3 +99,14 @@ export async function getLearningResources(authToken, skillName) {
  * Feature 005 calls Feature 009 endpoint directly: POST /api/roadmaps/primary/regenerate
  * Skill Tree does not trigger repersonalization anymore
  */
+// export async function repersonalize(authToken) {
+//   try {
+//     const response = await client.post('/roadmaps/primary/regenerate', {}, {
+//       headers: { Authorization: `Bearer ${authToken}` },
+//     });
+//     return response.data;
+//   } catch (err) {
+//     handleError(err);
+//   }
+// }
+

@@ -34,14 +34,15 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 
 		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
-		previewStore.storePendingPreview(userId, {
-			nodes,
-			personalisationLevel,
-			triggerReason,
-			studentProfileId,
-		});
-
-		notifyPreviewReady(userId);
+		   // Save generated roadmap directly to DB as completed
+		   await roadmapService.commitAccepted(userId, {
+			   studentProfileId,
+			   personalisationLevel,
+			   isPrimary: true,
+			   nodes,
+		   });
+		   // Optionally, notify user of completion (reuse notifyPreviewReady for now)
+		   notifyPreviewReady(userId);
 	} catch (err) {
 		await roadmapService.upsertFailedWithProfile(userId, studentProfileId, err.message, personalisationLevel);
 		notifyGenerationFailed(userId);

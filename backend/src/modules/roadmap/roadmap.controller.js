@@ -1,3 +1,18 @@
+// Preview roadmap: just echo the roadmap data for preview
+async function previewRoadmapHandler(req, res) {
+	try {
+		const { studentProfileId, personalisationLevel, nodes, sseToken } = req.body ?? {};
+
+		return res.json({
+			studentProfileId,
+			personalisationLevel,
+			nodes,
+			preview: true
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
 'use strict';
 
 const roadmapService = require('./roadmap.service');
@@ -87,7 +102,7 @@ async function getRoadmapById(req, res) {
 
 async function acceptRoadmapHandler(req, res) {
 	try {
-		const { studentProfileId, personalisationLevel, isPrimary, nodes } = req.body ?? {};
+		const { studentProfileId, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
 
 		if (
 			!Array.isArray(nodes) ||
@@ -102,16 +117,26 @@ async function acceptRoadmapHandler(req, res) {
 			});
 		}
 
-		const result = await acceptRoadmap(req.user.userId, {
-			studentProfileId,
-			personalisationLevel,
-			isPrimary: !!isPrimary,
-			nodes,
-		});
-		return res.json(result);
-	} catch (err) {
-		return mapError(err, res);
-	}
+		   const result = await acceptRoadmap(req.user.userId, {
+			   studentProfileId,
+			   personalisationLevel,
+			   isPrimary: !!isPrimary,
+			   nodes,
+		   });
+
+		   // Notify client roadmap accepted (optional)
+		   if (sseToken) {
+			   const { notifyClientByToken } = require('./roadmap.sse');
+			   notifyClientByToken(sseToken, 'roadmap:notification', {
+				   type: 'success',
+				   message: 'Roadmap accepted and saved.'
+			   });
+		   }
+
+		   return res.json(result);
+	   } catch (err) {
+		   return mapError(err, res);
+	   }
 }
 
 async function switchPrimaryHandler(req, res) {
@@ -128,36 +153,36 @@ async function switchPrimaryHandler(req, res) {
 }
 
 async function retryGeneration(req, res) {
-	try {
-		const userId = req.user.userId;
-		if (!profileExists) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'The student profile associated with this roadmap no longer exists.',
-				},
-			});
-		}
+	   try {
+		   const userId = req.user.userId;
+		   const sseToken = req.query?.sseToken || req.body?.sseToken;
+		   const { studentProfileId } = req.body ?? {};
+		   if (isGenerating(userId)) {
+			   return res.status(409).json({
+				   error: {
+					   code: 'CONFLICT',
+					   message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
+				   },
+			   });
+		   }
 
-		await triggerGeneration(userId, failedRoadmap.studentProfileId.toString(), 'retry');
+		   await triggerGeneration(userId, studentProfileId?.toString(), 'on-demand');
 
-		if (isGenerating(userId)) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
-				},
-			});
-		}
-
-		   await triggerGeneration(userId, studentProfileId.toString(), 'on-demand');
+		   // Notify client roadmap generation started (optional)
+		   if (sseToken) {
+			   const { notifyClientByToken } = require('./roadmap.sse');
+			   notifyClientByToken(sseToken, 'roadmap:notification', {
+				   type: 'info',
+				   message: 'Roadmap generation started. You will be notified when it completes.'
+			   });
+		   }
 
 		   return res.status(202).json({
 			   message: 'Roadmap generation started. You will be notified when it completes.',
 		   });
-	} catch (err) {
-		return mapError(err, res);
-	}
+	   } catch (err) {
+		   return mapError(err, res);
+	   }
 }
 
 async function rejectRoadmap(req, res) {
@@ -179,4 +204,5 @@ module.exports = {
 	switchPrimaryHandler,
 	retryGeneration,
 	rejectRoadmap,
+    previewRoadmapHandler,
 };

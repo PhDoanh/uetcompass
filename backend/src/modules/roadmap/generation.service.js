@@ -46,7 +46,7 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 
 		const nodes = await callGemini(profile, courseUnits, existingRoadmap);
 
-		const skillEnrichedNodes = await enrichNode(nodes, userId);
+		// const skillEnrichedNodes = await enrichNode(nodes, userId);
 
 		const completedCourseCodes = new Set(
 			(profile.completedCourses ?? []).map((c) => c.courseCode)

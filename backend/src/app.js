@@ -6,8 +6,10 @@ const cookieParser = require('cookie-parser');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
 const { authRouter, accountRouter } = require('./modules/auth');
-const roadmapRouter = require('./modules/roadmap/roadmap.routes');
+const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { academicRouter, trendsRouter, resourcesRouter } = require('./modules/scraping');
+
+
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 

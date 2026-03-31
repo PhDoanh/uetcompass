@@ -30,17 +30,17 @@ export default function WhyThisCourseTab({ courseCode }) {
   }, [courseCode]);
 
   if (loading) {
-    return <div className="text-gray-500 text-sm">Generating explanation...</div>;
+    return <div className="skill-tree-muted-text">Generating explanation...</div>;
   }
 
   if (error) {
-    return <div className="text-gray-600 text-sm italic">{error}</div>;
+    return <div className="skill-tree-muted-text skill-tree-muted-text--italic">{error}</div>;
   }
 
   return (
-    <div>
-      {cached && <p className="text-xs text-gray-500 mb-2">📌 Cached</p>}
-      <p className="text-gray-800 text-sm leading-relaxed">{content}</p>
+    <div className="why-tab">
+      {cached && <p className="why-tab__cached">Pinned from cache</p>}
+      <p className="why-tab__content">{content}</p>
     </div>
   );
 }

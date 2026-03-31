@@ -1,5 +1,5 @@
 import React from 'react';
-import '../style/general-component.css';
+import '../../style/general-component.css';
 
 export default function MenuBar({ onClose }) {
   return (

@@ -1,6 +1,6 @@
 
 import NavBar from './NavBar';
-import '../style/general-component.css';
+import '../../style/general-component.css';
 
 export default function Homepage() {
   return (

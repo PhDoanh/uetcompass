@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Menu, Search } from "lucide-react";
 import MenuBar from './MenuBar';
-import './NavBar.css';
+import '../../style/general-component.css';
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);

@@ -1,5 +1,8 @@
 'use strict';
 
+// MVP: Return mock roadmap nodes using mock data
+const mockCourseUnits = require('./mockData/mockCourseUnits');
+const mockCourseResource = require('./mockData/mockCourseResource');
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const roadmapNodeSchema = {
@@ -12,12 +15,14 @@ const roadmapNodeSchema = {
       credits:           { type: SchemaType.NUMBER },
       suggestedSemester: { type: SchemaType.NUMBER },
       reason:            { type: SchemaType.STRING },
+	  skills:            { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     },
     required: [
       'courseCode',
       'courseName',
       'credits',
       'reason',
+	  'skills',
     ],
   },
 };
@@ -51,7 +56,7 @@ Student Profile:
 }
 
 Available CourseUnits (DAG with prerequisites):
-${JSON.stringify(courseUnits)}
+${JSON.stringify(mockCourseUnits)}
 ${baseContext}
 
 Instructions:
@@ -62,6 +67,9 @@ Instructions:
 3. Return selected nodes in valid topological order: each node MUST appear after all its prerequisites.
 4. If no career goal is provided, include all required-type courses in topological order.
 5. For each node, populate:
+    - skills: a comma-separated string of the top 3-5 most important skills or concepts taught in the course that are relevant to the career goal.
+	  Focus on specific, actionable skills (e.g. "REST API design", "Dynamic Programming") rather than vague topics (e.g. "Web Development", "Algorithms").
+	  The skills MUST be directly relevant to the student's stated career goal and aspirations.
 	- reason: a clear, explicit explanation of why this course is included for this student's career goal. 
 	The reason MUST directly mention the student's target role and company type (e.g. "Backend Engineer at a Tech Startup") and explain why the course is a stepping stone or required for that specific career. 
 	Avoid generic statements; always justify the course's relevance to the stated career goal.
@@ -75,9 +83,18 @@ Instructions:
    Mix both theoretical concepts and practical technologies — do not list only abstract concepts.
 6. Do NOT include a skills or resources field — the system will append both as empty arrays after parsing.`;
 
+
+
 	const result = await buildGeminiModel().generateContent(prompt);
 	const nodes = JSON.parse(result.response.text());
-	return nodes.map((node) => ({ ...node, skills: [], resources: [] }));
+	// Attach resources from mockCourseResource if available
+	return nodes.map((node) => {
+		const resource = mockCourseResource[node.courseCode] || {};
+		return {
+			...node,
+			resources: resource.resources || [],
+		};
+	});
 }
 
 module.exports = { callGemini };

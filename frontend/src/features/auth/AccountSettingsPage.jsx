@@ -20,9 +20,24 @@ const COURSE_CATALOG = {
   'Computer Science': [
     { courseCode: 'INT2204', name: 'Object Oriented Programming' },
     { courseCode: 'INT2210', name: 'Data Structures and Algorithms' },
+    { courseCode: 'INT2203', name: 'Discrete Mathematics' },
+    { courseCode: 'INT3117', name: 'Operating Systems' },
+    { courseCode: 'INT3405', name: 'Artificial Intelligence Fundamentals' },
   ],
-  'Information Systems': [{ courseCode: 'INT3105', name: 'Database Systems' }],
-  'Computer Engineering': [{ courseCode: 'INT3401', name: 'Digital Design' }],
+  'Information Systems': [
+    { courseCode: 'INT3105', name: 'Database Systems' },
+    { courseCode: 'INT3110', name: 'Systems Analysis and Design' },
+    { courseCode: 'INT3122', name: 'Enterprise Information Systems' },
+    { courseCode: 'INT3150', name: 'Business Intelligence' },
+    { courseCode: 'INT3161', name: 'Project Management for IT' },
+  ],
+  'Computer Engineering': [
+    { courseCode: 'INT3401', name: 'Digital Design' },
+    { courseCode: 'INT3403', name: 'Computer Architecture' },
+    { courseCode: 'INT3407', name: 'Embedded Systems' },
+    { courseCode: 'INT3411', name: 'Microprocessors and Interfacing' },
+    { courseCode: 'INT3415', name: 'VLSI Design Basics' },
+  ],
 };
 
 function normalizeProfileForm(profile) {
@@ -178,6 +193,7 @@ export default function AccountSettingsPage() {
     setRegenLoading(true);
     try {
       setShowRegenRoadmap(false);
+      console.log('Triggering roadmap regeneration...');
       await retryPrimaryRoadmap(accessToken);
     } catch (err) {
       setError(err.message || 'Failed to regenerate roadmap.');

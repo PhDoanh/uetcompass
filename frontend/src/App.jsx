@@ -49,20 +49,22 @@ function AppContent() {
 	// Route to Skill Tree if pathname includes /skill-tree
 	if (!content && pathname.includes('/skill-tree')) {
 		content = (
-			//<OnboardingGuard>
-				<main style={{ maxWidth: 1400, margin: '0 auto', minHeight: 'calc(100vh - 70px)' }}>
+			<OnboardingGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
 					<SkillTreePage />
 				</main>
-			//</OnboardingGuard>
+			</OnboardingGuard>
 		);
 	}
 
 	const settingsPaths = ['/settings', '/account-settings', '/profile/settings'];
 	if (!content && settingsPaths.includes(pathname)) {
 		content = (
-			<main>
-				<AccountSettingsPage />
-			</main>
+			<AuthGuard>
+				<main>
+					<AccountSettingsPage />
+				</main>
+			</AuthGuard>
 		);
 	}
 

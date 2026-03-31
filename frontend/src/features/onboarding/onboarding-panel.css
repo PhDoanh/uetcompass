@@ -132,3 +132,84 @@
   margin-left: 8px;
   padding: 8px 14px;
 }
+
+.course-select-container {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.course-options-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.7) rgba(15, 23, 42, 0.7);
+}
+
+.course-options-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.course-options-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 999px;
+}
+
+.course-options-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #38bdf8, #2563eb);
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.8);
+}
+
+.onboarding-confirm-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  min-width: 100vw;
+  height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 3400;
+}
+
+.onboarding-confirm-popup {
+  width: min(420px, calc(100vw - 32px));
+  margin: 0 16px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  color: #f1f5f9;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.2), 0 14px 34px rgba(2, 6, 23, 0.6);
+  padding: 18px;
+}
+
+.onboarding-confirm-popup__title {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #7dd3fc;
+}
+
+.onboarding-confirm-popup__message {
+  margin: 10px 0 0;
+  color: #e2e8f0;
+  line-height: 1.45;
+}
+
+.onboarding-confirm-popup__actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

@@ -5,6 +5,7 @@ import OnboardingPanel from '../onboarding/OnboardingPanel';
 import '../../style/general-component.css';
 
 const HOMEPAGE_ONBOARDING_SEEN_PREFIX = 'homepageOnboardingSeen';
+const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 
 function resolveAccountKey(accessToken) {
   if (!accessToken) {
@@ -27,6 +28,7 @@ function resolveAccountKey(accessToken) {
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect } = useAuth();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
 
   const shouldPromptOnboarding = useMemo(
     () => onboardingState !== 'COMPLETED' && Boolean(accessToken),
@@ -52,6 +54,20 @@ export default function Homepage() {
     setShowOnboardingPanel(shouldPromptOnboarding && !hasSeenPrompt);
   }, [onboardingSeenKey, shouldPromptOnboarding]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const nextMessage = window.sessionStorage.getItem(ONBOARDING_REDIRECT_NOTICE_KEY);
+    if (!nextMessage) {
+      return;
+    }
+
+    setPopupMessage(nextMessage);
+    window.sessionStorage.removeItem(ONBOARDING_REDIRECT_NOTICE_KEY);
+  }, []);
+
   const handleCloseOnboarding = () => {
     setShowOnboardingPanel(false);
     if (typeof window !== 'undefined' && onboardingSeenKey) {
@@ -65,6 +81,24 @@ export default function Homepage() {
         <h1>Welcome to UET Compass</h1>
         <p>Your personalized learning and skill development platform.</p>
       </div>
+
+      {popupMessage ? (
+        <div className="homepage-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="homepage-popup-title">
+          <div className="homepage-popup">
+            <h2 id="homepage-popup-title" className="homepage-popup__title">Thông báo</h2>
+            <p className="homepage-popup__message">{popupMessage}</p>
+            <div className="homepage-popup__actions">
+              <button
+                type="button"
+                className="homepage-popup__button"
+                onClick={() => setPopupMessage('')}
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showOnboardingPanel && (
         <div className="homepage-onboarding-overlay">

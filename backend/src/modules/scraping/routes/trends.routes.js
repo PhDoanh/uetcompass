@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const trendsController = require('../controllers/trends.controller');
-const { verifyToken } = require('../../../middleware/auth.middleware'); // Adjust path as needed
+const { requireAuth } = require('../../../middleware/auth.middleware');
 
 /**
  * GET /api/market/trends
@@ -14,7 +14,7 @@ const { verifyToken } = require('../../../middleware/auth.middleware'); // Adjus
  */
 router.get(
   '/trends',
-  verifyToken,
+  requireAuth,
   trendsController.getAllTrends
 );
 
@@ -24,7 +24,7 @@ router.get(
  */
 router.get(
   '/trends/course/:courseName',
-  verifyToken,
+  requireAuth,
   trendsController.getTrendsByCourse
 );
 

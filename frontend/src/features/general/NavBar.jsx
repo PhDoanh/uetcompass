@@ -27,7 +27,7 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar__icon">
-        <img src="/ueticon.png" alt="UET Icon" className="navbar__icon-img" width={24} height={24} style={{ marginRight: 8 }} />
+        <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
         UET Compass
       </div>
       <div className="navbar__search">

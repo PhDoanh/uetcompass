@@ -6,7 +6,7 @@ export default function Homepage() {
   return (
     <>
       <NavBar />
-      <div className="homepage">
+      <div className="size-full flex flex-col">
         <h1>Welcome to UET Compass</h1>
         <p>Your personalized learning and skill development platform.</p>
       </div>

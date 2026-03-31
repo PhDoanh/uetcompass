@@ -7,6 +7,7 @@ const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
 const { authRouter, accountRouter } = require('./modules/auth');
 const roadmapRouter = require('./modules/roadmap/roadmap.routes');
+const { academicRouter, trendsRouter, resourcesRouter } = require('./modules/scraping');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
@@ -53,6 +54,9 @@ app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/account', accountRouter);
 app.use('/api/roadmaps', roadmapRouter);
+app.use('/api/resources', resourcesRouter);
+app.use('/api/resources', academicRouter);
+app.use('/api/market', trendsRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

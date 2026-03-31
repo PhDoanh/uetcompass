@@ -35,8 +35,32 @@ export default function CourseMultiSelect({ major, options = [], value = [], onC
 				const key = `${major}::${course.courseCode}`;
 				const checked = selectedKeys.has(key);
 				return (
-					<label key={key} style={{ display: 'block', marginBottom: 4 }}>
-						<input type="checkbox" checked={checked} onChange={() => toggle(course)} /> {course.courseCode} - {course.name}
+					<label
+						key={key}
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: 8,
+							marginBottom: 6,
+							cursor: 'pointer',
+							color: checked ? '#38bdf8' : 'inherit',
+							fontWeight: checked ? 700 : 500,
+						}}
+					>
+						<input
+							type="checkbox"
+							checked={checked}
+							onChange={() => toggle(course)}
+							style={{
+								width: 16,
+								height: 16,
+								margin: 0,
+								padding: 0,
+								accentColor: '#38bdf8',
+								flex: '0 0 auto',
+							}}
+						/>
+						<span>{course.courseCode} - {course.name}</span>
 					</label>
 				);
 			})}

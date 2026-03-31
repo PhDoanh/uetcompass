@@ -26,7 +26,7 @@ const COURSE_CATALOG = {
 	'Computer Engineering': [{ courseCode: 'INT3401', name: 'Digital Design' }],
 };
 
-export default function OnboardingPanel({ authToken, sseToken, onUnauthorized }) {
+export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted }) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [submitState, setSubmitState] = useState('idle');
@@ -68,6 +68,9 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized })
 			setSubmitState('submitted');
 			setIsOpen(false);
 			roadmapStatus.open();
+			if (typeof onCompleted === 'function') {
+				onCompleted(response);
+			}
 		} catch (error) {
 			setSubmitState('failed');
 			setSubmitError(error.message);
@@ -77,7 +80,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized })
 	if (!isOpen) {
 		return (
 			<div style={{ marginBottom: 16 }}>
-				<button onClick={() => setIsOpen(true)}>Reopen onboarding</button>
+				<button type="button" onClick={() => setIsOpen(true)}>Reopen onboarding</button>
 				{showLowPersonalization && (
 					<div style={{ marginTop: 8, padding: 8, border: '1px solid #f0ad4e', background: '#fff8e1' }}>
 						Your roadmap is in generic mode. Improve personalization by adding optional fields like target role.
@@ -117,17 +120,17 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized })
 			{roadmapStatus.status === 'failed' ? (
 				<div style={{ marginBottom: 8 }}>
 					Roadmap generation failed.
-					<button style={{ marginLeft: 8 }} onClick={roadmapStatus.retry}>
+					<button type="button" style={{ marginLeft: 8 }} onClick={roadmapStatus.retry}>
 						Retry
 					</button>
 				</div>
 			) : null}
 
 			<div style={{ display: 'flex', gap: 8 }}>
-				<button onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
+				<button type="button" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
 					{submitState === 'submitting' ? 'Submitting...' : 'Submit'}
 				</button>
-				<button onClick={() => setIsOpen(false)} disabled={submitState === 'submitting'}>
+				<button type="button" onClick={() => setIsOpen(false)} disabled={submitState === 'submitting'}>
 					Dismiss
 				</button>
 			</div>

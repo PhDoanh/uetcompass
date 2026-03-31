@@ -11,10 +11,5 @@ export default function OnboardingGuard({ children }) {
 		return null;
 	}
 
-	if (onboardingCompleted && typeof window !== 'undefined' && window.location.pathname.includes('/onboarding')) {
-		window.location.replace('/');
-		return null;
-	}
-
 	return children;
 }

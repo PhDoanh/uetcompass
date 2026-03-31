@@ -63,3 +63,16 @@ export async function retryRoadmapGeneration(authToken) {
 
 	return payload;
 }
+
+// Backward-compatible alias used by account settings flow.
+export const retryPrimaryRoadmap = retryRoadmapGeneration;
+export const retryGeneration = retryRoadmapGeneration;
+
+const roadmapApi = {
+	getPrimaryRoadmap,
+	retryRoadmapGeneration,
+	retryPrimaryRoadmap,
+	retryGeneration,
+};
+
+export default roadmapApi;

@@ -7,7 +7,6 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
-    "seed:mock": "node src/seed-mock.js",
     "seed:ctdt": "node -e \"require('./src/modules/curriculum/seed.job').runManualCli()\""
   },
   "dependencies": {

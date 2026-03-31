@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSkillTreeStore } from '../../stores/skillTreeStore';
 import * as skillTreeApi from '../../services/skillTree.api';
+import { retryRoadmapGeneration } from '../../services/roadmap.api';
 
 /**
  * T016: Create polling hook with visibility pause/resume
@@ -113,13 +114,13 @@ export function useSkillTree() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [repersonalizing, needsRepersonalization]);
 
-  const transitionNode = async (courseCode) => {
+  const transitionNode = async (courseCode, status) => {
     try {
       // Optimistic update
-      updateNodeStatus(courseCode, 'in_progress'); // simplified: just advance to next state
+      updateNodeStatus(courseCode, status);
 
       // Actual update
-      const result = await skillTreeApi.patchNodeStatus(authTokenRef.current, courseCode, 'in_progress');
+      await skillTreeApi.patchNodeStatus(authTokenRef.current, courseCode, status);
 
       // Sync with server state
       const data = await skillTreeApi.getTree(authTokenRef.current);
@@ -135,7 +136,7 @@ export function useSkillTree() {
   const triggerRepersonalize = async () => {
     try {
       setRepersonalizing(true);
-      await skillTreeApi.repersonalize(authTokenRef.current);
+      await retryRoadmapGeneration(authTokenRef.current);
       // Polling will handle the completion
     } catch (err) {
       setRepersonalizing(false);

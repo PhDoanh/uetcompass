@@ -34,29 +34,29 @@ export default function MarketSkillsTab({
   }, [courseCode]);
 
   if (loading) {
-    return <div className="text-gray-500 text-sm">Loading skills...</div>;
+    return <div className="skill-tree-muted-text">Loading skills...</div>;
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm">Error: {error}</div>;
+    return <div className="skill-tree-error-text">Error: {error}</div>;
   }
 
   if (skills.length === 0) {
-    return <div className="text-gray-500 text-sm">No market skills found</div>;
+    return <div className="skill-tree-muted-text">No market skills found</div>;
   }
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="skills-tab">
         {skills.map((skill) => (
           <button
             key={skill.name}
             onClick={() => onSelectSkill(skill.name)}
-            className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 transition-colors"
+            className="skills-tab__item"
           >
-            <div className="flex justify-between items-start">
-              <div className=" font-medium text-gray-900">{skill.name}</div>
-              <div className="text-xs text-gray-500">{skill.jobCount || 0} jobs</div>
+            <div className="skills-tab__item-top">
+              <div className="skills-tab__name">{skill.name}</div>
+              <div className="skills-tab__count">{skill.jobCount || 0} jobs</div>
             </div>
           </button>
         ))}

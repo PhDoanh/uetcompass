@@ -6,25 +6,25 @@ import { Lock, CheckCircle, Circle } from 'lucide-react';
  */
 
 export default function CourseNode({ node, onSelect = () => {} }) {
-  const getStatusColor = () => {
+  const getStatusVariant = () => {
     switch (node.status) {
       case 'done':
-        return 'bg-green-100 border-green-300';
+        return 'is-done';
       case 'in_progress':
-        return 'bg-blue-100 border-blue-300';
+        return 'is-in-progress';
       default:
-        return 'bg-gray-100 border-gray-300';
+        return 'is-pending';
     }
   };
 
   const getStatusIcon = () => {
     switch (node.status) {
       case 'done':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle size={18} />;
       case 'in_progress':
-        return <Circle className="w-5 h-5 text-blue-600" />;
+        return <Circle size={18} />;
       default:
-        return <Circle className="w-5 h-5 text-gray-400" />;
+        return <Circle size={18} />;
     }
   };
 
@@ -32,31 +32,29 @@ export default function CourseNode({ node, onSelect = () => {} }) {
     <button
       onClick={onSelect}
       disabled={!node.isUnlocked}
-      className={`p-4 border-2 rounded-lg text-left transition-all ${getStatusColor()} ${
-        !node.isUnlocked ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer'
-      }`}
+      className={`course-node ${getStatusVariant()} ${!node.isUnlocked ? 'is-locked' : ''}`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{node.courseCode}</h3>
-          <p className="text-sm text-gray-700 mt-1">{node.nameVi}</p>
-          {node.nameEn && <p className="text-xs text-gray-500">{node.nameEn}</p>}
+      <div className="course-node__main">
+        <div className="course-node__text">
+          <h3 className="course-node__code">{node.courseCode}</h3>
+          <p className="course-node__name-vi">{node.nameVi}</p>
+          {node.nameEn && <p className="course-node__name-en">{node.nameEn}</p>}
         </div>
-        <div className="ml-2 flex-shrink-0">
+        <div className="course-node__icon">
           {!node.isUnlocked ? (
-            <Lock className="w-5 h-5 text-red-600" />
+            <Lock size={18} />
           ) : (
             getStatusIcon()
           )}
         </div>
       </div>
       {node.credits && (
-        <div className="mt-2 text-xs text-gray-600">
+        <div className="course-node__credits">
           {node.credits} credits
         </div>
       )}
       {node.prerequisites && node.prerequisites.length > 0 && (
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="course-node__prerequisites">
           Prerequisites: {node.prerequisites.join(', ')}
         </div>
       )}

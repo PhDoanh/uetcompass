@@ -13,13 +13,9 @@ export default function RepersonalizeButton({
     <button
       onClick={onRepersonalize}
       disabled={repersonalizing}
-      className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${
-        repersonalizing
-          ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-          : 'bg-green-600 text-white hover:bg-green-700 active:scale-95'
-      }`}
+      className={`skill-tree-repersonalize-btn ${repersonalizing ? 'is-loading' : ''}`}
     >
-      <RefreshCw className={`w-4 h-4 ${repersonalizing ? 'animate-spin' : ''}`} />
+      <RefreshCw size={16} className={repersonalizing ? 'is-spinning' : ''} />
       {repersonalizing ? 'Re-personalizing...' : 'Re-personalize'}
     </button>
   );

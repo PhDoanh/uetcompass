@@ -148,7 +148,7 @@ async function crawlMarketTrendsPerNode(roadmapNodes = [], studentProfiles = nul
                     averageSalaryRange: salaryRange,
                     snapshotDate,
                     personalizationContext: personalizationCtx,
-                    contributingSources: tavilyResults.map(r => r.source),
+                    contributingSources: tavilyResults.map(r => r.url).filter(Boolean),
                     expiresAt: new Date(snapshotDate.getTime() + 30 * 24 * 60 * 60 * 1000)
                   },
                   { upsert: true, new: true }

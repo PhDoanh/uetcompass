@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import authApi from '../../services/auth.api';
 import { useAuth } from '../../providers/AuthProvider';
-import { retryPrimaryRoadmap } from '../../services/roadmap.api';
+import { retryRoadmapGeneration } from '../../services/roadmap.api';
 
 const EMPTY_PROFILE = {
   major: '',
@@ -177,7 +177,7 @@ export default function AccountSettingsPage() {
     setIsRegeneratingRoadmap(true);
 
     try {
-      await retryPrimaryRoadmap(accessToken);
+      await retryRoadmapGeneration(accessToken);
       setMessage('Roadmap regeneration triggered successfully.');
     } catch (err) {
       setError(err.message || 'Failed to regenerate roadmap.');

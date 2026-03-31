@@ -3,6 +3,7 @@ import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
 import CourseDetailPanel from './CourseDetailPanel';
 import RepersonalizeButton from './RepersonalizeButton';
+import './skill-tree.css';
 
 export default function SkillTreePage() {
   const {
@@ -28,10 +29,10 @@ export default function SkillTreePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading Skill Tree...</p>
+      <div className="skill-tree-loading-state">
+        <div className="skill-tree-loading-state__inner">
+          <div className="skill-tree-spinner"></div>
+          <p>Loading Skill Tree...</p>
         </div>
       </div>
     );
@@ -39,23 +40,22 @@ export default function SkillTreePage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 font-semibold mb-2">Error Loading Skill Tree</p>
-          <p className="text-gray-600">{error.message}</p>
+      <div className="skill-tree-loading-state">
+        <div className="skill-tree-loading-state__inner">
+          <p className="skill-tree-error-title">Error Loading Skill Tree</p>
+          <p className="skill-tree-error-message">{error.message}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex justify-between items-center">
+    <div className="skill-tree-page">
+      <header className="skill-tree-page__header">
+        <div className="skill-tree-page__header-inner">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Skill Tree</h1>
-            {roadmapName && <p className="text-gray-600 mt-1">{roadmapName}</p>}
+            <h1 className="skill-tree-page__title">Skill Tree</h1>
+            {roadmapName && <p className="skill-tree-page__subtitle">{roadmapName}</p>}
           </div>
           {needsRepersonalization && (
             <RepersonalizeButton
@@ -64,19 +64,16 @@ export default function SkillTreePage() {
             />
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Canvas */}
-        <div className="flex-1 overflow-auto">
+      <div className="skill-tree-layout">
+        <div className="skill-tree-layout__canvas">
           <SkillTreeCanvas
             nodes={nodes || []}
             onSelectNode={openCourse}
           />
         </div>
 
-        {/* Detail Panel */}
         {activeCourse && (
           <CourseDetailPanel
             node={activeCourse}
@@ -86,7 +83,7 @@ export default function SkillTreePage() {
             onSelectSkill={openSkill}
             onCloseSkill={closeSkill}
             onClosePanel={closeCourse}
-            onAdvanceStatus={() => transitionNode(activeCourse.courseCode)}
+            onStatusChange={(status) => transitionNode(activeCourse.courseCode, status)}
           />
         )}
       </div>

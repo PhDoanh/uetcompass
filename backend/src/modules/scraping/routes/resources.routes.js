@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const resourcesController = require('../controllers/resources.controller');
-const { verifyToken } = require('../../../middleware/auth.middleware'); // Adjust path as needed
+const { requireAuth } = require('../../../middleware/auth.middleware');
 
 /**
  * GET /api/resources/skills/:skillName
@@ -14,7 +14,7 @@ const { verifyToken } = require('../../../middleware/auth.middleware'); // Adjus
  */
 router.get(
   '/skills/:skillName',
-  verifyToken,
+  requireAuth,
   resourcesController.getResourcesBySkillName
 );
 
@@ -24,7 +24,7 @@ router.get(
  */
 router.post(
   '/crawl/trigger',
-  verifyToken,
+  requireAuth,
   resourcesController.triggerCurationFromRoadmap
 );
 

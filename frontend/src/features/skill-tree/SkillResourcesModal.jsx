@@ -29,56 +29,54 @@ export default function SkillResourcesModal({ skillName, onClose = () => {} }) {
   }, [skillName]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-900">Learn "{skillName}"</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
+    <div className="skill-modal-overlay" role="dialog" aria-modal="true" aria-label={`Learn ${skillName}`}>
+      <div className="skill-modal">
+        <div className="skill-modal__header">
+          <h3 className="skill-modal__title">Learn "{skillName}"</h3>
+          <button onClick={onClose} className="skill-tree-icon-button" aria-label="Close skill resources">
+            <X size={18} />
           </button>
         </div>
 
-        {loading && <div className="p-6 text-gray-500">Loading resources...</div>}
+        {loading && <div className="skill-modal__state skill-tree-muted-text">Loading resources...</div>}
 
-        {error && <div className="p-6 text-red-600">Error: {error}</div>}
+        {error && <div className="skill-modal__state skill-tree-error-text">Error: {error}</div>}
 
         {!loading && !error && (
-          <div className="p-6 grid grid-cols-2 gap-6">
-            {/* Free Resources */}
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Free</h4>
+          <div className="skill-modal__content">
+            <div className="skill-modal__column">
+              <h4 className="skill-modal__section-title">Free</h4>
               {resources.free && resources.free.length > 0 ? (
-                <ul className="space-y-2">
+                <ul className="skill-modal__list">
                   {resources.free.map((r, idx) => (
-                    <li key={idx} className="text-sm">
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    <li key={idx} className="skill-modal__item">
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="skill-tree-link">
                         {r.title}
                       </a>
-                      <p className="text-xs text-gray-500">{r.platform}</p>
+                      <p className="skill-modal__platform">{r.platform}</p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-500 text-sm">No free resources</p>
+                <p className="skill-tree-muted-text">No free resources</p>
               )}
             </div>
 
-            {/* Paid Resources */}
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Paid</h4>
+            <div className="skill-modal__column">
+              <h4 className="skill-modal__section-title">Paid</h4>
               {resources.paid && resources.paid.length > 0 ? (
-                <ul className="space-y-2">
+                <ul className="skill-modal__list">
                   {resources.paid.map((r, idx) => (
-                    <li key={idx} className="text-sm">
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    <li key={idx} className="skill-modal__item">
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="skill-tree-link">
                         {r.title}
                       </a>
-                      <p className="text-xs text-gray-500">{r.platform}</p>
+                      <p className="skill-modal__platform">{r.platform}</p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-500 text-sm">No paid resources</p>
+                <p className="skill-tree-muted-text">No paid resources</p>
               )}
             </div>
           </div>

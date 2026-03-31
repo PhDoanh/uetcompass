@@ -36,9 +36,11 @@ async function extractSkillsFromJobPostings(tavilySnippet, jobBoardContext = '')
       skillFrequency[normalized] = (skillFrequency[normalized] || 0) + 1;
     });
 
-    // Keep only skills with >= 3 occurrences
+    // Keep top skills with at least one occurrence to avoid sparse crawl output.
     const candidates = Object.entries(skillFrequency)
-      .filter(([_, count]) => count >= 3)
+      .filter(([_, count]) => count >= 1)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
       .map(([name, count]) => ({
         skillName: name,
         frequency: count,

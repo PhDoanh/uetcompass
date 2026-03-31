@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const academicController = require('../controllers/academic.controller');
-const { verifyToken } = require('../../../middleware/auth.middleware');
+const { requireAuth } = require('../../../middleware/auth.middleware');
 
 /**
  * GET /api/resources/academic/:courseName
@@ -15,7 +15,7 @@ const { verifyToken } = require('../../../middleware/auth.middleware');
  */
 router.get(
   '/academic/:courseName',
-  verifyToken,
+  requireAuth,
   academicController.getAcademicByCourse
 );
 

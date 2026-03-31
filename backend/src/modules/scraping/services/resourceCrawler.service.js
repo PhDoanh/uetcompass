@@ -132,19 +132,40 @@ async function crawlResourcesForSkills(skillTrendSnapshots = []) {
 
         console.log(`[ResourceCrawler] Crawling resources for skill: "${skillName}"`);
 
-        // Search Tavily for resources
-        const tavilyResults = await tavilyAdapter.resourceSearch(skillName);
+        const [freeResults, paidResults] = await Promise.all([
+          tavilyAdapter.resourceSearch(skillName, 'free'),
+          tavilyAdapter.resourceSearch(skillName, 'paid'),
+        ]);
+
+        const mergedResults = [];
+        const seenUrls = new Set();
+
+        freeResults.forEach((item) => {
+          if (!seenUrls.has(item.url)) {
+            seenUrls.add(item.url);
+            mergedResults.push({ ...item, __forcedPaid: false });
+          }
+        });
+
+        paidResults.forEach((item) => {
+          if (!seenUrls.has(item.url)) {
+            seenUrls.add(item.url);
+            mergedResults.push({ ...item, __forcedPaid: true });
+          }
+        });
 
         let resourcesFound = 0;
 
-        for (const result of tavilyResults) {
+        for (const result of mergedResults) {
           try {
-            const { title, url, snippet, source } = result;
+            const { title, url, snippet, source, __forcedPaid } = result;
 
             // Classify
             const sourcePlatform = detectPlatform(url, source);
             const resourceType = detectResourceType(url, title);
-            const isFree = !classifyAsPaid(sourcePlatform, snippet);
+            const isFree = typeof __forcedPaid === 'boolean'
+              ? !__forcedPaid
+              : !classifyAsPaid(sourcePlatform, snippet);
             const qualitySignal = extractQualitySignal(sourcePlatform, snippet);
 
             // Upsert by (skillTrendSnapshotId, url)

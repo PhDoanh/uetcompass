@@ -223,9 +223,9 @@ This feature adds one field to the existing `StudentProfile` schema:
 
 | Field | Type | Required | Default | Notes |
 |---|---|---|---|---|
-| `repersonalizationPending` | Boolean | yes | `false` | Set to `true` by Feature 004 when onboarding profile fields change in Account Settings; read and cleared to `false` by Feature 004 when student acts on Re-personalize |
+| `repersonalizationPending` | Boolean | yes | `false` | Set to `true` by Feature 005 when onboarding profile fields change in Account Settings; read and cleared to `false` by Feature 004 when student acts on Re-personalize |
 
-**Cross-feature boundary**: Feature 004 writes this field via `StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: true } })` (service-layer call from `profileSettings.service.js`). Feature 004 reads and clears it. Feature 001 does not interact with this field.
+**Cross-feature boundary**: Feature 005 writes this field via `StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: true } })` (service-layer call from `profileSettings.service.js`). Feature 004 reads and clears it when re-personalization is executed in roadmap. Feature 001 does not interact with this field.
 
 ---
 

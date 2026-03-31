@@ -141,6 +141,5 @@ module.exports = {
   getNodeWhy,
   getNodeMarketSkills,
   getSkillLearningResources,
-  postRepersonalize,
   handleError,
 };

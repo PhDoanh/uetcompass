@@ -217,7 +217,7 @@ async function attemptLogin(email, password) {
 
 ---
 
-## R-007: Re-personalization Signal (Feature 004 Integration)
+## R-007: Re-personalization Signal (Feature 005 sets; Feature 004 consumes)
 
 **Decision**: When `PATCH /api/auth/account/profile` saves changes, `profileSettings.service.js` compares new values against the stored `StudentProfile` for the 6 onboarding fields (major, completedCourseIds, careerGoal.role, careerGoal.companyType, graduationTimeline, personalAspirations). If any changed, it sets `student_profiles.repersonalizationPending = true` via `StudentProfile.updateOne()` (service-layer call — no direct cross-module import), and creates a `Notification` record of type `REPERSONALIZE` with a link to the roadmap.
 
@@ -225,7 +225,7 @@ async function attemptLogin(email, password) {
 
 **Feature 004 reads**: `GET /api/roadmap/status` (Feature 004's responsibility) reads `student_profiles.repersonalizationPending` to decide whether to show the "Re-personalize" button. When the student acts on it, Feature 004 clears the flag via `StudentProfile.updateOne({ userId }, { $set: { repersonalizationPending: false } })`.
 
-**Rationale**: A boolean flag on `StudentProfile` is the simplest cross-feature signal — no event bus, no queue, no additional storage beyond what already exists. The flag is owned by the `student_profiles` collection (Feature 001) but is set by Feature 004 and read/cleared by Feature 004 via the service layer, maintaining the module boundary.
+**Rationale**: A boolean flag on `StudentProfile` is the simplest cross-feature signal — no event bus, no queue, no additional storage beyond what already exists. The flag is owned by the `student_profiles` collection (Feature 001), set by Feature 005 from Account Settings saves, and read/cleared by Feature 004 when the student triggers re-personalization in roadmap, maintaining clear module boundaries.
 
 **Alternatives considered**:
 - Event emitter (rejected — in-process only, lost on Render restart; fragile)
@@ -239,7 +239,7 @@ async function attemptLogin(email, password) {
 
 **Rationale**: A persistent `notifications` collection ensures notifications are not lost when the student is offline at the time of the event (e.g., roadmap ready while the tab is closed). The unread-fetch-on-mount pattern is identical to the "roadmap status check" pattern from Feature 001 and keeps the SSE as an enhancement (not a requirement) for real-time delivery.
 
-**`type` enum**: `['ROADMAP_READY', 'ROADMAP_FAILED', 'REPERSONALIZE']` — extensible by other features. Feature 001 creates `ROADMAP_READY` / `ROADMAP_FAILED`; Feature 004 creates `REPERSONALIZE`.
+**`type` enum**: `['ROADMAP_READY', 'ROADMAP_FAILED', 'REPERSONALIZE']` — extensible by other features. Feature 001 creates `ROADMAP_READY` / `ROADMAP_FAILED`; Feature 005 creates `REPERSONALIZE`.
 
 **Alternatives considered**:
 - SSE-only, no persistence (rejected — notifications lost if client disconnects; spec requires in-app notification delivery which implies persistence for the case where client is offline)

@@ -86,6 +86,7 @@ export default function AccountSettingsPage() {
   const [regenLoading, setRegenLoading] = useState(false);
   const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
+  const [hasSubmittedOnboarding, setHasSubmittedOnboarding] = useState(false);
   const courseOptions = useMemo(() => COURSE_CATALOG[profileForm.major] || [], [profileForm.major]);
   const currentLearningProfileSerialized = useMemo(
     () => serializeLearningProfile(profileForm),
@@ -94,7 +95,7 @@ export default function AccountSettingsPage() {
   const hasLearningProfileChanges = currentLearningProfileSerialized !== initialLearningProfileSerialized;
   const learningActionButtonCount = (hasLearningProfileChanges ? 1 : 0) + (showRegenRoadmap ? 1 : 0);
 
-  const hasCompletedOnboarding = onboardingState === 'COMPLETED';
+  const hasCompletedOnboarding = onboardingState === 'COMPLETED' || hasSubmittedOnboarding;
 
   const patchProfileForm = (nextProfileForm) => {
     setProfileForm(nextProfileForm);
@@ -105,12 +106,14 @@ export default function AccountSettingsPage() {
     try {
       const data = await authApi.getProfile(accessToken);
       const nextProfileForm = mapProfileToForm(data);
+      const completedByProfileData = Boolean(String(data?.profile?.major || '').trim());
       setBasicForm({ 
         displayName: data.displayName || '', 
         fullName: data.fullName || '', 
         privacySetting: data.privacySetting || 'identified' 
       });
       setProfileForm(nextProfileForm);
+      setHasSubmittedOnboarding(completedByProfileData);
       setInitialLearningProfileSerialized(serializeLearningProfile(nextProfileForm));
     } catch (err) {
       if (err.status === 401) logoutAndRedirect();
@@ -360,7 +363,12 @@ export default function AccountSettingsPage() {
 
       {showOnboardingPanel && (
         <div className="onboarding-modal-overlay">
-          <OnboardingPanel onClose={() => { setShowOnboardingPanel(false); loadProfile(); }} />
+          <OnboardingPanel
+            authToken={accessToken}
+            onUnauthorized={logoutAndRedirect}
+            onCompleted={() => setHasSubmittedOnboarding(true)}
+            onClose={() => { setShowOnboardingPanel(false); loadProfile(); }}
+          />
         </div>
       )}
     </main>

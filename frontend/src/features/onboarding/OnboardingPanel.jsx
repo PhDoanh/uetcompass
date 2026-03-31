@@ -5,6 +5,7 @@ import CareerGoalForm from './CareerGoalForm';
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
 import { postSubmit } from '../../services/onboarding.api';
+import './onboarding-panel.css';
 
 const EMPTY_FORM = {
 	major: '',
@@ -26,7 +27,7 @@ const COURSE_CATALOG = {
 	'Computer Engineering': [{ courseCode: 'INT3401', name: 'Digital Design' }],
 };
 
-export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted }) {
+export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted, onClose }) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [submitState, setSubmitState] = useState('idle');
@@ -54,6 +55,13 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 
 	const canSubmit = !!mergedForm.major;
 
+	const closePanel = () => {
+		setIsOpen(false);
+		if (typeof onClose === 'function') {
+			onClose();
+		}
+	};
+
 	const handleSubmit = async () => {
 		if (!canSubmit) {
 			return;
@@ -66,7 +74,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 			const response = await postSubmit(authToken, mergedForm);
 			setShowLowPersonalization(Boolean(response?.isGeneric));
 			setSubmitState('submitted');
-			setIsOpen(false);
+			closePanel();
 			roadmapStatus.open();
 			if (typeof onCompleted === 'function') {
 				onCompleted(response);
@@ -78,27 +86,15 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	};
 
 	if (!isOpen) {
-		return (
-			<div style={{ marginBottom: 16 }}>
-				<button type="button" onClick={() => setIsOpen(true)}>Reopen onboarding</button>
-				{showLowPersonalization && (
-					<div style={{ marginTop: 8, padding: 8, border: '1px solid #f0ad4e', background: '#fff8e1' }}>
-						Your roadmap is in generic mode. Improve personalization by adding optional fields like target role.
-						<a href="/settings" style={{ marginLeft: 8 }}>
-							Go to Settings
-						</a>
-					</div>
-				)}
-			</div>
-		);
+		return null;
 	}
 
 	return (
-		<section style={{ border: '1px solid #ddd', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-			<h2 style={{ marginTop: 0 }}>Student onboarding</h2>
-			<p style={{ marginTop: 0, color: '#666' }}>Only major is required. Optional fields improve recommendation quality.</p>
+		<section className="onboarding-panel-shell">
+			<h2 className="onboarding-panel-title">Student onboarding</h2>
+			<p className="onboarding-panel-description">Only major is required. Optional fields improve recommendation quality.</p>
 
-			{loading ? <div>Loading draft...</div> : null}
+			{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
 
 			<MajorSelect
 				value={mergedForm.major}
@@ -116,26 +112,32 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 
 			<CareerGoalForm value={mergedForm} onChange={patchForm} />
 
-			{submitError ? <div style={{ color: '#b00020', marginBottom: 8 }}>{submitError}</div> : null}
+			{submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
+			{showLowPersonalization ? (
+				<div className="onboarding-panel-warning">
+					Your roadmap is in generic mode. Improve personalization by adding optional fields like target role.
+					<a href="/settings">Go to Settings</a>
+				</div>
+			) : null}
 			{roadmapStatus.status === 'failed' ? (
-				<div style={{ marginBottom: 8 }}>
+				<div className="onboarding-panel-note">
 					Roadmap generation failed.
-					<button type="button" style={{ marginLeft: 8 }} onClick={roadmapStatus.retry}>
+					<button type="button" className="secondary-btn onboarding-panel-inline-btn" onClick={roadmapStatus.retry}>
 						Retry
 					</button>
 				</div>
 			) : null}
 
-			<div style={{ display: 'flex', gap: 8 }}>
-				<button type="button" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
+			<div className="onboarding-panel-actions">
+				<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
 					{submitState === 'submitting' ? 'Submitting...' : 'Submit'}
 				</button>
-				<button type="button" onClick={() => setIsOpen(false)} disabled={submitState === 'submitting'}>
+				<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
 					Dismiss
 				</button>
 			</div>
 
-			{saving ? <small style={{ color: '#666' }}>Saving draft...</small> : null}
+			{saving ? <small className="onboarding-panel-note">Saving draft...</small> : null}
 		</section>
 	);
 }

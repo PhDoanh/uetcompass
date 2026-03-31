@@ -1,0 +1,134 @@
+.onboarding-panel-shell {
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 0;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f1f5f9;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  width: min(700px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.onboarding-field {
+  margin-bottom: 14px;
+}
+
+.onboarding-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.onboarding-label-required {
+  color: #f43f5e;
+}
+
+.onboarding-label-optional {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.onboarding-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #f8fafc;
+  box-sizing: border-box;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.onboarding-input::placeholder {
+  color: #94a3b8;
+}
+
+.onboarding-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+
+.onboarding-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 42px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #38bdf8 50%),
+    linear-gradient(135deg, #38bdf8 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% - 3px),
+    calc(100% - 14px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.onboarding-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.onboarding-error-text {
+  color: #fca5a5;
+}
+
+.onboarding-counter-text {
+  color: #94a3b8;
+}
+
+.onboarding-panel-title {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #38bdf8;
+  font-size: 1.4rem;
+}
+
+.onboarding-panel-description {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #94a3b8;
+}
+
+.onboarding-panel-note {
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.onboarding-panel-error {
+  color: #fca5a5;
+  margin-bottom: 8px;
+}
+
+.onboarding-panel-warning {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 10px;
+  background: rgba(250, 204, 21, 0.08);
+  color: #fde68a;
+}
+
+.onboarding-panel-warning a {
+  margin-left: 8px;
+  color: #38bdf8;
+}
+
+.onboarding-panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.onboarding-panel-inline-btn {
+  margin-left: 8px;
+  padding: 8px 14px;
+}

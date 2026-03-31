@@ -19,15 +19,15 @@ export default function MajorSelect({
 	};
 
 	return (
-		<div style={{ marginBottom: 12 }}>
-			<label htmlFor="major" style={{ display: 'block', fontWeight: 600 }}>
-				Major <span style={{ color: '#b00020' }}>*</span>
+		<div className="onboarding-field">
+			<label htmlFor="major" className="onboarding-label">
+				Major <span className="onboarding-label-required">*</span>
 			</label>
 			<select
 				id="major"
 				value={value || ''}
 				onChange={(event) => handleMajorChange(event.target.value)}
-				style={{ width: '100%', padding: 8, marginTop: 4 }}
+				className="onboarding-input onboarding-select"
 			>
 				<option value="">Select major</option>
 				{majors.map((major) => (

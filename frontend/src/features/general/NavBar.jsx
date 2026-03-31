@@ -7,6 +7,10 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const avatarRef = useRef(null);
 
+  const goHome = () => {
+    window.location.assign('/');
+  };
+
   // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -26,10 +30,10 @@ export default function NavBar() {
 
   return (
     <nav className="navbar">
-      <div className="navbar__icon">
+      <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
         <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
         UET Compass
-      </div>
+      </button>
       <div className="navbar__search">
         <Search className="navbar__search-icon" size={16} />
         <input className="navbar__input" type="text" placeholder="Search..." />

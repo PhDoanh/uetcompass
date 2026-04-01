@@ -93,3 +93,9 @@ export default function App() {
 		</AuthProvider>
 	);
 }
+
+export default function App() {
+	return (
+		<AppContent />
+	);
+}

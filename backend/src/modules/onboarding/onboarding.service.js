@@ -1,5 +1,6 @@
 const { Types } = require('mongoose');
 const { StudentProfile } = require('./onboarding.model');
+const { CourseUnit } = require('../curriculum/courseUnit.model');
 const { validateFreeText } = require('./onboarding.validation');
 const { ERROR_CODES, OnboardingError } = require('./onboarding.errors');
 const { notifyUser } = require('./onboarding.sse');
@@ -139,6 +140,59 @@ async function getDraft(userId) {
 	return resolveMaybeLean(StudentProfile.findOne({ userId }));
 }
 
+async function getCourseCatalog() {
+	const rows = await CourseUnit.find(
+		{},
+		{
+			_id: 1,
+			major: 1,
+			code: 1,
+			name: 1,
+		}
+	)
+		.sort({ major: 1, code: 1 })
+		.lean();
+
+	const catalogByMajor = new Map();
+
+	for (const row of rows) {
+		const major = String(row.major || '').trim();
+		const courseCode = String(row.code || '').trim();
+		const name = String(row.name || '').trim();
+		if (!major || !courseCode || !name) {
+			continue;
+		}
+
+		if (!catalogByMajor.has(major)) {
+			catalogByMajor.set(major, new Map());
+		}
+
+		const byCode = catalogByMajor.get(major);
+		if (!byCode.has(courseCode)) {
+			byCode.set(courseCode, {
+				courseCode,
+				name,
+				courseUnitId: String(row._id),
+			});
+		}
+	}
+
+	const majors = [...catalogByMajor.keys()].sort((a, b) => a.localeCompare(b, 'vi'));
+	const courseCatalog = Object.fromEntries(
+		majors.map((major) => {
+			const courses = [...catalogByMajor.get(major).values()].sort((a, b) =>
+				a.courseCode.localeCompare(b.courseCode, 'en')
+			);
+			return [major, courses];
+		})
+	);
+
+	return {
+		majors,
+		courseCatalog,
+	};
+}
+
 async function upsertDraft(userId, payload) {
 	console.info('[onboarding:draft:upsert:start]', { userId: String(userId) });
 	await assertDraftWritable(userId);
@@ -240,6 +294,7 @@ async function submitProfile(userId, payload) {
 
 module.exports = {
 	canonicalizeCompletedCourses,
+	getCourseCatalog,
 	getDraft,
 	setRoadmapGenerationHandler,
 	upsertDraft,

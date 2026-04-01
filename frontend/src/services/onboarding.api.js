@@ -42,6 +42,19 @@ export async function getDraft(authToken) {
 	});
 }
 
+export async function getCourseCatalog(authToken) {
+	const headers = authToken
+		? {
+			Authorization: `Bearer ${authToken}`,
+		}
+		: {};
+
+	return request('/onboarding/course-catalog', {
+		method: 'GET',
+		headers,
+	});
+}
+
 export async function putDraft(authToken, payload) {
 	return request('/onboarding/draft', {
 		method: 'PUT',

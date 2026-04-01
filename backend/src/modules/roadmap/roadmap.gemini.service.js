@@ -1,30 +1,28 @@
 'use strict';
 
-// MVP: Return mock roadmap nodes using mock data
-const mockCourseUnits = require('./mockData/mockCourseUnits');
 const mockCourseResource = require('./mockData/mockCourseResource');
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const roadmapNodeSchema = {
-  type: SchemaType.ARRAY,
-  items: {
-    type: SchemaType.OBJECT,
-    properties: {
-      courseCode:        { type: SchemaType.STRING },
-      courseName:        { type: SchemaType.STRING },
-      credits:           { type: SchemaType.NUMBER },
-      suggestedSemester: { type: SchemaType.NUMBER },
-      reason:            { type: SchemaType.STRING },
-	  skills:            { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    },
-    required: [
-      'courseCode',
-      'courseName',
-      'credits',
-      'reason',
-	  'skills',
-    ],
-  },
+	type: SchemaType.ARRAY,
+	items: {
+		type: SchemaType.OBJECT,
+		properties: {
+			courseCode:        { type: SchemaType.STRING },
+			courseName:        { type: SchemaType.STRING },
+			credits:           { type: SchemaType.NUMBER },
+			suggestedSemester: { type: SchemaType.NUMBER },
+			reason:            { type: SchemaType.STRING },
+			skills:            { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+		},
+		required: [
+			'courseCode',
+			'courseName',
+			'credits',
+			'reason',
+			'skills',
+		],
+	},
 };
 
 function buildGeminiModel() {
@@ -56,7 +54,7 @@ Student Profile:
 }
 
 Available CourseUnits (DAG with prerequisites):
-${JSON.stringify(mockCourseUnits)}
+${JSON.stringify(courseUnits)}
 ${baseContext}
 
 Instructions:

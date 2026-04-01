@@ -128,26 +128,36 @@ async function switchPrimaryHandler(req, res) {
 }
 
 async function retryGeneration(req, res) {
-	try {
-		const userId = req.user.userId;
+	   try {
+		   const userId = req.user.userId;
+		   const sseToken = req.query?.sseToken || req.body?.sseToken;
+		   const { studentProfileId } = req.body ?? {};
+		   if (isGenerating(userId)) {
+			   return res.status(409).json({
+				   error: {
+					   code: 'CONFLICT',
+					   message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
+				   },
+			   });
+		   }
 
-		if (isGenerating(userId)) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
-				},
-			});
-		}
+		   await triggerGeneration(userId, studentProfileId?.toString(), 'on-demand');
 
-		   await triggerGeneration(userId, studentProfileId.toString(), 'on-demand');
+		   // Notify client roadmap generation started (optional)
+		   if (sseToken) {
+			   const { notifyClientByToken } = require('./roadmap.sse');
+			   notifyClientByToken(sseToken, 'roadmap:notification', {
+				   type: 'info',
+				   message: 'Roadmap generation started. You will be notified when it completes.'
+			   });
+		   }
 
 		   return res.status(202).json({
 			   message: 'Roadmap generation started. You will be notified when it completes.',
 		   });
-	} catch (err) {
-		return mapError(err, res);
-	}
+	   } catch (err) {
+		   return mapError(err, res);
+	   }
 }
 
 async function rejectRoadmap(req, res) {

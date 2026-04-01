@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import authApi from '../../services/auth.api';
 import { useAuth } from '../../providers/AuthProvider';
-import { retryPrimaryRoadmap } from '../../services/roadmap.api';
+import { retryRoadmapGeneration } from '../../services/roadmap.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import MajorSelect from '../onboarding/MajorSelect';
 import CourseMultiSelect from '../onboarding/CourseMultiSelect';
@@ -112,6 +112,13 @@ export default function AccountSettingsPage() {
 
   const hasCompletedOnboarding = onboardingState === 'COMPLETED' || hasSubmittedOnboarding;
 
+  useEffect(() => {
+    if (hasLearningProfileChanges && (message || error)) {
+      setMessage('');
+      setError('');
+    }
+  }, [hasLearningProfileChanges, message, error]);
+
   const patchProfileForm = (nextProfileForm) => {
     setProfileForm(nextProfileForm);
   };
@@ -194,7 +201,8 @@ export default function AccountSettingsPage() {
     try {
       setShowRegenRoadmap(false);
       console.log('Triggering roadmap regeneration...');
-      await retryPrimaryRoadmap(accessToken);
+      await retryRoadmapGeneration(accessToken);
+      setMessage('Roadmap regeneration triggered successfully. It may take a few moments for changes to reflect on your roadmap.');
     } catch (err) {
       setError(err.message || 'Failed to regenerate roadmap.');
     } finally {
@@ -336,6 +344,11 @@ export default function AccountSettingsPage() {
                 </div>
               )}
               {message === 'Learning profile updated successfully.' && (
+                <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
+                  {message}
+                </div>
+              )}
+              {message === 'Roadmap regeneration triggered successfully. It may take a few moments for changes to reflect on your roadmap.' && (
                 <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
                   {message}
                 </div>

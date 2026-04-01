@@ -44,24 +44,21 @@ function closeConnection(sseToken) {
 	}
 }
 
-function notifyPreviewReady(userId) {
-	sendNotification(userId, 'roadmap:status', { status: 'completed' });
-}
 function notifyPreviewReady(sseToken) {
-   notifyClientByToken(sseToken, 'roadmap:notification', {
-	   type: 'success',
-	   message: 'Your roadmap has been generated!'
-   });
+	notifyClientByToken(sseToken, 'roadmap:status', { status: 'completed' });
+	notifyClientByToken(sseToken, 'roadmap:notification', {
+		type: 'success',
+		message: 'Your roadmap has been generated!',
+	});
 }
-function notifyGenerationFailed(userId) {
-	sendNotification(userId, 'roadmap:status', { status: 'failed', retryable: true });
-}
+
 function notifyGenerationFailed(sseToken) {
-   notifyClientByToken(sseToken, 'roadmap:notification', {
-	   type: 'error',
-	   message: 'Roadmap generation failed.',
-	   retryable: true
-   });
+	notifyClientByToken(sseToken, 'roadmap:status', { status: 'failed', retryable: true });
+	notifyClientByToken(sseToken, 'roadmap:notification', {
+		type: 'error',
+		message: 'Roadmap generation failed.',
+		retryable: true,
+	});
 }
 module.exports = {
 	addConnection,

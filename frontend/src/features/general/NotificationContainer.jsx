@@ -1,5 +1,6 @@
-import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
-import { openRoadmapSSE } from '../../services/notification.api';
+import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
+import { openRoadmapNotificationStream } from '../../services/notification.api';
+import { useSkillTreeStore } from '../../stores/skillTreeStore';
 import '../../style/general-component.css';
 
 const NotificationContext = createContext();
@@ -11,11 +12,12 @@ export function useNotification() {
 export function NotificationProvider({ children, sseToken }) {
   const [notifications, setNotifications] = useState([]);
   const eventSourceRef = useRef(null);
+  const requestRefetch = useSkillTreeStore((s) => s.requestRefetch);
 
-  const addNotification = (message, type = 'info', duration = 5000) => {
+  const addNotification = useCallback((message, type = 'info', duration = 5000) => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type, duration }]);
-  };
+  }, []);
 
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(notif => notif.id !== id));
@@ -27,7 +29,7 @@ export function NotificationProvider({ children, sseToken }) {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
-    const es = openRoadmapSSE(sseToken);
+    const es = openRoadmapNotificationStream(sseToken);
     eventSourceRef.current = es;
     es.addEventListener('roadmap:notification', (event) => {
       try {
@@ -37,13 +39,21 @@ export function NotificationProvider({ children, sseToken }) {
         }
       } catch {}
     });
+    es.addEventListener('roadmap:status', (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.status === 'completed') {
+          requestRefetch();
+        }
+      } catch {}
+    });
     es.addEventListener('error', () => {
       addNotification('Lost connection to roadmap updates.', 'error');
     });
     return () => {
       es.close();
     };
-  }, [sseToken]);
+  }, [sseToken, requestRefetch, addNotification]);
 
   return (
     <NotificationContext.Provider value={{ addNotification }}>

@@ -24,6 +24,9 @@ export const useSkillTreeStore = create((set) => ({
   loading: false,
   error: null,
 
+  // Refetch trigger — increment to force useSkillTree to re-fetch
+  refetchCount: 0,
+
   // Actions
   setTreeData: (data) => set((state) => ({
     nodes: data.nodes || [],
@@ -70,4 +73,6 @@ export const useSkillTreeStore = create((set) => ({
 
   setRepersonalizing: (repersonalizing) => set({ repersonalizing }),
   setNeedsRepersonalization: (needs) => set({ needsRepersonalization: needs }),
+
+  requestRefetch: () => set((state) => ({ refetchCount: state.refetchCount + 1 })),
 }));

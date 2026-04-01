@@ -1,3 +1,5 @@
+'use strict';
+
 const pendingPreviews = new Map();
 
 function storePendingPreview(userId, payload) {

@@ -1,0 +1,22 @@
+/**
+ * T015: Academic Materials Routes (User Story 1)
+ * REST endpoints for academic materials
+ */
+
+const express = require('express');
+const router = express.Router();
+const academicController = require('../controllers/academic.controller');
+const { requireAuth } = require('../../../middleware/auth.middleware');
+
+/**
+ * GET /api/resources/academic/:courseName
+ * Returns academic materials for a course
+ * Authorization required: Bearer token
+ */
+router.get(
+  '/academic/:courseName',
+  requireAuth,
+  academicController.getAcademicByCourse
+);
+
+module.exports = router;

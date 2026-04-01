@@ -27,18 +27,8 @@ export function decidePostLoginRoute(onboardingState) {
 }
 
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    return window.localStorage.getItem('authToken') || null;
-  });
-  const [onboardingState, setOnboardingState] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 'NEVER_STARTED';
-    }
-    return window.localStorage.getItem('onboardingState') || 'NEVER_STARTED';
-  });
+  const [accessToken, setAccessToken] = useState(null);
+  const [onboardingState, setOnboardingState] = useState('NEVER_STARTED');
   const [onboardingDraft, setOnboardingDraft] = useState(null);
 
   const value = useMemo(
@@ -55,37 +45,16 @@ export function AuthProvider({ children }) {
         setAccessToken(nextToken);
         setOnboardingState(nextState);
         setOnboardingDraft(nextDraft);
-
-        if (typeof window !== 'undefined') {
-          if (nextToken) {
-            window.localStorage.setItem('authToken', nextToken);
-          } else {
-            window.localStorage.removeItem('authToken');
-          }
-
-          window.localStorage.setItem('onboardingState', nextState);
-          window.localStorage.setItem('onboardingCompleted', String(nextState === 'COMPLETED'));
-        }
       },
       logout: () => {
         setAccessToken(null);
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('authToken');
-          window.localStorage.removeItem('onboardingState');
-          window.localStorage.removeItem('onboardingCompleted');
-        }
       },
       handleAccountDeleted: () => {
         setAccessToken(null);
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('authToken');
-          window.localStorage.removeItem('onboardingState');
-          window.localStorage.removeItem('onboardingCompleted');
-        }
         if (typeof window !== 'undefined') {
           window.location.assign('/login');
         }
@@ -101,9 +70,6 @@ export function AuthProvider({ children }) {
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
         if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('authToken');
-          window.localStorage.removeItem('onboardingState');
-          window.localStorage.removeItem('onboardingCompleted');
           window.location.assign('/login');
         }
       },

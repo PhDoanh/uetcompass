@@ -54,6 +54,16 @@ function AppContent() {
 		);
 	}
 
+	if (pathname.includes('/settings')) {
+		return (
+			<OnboardingGuard>
+				<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+					<AccountSettingsPage />
+				</main>
+			</OnboardingGuard>
+		);
+	}
+
 	return (
 		<AuthGuard>
 			<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
@@ -69,6 +79,16 @@ export default function App() {
 	return (
 		<AuthProvider>
 			<AppContent />
+		</AuthProvider>
+	);
+}
+
+export default function App() {
+	return (
+		<AuthProvider>
+			<AuthGuard>
+				<AppContent />
+			</AuthGuard>
 		</AuthProvider>
 	);
 }

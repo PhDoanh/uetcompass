@@ -144,21 +144,6 @@ async function retryGeneration(req, res) {
 		const sseToken = req.query?.sseToken || req.body?.sseToken
 			|| req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
 
-		// Look up studentProfileId from existing roadmap; frontend does not send it on retry
-		let { studentProfileId } = req.body ?? {};
-		if (!studentProfileId) {
-			const existing = await roadmapService.getPrimaryByUser(userId);
-			studentProfileId = existing?.studentProfileId?.toString();
-		}
-		if (!studentProfileId) {
-			return res.status(422).json({
-				error: {
-					code: 'INVALID_PAYLOAD',
-					message: 'No student profile found for this user. Complete onboarding first.',
-				},
-			});
-		}
-
 		if (isGenerating(userId)) {
 			return res.status(409).json({
 				error: {
@@ -168,7 +153,7 @@ async function retryGeneration(req, res) {
 			});
 		}
 
-		await triggerGeneration(userId, studentProfileId.toString(), 'on-demand', sseToken);
+		await triggerGeneration(userId, 'on-demand', sseToken);
 
 		// Notify client roadmap generation started (optional)
 		if (sseToken) {

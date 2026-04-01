@@ -94,9 +94,13 @@ export default function AccountSettingsPage() {
     serializeLearningProfile(EMPTY_PROFILE)
   );
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [pageError, setPageError] = useState('');
+  const [basicStatus, setBasicStatus] = useState({ message: '', error: '' });
+  const [learningStatus, setLearningStatus] = useState({ message: '', error: '' });
+  const [passwordStatus, setPasswordStatus] = useState({ message: '', error: '' });
   const [loading, setLoading] = useState(false);
   const [regenLoading, setRegenLoading] = useState(false);
   const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
@@ -113,11 +117,10 @@ export default function AccountSettingsPage() {
   const hasCompletedOnboarding = onboardingState === 'COMPLETED' || hasSubmittedOnboarding;
 
   useEffect(() => {
-    if (hasLearningProfileChanges && (message || error)) {
-      setMessage('');
-      setError('');
+    if (hasLearningProfileChanges && (learningStatus.message || learningStatus.error)) {
+      setLearningStatus({ message: '', error: '' });
     }
-  }, [hasLearningProfileChanges, message, error]);
+  }, [hasLearningProfileChanges, learningStatus.message, learningStatus.error]);
 
   const patchProfileForm = (nextProfileForm) => {
     setProfileForm(nextProfileForm);
@@ -139,7 +142,7 @@ export default function AccountSettingsPage() {
       setInitialLearningProfileSerialized(serializeLearningProfile(nextProfileForm));
     } catch (err) {
       if (err.status === 401) logoutAndRedirect();
-      setError("Failed to load profile data.");
+      setPageError('Failed to load profile data.');
     }
   }, [accessToken, logoutAndRedirect]);
 
@@ -149,13 +152,14 @@ export default function AccountSettingsPage() {
 
   const onSaveBasic = async (e) => {
     e.preventDefault();
-    setMessage(''); setError(''); setLoading(true);
+    setBasicStatus({ message: '', error: '' });
+    setLoading(true);
     
     try {
       await authApi.patchProfile(accessToken, basicForm);
-      setMessage('Basic information updated successfully.');
+      setBasicStatus({ message: 'Basic information updated successfully.', error: '' });
     } catch (err) {
-      setError(err.message || 'Failed to update basic info.');
+      setBasicStatus({ message: '', error: err.message || 'Failed to update basic info.' });
     } finally {
       setLoading(false);
     }
@@ -163,7 +167,8 @@ export default function AccountSettingsPage() {
 
   const onSaveLearning = async (e) => {
     e.preventDefault();
-    setMessage(''); setError(''); setLoading(true);
+    setLearningStatus({ message: '', error: '' });
+    setLoading(true);
     setShowRegenRoadmap(false);
     
     const payload = {
@@ -183,11 +188,11 @@ export default function AccountSettingsPage() {
     
     try {
       await authApi.patchProfile(accessToken, payload);
-      setMessage('Learning profile updated successfully.');
+      setLearningStatus({ message: 'Learning profile updated successfully.', error: '' });
       setShowRegenRoadmap(true);
       loadProfile(); 
     } catch (err) {
-      setError(err.message || 'Failed to update learning profile.');
+      setLearningStatus({ message: '', error: err.message || 'Failed to update learning profile.' });
     } finally {
       setLoading(false);
     }
@@ -195,16 +200,18 @@ export default function AccountSettingsPage() {
 
   const onRegenRoadmap = async () => {
     if (!accessToken) return;
-    setMessage('');
-    setError('');
+    setLearningStatus({ message: '', error: '' });
     setRegenLoading(true);
     try {
       setShowRegenRoadmap(false);
       console.log('Triggering roadmap regeneration...');
       await retryRoadmapGeneration(accessToken);
-      setMessage('Roadmap regeneration triggered successfully. It may take a few moments for changes to reflect on your roadmap.');
+      setLearningStatus({
+        message: 'Roadmap regeneration triggered successfully. It may take a few moments for changes to reflect on your roadmap.',
+        error: '',
+      });
     } catch (err) {
-      setError(err.message || 'Failed to regenerate roadmap.');
+      setLearningStatus({ message: '', error: err.message || 'Failed to regenerate roadmap.' });
     } finally {
       setRegenLoading(false);
     }
@@ -212,17 +219,18 @@ export default function AccountSettingsPage() {
 
   const onSavePassword = async (e) => {
     e.preventDefault();
-    setMessage(''); setError(''); setLoading(true);
+    setPasswordStatus({ message: '', error: '' });
+    setLoading(true);
     try {
       await authApi.changePassword(accessToken, { ...passwordForm, action: 'changePassword' });
-      setMessage('Password changed successfully.');
+      setPasswordStatus({ message: 'Password changed successfully.', error: '' });
       setPasswordForm({ currentPassword: '', newPassword: '' });
     } catch (err) {
       if (err.status === 401 && err.code === 'UNAUTHORIZED') {
         logoutAndRedirect();
         return;
       }
-      setError(err.message || 'Failed to change password.');
+      setPasswordStatus({ message: '', error: err.message || 'Failed to change password.' });
     } finally {
       setLoading(false);
     }
@@ -232,7 +240,7 @@ export default function AccountSettingsPage() {
     <main className="account-settings-shell">
       <h1 className="account-settings-title">Account Settings</h1>
       
-      {error && <div className="status-text error">{error}</div>}
+      {pageError && <div className="status-text error">{pageError}</div>}
 
       <div className="settings-grid">
         <section className="account-settings-card">
@@ -269,11 +277,16 @@ export default function AccountSettingsPage() {
             <button type="submit" className="primary-btn" disabled={loading}>
               Save Basic Info
             </button>
-            {message === 'Basic information updated successfully.' && (
-              <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
-                {message}
+            {basicStatus.error ? (
+              <div className="status-text error" style={{ marginTop: 12, marginBottom: 0 }}>
+                {basicStatus.error}
               </div>
-            )}
+            ) : null}
+            {basicStatus.message ? (
+              <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
+                {basicStatus.message}
+              </div>
+            ) : null}
           </form>
         </section>
 
@@ -343,16 +356,16 @@ export default function AccountSettingsPage() {
                   )}
                 </div>
               )}
-              {message === 'Learning profile updated successfully.' && (
-                <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
-                  {message}
+              {learningStatus.error ? (
+                <div className="status-text error" style={{ marginTop: 12, marginBottom: 0 }}>
+                  {learningStatus.error}
                 </div>
-              )}
-              {message === 'Roadmap regeneration triggered successfully. It may take a few moments for changes to reflect on your roadmap.' && (
+              ) : null}
+              {learningStatus.message ? (
                 <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
-                  {message}
+                  {learningStatus.message}
                 </div>
-              )}
+              ) : null}
             </form>
           )}
         </section>
@@ -361,31 +374,72 @@ export default function AccountSettingsPage() {
           <h2 className="section-title">Security</h2>
           <form onSubmit={onSavePassword}>
             <label htmlFor="currentPassword">Current Password</label>
-            <input 
-              id="currentPassword" 
-              type="password" 
-              value={passwordForm.currentPassword} 
-              onChange={(e) => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
-              className="form-input"
-            />
+            <div className="account-password-wrapper">
+              <input 
+                id="currentPassword" 
+                type={showCurrentPassword ? 'text' : 'password'} 
+                value={passwordForm.currentPassword} 
+                onChange={(e) => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                className="form-input"
+              />
+              <button
+                type="button"
+                className="account-password-toggle"
+                onClick={() => setShowCurrentPassword((prev) => !prev)}
+                aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="account-eye-icon">
+                  <path
+                    d="M2 12C3.7 8.2 7.3 5.5 12 5.5C16.7 5.5 20.3 8.2 22 12C20.3 15.8 16.7 18.5 12 18.5C7.3 18.5 3.7 15.8 2 12Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+                  {showCurrentPassword ? <path d="M4 20L20 4" stroke="currentColor" strokeWidth="1.8" /> : null}
+                </svg>
+              </button>
+            </div>
 
             <label htmlFor="newPassword">New Password</label>
-            <input 
-              id="newPassword" 
-              type="password" 
-              value={passwordForm.newPassword} 
-              onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
-              className="form-input"
-            />
+            <div className="account-password-wrapper">
+              <input 
+                id="newPassword" 
+                type={showNewPassword ? 'text' : 'password'} 
+                value={passwordForm.newPassword} 
+                onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                className="form-input"
+              />
+              <button
+                type="button"
+                className="account-password-toggle"
+                onClick={() => setShowNewPassword((prev) => !prev)}
+                aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="account-eye-icon">
+                  <path
+                    d="M2 12C3.7 8.2 7.3 5.5 12 5.5C16.7 5.5 20.3 8.2 22 12C20.3 15.8 16.7 18.5 12 18.5C7.3 18.5 3.7 15.8 2 12Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+                  {showNewPassword ? <path d="M4 20L20 4" stroke="currentColor" strokeWidth="1.8" /> : null}
+                </svg>
+              </button>
+            </div>
             
             <button type="submit" className="secondary-btn btn-danger" disabled={loading}>
               Change Password
             </button>
-            {message === 'Password changed successfully.' && (
-              <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
-                {message}
+            {passwordStatus.error ? (
+              <div className="status-text error" style={{ marginTop: 12, marginBottom: 0 }}>
+                {passwordStatus.error}
               </div>
-            )}
+            ) : null}
+            {passwordStatus.message ? (
+              <div className="status-text success" style={{ marginTop: 12, marginBottom: 0 }}>
+                {passwordStatus.message}
+              </div>
+            ) : null}
           </form>
         </section>
       </div>

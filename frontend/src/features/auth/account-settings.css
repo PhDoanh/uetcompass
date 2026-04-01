@@ -83,6 +83,44 @@
   transition: all 0.2s ease;
 }
 
+.account-password-wrapper {
+  position: relative;
+}
+
+.account-password-wrapper .form-input {
+  padding-right: 54px;
+}
+
+.account-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  height: 36px;
+  width: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 211, 252, 0.75);
+  background: rgba(14, 165, 233, 0.2);
+  color: #e0f2fe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.account-password-toggle:hover {
+  background: rgba(14, 165, 233, 0.34);
+  border-color: #7dd3fc;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.account-eye-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .account-settings-card .form-select-neon {
   appearance: none;
   -webkit-appearance: none;
@@ -289,6 +327,12 @@
   background: rgba(248, 113, 113, 0.15);
   border: 1px solid rgba(248, 113, 113, 0.35);
   color: #fca5a5;
+}
+
+/* Hide native Edge/IE password reveal so only custom eye button is shown. */
+.form-input[type='password']::-ms-reveal,
+.form-input[type='password']::-ms-clear {
+  display: none;
 }
 
 .onboarding-modal-overlay {

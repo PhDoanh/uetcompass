@@ -53,7 +53,7 @@ accountRouter.use(requireAuth);
 
 accountRouter.get('/profile', controller.getProfile);
 accountRouter.patch('/profile', controller.patchProfile);
-accountRouter.post('/change-password', requireBody(['currentPassword', 'newPassword']), controller.changePassword);
+accountRouter.post('/change-password', requireBody(['newPassword']), controller.changePassword);
 accountRouter.post('/link-google', requireBody(['credential']), controller.linkGoogle);
 accountRouter.delete('/link-google/:googleId', controller.unlinkGoogle);
 accountRouter.post('/request-deletion', controller.requestDeletion);

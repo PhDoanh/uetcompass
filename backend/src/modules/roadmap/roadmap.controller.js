@@ -155,17 +155,9 @@ async function retryGeneration(req, res) {
 
 		await triggerGeneration(userId, 'on-demand', sseToken);
 
-		// Notify client roadmap generation started (optional)
-		if (sseToken) {
-			notifyClientByToken(sseToken, 'roadmap:notification', {
-				type: 'info',
-				message: 'Roadmap generation started. You will be notified when it completes.',
-			});
-		}
-
-		return res.status(202).json({
-			message: 'Roadmap generation started. You will be notified when it completes.',
-		});
+		   return res.status(202).json({
+			   message: 'Roadmap generation started. You will be notified when it completes.',
+		   });
 	} catch (err) {
 		return mapError(err, res);
 	}

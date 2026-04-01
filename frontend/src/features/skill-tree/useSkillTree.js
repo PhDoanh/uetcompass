@@ -30,6 +30,7 @@ export function useSkillTree() {
     updateNodeStatus: updateStatus,
     setRepersonalizing,
     setNeedsRepersonalization,
+    refetchCount,
   } = useSkillTreeStore();
 
   const pollIntervalRef = useRef(null);
@@ -50,7 +51,7 @@ export function useSkillTree() {
     };
 
     fetchTree();
-  }, []);
+  }, [refetchCount]);
 
   // Polling for repersonalization completion
   useEffect(() => {

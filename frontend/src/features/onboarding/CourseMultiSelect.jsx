@@ -1,4 +1,12 @@
+import { useEffect, useState } from 'react';
+
 export default function CourseMultiSelect({ major, options = [], value = [], onChange }) {
+	const [showAllCourses, setShowAllCourses] = useState(false);
+
+	useEffect(() => {
+		setShowAllCourses(false);
+	}, [major]);
+
 	if (!major) {
 		return null;
 	}
@@ -31,15 +39,34 @@ export default function CourseMultiSelect({ major, options = [], value = [], onC
 	return (
 		<div style={{ marginBottom: 12 }}>
 			<div style={{ fontWeight: 600, marginBottom: 4 }}>Completed courses (optional)</div>
-			{options.map((course) => {
-				const key = `${major}::${course.courseCode}`;
-				const checked = selectedKeys.has(key);
-				return (
-					<label key={key} style={{ display: 'block', marginBottom: 4 }}>
-						<input type="checkbox" checked={checked} onChange={() => toggle(course)} /> {course.courseCode} - {course.name}
-					</label>
-				);
-			})}
+			<button
+				type="button"
+				className="secondary-btn"
+				onClick={() => setShowAllCourses((prev) => !prev)}
+				style={{ marginTop: 10, padding: '8px 12px', fontSize: '0.86rem' }}
+			>
+				{showAllCourses ? 'Ẩn danh sách môn học' : 'Hiện danh sách môn học'}
+			</button>
+
+			{showAllCourses ? (
+				<div className="course-select-container course-options-scroll">
+					{options.map((course) => {
+						const key = `${major}::${course.courseCode}`;
+						const checked = selectedKeys.has(key);
+						return (
+							<label key={key} className="course-checkbox-item" style={{ color: checked ? '#38bdf8' : 'inherit', fontWeight: checked ? 700 : 500 }}>
+								<input
+									type="checkbox"
+									checked={checked}
+									onChange={() => toggle(course)}
+									className="course-checkbox-input"
+								/>
+								<span>{course.courseCode} - {course.name}</span>
+							</label>
+						);
+					})}
+				</div>
+			) : null}
 		</div>
 	);
 }

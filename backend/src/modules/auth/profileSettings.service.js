@@ -195,8 +195,17 @@ async function changePassword(userId, { currentPassword, newPassword }) {
 
   const current = String(currentPassword || '');
   const next = String(newPassword || '');
-  if (!current || next.length < 8) {
+
+  if (!current || newPassword.length < 8) {
     throw buildError(400, 'INVALID_INPUT', 'currentPassword and valid newPassword are required.');
+  }
+
+  if (!user.passwordHash) {
+    throw buildError(
+      400,
+      'PASSWORD_NOT_SET',
+      'This account does not have a local password yet. Use forgot password to set one.'
+    );
   }
 
   const isValidCurrent = await passwordService.verifyPassword(current, user.passwordHash);

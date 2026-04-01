@@ -13,12 +13,12 @@ function getClient() {
 }
 
 async function extractContent(url) {
-	const response = await getClient().extract([url]);
+	const response = await getClient().extract([url], { extract_depth: "advanced" });
 	const results = Array.isArray(response?.results) ? response.results : [];
-	if (results.length === 0 || !results[0]?.raw_content) {
+	if (results.length === 0 || !results[0]?.rawContent) {
 		throw new Error(`Tavily returned no extractable content for ${url}`);
 	}
-	return results[0].raw_content;
+	return results[0].rawContent;
 }
 
 module.exports = {

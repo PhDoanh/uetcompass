@@ -27,15 +27,15 @@ export default function CareerGoalForm({ value, onChange }) {
 				placeholder="e.g. Backend Engineer"
 			/>
 
-			<div style={{ marginBottom: 12 }}>
-				<label htmlFor="companyType" style={{ display: 'block', fontWeight: 600 }}>
-					Company type <span style={{ fontWeight: 400 }}>(optional)</span>
+			<div className="onboarding-field">
+				<label htmlFor="companyType" className="onboarding-label">
+					Company type <span className="onboarding-label-optional">(optional)</span>
 				</label>
 				<select
 					id="companyType"
 					value={careerGoal.companyType || ''}
 					onChange={(event) => patch({ careerGoal: { companyType: event.target.value } })}
-					style={{ width: '100%', padding: 8, marginTop: 4 }}
+					className="onboarding-input onboarding-select"
 				>
 					<option value="">Select company type</option>
 					{COMPANY_TYPES.map((item) => (

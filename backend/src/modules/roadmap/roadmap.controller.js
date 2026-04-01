@@ -130,16 +130,6 @@ async function switchPrimaryHandler(req, res) {
 async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
-		if (!profileExists) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'The student profile associated with this roadmap no longer exists.',
-				},
-			});
-		}
-
-		await triggerGeneration(userId, failedRoadmap.studentProfileId.toString(), 'retry');
 
 		if (isGenerating(userId)) {
 			return res.status(409).json({

@@ -1,5 +1,7 @@
 import { useAuth } from '../providers/AuthProvider';
 
+const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
+
 export default function OnboardingGuard({ children }) {
 	const { onboardingState } = useAuth();
 	const onboardingCompleted = onboardingState === 'COMPLETED';
@@ -8,13 +10,12 @@ export default function OnboardingGuard({ children }) {
 	// Redirect to / if accessing /skill-tree without completed onboarding
 	if (!onboardingCompleted && pathname.includes('/skill-tree')) {
 		if (typeof window !== 'undefined') {
+			window.sessionStorage.setItem(
+				ONBOARDING_REDIRECT_NOTICE_KEY,
+				'Cần hoàn thành Onboarding để vào tính năng này'
+			);
 			window.location.replace('/');
 		}
-		return null;
-	}
-
-	if (onboardingCompleted && typeof window !== 'undefined' && window.location.pathname.includes('/onboarding')) {
-		window.location.replace('/');
 		return null;
 	}
 

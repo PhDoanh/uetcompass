@@ -91,7 +91,7 @@ const userSchema = new mongoose.Schema(
     lockedUntil: {
       type: Date,
       default: null,
-      required: true,
+      required: false,
     },
     linkedGoogleAccounts: {
       type: [googleAccountSchema],

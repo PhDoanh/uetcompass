@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+
 const DEFAULT_MAJORS = ['Computer Science', 'Information Systems', 'Computer Engineering'];
 
 export default function MajorSelect({
@@ -7,27 +10,58 @@ export default function MajorSelect({
 	onResetCourses,
 	majors = DEFAULT_MAJORS,
 }) {
+	const [showConfirm, setShowConfirm] = useState(false);
+	const [pendingMajor, setPendingMajor] = useState('');
+
 	const handleMajorChange = (nextMajor) => {
 		if (value && value !== nextMajor && selectedCourses.length > 0) {
-			const confirmed = window.confirm('Changing major will clear selected completed courses. Continue?');
-			if (!confirmed) {
-				return;
-			}
-			onResetCourses?.();
+			setPendingMajor(nextMajor);
+			setShowConfirm(true);
+			return;
 		}
 		onChange(nextMajor);
 	};
 
+	const handleCancelChange = () => {
+		setPendingMajor('');
+		setShowConfirm(false);
+	};
+
+	const handleConfirmChange = () => {
+		onResetCourses?.();
+		onChange(pendingMajor);
+		setPendingMajor('');
+		setShowConfirm(false);
+	};
+
+	const confirmModal = showConfirm && typeof document !== 'undefined'
+		? createPortal(
+			<div className="onboarding-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-confirm-title">
+				<div className="onboarding-confirm-popup">
+					<h3 id="onboarding-confirm-title" className="onboarding-confirm-popup__title">Confirm major change</h3>
+					<p className="onboarding-confirm-popup__message">
+						Changing major will clear selected completed courses. Continue?
+					</p>
+					<div className="onboarding-confirm-popup__actions">
+						<button type="button" className="secondary-btn" onClick={handleCancelChange}>Cancel</button>
+						<button type="button" className="primary-btn" onClick={handleConfirmChange}>Continue</button>
+					</div>
+				</div>
+			</div>,
+			document.body
+		)
+		: null;
+
 	return (
-		<div style={{ marginBottom: 12 }}>
-			<label htmlFor="major" style={{ display: 'block', fontWeight: 600 }}>
-				Major <span style={{ color: '#b00020' }}>*</span>
+		<div className="onboarding-field">
+			<label htmlFor="major" className="onboarding-label">
+				Major <span className="onboarding-label-required">*</span>
 			</label>
 			<select
 				id="major"
 				value={value || ''}
 				onChange={(event) => handleMajorChange(event.target.value)}
-				style={{ width: '100%', padding: 8, marginTop: 4 }}
+				className="onboarding-input onboarding-select"
 			>
 				<option value="">Select major</option>
 				{majors.map((major) => (
@@ -36,6 +70,8 @@ export default function MajorSelect({
 					</option>
 				))}
 			</select>
+
+			{confirmModal}
 		</div>
 	);
 }

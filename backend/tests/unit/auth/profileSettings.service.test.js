@@ -8,7 +8,7 @@ jest.mock('../../../src/modules/auth/user.model', () => ({
 jest.mock('../../../src/modules/onboarding/onboarding.model', () => ({
   StudentProfile: {
     findOne: jest.fn(),
-    updateOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
   },
 }));
 
@@ -47,6 +47,18 @@ describe('profile settings diff detection', () => {
       careerGoal: { role: 'SE', companyType: 'Product', graduationTimeline: '2027' },
       personalAspirations: 'x',
     });
+    StudentProfile.findOneAndUpdate.mockResolvedValueOnce({
+      userId: 'u1',
+      isDraft: false,
+      major: 'Information Systems',
+      completedCourses: [{ major: 'Information Systems', courseCode: 'INT2204' }],
+      careerGoal: {
+        role: null,
+        companyType: null,
+        graduationTimeline: null,
+      },
+      personalAspirations: null,
+    });
 
     await profileSettingsService.updateProfile('u1', {
       profile: {
@@ -54,7 +66,7 @@ describe('profile settings diff detection', () => {
       },
     });
 
-    expect(StudentProfile.updateOne).toHaveBeenCalledWith(
+    expect(StudentProfile.findOneAndUpdate).toHaveBeenCalledWith(
       { userId: 'u1' },
       {
         $set: expect.objectContaining({
@@ -65,10 +77,69 @@ describe('profile settings diff detection', () => {
             graduationTimeline: null,
           },
           personalAspirations: null,
+          isDraft: false,
         }),
-      }
+        $setOnInsert: expect.objectContaining({
+          userId: 'u1',
+          isDraft: true,
+          submittedAt: null,
+        }),
+      },
+      { new: true, upsert: true, runValidators: true }
     );
     expect(notificationService.createRepersonalizeNotification).not.toHaveBeenCalled();
+  });
+
+  test('persists profile changes for draft onboarding profiles', async () => {
+    User.findById.mockResolvedValueOnce({
+      _id: 'u1',
+      email: 'a@vnu.edu.vn',
+      displayName: 'A',
+      fullName: 'A',
+      privacySetting: 'identified',
+    });
+    StudentProfile.findOne.mockResolvedValueOnce({
+      userId: 'u1',
+      isDraft: true,
+      major: 'Computer Science',
+      completedCourses: [{ major: 'Computer Science', courseCode: 'INT2204' }],
+      careerGoal: { role: 'SE', companyType: 'Product', graduationTimeline: '2027' },
+      personalAspirations: 'x',
+    });
+    StudentProfile.findOneAndUpdate.mockResolvedValueOnce({
+      userId: 'u1',
+      isDraft: true,
+      major: 'Information Systems',
+      completedCourses: [{ major: 'Information Systems', courseCode: 'INT2204' }],
+      careerGoal: {
+        role: null,
+        companyType: null,
+        graduationTimeline: null,
+      },
+      personalAspirations: null,
+    });
+
+    await profileSettingsService.updateProfile('u1', {
+      profile: {
+        major: 'Information Systems',
+      },
+    });
+
+    expect(StudentProfile.findOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'u1' },
+      {
+        $set: expect.objectContaining({
+          major: 'Information Systems',
+          isDraft: true,
+        }),
+        $setOnInsert: expect.objectContaining({
+          userId: 'u1',
+          isDraft: true,
+          submittedAt: null,
+        }),
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
   });
 
   test('does not trigger repersonalization for identity-only updates', async () => {
@@ -99,7 +170,7 @@ describe('profile settings diff detection', () => {
       displayName: 'A New',
     });
 
-    expect(StudentProfile.updateOne).not.toHaveBeenCalled();
+    expect(StudentProfile.findOneAndUpdate).not.toHaveBeenCalled();
     expect(notificationService.createRepersonalizeNotification).not.toHaveBeenCalled();
   });
 });

@@ -141,6 +141,8 @@ async function switchPrimaryHandler(req, res) {
 async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
+		const sseToken = req.query?.sseToken || req.body?.sseToken
+			|| req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
 
 		if (isGenerating(userId)) {
 			return res.status(409).json({
@@ -151,7 +153,7 @@ async function retryGeneration(req, res) {
 			});
 		}
 
-		   await triggerGeneration(userId, studentProfileId.toString(), 'on-demand');
+		await triggerGeneration(userId, 'on-demand', sseToken);
 
 		   return res.status(202).json({
 			   message: 'Roadmap generation started. You will be notified when it completes.',

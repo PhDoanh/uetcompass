@@ -197,17 +197,6 @@ body {
   margin: 0.35rem 0;
 }
 
-/* Homepage */
-.homepage {
-  flex: 1 1 auto;
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
 .notification {
   position: fixed;
   bottom: 24px;

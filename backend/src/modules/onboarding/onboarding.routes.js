@@ -23,6 +23,8 @@ router.get('/status', (req, res) => {
 	addConnection(String(sseToken), res);
 });
 
+router.get('/course-catalog', controller.getCourseCatalog);
+
 router.use(requireAuth);
 
 router.get('/draft', controller.getDraft);

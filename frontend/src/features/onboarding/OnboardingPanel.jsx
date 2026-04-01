@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MajorSelect from './MajorSelect';
 import CourseMultiSelect from './CourseMultiSelect';
 import CareerGoalForm from './CareerGoalForm';
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
-import { postSubmit } from '../../services/onboarding.api';
+import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
 
 const EMPTY_FORM = {
 	major: '',
@@ -17,21 +17,16 @@ const EMPTY_FORM = {
 	personalAspirations: '',
 };
 
-const COURSE_CATALOG = {
-	'Computer Science': [
-		{ courseCode: 'INT2204', name: 'Object Oriented Programming' },
-		{ courseCode: 'INT2210', name: 'Data Structures and Algorithms' },
-	],
-	'Information Systems': [{ courseCode: 'INT3105', name: 'Database Systems' }],
-	'Computer Engineering': [{ courseCode: 'INT3401', name: 'Digital Design' }],
-};
-
 export default function OnboardingPanel({ authToken, sseToken, onUnauthorized }) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [submitState, setSubmitState] = useState('idle');
 	const [submitError, setSubmitError] = useState(null);
 	const [showLowPersonalization, setShowLowPersonalization] = useState(false);
+	const [catalogLoading, setCatalogLoading] = useState(true);
+	const [catalogError, setCatalogError] = useState(null);
+	const [catalogMajors, setCatalogMajors] = useState([]);
+	const [catalogByMajor, setCatalogByMajor] = useState({});
 
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
@@ -44,8 +39,48 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized })
 		onUnauthorized,
 	});
 
+	useEffect(() => {
+		let disposed = false;
+
+		async function loadCatalog() {
+			setCatalogLoading(true);
+			setCatalogError(null);
+
+			try {
+				const payload = await getCourseCatalog(authToken);
+				if (disposed) {
+					return;
+				}
+
+				setCatalogMajors(Array.isArray(payload?.majors) ? payload.majors : []);
+				setCatalogByMajor(payload?.courseCatalog && typeof payload.courseCatalog === 'object' ? payload.courseCatalog : {});
+			} catch (error) {
+				if (disposed) {
+					return;
+				}
+
+				if (authToken && error?.status === 401 && onUnauthorized) {
+					onUnauthorized();
+				}
+				setCatalogError(error.message || 'Failed to load course catalog');
+				setCatalogMajors([]);
+				setCatalogByMajor({});
+			} finally {
+				if (!disposed) {
+					setCatalogLoading(false);
+				}
+			}
+		}
+
+		loadCatalog();
+
+		return () => {
+			disposed = true;
+		};
+	}, [authToken, onUnauthorized]);
+
 	const mergedForm = draft ? { ...EMPTY_FORM, ...draft } : form;
-	const courseOptions = useMemo(() => COURSE_CATALOG[mergedForm.major] || [], [mergedForm.major]);
+	const courseOptions = useMemo(() => catalogByMajor[mergedForm.major] || [], [catalogByMajor, mergedForm.major]);
 
 	const patchForm = (nextForm) => {
 		setForm(nextForm);
@@ -96,12 +131,15 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized })
 			<p style={{ marginTop: 0, color: '#666' }}>Only major is required. Optional fields improve recommendation quality.</p>
 
 			{loading ? <div>Loading draft...</div> : null}
+			{catalogLoading ? <div>Loading majors and courses...</div> : null}
+			{catalogError ? <div style={{ color: '#b00020', marginBottom: 8 }}>{catalogError}</div> : null}
 
 			<MajorSelect
 				value={mergedForm.major}
 				selectedCourses={mergedForm.completedCourses}
 				onResetCourses={() => patchForm({ ...mergedForm, completedCourses: [] })}
 				onChange={(major) => patchForm({ ...mergedForm, major })}
+				majors={catalogMajors}
 			/>
 
 			<CourseMultiSelect

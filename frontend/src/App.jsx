@@ -1,7 +1,7 @@
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
 import OnboardingGuard from './guards/OnboardingGuard';
 
-export default function App() {
+function AppContent() {
 	const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('token') || '' : '';
 	const sseToken = typeof window !== 'undefined' ? window.localStorage.getItem('sseToken') || '' : '';
 
@@ -17,5 +17,11 @@ export default function App() {
 				<OnboardingPanel authToken={authToken} sseToken={sseToken} onUnauthorized={handleUnauthorized} />
 			</main>
 		</OnboardingGuard>
+	);
+}
+
+export default function App() {
+	return (
+		<AppContent />
 	);
 }

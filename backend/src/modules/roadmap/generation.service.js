@@ -9,13 +9,15 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
 const activeGenerations = new Set();
 
-async function runGenerationLifecycle(userId, studentProfileId, triggerReason, sseToken = '') {
+async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 	let personalisationLevel = 'full';
+	let studentProfileId;
 	try {
-		const profile = await StudentProfile.findById(studentProfileId);
+		const profile = await StudentProfile.findOne({ userId });
 		if (!profile) {
-			throw new Error(`StudentProfile not found: ${studentProfileId}`);
+			throw new Error(`StudentProfile not found for user: ${userId}`);
 		}
+		studentProfileId = profile._id;
 
 		personalisationLevel =
 			profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
@@ -50,7 +52,7 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason, s
 	}
 }
 
-async function triggerGeneration(userId, studentProfileId, triggerReason, sseToken = '') {
+async function triggerGeneration(userId, triggerReason, sseToken = '') {
 	const userKey = userId.toString();
 	if (activeGenerations.has(userKey)) {
 		const err = new Error('CONFLICT');
@@ -61,7 +63,7 @@ async function triggerGeneration(userId, studentProfileId, triggerReason, sseTok
 
 	activeGenerations.add(userKey);
 
-	runGenerationLifecycle(userId, studentProfileId, triggerReason, sseToken).catch((unexpectedErr) => {
+	runGenerationLifecycle(userId, triggerReason, sseToken).catch((unexpectedErr) => {
 		console.error('[generation] Unhandled lifecycle error:', unexpectedErr);
 		activeGenerations.delete(userKey);
 	});

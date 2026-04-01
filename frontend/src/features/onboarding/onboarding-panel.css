@@ -145,8 +145,29 @@
   max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   scrollbar-width: thin;
   scrollbar-color: rgba(56, 189, 248, 0.7) rgba(15, 23, 42, 0.7);
+}
+
+.course-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.course-checkbox-item span {
+  flex: 1;
+}
+
+.course-checkbox-input {
+  margin-top: 2px;
+  flex: 0 0 auto;
 }
 
 .course-options-scroll::-webkit-scrollbar {

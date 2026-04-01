@@ -37,7 +37,7 @@ async function acceptRoadmap(userId, { studentProfileId, personalisationLevel, i
 		nodes: filteredNodes,
 	});
 
-	   return committed;
+	return committed;
 }
 
 module.exports = {

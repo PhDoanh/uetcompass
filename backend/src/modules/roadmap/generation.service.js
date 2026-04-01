@@ -9,7 +9,7 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
 const activeGenerations = new Set();
 
-async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
+async function runGenerationLifecycle(userId, studentProfileId, triggerReason, sseToken = '') {
 	let personalisationLevel = 'full';
 	try {
 		const profile = await StudentProfile.findById(studentProfileId);
@@ -34,23 +34,23 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 
 		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
-		previewStore.storePendingPreview(userId, {
-			nodes,
-			personalisationLevel,
-			triggerReason,
-			studentProfileId,
-		});
-
-		notifyPreviewReady(userId);
+		   // Save generated roadmap directly to DB as completed
+		   await roadmapService.commitAccepted(userId, {
+			   studentProfileId,
+			   personalisationLevel,
+			   isPrimary: true,
+			   nodes,
+		   });
+		   notifyPreviewReady(sseToken);
 	} catch (err) {
 		await roadmapService.upsertFailedWithProfile(userId, studentProfileId, err.message, personalisationLevel);
-		notifyGenerationFailed(userId);
+		notifyGenerationFailed(sseToken);
 	} finally {
 		activeGenerations.delete(userId.toString());
 	}
 }
 
-async function triggerGeneration(userId, studentProfileId, triggerReason) {
+async function triggerGeneration(userId, studentProfileId, triggerReason, sseToken = '') {
 	const userKey = userId.toString();
 	if (activeGenerations.has(userKey)) {
 		const err = new Error('CONFLICT');
@@ -61,7 +61,7 @@ async function triggerGeneration(userId, studentProfileId, triggerReason) {
 
 	activeGenerations.add(userKey);
 
-	runGenerationLifecycle(userId, studentProfileId, triggerReason).catch((unexpectedErr) => {
+	runGenerationLifecycle(userId, studentProfileId, triggerReason, sseToken).catch((unexpectedErr) => {
 		console.error('[generation] Unhandled lifecycle error:', unexpectedErr);
 		activeGenerations.delete(userKey);
 	});
@@ -85,7 +85,6 @@ async function __handleSigterm() {
 		} else {
 			await roadmapService.upsertFailed(userId, 'Worker restart — generation preview lost');
 		}
-		notifyGenerationFailed(userId);
 		previewStore.clearPendingPreview(userId);
 	}
 }

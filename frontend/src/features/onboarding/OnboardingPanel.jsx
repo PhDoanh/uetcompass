@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MajorSelect from './MajorSelect';
 import CourseMultiSelect from './CourseMultiSelect';
 import CareerGoalForm from './CareerGoalForm';
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
-import { postSubmit } from '../../services/onboarding.api';
+import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
 import './onboarding-panel.css';
 
 const EMPTY_FORM = {
@@ -18,36 +18,16 @@ const EMPTY_FORM = {
 	personalAspirations: '',
 };
 
-const COURSE_CATALOG = {
-	'Computer Science': [
-		{ courseCode: 'INT2204', name: 'Object Oriented Programming' },
-		{ courseCode: 'INT2210', name: 'Data Structures and Algorithms' },
-		{ courseCode: 'INT2203', name: 'Discrete Mathematics' },
-		{ courseCode: 'INT3117', name: 'Operating Systems' },
-		{ courseCode: 'INT3405', name: 'Artificial Intelligence Fundamentals' },
-	],
-	'Information Systems': [
-		{ courseCode: 'INT3105', name: 'Database Systems' },
-		{ courseCode: 'INT3110', name: 'Systems Analysis and Design' },
-		{ courseCode: 'INT3122', name: 'Enterprise Information Systems' },
-		{ courseCode: 'INT3150', name: 'Business Intelligence' },
-		{ courseCode: 'INT3161', name: 'Project Management for IT' },
-	],
-	'Computer Engineering': [
-		{ courseCode: 'INT3401', name: 'Digital Design' },
-		{ courseCode: 'INT3403', name: 'Computer Architecture' },
-		{ courseCode: 'INT3407', name: 'Embedded Systems' },
-		{ courseCode: 'INT3411', name: 'Microprocessors and Interfacing' },
-		{ courseCode: 'INT3415', name: 'VLSI Design Basics' },
-	],
-};
-
 export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted, onClose }) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [submitState, setSubmitState] = useState('idle');
 	const [submitError, setSubmitError] = useState(null);
 	const [showLowPersonalization, setShowLowPersonalization] = useState(false);
+	const [catalogLoading, setCatalogLoading] = useState(true);
+	const [catalogError, setCatalogError] = useState(null);
+	const [catalogMajors, setCatalogMajors] = useState([]);
+	const [catalogByMajor, setCatalogByMajor] = useState({});
 
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
@@ -60,8 +40,48 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 		onUnauthorized,
 	});
 
+	useEffect(() => {
+		let disposed = false;
+
+		async function loadCatalog() {
+			setCatalogLoading(true);
+			setCatalogError(null);
+
+			try {
+				const payload = await getCourseCatalog(authToken);
+				if (disposed) {
+					return;
+				}
+
+				setCatalogMajors(Array.isArray(payload?.majors) ? payload.majors : []);
+				setCatalogByMajor(payload?.courseCatalog && typeof payload.courseCatalog === 'object' ? payload.courseCatalog : {});
+			} catch (error) {
+				if (disposed) {
+					return;
+				}
+
+				if (authToken && error?.status === 401 && onUnauthorized) {
+					onUnauthorized();
+				}
+				setCatalogError(error.message || 'Failed to load course catalog');
+				setCatalogMajors([]);
+				setCatalogByMajor({});
+			} finally {
+				if (!disposed) {
+					setCatalogLoading(false);
+				}
+			}
+		}
+
+		loadCatalog();
+
+		return () => {
+			disposed = true;
+		};
+	}, [authToken, onUnauthorized]);
+
 	const mergedForm = draft ? { ...EMPTY_FORM, ...draft } : form;
-	const courseOptions = useMemo(() => COURSE_CATALOG[mergedForm.major] || [], [mergedForm.major]);
+	const courseOptions = useMemo(() => catalogByMajor[mergedForm.major] || [], [catalogByMajor, mergedForm.major]);
 
 	const patchForm = (nextForm) => {
 		setForm(nextForm);
@@ -110,12 +130,15 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 			<p className="onboarding-panel-description">Only major is required. Optional fields improve recommendation quality.</p>
 
 			{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
+			{catalogLoading ? <div>Loading majors and courses...</div> : null}
+			{catalogError ? <div style={{ color: '#b00020', marginBottom: 8 }}>{catalogError}</div> : null}
 
 			<MajorSelect
 				value={mergedForm.major}
 				selectedCourses={mergedForm.completedCourses}
 				onResetCourses={() => patchForm({ ...mergedForm, completedCourses: [] })}
 				onChange={(major) => patchForm({ ...mergedForm, major })}
+				majors={catalogMajors}
 			/>
 
 			<CourseMultiSelect

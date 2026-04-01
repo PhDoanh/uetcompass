@@ -26,6 +26,16 @@ async function getDraft(req, res, next) {
 	}
 }
 
+async function getCourseCatalog(req, res, next) {
+	try {
+		const payload = await onboardingService.getCourseCatalog();
+		return res.status(200).json(payload);
+	} catch (err) {
+		const { status, body } = toHttpError(err);
+		return res.status(status).json(body);
+	}
+}
+
 async function putDraft(req, res, next) {
 	try {
 		const draft = await onboardingService.upsertDraft(req.user.userId, req.body || {});
@@ -50,6 +60,7 @@ async function submit(req, res, next) {
 }
 
 module.exports = {
+	getCourseCatalog,
 	getDraft,
 	putDraft,
 	submit,

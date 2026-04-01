@@ -1,3 +1,5 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { cronSchedule } = require('./curriculum.config');
 const { runSeedPipeline } = require('./seed.pipeline');
@@ -5,6 +7,14 @@ const { getExitCode } = require('./seed.status');
 const { logEvent } = require('./seed.logger');
 
 let scheduledTask;
+
+async function ensureDbConnection() {
+	if (mongoose.connection.readyState === 1) return;
+	if (!process.env.MONGODB_URI) {
+		throw new Error('Missing MONGODB_URI');
+	}
+	await mongoose.connect(process.env.MONGODB_URI);
+}
 
 function registerCronJob() {
 	if (scheduledTask) {
@@ -31,6 +41,7 @@ async function triggerManually() {
 
 async function runManualCli() {
 	try {
+		await ensureDbConnection();
 		const result = await triggerManually();
 		process.exit(getExitCode(result.exitStatus));
 	} catch (error) {

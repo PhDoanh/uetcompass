@@ -102,7 +102,7 @@ module.exports = { extractContent };
 
 **Decision**: Use `@google/generative-ai` SDK with `responseMimeType: "application/json"` and `responseSchema` in `generationConfig`. This forces Gemini to return JSON conforming to the specified schema, making `JSON.parse()` reliable and reducing validation surface area.
 
-**Rationale**: Gemini's structured output mode (available in `gemini-1.5-flash`) constrains the response to the declared schema — no free-form text wrapping the JSON, no markdown code fences. This eliminates the brittle `JSON.parse(response.replace(/```json|```/g, ''))` pattern. The schema is passed once per call, not embedded in the prompt text, keeping token usage minimal.
+**Rationale**: Gemini's structured output mode (available in `gemini-2.5-flash`) constrains the response to the declared schema — no free-form text wrapping the JSON, no markdown code fences. This eliminates the brittle `JSON.parse(response.replace(/```json|```/g, ''))` pattern. The schema is passed once per call, not embedded in the prompt text, keeping token usage minimal.
 
 **Token optimization**: Prompt contains only the Markdown content and a one-line instruction. The schema is passed via `responseSchema`, not via prompt text.
 
@@ -132,7 +132,7 @@ const COURSE_UNIT_SCHEMA = {
 
 async function parseCourseUnits(markdownContent, major) {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: COURSE_UNIT_SCHEMA,
@@ -149,7 +149,7 @@ module.exports = { parseCourseUnits };
 
 **Alternatives considered**:
 - Prompt-injected schema (rejected — inflates token count; less reliable than native structured output)
-- `gemini-1.5-pro` (rejected — higher cost/token; `gemini-1.5-flash` is sufficient for parse-only tasks)
+- `gemini-1.5-pro` (rejected — higher cost/token; `gemini-2.5-flash` is sufficient for parse-only tasks)
 - Post-processing with regex (rejected — brittle; structured output mode eliminates the need entirely)
 
 ---

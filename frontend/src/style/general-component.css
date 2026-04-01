@@ -302,3 +302,102 @@ body {
 .notification--info .notification__icon {
   color: #3b82f6;
 }
+
+/* Homepage */
+.homepage {
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-dark);
+  background-image:
+    linear-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: var(--text-main);
+}
+
+.homepage-onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 18px;
+  box-sizing: border-box;
+  background: rgba(2, 6, 23, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.homepage-popup-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3200;
+}
+
+.homepage-popup {
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--border-glow);
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+  color: var(--text-main);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.2), 0 14px 34px rgba(2, 6, 23, 0.6);
+  padding: 18px;
+}
+
+.homepage-popup__title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #7dd3fc;
+}
+
+.homepage-popup__message {
+  margin: 10px 0 0;
+  color: #e2e8f0;
+  line-height: 1.45;
+}
+
+.homepage-popup__actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.homepage-popup__button {
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.32), rgba(37, 99, 235, 0.32));
+  color: #e0f2fe;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.homepage-popup__button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.homepage-popup__button:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.8);
+  outline-offset: 2px;
+}

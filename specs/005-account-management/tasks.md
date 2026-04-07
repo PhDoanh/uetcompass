@@ -1,247 +1,146 @@
 # Tasks: Student Account Management
 
 **Input**: Design documents from `/specs/005-account-management/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/rest-api.md, quickstart.md
-
-**Tests**: Jest unit tests are required for this feature (per plan + constitution check). Include tests before implementation in each user story phase.
-
-**Organization**: Tasks are grouped by user story so each story can be built and validated independently.
-
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: Can run in parallel (different files, no dependency on incomplete tasks)
-- **[Story]**: User story label (US1, US2, US3, US4, US5, US6, US7, US8)
-- Every task includes an exact file path
+**Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/rest-api.md`, `quickstart.md`
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Establish auth/account module scaffolding and dependencies for backend + frontend.
+**Purpose**: Prepare account-focused module scaffolding and shared wiring.
 
-- [X] T001 Create auth module directory scaffold and module export in `backend/src/modules/auth/index.js`
-- [X] T002 [P] Add auth and security dependencies (`jsonwebtoken`, `bcryptjs`, `google-auth-library`, `nodemailer`, `cookie-parser`, `helmet`, `express-rate-limit`, `uuid`) in `backend/package.json`
-- [X] T003 [P] Add Google Sign-In dependency (`@react-oauth/google`) in `frontend/package.json`
-- [X] T004 Add feature environment variable documentation for auth/session/email/Google setup in `specs/005-account-management/quickstart.md`
-- [X] T005 Create frontend auth feature entry scaffold in `frontend/src/features/auth/AuthModule.jsx`
+- [ ] T001 Create backend account module scaffold in `backend/src/modules/account/index.js`
+- [ ] T002 [P] Create backend account constants/errors scaffold in `backend/src/modules/account/account.constants.js`
+- [ ] T003 [P] Create frontend account feature scaffold in `frontend/src/features/account/AccountModule.jsx`
+- [ ] T004 Create frontend account API service scaffold in `frontend/src/features/account/account.api.js`
+- [ ] T005 Update feature quickstart references to account module paths in `specs/005-account-management/quickstart.md`
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core auth/account infrastructure that MUST exist before user stories can be implemented.
+**Purpose**: Core account infrastructure required before user-story implementation.
 
-**⚠️ CRITICAL**: No user story implementation starts until this phase is complete.
+**CRITICAL**: No user story work starts before this phase is complete.
 
-- [X] T006 Implement `User` schema with account states, OTP sub-documents, identity/privacy fields, and lockout fields in `backend/src/modules/auth/user.model.js`
-- [X] T007 [P] Implement `RefreshToken` schema with family rotation and TTL index in `backend/src/modules/auth/refreshToken.model.js`
-- [X] T008 [P] Implement `DeletedEmail` schema for deletion audit/re-registration eligibility in `backend/src/modules/auth/deletedEmail.model.js`
-- [X] T009 [P] Implement notification persistence schema for auth-triggered in-app events in `backend/src/modules/notifications/notification.model.js`
-- [X] T010 Implement shared identity fallback policy helpers (`resolveEffectiveDisplayName`, sanitization) in `backend/src/modules/auth/identity.policy.js`
-- [X] T011 Implement token primitives (AT issue/verify + opaque RT generate/hash) in `backend/src/modules/auth/token.service.js`
-- [X] T012 [P] Implement email transport + templates for registration OTP, reset OTP, and deletion confirmation in `backend/src/modules/auth/auth.email.js`
-- [X] T013 [P] Implement notification service + SSE connection store for auth/account events in `backend/src/modules/notifications/notification.service.js`
-- [X] T014 Create baseline auth router/controller skeleton with input validation and shared error envelope mapping in `backend/src/modules/auth/auth.routes.js`
-- [X] T015 Mount auth/account/notification routes and middleware (`helmet`, `cookie-parser`, CORS credentials) in `backend/src/app.js`
+- [ ] T006 Implement account domain models (`StudentAccount`, `AccountDeletionToken`, `AccountAuditEvent`) in `backend/src/modules/account/account.model.js`
+- [ ] T007 [P] Implement account audit repository/service in `backend/src/modules/account/accountAudit.service.js`
+- [ ] T008 [P] Implement identity fallback and privacy policy helpers in `backend/src/modules/account/identity.policy.js`
+- [ ] T009 Implement account authorization precondition guard (requires Feature 011 authenticated + UET-verified context) in `backend/src/modules/account/account.guard.js`
+- [ ] T010 Implement base account service skeleton for profile/password/deletion operations in `backend/src/modules/account/account.service.js`
+- [ ] T011 Implement base account controller + router skeleton in `backend/src/modules/account/account.controller.js`
+- [ ] T012 Mount account routes with guard in `backend/src/app.js`
+- [ ] T013 [P] Create frontend account settings store (loading/error/success state) in `frontend/src/stores/accountSettings.store.js`
+- [ ] T014 [P] Create frontend reusable account settings form schema/validators in `frontend/src/features/account/accountSettings.validation.js`
+- [ ] T015 Create account settings route entry integration in `frontend/src/App.jsx`
 
-**Checkpoint**: Shared foundations complete; user stories can proceed.
+**Checkpoint**: Foundation ready; user stories can now be developed independently.
 
 ---
 
-## Phase 3: User Story 1 - Register as a New UET Student (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Update Basic Account Profile (Priority: P1) 🎯 MVP
 
-**Goal**: Students register with `@vnu.edu.vn`, receive 4-digit OTP, verify within 2 minutes, and recover locked-unverified accounts through OTP resend.
+**Goal**: Authenticated UET student updates `displayName`, `fullName`, `privacySetting`, and avatar from Account Settings.
 
-**Independent Test**: Register with valid `@vnu.edu.vn` email, receive OTP, verify within 2 minutes, then confirm active login eligibility; also verify timeout lock + resend-unlock flow.
+**Independent Test**: Save profile updates and verify persisted values are returned on refresh with ownership enforcement.
 
 ### Tests for User Story 1
 
-- [X] T016 [P] [US1] Add registration validation unit tests for required fields, domain enforcement, and duplicate email handling in `backend/tests/unit/auth/register.validation.test.js`
-- [X] T017 [P] [US1] Add email verification OTP lifecycle tests (issue, expiry at 2 minutes, lock transition, resend unlock) in `backend/tests/unit/auth/emailVerification.service.test.js`
-- [X] T018 [P] [US1] Add auth controller tests for `POST /api/auth/register`, `POST /api/auth/verify-email`, and `POST /api/auth/resend-otp` in `backend/tests/unit/auth/register.controller.test.js`
+- [ ] T016 [P] [US1] Add backend unit test for profile read mapper and ownership guard behavior in `backend/tests/unit/account/account.profile.get.test.js`
+- [ ] T017 [P] [US1] Add backend unit test for profile patch validation and field update rules in `backend/tests/unit/account/account.profile.patch.test.js`
+- [ ] T018 [P] [US1] Add frontend unit test for basic account profile save form logic in `frontend/src/features/account/AccountSettings.basic.test.jsx`
 
 ### Implementation for User Story 1
 
-- [X] T019 [US1] Implement registration + duplicate-email guard + pending account creation in `backend/src/modules/auth/auth.service.js`
-- [X] T020 [US1] Implement verify-email and resend-otp service flow with locked-unverified account recovery in `backend/src/modules/auth/auth.service.js`
-- [X] T021 [US1] Implement register/verify/resend controllers and route wiring in `backend/src/modules/auth/auth.controller.js`
-- [X] T022 [P] [US1] Build registration page with inline `@vnu.edu.vn` validation and OTP verification step in `frontend/src/features/auth/RegisterPage.jsx`
-- [X] T023 [US1] Add registration API client methods (`register`, `verifyEmail`, `resendOtp`) in `frontend/src/features/auth/auth.api.js`
+- [ ] T019 [US1] Implement `GET /api/account/profile` identity payload (`displayName`, `fullName`, `privacySetting`, `avatarUrl`, `effectiveDisplayName`) in `backend/src/modules/account/account.service.js`
+- [ ] T020 [US1] Implement basic profile update logic and field validation in `backend/src/modules/account/account.service.js`
+- [ ] T021 [US1] Implement profile API handlers in `backend/src/modules/account/account.controller.js`
+- [ ] T022 [P] [US1] Implement account settings basic profile UI section in `frontend/src/features/account/AccountSettingsPage.jsx`
+- [ ] T023 [P] [US1] Implement frontend profile API calls (`getProfile`, `updateProfile`) in `frontend/src/features/account/account.api.js`
+- [ ] T024 [US1] Emit `PROFILE_UPDATED` audit event on successful basic profile change in `backend/src/modules/account/accountAudit.service.js`
 
-**Checkpoint**: US1 registration and email verification flow is independently functional.
+**Checkpoint**: User Story 1 works end-to-end and is independently testable.
 
 ---
 
-## Phase 4: User Story 2 - Log In with Email and Password (Priority: P1)
+## Phase 4: User Story 2 - Onboarding Section Behavior in Account Settings (Priority: P1)
 
-**Goal**: Verified students log in with email/password, with 5-failure lockout for 15 minutes and correct lockout messaging.
+**Goal**: Show CTA button to open Onboarding Panel when onboarding is incomplete; keep editable onboarding-derived fields when onboarding is completed.
 
-**Independent Test**: Login succeeds with correct credentials; 5 consecutive failures trigger 15-minute lockout and remaining-time responses; lockout clears after timeout.
+**Independent Test**: With incomplete account, onboarding section shows CTA and opens panel; with completed account, onboarding-derived fields are editable and persisted.
 
 ### Tests for User Story 2
 
-- [X] T024 [P] [US2] Add password hash/verify tests (`bcryptjs`, 12 rounds) in `backend/tests/unit/auth/password.service.test.js`
-- [X] T025 [P] [US2] Add login lockout tests for failed attempt counter, 5th failure lock, and 15-minute release in `backend/tests/unit/auth/loginLockout.service.test.js`
-- [X] T026 [P] [US2] Add login controller tests for `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, and `EMAIL_NOT_VERIFIED` mappings in `backend/tests/unit/auth/login.controller.test.js`
+- [ ] T025 [P] [US2] Add backend unit test for onboarding section mode mapping (`cta` vs `editable`) in `backend/tests/unit/account/account.onboarding-mode.test.js`
+- [ ] T026 [P] [US2] Add backend unit test rejecting onboarding field edits when onboarding incomplete in `backend/tests/unit/account/account.onboarding-edit-guard.test.js`
+- [ ] T027 [P] [US2] Add frontend unit test for CTA rendering and click-open onboarding action in `frontend/src/features/account/AccountSettings.onboardingCta.test.jsx`
 
 ### Implementation for User Story 2
 
-- [X] T027 [US2] Implement password hashing/verification helpers in `backend/src/modules/auth/password.service.js`
-- [X] T028 [US2] Implement email/password login service with lockout timer and failure reset on success in `backend/src/modules/auth/auth.service.js`
-- [X] T029 [US2] Implement login endpoint response contract (`accessToken`, onboarding state placeholder, lockout details) in `backend/src/modules/auth/auth.controller.js`
-- [X] T030 [US2] Build email/password login form with generic credential error and lockout countdown messaging in `frontend/src/features/auth/LoginPage.jsx`
+- [ ] T028 [US2] Implement onboarding-state read and onboarding section mode mapping in `backend/src/modules/account/account.service.js`
+- [ ] T029 [US2] Implement onboarding-derived fields update path for completed-onboarding users in `backend/src/modules/account/account.service.js`
+- [ ] T030 [US2] Implement onboarding edit guard + error mapping in `backend/src/modules/account/account.controller.js`
+- [ ] T031 [P] [US2] Implement Account Settings onboarding section UI (`cta` and `editable` modes) in `frontend/src/features/account/AccountSettingsOnboardingSection.jsx`
+- [ ] T032 [US2] Wire CTA action to open existing onboarding panel flow in `frontend/src/features/account/AccountSettingsPage.jsx`
 
-**Checkpoint**: US2 email/password login and lockout behavior is independently functional.
-
----
-
-## Phase 5: User Story 3 - Log In with Google (Priority: P1)
-
-**Goal**: Students authenticate via Google account picker with strict `@vnu.edu.vn` domain enforcement and existing/new account handling.
-
-**Independent Test**: Google sign-in with `@vnu.edu.vn` grants access and onboarding flow; non-`@vnu.edu.vn` fails with clear domain restriction error.
-
-### Tests for User Story 3
-
-- [X] T031 [P] [US3] Add Google token verification unit tests (`email_verified`, audience check, domain enforcement) in `backend/tests/unit/auth/google.service.test.js`
-- [X] T032 [P] [US3] Add Google login service tests for existing-account login vs new-account creation in `backend/tests/unit/auth/googleLogin.service.test.js`
-- [X] T033 [P] [US3] Add controller tests for `POST /api/auth/google` 200/201/403/400 paths in `backend/tests/unit/auth/google.controller.test.js`
-
-### Implementation for User Story 3
-
-- [X] T034 [US3] Implement Google ID token verification service (`google-auth-library`) in `backend/src/modules/auth/google.service.js`
-- [X] T035 [US3] Implement Google login/register orchestration in `backend/src/modules/auth/auth.service.js`
-- [X] T036 [US3] Implement Google login controller route and domain-specific error mapping in `backend/src/modules/auth/auth.controller.js`
-- [X] T037 [US3] Integrate Google OAuth provider + Google login button flow in `frontend/src/features/auth/LoginPage.jsx`
-
-**Checkpoint**: US3 Google sign-in is independently functional.
+**Checkpoint**: User Story 2 behavior is correct for both onboarding states and independently testable.
 
 ---
 
-## Phase 6: User Story 4 - Recover Account via Forgot Password (Priority: P2)
+## Phase 5: User Story 4 - Soft Delete Account with Email Confirmation (Priority: P1)
 
-**Goal**: Students reset passwords via 4-digit OTP with 2-minute expiry, 10 wrong-attempt cap, and non-enumerating generic request response.
+**Goal**: Request soft delete via email confirmation token; valid confirmation soft-deletes account and revokes active sessions.
 
-**Independent Test**: Request reset, receive OTP, verify OTP within 2 minutes, set new password, then login succeeds with the new password; unknown email still returns generic response.
+**Independent Test**: Request deletion, consume token once, verify account becomes soft-deleted and subsequent protected access is denied.
 
 ### Tests for User Story 4
 
-- [X] T038 [P] [US4] Add forgot-password request tests to enforce generic response for both known and unknown emails in `backend/tests/unit/auth/forgotPassword.request.test.js`
-- [X] T039 [P] [US4] Add reset OTP verification tests for expiry and 10-attempt invalidation behavior in `backend/tests/unit/auth/resetOtp.service.test.js`
-- [X] T040 [P] [US4] Add reset-password controller tests for `POST /api/auth/verify-reset-otp` and `POST /api/auth/reset-password`, including `PASSWORD_RESET_COMPLETED` audit-record assertion, in `backend/tests/unit/auth/resetPassword.controller.test.js`
+- [ ] T033 [P] [US4] Add backend unit test for deletion request token issuance + audit call in `backend/tests/unit/account/account.deletion.request.test.js`
+- [ ] T034 [P] [US4] Add backend unit test for deletion token consume logic (valid/expired/replayed) in `backend/tests/unit/account/account.deletion.confirm.test.js`
+- [ ] T035 [P] [US4] Add backend unit test for soft-delete access gate decision logic in `backend/tests/unit/account/account.soft-delete-access.test.js`
+- [ ] T036 [P] [US4] Add frontend unit test for deletion request/confirm UI state transitions in `frontend/src/features/account/AccountDeletionFlow.test.jsx`
 
 ### Implementation for User Story 4
 
-- [X] T041 [US4] Implement forgot-password OTP issuance with generic response policy in `backend/src/modules/auth/password.service.js`
-- [X] T042 [US4] Implement reset OTP verify flow + short-lived reset token + password update flow with `PASSWORD_RESET_COMPLETED` audit-record write in `backend/src/modules/auth/password.service.js`
-- [X] T043 [US4] Implement forgot-password, verify-reset-otp, and reset-password routes/controllers in `backend/src/modules/auth/auth.controller.js`
-- [X] T044 [US4] Build forgot-password UI (email submit -> OTP verify -> new password) in `frontend/src/features/auth/ForgotPasswordPage.jsx`
+- [ ] T037 [US4] Implement deletion token issue + email dispatch in `backend/src/modules/account/account.service.js`
+- [ ] T038 [US4] Implement deletion token consume + soft-delete execution + session revocation in `backend/src/modules/account/account.service.js`
+- [ ] T039 [US4] Implement deletion request/confirm handlers in `backend/src/modules/account/account.controller.js`
+- [ ] T040 [US4] Emit `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_SOFT_DELETED` audit events in `backend/src/modules/account/accountAudit.service.js`
+- [ ] T041 [P] [US4] Implement frontend account deletion section (request + confirm token flow messaging) in `frontend/src/features/account/AccountDeletionSection.jsx`
 
-**Checkpoint**: US4 password recovery is independently functional.
-
----
-
-## Phase 7: User Story 5 - Post-Login Routing by Onboarding State (Priority: P2)
-
-**Goal**: Every successful login returns and applies onboarding state (`NEVER_STARTED`, `DRAFT_IN_PROGRESS`, `COMPLETED`) to drive correct post-login UX.
-
-**Independent Test**: Use three accounts (never started, draft, completed) and verify each login path triggers the correct homepage/onboarding behavior.
-
-### Tests for User Story 5
-
-- [X] T045 [P] [US5] Add onboarding-state resolver tests from `student_profiles` (`null`, draft, completed`) and key draft-field restoration checks (`major`, `completedCourseIds`, `careerGoal`, `personalAspirations`) in `backend/tests/unit/auth/onboardingState.service.test.js`
-- [X] T046 [P] [US5] Add login response tests ensuring onboarding state is included for email and Google login in `backend/tests/unit/auth/loginResponse.contract.test.js`
-- [X] T047 [P] [US5] Add frontend auth provider tests for onboarding-route decision handling and key draft-field rehydration on re-login in `frontend/src/features/auth/AuthProvider.test.jsx`
-
-### Implementation for User Story 5
-
-- [X] T048 [US5] Implement onboarding-state lookup integration in auth login service using onboarding profile read in `backend/src/modules/auth/auth.service.js`
-- [X] T049 [US5] Implement AuthProvider state management (AT in memory + onboarding-state propagation) in `frontend/src/providers/AuthProvider.jsx`
-- [X] T050 [US5] Implement auth guard redirect behavior for authenticated/unauthenticated route access in `frontend/src/guards/AuthGuard.jsx`
-- [X] T051 [US5] Wire onboarding state to onboarding panel trigger and account-settings reopen entry in `frontend/src/App.jsx`
-
-**Checkpoint**: US5 post-login routing is independently functional.
+**Checkpoint**: User Story 4 soft-delete lifecycle works and is independently testable.
 
 ---
 
-## Phase 8: User Story 6 - Update Profile, Identity Preferences, and Trigger Re-personalization (Priority: P2)
+## Phase 6: User Story 3 - Change Password (Priority: P2)
 
-**Goal**: Students update account/profile fields, apply global identity/privacy policy, and trigger roadmap re-personalization only when onboarding fields change.
+**Goal**: Authenticated user changes password by providing current password and new password.
 
-**Independent Test**: For onboarded student, update onboarding field and verify `repersonalizationPending=true`, roadmap CTA signal, and in-app notification with roadmap link; non-onboarding-only updates do not trigger signal.
+**Independent Test**: Wrong current password is rejected; correct current password updates hash; old password no longer authenticates.
 
-### Tests for User Story 6
+### Tests for User Story 3
 
-- [X] T052 [P] [US6] Add identity policy tests for `displayName/fullName/privacySetting` and fallback order resolution in `backend/tests/unit/auth/identity.policy.test.js`
-- [X] T053 [P] [US6] Add profile update diff-detection tests for onboarding fields vs non-onboarding fields in `backend/tests/unit/auth/profileSettings.service.test.js`
-- [X] T054 [P] [US6] Add notifications endpoint tests (`GET /api/notifications`, `PATCH /api/notifications/:id/read`) and `REPERSONALIZE` delivery timing assertion (<= 5 seconds) in `backend/tests/unit/notifications/notification.controller.test.js`
+- [ ] T042 [P] [US3] Add backend unit test for password change success/failure cases in `backend/tests/unit/account/account.password-change.test.js`
+- [ ] T043 [P] [US3] Add backend unit test for password change verification helper in `backend/tests/unit/account/password-change.service.test.js`
+- [ ] T044 [P] [US3] Add frontend test for password change form validation and submit states in `frontend/src/features/account/AccountPasswordChange.test.jsx`
 
-### Implementation for User Story 6
+### Implementation for User Story 3
 
-- [X] T055 [US6] Implement `GET/PATCH /api/account/profile` with explicit `displayName`, `fullName`, `privacySetting` handling in `backend/src/modules/auth/profileSettings.service.js`
-- [X] T056 [US6] Implement onboarding-field change detection to set `student_profiles.repersonalizationPending` in `backend/src/modules/auth/profileSettings.service.js`
-- [X] T057 [US6] Implement `REPERSONALIZE` notification creation + SSE push integration in `backend/src/modules/notifications/notification.service.js`
-- [X] T058 [US6] Implement account profile + notifications controllers/routes in `backend/src/modules/auth/auth.controller.js`
-- [X] T059 [US6] Build account settings page for identity/privacy/avatar and conditional onboarding profile fields in `frontend/src/features/auth/AccountSettingsPage.jsx`
-- [X] T060 [US6] Extend single frontend auth API client with profile/notification methods and roadmap-link notification handling in `frontend/src/features/auth/auth.api.js`
+- [ ] T045 [US3] Implement password change service (verify current password, update hash) in `backend/src/modules/account/account.service.js`
+- [ ] T046 [US3] Implement password change endpoint handler in `backend/src/modules/account/account.controller.js`
+- [ ] T047 [US3] Emit `PASSWORD_CHANGED` audit event in `backend/src/modules/account/accountAudit.service.js`
+- [ ] T048 [P] [US3] Implement frontend password change section in `frontend/src/features/account/AccountPasswordSection.jsx`
 
-**Checkpoint**: US6 profile updates and re-personalization signaling are independently functional.
+**Checkpoint**: User Story 3 is independently testable and does not regress other stories.
 
 ---
 
-## Phase 9: User Story 7 - Change Password, Manage Google Links, and Delete Account (Priority: P3)
+## Phase 7: Polish & Cross-Cutting Concerns
 
-**Goal**: Logged-in students self-manage password, linked Google accounts, and hard-delete account via email confirmation token.
+**Purpose**: Final consistency, documentation, and regression hardening across all stories.
 
-**Independent Test**: Independently validate password change, Google link/unlink, and deletion-request/confirmation cascade including email re-registration eligibility.
-
-### Tests for User Story 7
-
-- [X] T061 [P] [US7] Add authenticated password-change tests (`currentPassword` verification required) with `PASSWORD_CHANGED` audit-record assertion in `backend/tests/unit/auth/changePassword.service.test.js`
-- [X] T062 [P] [US7] Add link/unlink Google account tests including cross-account conflict handling in `backend/tests/unit/auth/googleLinking.service.test.js`
-- [X] T063 [P] [US7] Add deletion-token and hard-delete cascade tests (`users`, `student_profiles`, `refresh_tokens`, `notifications`, `deleted_emails`) in `backend/tests/unit/auth/deletion.service.test.js`
-
-### Implementation for User Story 7
-
-- [X] T064 [US7] Implement `POST /api/account/change-password` with `PASSWORD_CHANGED` audit-record write in `backend/src/modules/auth/profileSettings.service.js`
-- [X] T065 [US7] Implement `POST /api/account/link-google` and `DELETE /api/account/link-google/:googleId` in `backend/src/modules/auth/google.service.js`
-- [X] T066 [US7] Implement deletion request + token confirmation + cascade delete in `backend/src/modules/auth/deletion.service.js`
-- [X] T067 [US7] Implement account-management endpoints for change-password/link/unlink/request-deletion/confirm-deletion in `backend/src/modules/auth/auth.controller.js`
-- [X] T068 [US7] Extend account settings UI with password change, linked Google management, and delete-account flow in `frontend/src/features/auth/AccountSettingsPage.jsx`
-- [X] T069 [US7] Add account-security API methods to single frontend auth API client in `frontend/src/features/auth/auth.api.js`
-- [X] T070 [US7] Add post-deletion cleanup and redirect-to-login handling in `frontend/src/providers/AuthProvider.jsx`
-
-**Checkpoint**: US7 account self-service management is independently functional.
-
----
-
-## Phase 10: User Story 8 - Log Out (Priority: P3)
-
-**Goal**: Students can terminate their session immediately and are blocked from authenticated routes until re-authentication.
-
-**Independent Test**: Trigger logout and verify refresh token revocation, access loss, and forced redirect when opening protected routes.
-
-### Tests for User Story 8
-
-- [X] T071 [P] [US8] Add logout service/controller tests for refresh-token revocation and cookie clearing in `backend/tests/unit/auth/logout.controller.test.js`
-- [X] T072 [P] [US8] Add frontend auth guard tests to verify redirect after logout in `frontend/src/guards/AuthGuard.test.jsx`
-
-### Implementation for User Story 8
-
-- [X] T073 [US8] Implement `POST /api/auth/logout` with refresh token revocation and cookie clear in `backend/src/modules/auth/auth.service.js`
-- [X] T074 [US8] Implement frontend logout action and protected-route invalidation in `frontend/src/providers/AuthProvider.jsx`
-
-**Checkpoint**: US8 logout and route protection behavior is independently functional.
-
----
-
-## Phase 11: Polish & Cross-Cutting Concerns
-
-**Purpose**: Final hardening, documentation, and validation across stories.
-
-- [X] T075 [P] Add auth/account module README with endpoint map and ownership boundaries in `backend/src/modules/auth/README.md`
-- [X] T076 [P] Add frontend auth UX polish for loading/error/success states across auth pages in `frontend/src/features/auth/AuthModule.jsx`
-- [X] T077 Run and stabilize auth/account unit test suite via `scripts/run-tests.mjs`
-- [X] T078 Validate quickstart manual scenarios and document outcomes in `specs/005-account-management/checklists/requirements.md`
-- [X] T079 Security hardening review for cookie flags, CORS credentials, and sensitive logging redaction in `backend/src/app.js`
+- [ ] T049 [P] Update API examples and validation notes in `specs/005-account-management/contracts/rest-api.md`
+- [ ] T050 [P] Update manual verification checklist with final endpoint names and expected errors in `specs/005-account-management/quickstart.md`
+- [ ] T051 Run backend + frontend test suites and document results in `specs/005-account-management/checklists/requirements.md`
+- [ ] T052 Perform security review pass for ownership/soft-delete/privacy fallback regressions in `backend/src/modules/account/account.service.js`
 
 ---
 
@@ -249,116 +148,62 @@
 
 ### Phase Dependencies
 
-- **Phase 1 (Setup)**: No dependencies.
-- **Phase 2 (Foundational)**: Depends on Phase 1; blocks all user stories.
-- **Phase 3+ (User Stories)**: Depend on Phase 2 completion.
-- **Phase 11 (Polish)**: Depends on all targeted user stories being complete.
+- Phase 1 (Setup): no dependencies.
+- Phase 2 (Foundational): depends on Phase 1; blocks all user stories.
+- Phase 3 (US1), Phase 4 (US2), Phase 5 (US4), Phase 6 (US3): all depend on Phase 2.
+- Phase 7 (Polish): depends on completion of selected user stories.
 
-### User Story Dependency Graph
+### User Story Dependencies
 
-- **US1 (P1)**: Starts after Phase 2; no user-story dependency.
-- **US2 (P1)**: Depends on US1 account activation path and shared token/password foundations.
-- **US3 (P1)**: Depends on US1 user lifecycle foundations; independent from US2 after Phase 2.
-- **US4 (P2)**: Depends on US2 password service foundations.
-- **US5 (P2)**: Depends on successful login flows from US2 and US3.
-- **US6 (P2)**: Depends on US5 authenticated session + onboarding state usage.
-- **US7 (P3)**: Depends on US3 Google verification service and US6 account settings surface.
-- **US8 (P3)**: Depends on US2/US3 session issuance and refresh-token foundations.
+- US1 (P1): can start right after Foundational.
+- US2 (P1): depends on Foundational and integrates with onboarding state from Feature 001; independent from US4/US3.
+- US4 (P1): depends on Foundational; independent from US1/US2 except shared account models.
+- US3 (P2): depends on Foundational; can run independently of US2/US4.
 
-Suggested completion order: **US1 -> (US2, US3 in parallel) -> US4 -> US5 -> US6 -> (US7, US8 in parallel)**.
+### Within Each User Story
 
----
+- Tests first (create failing tests before implementation).
+- Service/domain logic before controller wiring.
+- Backend endpoint completion before frontend wiring.
+- Audit event instrumentation before story checkpoint closure.
 
 ## Parallel Execution Examples
 
 ### User Story 1
 
-Run in parallel after T015:
-
-- T016 `backend/tests/unit/auth/register.validation.test.js`
-- T017 `backend/tests/unit/auth/emailVerification.service.test.js`
-- T018 `backend/tests/unit/auth/register.controller.test.js`
-- T022 `frontend/src/features/auth/RegisterPage.jsx`
+- Run in parallel: T016, T017, T018
+- Run in parallel: T022, T023
 
 ### User Story 2
 
-Run in parallel after T023:
-
-- T024 `backend/tests/unit/auth/password.service.test.js`
-- T025 `backend/tests/unit/auth/loginLockout.service.test.js`
-- T026 `backend/tests/unit/auth/login.controller.test.js`
-
-### User Story 3
-
-Run in parallel after T030:
-
-- T031 `backend/tests/unit/auth/google.service.test.js`
-- T032 `backend/tests/unit/auth/googleLogin.service.test.js`
-- T033 `backend/tests/unit/auth/google.controller.test.js`
+- Run in parallel: T025, T026, T027
+- Run in parallel: T031 with backend tasks after T028 stabilizes response shape
 
 ### User Story 4
 
-Run in parallel after T037:
+- Run in parallel: T033, T034, T035, T036
+- Run in parallel: T040, T041 after T037/T038 contracts are stable
 
-- T038 `backend/tests/unit/auth/forgotPassword.request.test.js`
-- T039 `backend/tests/unit/auth/resetOtp.service.test.js`
-- T040 `backend/tests/unit/auth/resetPassword.controller.test.js`
+### User Story 3
 
-### User Story 5
-
-Run in parallel after T044:
-
-- T045 `backend/tests/unit/auth/onboardingState.service.test.js`
-- T046 `backend/tests/unit/auth/loginResponse.contract.test.js`
-- T047 `frontend/src/features/auth/AuthProvider.test.jsx`
-
-### User Story 6
-
-Run in parallel after T051:
-
-- T052 `backend/tests/unit/auth/identity.policy.test.js`
-- T053 `backend/tests/unit/auth/profileSettings.service.test.js`
-- T054 `backend/tests/unit/notifications/notification.controller.test.js`
-- T059 `frontend/src/features/auth/AccountSettingsPage.jsx`
-
-### User Story 7
-
-Run in parallel after T060:
-
-- T061 `backend/tests/unit/auth/changePassword.service.test.js`
-- T062 `backend/tests/unit/auth/googleLinking.service.test.js`
-- T063 `backend/tests/unit/auth/deletion.service.test.js`
-
-### User Story 8
-
-Run in parallel after T070:
-
-- T071 `backend/tests/unit/auth/logout.controller.test.js`
-- T072 `frontend/src/guards/AuthGuard.test.jsx`
-
----
+- Run in parallel: T042, T043, T044
+- Run in parallel: T047, T048 after T045 endpoint contract is finalized
 
 ## Implementation Strategy
 
-### MVP First (US1 Only)
+### MVP First
 
 1. Complete Phase 1 and Phase 2.
-2. Complete Phase 3 (US1).
-3. Validate US1 independent test criteria before expanding scope.
+2. Deliver Phase 3 (US1) as first production increment.
+3. Validate US1 independently before continuing.
 
 ### Incremental Delivery
 
-1. Deliver MVP (US1 registration + verification).
-2. Add core login methods (US2, US3).
-3. Add recovery and routing (US4, US5).
-4. Add account settings and re-personalization signal (US6).
-5. Add advanced account management and logout hardening (US7, US8).
-6. Finish polish and full validation.
+1. Add Phase 4 (US2) for onboarding section behavior.
+2. Add Phase 5 (US4) for critical account lifecycle control.
+3. Add Phase 6 (US3) for password hygiene.
+4. Finish with Phase 7 polish and full regression verification.
 
-### Parallel Team Strategy
+### Suggested MVP Scope
 
-1. Team completes Phase 1 and Phase 2 together.
-2. Split core auth work:
-   - Developer A: US2 (email/password login)
-   - Developer B: US3 (Google sign-in)
-3. Rejoin for US5/US6 integration, then split US7 and US8 in parallel.
+- MVP: US1 only (basic profile management) after Setup + Foundational.

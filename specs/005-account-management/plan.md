@@ -1,36 +1,38 @@
 # Implementation Plan: Student Account Management
 
-**Branch**: `005-account-management` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
+**Branch**: `005-account-management` | **Date**: 2026-04-07 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/005-account-management/spec.md`
 
 ## Summary
 
-Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (global account preferences + profile edits + re-personalization signal, change password, Google link/unlink, hard-delete with email confirmation), and logout. Feature 005 is the owner of global account preferences on `users`: `privacySetting` (`identified | anonymous`) and identity split (`displayName` as primary public field, `fullName` editable independently). Identity rendering follows a unified fallback policy: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
+Feature 005 implements account self-management for users who already passed authentication and UET verification in Feature 011-authentication. Scope includes profile update, onboarding-information behavior in Account Settings (CTA to open Onboarding Panel before completion, direct edit after completion), password change, and soft-delete account with email confirmation. Implementation will reuse existing Express + Mongoose backend and React + Zustand frontend patterns, with strict ownership checks and auditable security events.
 
 ## Technical Context
 
-**Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-**Primary Dependencies**:
-- Backend: `express.js`, `mongoose 8`, `jsonwebtoken`, `bcryptjs`, `nodemailer`, `google-auth-library`, `cors`, `cookie-parser`, `helmet`, `express-rate-limit`, `uuid`
-- Frontend: `React 18`, `React Router v6`, `@react-oauth/google` (Google Identity Services wrapper), native `EventSource` (SSE — reused from Feature 001)
-
-**Storage**: MongoDB Atlas free tier — `users` collection (auth + lockout state + global identity/privacy preferences: `displayName`, `fullName`, `privacySetting`), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag)
-**Testing**: Jest 29 — unit tests only; MongoDB, `bcryptjs`, `google-auth-library`, `nodemailer` all mocked
-**Target Platform**: Backend → Render (Node.js web service, free tier, cold start ~50s); Frontend → Vercel (React SPA)
-**Project Type**: Web application — React SPA + Node.js/Express REST API (modular monolith)
-**Performance Goals**: Login response < 300ms p95 (single DB lookup + bcrypt compare); silent refresh absorbs Render cold start via 60s timeout + 2 retries; SSE heartbeat every 15s (inherited from Feature 001 pattern)
-**Constraints**: No Redis — MongoDB-only storage; `SameSite=None; Secure` cookie required for Vercel↔Render cross-origin RT delivery; `bcryptjs` (pure JS) preferred over `bcrypt` (native) to avoid Render build issues; AT stored in React memory only (not localStorage); no 2FA beyond OTP email verification
-**Scale/Scope**: UET-VNU students only — hundreds to low-thousands of concurrent users; no multi-tenancy; single `@vnu.edu.vn` domain constraint hardcoded
+**Language/Version**: JavaScript (Node.js 20 LTS backend, React 18 frontend)
+**Primary Dependencies**: Express 4, Mongoose 8, bcryptjs, jsonwebtoken, nodemailer, React 18, Zustand, Axios
+**Storage**: MongoDB Atlas/local MongoDB via Mongoose
+**Testing**: Jest 29, Supertest (backend integration), React Testing Library/Jest (frontend guard + settings flows)
+**Target Platform**: Web app (Vercel frontend + Render backend)
+**Project Type**: Web application (frontend + backend monorepo)
+**Performance Goals**: Profile read/update p95 < 300ms (excluding avatar upload transfer), password change p95 < 400ms, deletion confirmation completes and revokes session <= 5s
+**Constraints**: Must require Feature 011-authentication session + UET-verified state for every endpoint; no cross-account access; privacy fallback rendering must be consistent across surfaces
+**Scale/Scope**: UET student-only product scope; initial deployment target up to 10k student accounts
 
 ## Constitution Check
 
-*Pre-design gate — re-checked after Phase 1 design: one constitutional conflict is acknowledged; implementation proceeds with a documented risk note while governance decision remains pending.*
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- [x] **Modular Monolithic**: All auth logic is isolated in `backend/src/modules/auth/`. Shared notification delivery lives in `backend/src/modules/notifications/`. The re-personalization signal is written to `student_profiles.repersonalizationPending` via `studentProfileService` (service-layer call only — no direct cross-module import). No microservice split introduced.
-- [x] **UET-First**: `@vnu.edu.vn` domain constraint is hardcoded in both client-side form validation and server-side Google ID token verification. No abstraction for other universities.
-- [x] **Privacy (Risk Note)**: Passwords are stored as bcrypt hashes only — never plaintext, never logged. UET portal credentials are not involved in this feature. No password history is surfaced to users. Only the minimum account data (display/public name, legal/full name, privacy preference, email, avatar, lockout counters, OTP state) is stored — no grades, transcripts, or credential scraping. This still conflicts with Constitution Principle III wording and is tracked as a pending governance decision without modifying `constitution.md` in this feature.
-- [x] **AI-Assisted**: Gemini API is **not called** in this feature. All validation (email domain, OTP check, password confirmation) is pure code logic. No LLM involved.
-- [x] **Test What Matters**: Unit tests mandatory for: OTP expiry + lockout logic (`auth.service.test.js`), bcrypt hash/verify (`password.service.test.js`), refresh token rotation + reuse detection (`token.service.test.js`), re-personalization change detection (`profileSettings.service.test.js`), identity fallback + privacy rendering policy (`profileSettings.service.test.js` or dedicated identity policy unit test).
+- Principle I (Modular Monolithic): PASS
+  - Keep implementation inside existing backend modules and frontend feature folders; no new service split.
+- Principle II (UET-First Scope): PASS
+  - Feature remains strictly for verified UET students from Feature 011-authentication.
+- Principle III (Privacy by Minimalism): PASS WITH NOTE
+  - No UET portal credentials are introduced/stored here; only account/profile fields required by product behavior.
+- Principle IV (AI-Assisted, Human-Controlled): PASS
+  - No new AI decision path introduced by this feature.
+- Principle V (Test What Matters): PASS
+  - Plan includes unit/integration tests for ownership checks, password-change verification, onboarding CTA behavior, and deletion token flow.
 
 ## Project Structure
 
@@ -38,14 +40,13 @@ Build the authentication and account-management foundation for UETCompass: email
 
 ```text
 specs/005-account-management/
-├── plan.md              ← this file
-├── spec.md              ← feature requirements
-├── research.md          ← Phase 0: 10 technical decisions resolved
-├── data-model.md        ← Phase 1: users, refresh_tokens, notifications schemas
-├── quickstart.md        ← Phase 1: local dev setup + manual test guide
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
 ├── contracts/
-│   └── rest-api.md      ← Phase 1: all auth + account-settings API contracts
-└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
+│   └── rest-api.md
+└── tasks.md
 ```
 
 ### Source Code (repository root)
@@ -53,55 +54,64 @@ specs/005-account-management/
 ```text
 backend/
 ├── src/
-│   ├── modules/
-│   │   ├── auth/
-│   │   │   ├── user.model.js              # users Mongoose schema + model
-│   │   │   ├── auth.service.js            # register, login, logout, OTP logic, lockout
-│   │   │   ├── token.service.js           # RT rotation, AT issue, reuse detection
-│   │   │   ├── password.service.js        # bcryptjs hash/verify, password reset flow
-│   │   │   ├── google.service.js          # google-auth-library ID token verification
-│   │   │   ├── deletion.service.js        # hard delete cascade, deletion token flow
-│   │   │   ├── profileSettings.service.js # update displayName/fullName/privacySetting/avatar + onboarding fields, re-personalization diff
-│   │   │   ├── auth.controller.js         # Express handlers (thin)
-│   │   │   ├── auth.routes.js             # /api/auth/* routes + middleware
-│   │   │   └── auth.email.js              # OTP and deletion confirmation emails via Nodemailer
-│   │   ├── notifications/
-│   │   │   ├── notification.model.js      # notifications Mongoose schema
-│   │   │   ├── notification.service.js    # create, markRead, getUnread
-│   │   │   └── notification.sse.js        # SSE connection store (Map) + push — same pattern as onboarding.sse.js
-│   │   └── onboarding/                    # Owned by Feature 001 — read repersonalizationPending flag here
 │   ├── middleware/
-│   │   └── auth.middleware.js             # JWT AT verify → attaches req.user.userId (shared across features)
-│   └── app.js                             # Express bootstrap — mounts auth.routes, cors, helmet, cookieParser
+│   │   └── auth.middleware.js
+│   └── modules/
+│       ├── account/
+│       ├── onboarding/
+│       └── notifications/
 └── tests/
+    ├── integration/
     └── unit/
-        └── auth/
-            ├── auth.service.test.js        # OTP expiry, account lock/unlock, duplicate email
-            ├── token.service.test.js       # RT rotation, reuse detection, family revocation
-            ├── password.service.test.js    # bcrypt hash, verify, wrong-password counter
-            └── profileSettings.service.test.js  # diff detection, repersonalizationPending flag set, identity fallback policy
 
 frontend/
 ├── src/
 │   ├── features/
-│   │   └── auth/
-│   │       ├── LoginPage.jsx              # Email+password form + Google Sign-In button
-│   │       ├── RegisterPage.jsx           # Registration form + OTP verification step
-│   │       ├── ForgotPasswordPage.jsx     # Email input → OTP → new password
-│   │       ├── AccountSettingsPage.jsx    # Identity/privacy prefs + profile fields + password change + Google links + delete
-│   │       └── auth.api.js                # Single frontend API client for auth + account endpoints
-│   ├── providers/
-│   │   └── AuthProvider.jsx              # Context + silent refresh on mount + AT in-memory store
-│   └── guards/
-│       └── AuthGuard.jsx                 # Redirect to /login if no valid AT
+│   │   ├── account/
+│   │   ├── onboarding/
+│   │   └── general/
+│   ├── guards/
+│   ├── services/
+│   └── stores/
 ```
 
-**Structure Decision**: Option 2 — Web application. Modular monolith backend; all auth logic isolated in `modules/auth/`. Notifications extracted to `modules/notifications/` (shared with Feature 004). Feature 001's `onboarding` module is read-only from this feature — the `repersonalizationPending` flag is set via `studentProfileService` call through the service layer. Frontend uses a feature-folder structure mirroring the backend module boundary.
+**Structure Decision**: Use existing web app structure (backend + frontend) and extend current account/profile-related paths. Do not introduce new top-level applications or infrastructure components.
+
+## Phase 0: Outline & Research
+
+Resolved research topics:
+- Access precondition pattern from Feature 011-authentication (session + UET-verified gate).
+- Soft-delete strategy and deletion-token lifecycle.
+- Account Settings behavior before/after onboarding completion.
+- Identity rendering fallback + privacy consistency policy.
+- Audit event boundaries for sensitive account changes.
+
+Output artifact:
+- [research.md](./research.md)
+
+## Phase 1: Design & Contracts
+
+Design outputs:
+- [data-model.md](./data-model.md) with entities and state constraints.
+- [contracts/rest-api.md](./contracts/rest-api.md) for profile/password/deletion APIs.
+- [quickstart.md](./quickstart.md) with local validation flow and test checklist.
+
+Agent context update:
+- Run `.specify/scripts/powershell/update-agent-context.ps1 -AgentType copilot` after design artifacts are created.
+
+## Post-Design Constitution Check
+
+- Principle I (Modular Monolithic): PASS
+  - Contracts and model changes stay in existing module boundaries.
+- Principle II (UET-First Scope): PASS
+  - APIs require verified UET-authenticated context from Feature 011-authentication.
+- Principle III (Privacy by Minimalism): PASS
+  - No additional sensitive credential types introduced; privacy setting and fallback rendering codified.
+- Principle IV (AI-Assisted, Human-Controlled): PASS
+  - No AI-generated account decisions.
+- Principle V (Test What Matters): PASS
+  - Quickstart explicitly covers critical side-effect paths and security-sensitive operations.
 
 ## Complexity Tracking
 
-One constitution-related risk is tracked and explicitly accepted in this plan pending governance decision.
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| Principle III — Privacy by Minimalism | Feature 005 requires persisted account identity/profile data to satisfy FR-026 through FR-039 and account lifecycle behavior. | Avoiding persisted account/profile data would break required account settings, privacy preference management, and profile update flows. |
+No constitution violations requiring exceptions.

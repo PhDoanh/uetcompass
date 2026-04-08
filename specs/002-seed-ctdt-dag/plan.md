@@ -5,26 +5,27 @@
 
 ## Summary
 
-Build a background job that reads a configured list of UET curriculum URLs, extracts raw content via Tavily Extract API, parses each into structured CourseUnit records via Gemini (with JSON schema validation), bulk-upserts into MongoDB `course_units` collection, then runs per-major DFS cycle detection on the resulting DAG and logs all outcomes. Triggered by node-cron on a semester schedule in production and by an npm script in dev.
+Build a background job that reads a configured list of UET Programs from
+`curriculum.config.js`, each with semantic source URLs (overview, curriculum table, program outcome). For each Program, the job checks whether source content has changed since the last completed run (via `SeedRun` change detection). If changed, it executes a two-phase pipeline: **Call 1** uses Tavily Extract + Gemini to parse and upsert `Program`, `ProgramOutcome`, and `CourseUnit` records (with `emphasis` computed deterministically); **Call 2** uses a single Gemini Batch Enrichment call per Program to infer `difficultyLevel`, `careerTracks`, and `skills` for all CourseUnits and ProgramOutcomes at once, using `CAREER_TRACKS` and `SKILL_VOCABULARY` from config as closed vocabularies. After all Programs are processed, DFS cycle detection runs per-program (`programId`). All run state is tracked in `SeedRun` records. Triggered by `node-cron` (semester schedule) in production and by npm script in dev.
 
 ## Technical Context
 
 **Language/Version**: Node.js 20 LTS + Express.js (consistent with existing backend stack)
 **Primary Dependencies**: `node-cron` (Cron scheduler), `@google/generative-ai` (Gemini SDK — first integration), `@tavily/core` (Tavily Extract SDK — first integration), `mongoose` (existing)
-**Storage**: MongoDB Atlas free tier via Mongoose — collection: `course_units`; upsert filter key: `{ code, major }`
+**Storage**: MongoDB Atlas free tier via Mongoose — collections: `course_units`, `programs`, `program_outcomes`, `course_outcomes` (schema only, empty in MVP), `seed_runs`; upsert filter key for CourseUnit: `{ code, programId }`
 **Testing**: Jest — unit tests only; Tavily API, Gemini API, and MongoDB all mocked; fake API key fixtures hardcoded
 **Target Platform**: Render free-tier (Node.js server, cold start ~50s); Cron runs in same process as Express app
 **Project Type**: Background job embedded in web-service monolith
-**Performance Goals**: Sequential Tavily calls (no parallel) to respect free-tier rate limits; single `bulkWrite` round-trip per URL batch; minimal Gemini token usage via concise prompts
-**Constraints**: No Redis or external queue — `node-cron` only; no new collections beyond `course_units`; manual trigger restricted to dev environment (`NODE_ENV !== production`)
-**Scale/Scope**: ~10–20 curriculum URLs per run; runs once per semester in production; full batch completes in single cron invocation
+**Performance Goals**: Sequential Tavily calls (no parallel) to respect free-tier rate limits; single `bulkWrite` round-trip per Program per phase; **Call 2 Batch Enrichment uses a single Gemini call per Program** (not per CourseUnit) to minimize API usage — full program context (60–70 courses) fits well within Gemini 2.5 Flash's 1M token context window; maximum 7 Call 2 invocations for all configured Programs.
+**Constraints**: No Redis or external queue — `node-cron` only; New collections scoped to curriculum module: `programs`, `program_outcomes`, `seed_runs`; `course_outcomes` defined but empty in MVP; manual trigger restricted to dev environment (`NODE_ENV !== production`)
+**Scale/Scope**: ~7 configured Programs (each with 1–3 source URLs) per run; runs once per semester in production; full batch completes in single cron invocation
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - [x] **Modular Monolithic**: All code lives in `backend/src/modules/curriculum/`. Tavily and Gemini are implementation details of the pipeline — no cross-module imports. Curriculum module boundary is respected.
-- [x] **UET-First**: URLs, major identifiers, and schema are all hardcoded/configured for UET-VNU context only. No generalization to other universities.
+- [x] **UET-First**: URLs, program identifiers, and schema are all hardcoded/configured for UET-VNU context only. No generalization to other universities.
 - [x] **Privacy**: Feature has no student credentials — operates entirely on publicly available curriculum pages. Privacy rules (no credential storage) are not triggered. ✅ Not applicable.
 - [x] **AI-Assisted**: Gemini output is validated against CourseUnit JSON schema before any upsert. Invalid output causes the URL to be skipped and logged — no blind trust.
 - [x] **Test What Matters**: Unit tests mandatory for pipeline logic (per-URL processing), cycle detection (DFS with cycle / DFS clean graph), and `bulkWrite` upsert behavior (overwrite on match, insert on new). All external dependencies mocked.
@@ -52,19 +53,26 @@ backend/
 │   └── modules/
 │       └── curriculum/
 │           ├── courseUnit.model.js      # Mongoose schema + model
+│           ├── program.model.js         # Mongoose schema + model for Program
+│           ├── programOutcome.model.js  # Mongoose schema + model for ProgramOutcome
+│           ├── courseOutcome.model.js   # Mongoose schema + model for CourseOutcome (schema only, MVP)
+│           ├── seedRun.model.js         # Mongoose schema + model for SeedRun
 │           ├── seed.pipeline.js         # Main pipeline: extract → parse → validate → upsert
+│           ├── enrichment.pipeline.js   # Call 2: Batch Enrichment — single Gemini call per Program
 │           ├── seed.job.js              # node-cron registration + manual trigger export
 │           ├── tavily.service.js        # Tavily Extract API wrapper
 │           ├── gemini.service.js        # Gemini SDK wrapper (structured JSON output)
-│           ├── cycle.detector.js        # DFS cycle detection per-major subgraph
+│           ├── cycle.detector.js        # DFS cycle detection per-program subgraph
 │           ├── seed.logger.js           # Console + file log writer
-│           └── curriculum.config.js     # URL list + job config
+│           └── curriculum.config.js     # Program list + source URLs by scrapeType and add array: CAREER_TRACKS + SKILL_VOCABULARY
 ├── tests/
 │   └── unit/
 │       └── curriculum/
 │           ├── seed.pipeline.test.js    # Pipeline happy path + per-URL skip
 │           ├── cycle.detector.test.js   # Cycle found + clean graph
-│           └── bulkWrite.upsert.test.js # Overwrite on match, insert on new
+│           ├── bulkWrite.upsert.test.js # Overwrite on match, insert on new
+│           ├── enrichment.pipeline.test.js # Call 2 batch enrichment + vocabulary filtering
+│           └── seedRun.changeDetection.test.js # Change detection: skip on no change, re-run on
 └── logs/
     └── seed-ctdt.log                    # File log output (gitignored)
 ```

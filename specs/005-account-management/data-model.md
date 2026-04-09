@@ -1,8 +1,8 @@
 # Data Model: Student Account Management
 
 **Feature**: `005-account-management`
-**Date**: 2026-04-07
-**Dependencies**: Feature 011-authentication (auth + UET verification), Feature 001 (onboarding state)
+**Date**: 2026-04-09
+**Dependencies**: Feature 011-authentication (auth + UET verification)
 
 ## Entity: StudentAccount (`users`)
 
@@ -26,25 +26,6 @@ Validation rules:
 - `displayName` empty after trim is treated as absent.
 - `privacySetting = anonymous` affects data exposure on public surfaces, not owner view.
 - Ownership scope is enforced by authenticated user id from Feature 011-authentication context.
-
-## Entity: OnboardingProfileView (`student_profiles`, owned by Feature 001)
-
-Purpose: Provide onboarding completion status and onboarding-derived fields to Account Settings behavior.
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `userId` | ObjectId | yes | FK to users |
-| `isDraft` | Boolean | yes | `true` means onboarding not completed |
-| `major` | String\|null | no | Editable only when onboarding completed |
-| `completedCourseIds` | ObjectId[] | no | Editable only when onboarding completed |
-| `careerGoal.role` | String\|null | no | Editable only when onboarding completed |
-| `careerGoal.companyType` | String\|null | no | Editable only when onboarding completed |
-| `graduationTimeline` | String\|null | no | Editable only when onboarding completed |
-| `personalAspirations` | String\|null | no | Editable only when onboarding completed |
-
-Behavioral mapping in Account Settings:
-- If no profile or `isDraft=true`: onboarding section returns `mode=cta` and includes action metadata to open Onboarding Panel.
-- If `isDraft=false`: onboarding section returns `mode=editable` and exposes onboarding-derived fields.
 
 ## Entity: AccountDeletionToken (`account_deletion_tokens` or embedded on `users`)
 
@@ -82,9 +63,6 @@ Returned by account profile read endpoint.
 | Field | Type | Description |
 |---|---|---|
 | `identity` | object | `displayName`, `fullName`, `privacySetting`, `avatarUrl`, `effectiveDisplayName` |
-| `onboardingSection.mode` | enum | `cta` or `editable` |
-| `onboardingSection.fields` | object\|null | Populated only when `mode=editable` |
-| `onboardingSection.action` | object\|null | Populated only when `mode=cta`, includes `type=openOnboardingPanel` |
 
 ## Key Invariants
 

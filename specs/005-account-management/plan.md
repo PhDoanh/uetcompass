@@ -1,11 +1,11 @@
 # Implementation Plan: Student Account Management
 
-**Branch**: `005-account-management` | **Date**: 2026-04-07 | **Spec**: [spec.md](./spec.md)
+**Branch**: `005-account-management` | **Date**: 2026-04-09 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/005-account-management/spec.md`
 
 ## Summary
 
-Feature 005 implements account self-management for users who already passed authentication and UET verification in Feature 011-authentication. Scope includes profile update, onboarding-information behavior in Account Settings (CTA to open Onboarding Panel before completion, direct edit after completion), password change, and soft-delete account with email confirmation. Implementation will reuse existing Express + Mongoose backend and React + Zustand frontend patterns, with strict ownership checks and auditable security events.
+Feature 005 implements account self-management for users who already passed authentication and UET verification in Feature 011-authentication. Scope includes basic profile update, password change, and soft-delete account with email confirmation. Implementation will reuse existing Express + Mongoose backend and React + Zustand frontend patterns, with strict ownership checks and auditable security events.
 
 ## Technical Context
 
@@ -32,7 +32,7 @@ Feature 005 implements account self-management for users who already passed auth
 - Principle IV (AI-Assisted, Human-Controlled): PASS
   - No new AI decision path introduced by this feature.
 - Principle V (Test What Matters): PASS
-  - Plan includes unit/integration tests for ownership checks, password-change verification, onboarding CTA behavior, and deletion token flow.
+  - Plan includes unit/integration tests for ownership checks, password-change verification, and deletion token flow.
 
 ## Project Structure
 
@@ -58,7 +58,6 @@ backend/
 │   │   └── auth.middleware.js
 │   └── modules/
 │       ├── account/
-│       ├── onboarding/
 │       └── notifications/
 └── tests/
     ├── integration/
@@ -68,7 +67,6 @@ frontend/
 ├── src/
 │   ├── features/
 │   │   ├── account/
-│   │   ├── onboarding/
 │   │   └── general/
 │   ├── guards/
 │   ├── services/
@@ -82,7 +80,6 @@ frontend/
 Resolved research topics:
 - Access precondition pattern from Feature 011-authentication (session + UET-verified gate).
 - Soft-delete strategy and deletion-token lifecycle.
-- Account Settings behavior before/after onboarding completion.
 - Identity rendering fallback + privacy consistency policy.
 - Audit event boundaries for sensitive account changes.
 

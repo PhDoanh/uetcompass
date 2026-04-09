@@ -31,16 +31,10 @@
 
 ## Notes
 
-- All 8 user stories pass independently with no blocking issues.
-- Cross-feature integration points (Feature 001 onboarding panel, Feature 004 Re-personalize trigger) are clearly bounded in Assumptions and Out of Scope.
-- No [NEEDS CLARIFICATION] markers were required — all decisions resolved using input constraints (e.g., OTP 4-digit, 2-minute expiry, 5-attempt lockout) or documented as reasonable defaults in Assumptions.
+- All 3 user stories pass independently with no blocking issues.
+- Cross-feature integration points are clearly bounded: Feature 011-authentication is a strict precondition, and account recovery after soft delete is outside this feature.
+- No [NEEDS CLARIFICATION] markers remain in the specification.
 - Spec is ready to proceed to `/speckit.clarify` or `/speckit.plan`.
-- 2026-03-24 implement validation update:
-- Backend auth/account unit suite executed via `node scripts/run-tests.mjs backend` and all feature-005 auth tests passed.
-- Manual quickstart scenario status:
-- Registration + OTP verify: pass
-- Email/password login + lockout: pass
-- Google login (domain enforcement): pass
-- Forgot/reset password flow: pass
-- Profile update + repersonalization notification flow: pass
-- Account deletion token flow + cascade checks: pass
+- 2026-04-09 scope update:
+- Scope-alignment references removed from Feature 005 artifacts to match current specification.
+- Primary coverage now includes profile update, password change, and soft-delete account flow.

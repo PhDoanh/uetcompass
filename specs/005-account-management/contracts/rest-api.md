@@ -1,7 +1,7 @@
 # REST API Contract: Account Management
 
 **Feature**: `005-account-management`
-**Date**: 2026-04-07
+**Date**: 2026-04-09
 **Base path**: `/api/account`
 
 ## Access Preconditions
@@ -55,21 +55,9 @@ Returns Account Settings payload for current user.
     "privacySetting": "identified",
     "avatarUrl": "https://cdn.example/avatar.jpg",
     "effectiveDisplayName": "anhdev"
-  },
-  "onboardingSection": {
-    "mode": "cta",
-    "fields": null,
-    "action": {
-      "type": "openOnboardingPanel",
-      "label": "Continue onboarding"
-    }
   }
 }
 ```
-
-`onboardingSection.mode` values:
-- `cta`: onboarding not completed, show button to open Onboarding Panel.
-- `editable`: onboarding completed, return editable onboarding-derived fields.
 
 ### 401/403
 
@@ -86,24 +74,12 @@ Updates account profile fields owned by current user.
   "displayName": "anhdev",
   "fullName": "Nguyen Van A",
   "privacySetting": "anonymous",
-  "avatarUrl": "https://cdn.example/new-avatar.jpg",
-  "onboardingProfile": {
-    "major": "Software Engineering",
-    "completedCourseIds": ["67f2001aa9d4cae4139f0001"],
-    "careerGoal": {
-      "role": "Backend Developer",
-      "companyType": "Product"
-    },
-    "graduationTimeline": "2027-Q2",
-    "personalAspirations": "Become a systems engineer"
-  }
+  "avatarUrl": "https://cdn.example/new-avatar.jpg"
 }
 ```
 
 Rules:
 - Identity fields are always editable by owner.
-- `onboardingProfile` is editable only when onboarding is completed.
-- If onboarding not completed, server rejects onboarding field writes with validation error and client should use CTA -> Onboarding Panel flow.
 
 ### 200 OK
 
@@ -116,22 +92,6 @@ Rules:
     "privacySetting": "anonymous",
     "avatarUrl": "https://cdn.example/new-avatar.jpg",
     "effectiveDisplayName": "anhdev"
-  }
-}
-```
-
-### 400 INVALID_INPUT
-
-Example (attempt to edit onboarding fields before completion):
-
-```json
-{
-  "error": {
-    "code": "INVALID_INPUT",
-    "message": "Onboarding fields are editable only after onboarding is completed",
-    "details": {
-      "field": "onboardingProfile"
-    }
   }
 }
 ```

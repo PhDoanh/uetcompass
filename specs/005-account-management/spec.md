@@ -2,7 +2,7 @@
 
 **Feature Branch**: `005-account-management`
 **Created**: 2026-03-11
-**Updated**: 2026-04-07
+**Updated**: 2026-04-09
 **Status**: Draft
 **Input**: User description: "Feature 005 only covers account management for already authenticated UET students. Users can update their information and delete their own account."
 
@@ -17,7 +17,6 @@ Entry condition:
 
 Included:
 - Update account/profile information.
-- Update onboarding-derived profile fields in Account Settings.
 - Change password.
 - Request account deletion and confirm by email link.
 - Execute **soft delete** (disable account, recoverable by admin process).
@@ -47,25 +46,7 @@ An authenticated UET student opens Account Settings and updates basic profile fi
 
 ---
 
-### User Story 2 - Update Onboarding-Derived Fields in Account Settings (Priority: P1)
-
-An authenticated student manages onboarding-related information from Account Settings. If onboarding is completed, they can edit onboarding-derived fields directly. If onboarding is not completed, they see a button to open the Onboarding Panel and continue onboarding.
-
-**Why this priority**: Student goals and learning context evolve; account settings must allow profile evolution after onboarding.
-
-**Independent Test**: Edit one or more onboarding-derived fields, save, and verify the updated data is persisted and available for downstream personalization logic.
-
-**Acceptance Scenarios**:
-
-1. **Given** a student has completed onboarding, **When** they open Account Settings, **Then** onboarding-derived profile fields are visible and editable.
-2. **Given** a student has not completed onboarding, **When** they open Account Settings, **Then** the onboarding information section shows a CTA button to continue onboarding instead of editable onboarding-derived fields.
-3. **Given** a student has not completed onboarding, **When** they click the CTA button, **Then** the Onboarding Panel opens so they can proceed with onboarding.
-4. **Given** onboarding-derived fields are updated and saved by a student who has completed onboarding, **When** the request succeeds, **Then** the new values are persisted for downstream features.
-5. **Given** only non-onboarding fields are changed, **When** save succeeds, **Then** no onboarding-derived data is modified.
-
----
-
-### User Story 3 - Change Password (Priority: P2)
+### User Story 2 - Change Password (Priority: P2)
 
 An authenticated student changes their password from Account Settings by providing current password and new password.
 
@@ -81,7 +62,7 @@ An authenticated student changes their password from Account Settings by providi
 
 ---
 
-### User Story 4 - Soft Delete Account with Email Confirmation (Priority: P1)
+### User Story 3 - Soft Delete Account with Email Confirmation (Priority: P1)
 
 An authenticated student requests account deletion. The system sends an email confirmation link. Only after clicking a valid link, the account is soft-deleted (disabled), access is revoked, and data is hidden from active product flows.
 
@@ -123,25 +104,19 @@ An authenticated student requests account deletion. The system sends an email co
 - **FR-006**: Any UI that renders student identity MUST apply fallback order: valid `displayName` -> `fullName` -> sanitized email local-part -> `"Student"`.
 - **FR-006A**: Access to all Account Management pages/APIs in this feature MUST require a valid authenticated session and UET-verified account state provided by Feature 011-authentication.
 
-**Onboarding-Derived Fields in Account Settings**
-
-- **FR-007**: If onboarding has been completed, Account Settings MUST display and allow editing of onboarding-derived fields (major, completed courses, target role, target company type, graduation timeline, personal aspirations).
-- **FR-008**: If onboarding has not been completed, Account Settings MUST show a clear CTA button in the onboarding information section to open the Onboarding Panel and continue onboarding.
-- **FR-009**: Saving onboarding-derived field updates MUST persist values for downstream personalization consumers.
-
 **Password Management**
 
-- **FR-010**: The system MUST allow authenticated students to change password by providing current password and new password.
-- **FR-011**: The current password MUST be verified before applying a password change.
-- **FR-012**: After password change, old password MUST no longer be accepted.
+- **FR-007**: The system MUST allow authenticated students to change password by providing current password and new password.
+- **FR-008**: The current password MUST be verified before applying a password change.
+- **FR-009**: After password change, old password MUST no longer be accepted.
 
 **Account Deletion (Soft Delete)**
 
-- **FR-013**: The system MUST allow authenticated students to request account deletion from Account Settings.
-- **FR-014**: On deletion request, the system MUST send a time-limited, single-use confirmation link to the account email and MUST NOT delete/disable immediately.
-- **FR-015**: Account deletion MUST execute only after a valid confirmation link is clicked.
-- **FR-016**: Deletion execution for this feature MUST be soft delete: account status changes to disabled/deleted, sign-in access is blocked, and current sessions are revoked.
-- **FR-017**: Expired or consumed deletion tokens MUST be rejected safely with no state change.
+- **FR-010**: The system MUST allow authenticated students to request account deletion from Account Settings.
+- **FR-011**: On deletion request, the system MUST send a time-limited, single-use confirmation link to the account email and MUST NOT delete/disable immediately.
+- **FR-012**: Account deletion MUST execute only after a valid confirmation link is clicked.
+- **FR-013**: Deletion execution for this feature MUST be soft delete: account status changes to disabled/deleted, sign-in access is blocked, and current sessions are revoked.
+- **FR-014**: Expired or consumed deletion tokens MUST be rejected safely with no state change.
 
 ---
 
@@ -157,7 +132,7 @@ An authenticated student requests account deletion. The system sends an email co
 
 ### Key Entities
 
-- **StudentAccount**: Authenticated UET student account. Key attributes: `displayName`, `fullName`, `privacySetting`, email, password credential, avatar, onboarding-derived profile fields, account status (`active | soft-deleted`), timestamps.
+- **StudentAccount**: Authenticated UET student account. Key attributes: `displayName`, `fullName`, `privacySetting`, email, password credential, avatar, account status (`active | soft-deleted`), timestamps.
 - **AccountDeletionToken**: Time-limited, single-use token used to confirm account soft deletion by email link.
 - **AccountAuditEvent**: Immutable event records for account-sensitive actions.
 
@@ -178,8 +153,6 @@ An authenticated student requests account deletion. The system sends an email co
 ## Assumptions
 
 - Authentication and UET student verification are implemented by Feature 011-authentication and are strict prerequisites for this feature.
-- Onboarding completion state is provided by Feature 001 and consumed here for Account Settings behavior (editable onboarding-derived fields after completion, CTA button and Onboarding Panel entry before completion).
-- Downstream personalization consumers (roadmap/skill-tree) consume updated onboarding-derived fields but are implemented outside this feature.
 - Account recovery after soft delete is handled by a separate admin/support process outside this feature.
 
 ---

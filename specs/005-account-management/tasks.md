@@ -61,75 +61,51 @@
 
 ---
 
-## Phase 4: User Story 2 - Onboarding Section Behavior in Account Settings (Priority: P1)
-
-**Goal**: Show CTA button to open Onboarding Panel when onboarding is incomplete; keep editable onboarding-derived fields when onboarding is completed.
-
-**Independent Test**: With incomplete account, onboarding section shows CTA and opens panel; with completed account, onboarding-derived fields are editable and persisted.
-
-### Tests for User Story 2
-
-- [ ] T025 [P] [US2] Add backend unit test for onboarding section mode mapping (`cta` vs `editable`) in `backend/tests/unit/account/account.onboarding-mode.test.js`
-- [ ] T026 [P] [US2] Add backend unit test rejecting onboarding field edits when onboarding incomplete in `backend/tests/unit/account/account.onboarding-edit-guard.test.js`
-- [ ] T027 [P] [US2] Add frontend unit test for CTA rendering and click-open onboarding action in `frontend/src/features/account/AccountSettings.onboardingCta.test.jsx`
-
-### Implementation for User Story 2
-
-- [ ] T028 [US2] Implement onboarding-state read and onboarding section mode mapping in `backend/src/modules/account/account.service.js`
-- [ ] T029 [US2] Implement onboarding-derived fields update path for completed-onboarding users in `backend/src/modules/account/account.service.js`
-- [ ] T030 [US2] Implement onboarding edit guard + error mapping in `backend/src/modules/account/account.controller.js`
-- [ ] T031 [P] [US2] Implement Account Settings onboarding section UI (`cta` and `editable` modes) in `frontend/src/features/account/AccountSettingsOnboardingSection.jsx`
-- [ ] T032 [US2] Wire CTA action to open existing onboarding panel flow in `frontend/src/features/account/AccountSettingsPage.jsx`
-
-**Checkpoint**: User Story 2 behavior is correct for both onboarding states and independently testable.
-
----
-
-## Phase 5: User Story 4 - Soft Delete Account with Email Confirmation (Priority: P1)
+## Phase 4: User Story 3 - Soft Delete Account with Email Confirmation (Priority: P1)
 
 **Goal**: Request soft delete via email confirmation token; valid confirmation soft-deletes account and revokes active sessions.
 
 **Independent Test**: Request deletion, consume token once, verify account becomes soft-deleted and subsequent protected access is denied.
 
-### Tests for User Story 4
+### Tests for User Story 3
 
-- [ ] T033 [P] [US4] Add backend unit test for deletion request token issuance + audit call in `backend/tests/unit/account/account.deletion.request.test.js`
-- [ ] T034 [P] [US4] Add backend unit test for deletion token consume logic (valid/expired/replayed) in `backend/tests/unit/account/account.deletion.confirm.test.js`
-- [ ] T035 [P] [US4] Add backend unit test for soft-delete access gate decision logic in `backend/tests/unit/account/account.soft-delete-access.test.js`
-- [ ] T036 [P] [US4] Add frontend unit test for deletion request/confirm UI state transitions in `frontend/src/features/account/AccountDeletionFlow.test.jsx`
+- [ ] T033 [P] [US3] Add backend unit test for deletion request token issuance + audit call in `backend/tests/unit/account/account.deletion.request.test.js`
+- [ ] T034 [P] [US3] Add backend unit test for deletion token consume logic (valid/expired/replayed) in `backend/tests/unit/account/account.deletion.confirm.test.js`
+- [ ] T035 [P] [US3] Add backend unit test for soft-delete access gate decision logic in `backend/tests/unit/account/account.soft-delete-access.test.js`
+- [ ] T036 [P] [US3] Add frontend unit test for deletion request/confirm UI state transitions in `frontend/src/features/account/AccountDeletionFlow.test.jsx`
 
-### Implementation for User Story 4
+### Implementation for User Story 3
 
-- [ ] T037 [US4] Implement deletion token issue + email dispatch in `backend/src/modules/account/account.service.js`
-- [ ] T038 [US4] Implement deletion token consume + soft-delete execution + session revocation in `backend/src/modules/account/account.service.js`
-- [ ] T039 [US4] Implement deletion request/confirm handlers in `backend/src/modules/account/account.controller.js`
-- [ ] T040 [US4] Emit `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_SOFT_DELETED` audit events in `backend/src/modules/account/accountAudit.service.js`
-- [ ] T041 [P] [US4] Implement frontend account deletion section (request + confirm token flow messaging) in `frontend/src/features/account/AccountDeletionSection.jsx`
+- [ ] T037 [US3] Implement deletion token issue + email dispatch in `backend/src/modules/account/account.service.js`
+- [ ] T038 [US3] Implement deletion token consume + soft-delete execution + session revocation in `backend/src/modules/account/account.service.js`
+- [ ] T039 [US3] Implement deletion request/confirm handlers in `backend/src/modules/account/account.controller.js`
+- [ ] T040 [US3] Emit `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_SOFT_DELETED` audit events in `backend/src/modules/account/accountAudit.service.js`
+- [ ] T041 [P] [US3] Implement frontend account deletion section (request + confirm token flow messaging) in `frontend/src/features/account/AccountDeletionSection.jsx`
 
-**Checkpoint**: User Story 4 soft-delete lifecycle works and is independently testable.
+**Checkpoint**: User Story 3 soft-delete lifecycle works and is independently testable.
 
 ---
 
-## Phase 6: User Story 3 - Change Password (Priority: P2)
+## Phase 5: User Story 2 - Change Password (Priority: P2)
 
 **Goal**: Authenticated user changes password by providing current password and new password.
 
 **Independent Test**: Wrong current password is rejected; correct current password updates hash; old password no longer authenticates.
 
-### Tests for User Story 3
+### Tests for User Story 2
 
-- [ ] T042 [P] [US3] Add backend unit test for password change success/failure cases in `backend/tests/unit/account/account.password-change.test.js`
-- [ ] T043 [P] [US3] Add backend unit test for password change verification helper in `backend/tests/unit/account/password-change.service.test.js`
-- [ ] T044 [P] [US3] Add frontend test for password change form validation and submit states in `frontend/src/features/account/AccountPasswordChange.test.jsx`
+- [ ] T042 [P] [US2] Add backend unit test for password change success/failure cases in `backend/tests/unit/account/account.password-change.test.js`
+- [ ] T043 [P] [US2] Add backend unit test for password change verification helper in `backend/tests/unit/account/password-change.service.test.js`
+- [ ] T044 [P] [US2] Add frontend test for password change form validation and submit states in `frontend/src/features/account/AccountPasswordChange.test.jsx`
 
-### Implementation for User Story 3
+### Implementation for User Story 2
 
-- [ ] T045 [US3] Implement password change service (verify current password, update hash) in `backend/src/modules/account/account.service.js`
-- [ ] T046 [US3] Implement password change endpoint handler in `backend/src/modules/account/account.controller.js`
-- [ ] T047 [US3] Emit `PASSWORD_CHANGED` audit event in `backend/src/modules/account/accountAudit.service.js`
-- [ ] T048 [P] [US3] Implement frontend password change section in `frontend/src/features/account/AccountPasswordSection.jsx`
+- [ ] T045 [US2] Implement password change service (verify current password, update hash) in `backend/src/modules/account/account.service.js`
+- [ ] T046 [US2] Implement password change endpoint handler in `backend/src/modules/account/account.controller.js`
+- [ ] T047 [US2] Emit `PASSWORD_CHANGED` audit event in `backend/src/modules/account/accountAudit.service.js`
+- [ ] T048 [P] [US2] Implement frontend password change section in `frontend/src/features/account/AccountPasswordSection.jsx`
 
-**Checkpoint**: User Story 3 is independently testable and does not regress other stories.
+**Checkpoint**: User Story 2 is independently testable and does not regress other stories.
 
 ---
 
@@ -150,15 +126,14 @@
 
 - Phase 1 (Setup): no dependencies.
 - Phase 2 (Foundational): depends on Phase 1; blocks all user stories.
-- Phase 3 (US1), Phase 4 (US2), Phase 5 (US4), Phase 6 (US3): all depend on Phase 2.
+- Phase 3 (US1), Phase 4 (US3), Phase 5 (US2): all depend on Phase 2.
 - Phase 7 (Polish): depends on completion of selected user stories.
 
 ### User Story Dependencies
 
 - US1 (P1): can start right after Foundational.
-- US2 (P1): depends on Foundational and integrates with onboarding state from Feature 001; independent from US4/US3.
-- US4 (P1): depends on Foundational; independent from US1/US2 except shared account models.
-- US3 (P2): depends on Foundational; can run independently of US2/US4.
+- US3 (P1): depends on Foundational; independent from US1/US2 except shared account models.
+- US2 (P2): depends on Foundational; can run independently of US1/US3.
 
 ### Within Each User Story
 
@@ -174,17 +149,12 @@
 - Run in parallel: T016, T017, T018
 - Run in parallel: T022, T023
 
-### User Story 2
-
-- Run in parallel: T025, T026, T027
-- Run in parallel: T031 with backend tasks after T028 stabilizes response shape
-
-### User Story 4
+### User Story 3
 
 - Run in parallel: T033, T034, T035, T036
 - Run in parallel: T040, T041 after T037/T038 contracts are stable
 
-### User Story 3
+### User Story 2
 
 - Run in parallel: T042, T043, T044
 - Run in parallel: T047, T048 after T045 endpoint contract is finalized
@@ -199,10 +169,9 @@
 
 ### Incremental Delivery
 
-1. Add Phase 4 (US2) for onboarding section behavior.
-2. Add Phase 5 (US4) for critical account lifecycle control.
-3. Add Phase 6 (US3) for password hygiene.
-4. Finish with Phase 7 polish and full regression verification.
+1. Add Phase 4 (US3) for critical account lifecycle control.
+2. Add Phase 5 (US2) for password hygiene.
+3. Finish with Phase 7 polish and full regression verification.
 
 ### Suggested MVP Scope
 

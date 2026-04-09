@@ -8,9 +8,9 @@
 
 ## R-001: Gemini Structured JSON Output for Roadmap Generation
 
-**Decision**: Use `@google/generative-ai` SDK (already in-codebase from Feature 002) with `responseMimeType: 'application/json'` and `responseSchema` set to a JSON Schema matching `RoadmapNode[]`. The AI is instructed via a single prompt to (1) select career-relevant courses, (2) return them in valid topological order, and (3) enrich each node with `gainedSkills`, `supportingSkills`, `reason`, and `careerRelevanceNote`. Re-generation with base roadmap context passes the existing accepted roadmap's `nodes` array in the prompt alongside the updated profile and full DAG.
+**Decision**: Use `@google/generative-ai` SDK (already in-codebase from Feature 002) with `responseMimeType: 'application/json'` and `responseSchema` set to a JSON Schema matching a simple `string[]` of approved skill names. The AI call is scoped to a single task: given a list of off-template skills, return only those that are career-relevant for the student's stated role. Template-matched skill node construction, ordering, and topological validation are handled entirely by system logic; the AI is not involved in those steps.
 
-**Rationale**: `responseSchema` enforcement (available in Gemini 1.5 Flash) ensures the AI never returns free-form text or partially-structured JSON, eliminating the need for a post-response parser. Gemini validates the response shape server-side before it reaches the application. A single prompt (selection + ordering + enrichment) is more token-efficient than a two-pass approach and keeps the generation lifecycle simple. The `resources` field is **not** included in the schema — the system appends an empty array to every node after parsing.
+**Rationale**: `responseSchema` enforcement ensures the AI returns a valid JSON array of strings — no post-response parsing required. Scoping the AI to off-template skill evaluation only (rather than full roadmap generation) minimises token usage and keeps AI responsibility narrow: the system owns template matching, ordering, and node enrichment; the AI only judges career relevance for skills absent from the template. `resources` is **not** included in the AI schema — the system appends an empty array to every node after construction.
 
 **Pattern**:
 ```js
@@ -19,24 +19,15 @@ const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const roadmapNodeSchema = {
+const offTemplateEvalSchema = {
   type: SchemaType.ARRAY,
   items: {
     type: SchemaType.OBJECT,
     properties: {
-      courseCode:          { type: SchemaType.STRING },
-      courseName:          { type: SchemaType.STRING },
-      credits:             { type: SchemaType.NUMBER },
-      suggestedSemester:   { type: SchemaType.NUMBER },
-      gainedSkills:        { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-      supportingSkills:    { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-      reason:              { type: SchemaType.STRING },
-      careerRelevanceNote: { type: SchemaType.STRING },
+      skillName: { type: SchemaType.STRING },
+      reason:    { type: SchemaType.STRING },
     },
-    required: [
-      'courseCode', 'courseName', 'credits',
-      'gainedSkills', 'supportingSkills', 'reason', 'careerRelevanceNote',
-    ],
+    required: ['skillName', 'reason'],
   },
 };
 
@@ -44,16 +35,16 @@ const model = genAI.getGenerativeModel({
   model: 'gemini-2.5-flash',
   generationConfig: {
     responseMimeType: 'application/json',
-    responseSchema: roadmapNodeSchema,
+    responseSchema: offTemplateEvalSchema,
   },
 });
 
-async function callGemini(profile, courseUnits, existingRoadmap = null) {
-  const baseContext = existingRoadmap
-    ? `\nExisting accepted roadmap (use as base context — informs but does not constrain the new output):\n${JSON.stringify(existingRoadmap.nodes)}`
-    : '';
+async function evaluateOffTemplateSkills(offTemplateSkills, profile, program) {
+  if (!profile.careerGoal?.role && !profile.careerGoal?.companyType) {
+    return []; // No career goal — skip AI call, exclude all off-template skills
+  }
 
-  const prompt = `You are a personalised learning roadmap generator for UET-VNU students.
+  const prompt = `You are evaluating skills for career relevance for a UET-VNU student.
 
 Student Profile:
 - Major: ${profile.major}
@@ -61,35 +52,27 @@ Student Profile:
 - Career Goal Company Type: ${profile.careerGoal?.companyType ?? 'not provided'}
 - Graduation Timeline: ${profile.graduationTimeline ?? 'not provided'}
 - Personal Aspirations: ${profile.personalAspirations ?? 'not provided'}
-- Completed Course Codes: ${(profile.completedCourseCodes ?? []).join(', ') || 'none'}
 
-Available CourseUnits (DAG with prerequisites):
-${JSON.stringify(courseUnits)}
-${baseContext}
+Program Description: ${program.objectives}
+
+Off-template skills to evaluate:
+${JSON.stringify(offTemplateSkills)}
 
 Instructions:
-1. Select only career-relevant courses: all required-type courses that are direct or transitive
-   prerequisites of career-relevant courses, plus only the electives that best match the career goal.
-2. Exclude courses listed in Completed Course Codes as actionable nodes.
-   Treat completed courses as satisfied prerequisites when determining accessible nodes.
-3. Return selected nodes in valid topological order: each node MUST appear after all its prerequisites.
-4. If no career goal is provided, include all required-type courses in topological order.
-5. For each node, populate gainedSkills (skills the course teaches), supportingSkills (skills needed
-   in practice for the career goal that the course does NOT teach), reason, and careerRelevanceNote.
-6. supportingSkills must NOT repeat skills already listed in gainedSkills for the same node.
-7. Do NOT include a resources field — the system will append an empty array after parsing.`;
+For each skill in the list that is meaningfully relevant to the student's career goal,
+return an object with the skill name and a plain-language reason explaining why it matters
+for the student's specific role and company type.
+Omit skills that are tangential, redundant, or not applicable. Return an empty array if
+no skills qualify.`;
 
   const result = await model.generateContent(prompt);
-  const nodes = JSON.parse(result.response.text());
-  // Append resources: [] to every node after parsing
-  return nodes.map((node) => ({ ...node, resources: [] }));
+  return JSON.parse(result.response.text()); // { skillName, reason }[] for approved skills
 }
 ```
 
 **Alternatives considered**:
-- Manually parsing free-text Gemini response (rejected — response format is unstable across calls; `responseSchema` provides a binding guarantee)
-- Two-pass approach: selection in Pass 1, enrichment in Pass 2 (rejected — doubles LLM calls and token cost; single call is sufficient)
-- `suggestedSemester` as required field in schema (rejected — the AI may not always have semester data; made optional to prevent schema validation failures on missing metadata)
+- Delegating full roadmap generation to AI (rejected — template matching and topological ordering are deterministic system rules; AI involvement should be minimal and scoped to subjective career-relevance judgement for off-template skills only)
+- Returning only `skillName[]` from the off-template eval call (rejected — requires a second enrichment call for `reason`; returning `{ skillName, reason }` in the same call is more efficient and keeps the AI context consistent)
 
 ---
 
@@ -133,26 +116,33 @@ function validateTopologicalOrder(selectedNodes, allCourseUnits) {
   }
 
   // Phase 2: Validate AI ordering against prerequisite constraints
-  // Build a position index for nodes in the AI output
-  const positionMap = new Map();
-  selectedNodes.forEach((node, i) => positionMap.set(node.courseCode, i));
+  // Map each courseCode to the index of the node that contains it in relatedCourses
+  const courseToNodePosition = new Map();
+  selectedNodes.forEach((node, i) => {
+    for (const rc of node.relatedCourses ?? []) {
+      courseToNodePosition.set(rc.courseCode, i);
+    }
+  });
 
-  for (const node of selectedNodes) {
-    const prereqs = prereqMap.get(node.courseCode) ?? [];
-    for (const prereq of prereqs) {
-      // Completed courses are satisfied prerequisites — they are not in the output nodes array
-      if (!positionMap.has(prereq)) continue;
-      if (positionMap.get(prereq) >= positionMap.get(node.courseCode)) {
-        throw new Error(
-          `Ordering violation: ${node.courseCode} appears before its prerequisite ${prereq}`
-        );
+  for (let i = 0; i < selectedNodes.length; i++) {
+    const node = selectedNodes[i];
+    for (const rc of node.relatedCourses ?? []) {
+      const prereqs = prereqMap.get(rc.courseCode) ?? [];
+      for (const prereq of prereqs) {
+        // Completed courses are satisfied prerequisites — not present in courseToNodePosition
+        if (!courseToNodePosition.has(prereq)) continue;
+        if (courseToNodePosition.get(prereq) >= i) {
+          throw new Error(
+            `Ordering violation: skill "${node.skillName}" (via ${rc.courseCode}) appears before its prerequisite ${prereq}`
+          );
+        }
       }
     }
   }
 }
 ```
 
-If `validateTopologicalOrder()` throws, `generation.service.js` catches the error, stores a `status: failed` document, and sends the failure notification to the student (see R-005).
+If `validateTopologicalOrder()` throws, `generation.service.js` catches the error, calls `roadmapService.upsertFailed()` (leaving the roadmap document without `acceptedAt`), and sends the failure notification to the student (see R-005).
 
 **Alternatives considered**:
 - Kahn's algorithm (BFS): rejected — DFS combines cycle detection and order validation in a single traversal with less bookkeeping
@@ -187,14 +177,25 @@ async function triggerGeneration(userId, studentProfileId, triggerReason) {
 async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
   activeGenerations.add(userId.toString());
   try {
-    const profile      = await loadStudentProfile(studentProfileId);
-    const courseUnits  = await loadCourseUnitDAG(profile.major);
-    const existingRoadmap =
-      triggerReason === 'repersonalization'
-        ? await roadmapService.getCompletedByUser(userId)  // null if none
-        : null;
+    const profile        = await loadStudentProfile(studentProfileId);
+    const courseUnits    = await loadCourseUnitDAG(profile.major);   // all courses for major
+    const program        = await loadProgram(profile.major);
+    const template       = await loadRoadmapTemplate(profile.major);
 
-    const nodes = await callGemini(profile, courseUnits, existingRoadmap);
+    // Step 2: collect skills from all non-completed courses, build reverse map
+    const skillCoursesMap = buildSkillCoursesMap(courseUnits, profile.completedCourseCodes ?? []);
+    // skillCoursesMap: Map<skillName, CourseUnit[]>
+
+    // Step 3: match skills against template; inherit nodeType/parentNodeId/order from template
+    const { templateNodes, offTemplateSkills } = matchSkillsToTemplate(skillCoursesMap, template);
+
+    // Step 4: AI evaluates off-template skills for career relevance (skipped if no career goal)
+    const approvedOffTemplate = await evaluateOffTemplateSkills(offTemplateSkills, profile, program);
+
+    // Step 5: map approved off-template skills to topic node with most relatedCourses overlap
+    const offTemplateNodes = mapOffTemplateSkills(approvedOffTemplate, skillCoursesMap, templateNodes);
+
+    const nodes = [...templateNodes, ...offTemplateNodes];
     validateTopologicalOrder(nodes, courseUnits);
 
     const personalisationLevel =
@@ -217,7 +218,7 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 }
 ```
 
-Worker restart recovery: the `finally` block always runs on normal termination. On `SIGTERM` (graceful Render shutdown), any `userId` whose generation was in-flight has the preview lost; the `SIGTERM` handler should iterate `pendingPreviews` (R-004) and call `upsertFailed` for each. On ungraceful crash, the student will receive no notification — the retry mechanism is available from the Skill Tree once they reload and see `status: failed` on their roadmap (if a previous roadmap document existed).
+Worker restart recovery: the `finally` block always runs on normal termination. On `SIGTERM` (graceful Render shutdown), any `userId` whose generation was in-flight has the preview lost; the `SIGTERM` handler should iterate `pendingPreviews` (R-004) and call `upsertFailed` for each. On ungraceful crash, the student will receive no notification — the retry mechanism is available from the Skill Tree once they reload and find their roadmap without `acceptedAt` (if a previous roadmap document existed).
 
 **Alternatives considered**:
 - BullMQ + Redis queue (rejected — requires Redis; Render free-tier constraint from Feature 001)
@@ -344,8 +345,8 @@ roadmapSchema.index(
 );
 
 roadmapSchema.index(
-  { userId: 1, status: 1, updatedAt: -1 },
-  { name: 'roadmap_list_by_user_status_updatedAt' }
+  { userId: 1, acceptedAt: 1, updatedAt: -1 },
+  { name: 'roadmap_list_by_user_acceptedAt_updatedAt' }
 );
 ```
 

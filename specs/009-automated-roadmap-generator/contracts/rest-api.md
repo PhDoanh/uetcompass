@@ -1,6 +1,6 @@
 # REST API Contract: Roadmap Module
 
-**Feature**: `009-roadmap-generator`
+**Feature**: `009-automated-roadmap-generator`
 **Date**: 2026-03-14
 **Base path**: `/api`
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`. The middleware attaches `req.user.userId` (ObjectId) to every request.
@@ -58,18 +58,16 @@ No body.
   "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
   "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
   "personalisationLevel": "full",
-  "status": "completed",
-  "errorMessage": null,
   "nodes": [
     {
-      "courseCode": "INT2204",
-      "courseName": "Object-Oriented Programming",
-      "credits": 3,
-      "suggestedSemester": 2,
-      "gainedSkills": ["OOP principles", "Java fundamentals", "design patterns"],
-      "supportingSkills": ["SOLID principles", "unit testing with JUnit"],
+      "nodeId": "node-01",
+      "nodeType": "topic",
+      "skillName": "Object-Oriented Programming",
+      "parentNodeId": null,
+      "relatedCourses": [
+        { "courseCode": "INT2204", "courseName": "Object-Oriented Programming", "credits": 3 }
+      ],
       "reason": "Foundation for all software engineering courses in the roadmap.",
-      "careerRelevanceNote": "Backend engineers at product companies rely on OOP daily for service design.",
       "resources": []
     }
   ],
@@ -99,7 +97,6 @@ List roadmap documents for the authenticated user.
 
 ### Query parameters
 
-- `status` (optional): `completed` | `failed`
 - `page` (optional, default `1`)
 - `limit` (optional, default `20`, max `100`)
 
@@ -113,9 +110,7 @@ List roadmap documents for the authenticated user.
       "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
       "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
       "personalisationLevel": "full",
-      "status": "completed",
       "isPrimary": true,
-      "errorMessage": null,
       "updatedAt": "2026-03-14T06:05:00.000Z",
       "acceptedAt": "2026-03-11T08:05:00.000Z"
     }
@@ -212,14 +207,14 @@ This endpoint does not depend on old preview-accept lookup.
   "isPrimary": true,
   "nodes": [
     {
-      "courseCode": "INT2204",
-      "courseName": "Object-Oriented Programming",
-      "credits": 3,
-      "suggestedSemester": 2,
-      "gainedSkills": ["OOP principles", "Java fundamentals"],
-      "supportingSkills": ["SOLID principles"],
+      "nodeId": "node-01",
+      "nodeType": "topic",
+      "skillName": "Object-Oriented Programming",
+      "parentNodeId": null,
+      "relatedCourses": [
+        { "courseCode": "INT2204", "courseName": "Object-Oriented Programming", "credits": 3 }
+      ],
       "reason": "Foundation for software engineering.",
-      "careerRelevanceNote": "Useful for backend development at product companies.",
       "resources": []
     }
   ]
@@ -236,9 +231,7 @@ Returns the committed roadmap document.
   "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
   "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
   "personalisationLevel": "full",
-  "status": "completed",
   "isPrimary": true,
-  "errorMessage": null,
   "nodes": [ /* … same shape as primary roadmap response … */ ],
   "createdAt": "2026-03-11T08:00:00.000Z",
   "acceptedAt": "2026-03-11T08:05:12.000Z",
@@ -285,7 +278,7 @@ Returns the committed roadmap document.
 
 Trigger a retry of a failed roadmap generation. The system re-reads the existing `StudentProfile` and re-runs the full generation lifecycle from the input retrieval step. Returns 202 Accepted immediately — the generation runs asynchronously and the student is notified via SSE on completion or failure (FR-030).
 
-**Preconditions**: A `roadmaps` document with `status: failed` must exist for this user. An in-progress generation for this user must not be active.
+**Preconditions**: A `roadmaps` document without `acceptedAt` must exist for this user. An in-progress generation for this user must not be active.
 
 ### Request
 
@@ -316,7 +309,7 @@ No body.
 {
   "error": {
     "code": "CONFLICT",
-    "message": "No failed roadmap generation found. Retry is only available after a generation failure."
+    "message": "No incomplete roadmap found. Retry is only available after a generation failure."
   }
 }
 ```
@@ -329,7 +322,7 @@ Generation is triggered internally by two system events (FR-033):
 
 1. **Profile submission** — emitted by Feature 001's `POST /api/onboarding/submit` handler after successfully persisting the `StudentProfile`. The roadmap module exports a `triggerGeneration(userId, studentProfileId, 'profile_submission')` function called directly within the same process.
 
-2. **Repersonalization** — emitted by Feature 005's account settings handler after setting `repersonalizationPending: true` on the `StudentProfile`. The roadmap module exports `triggerGeneration(userId, studentProfileId, 'repersonalization')` called via the service layer.
+2. **Repersonalization** — emitted by Feature 005's account settings handler when the student requests roadmap regeneration. The roadmap module exports `triggerGeneration(userId, studentProfileId, 'repersonalization')` called via the service layer.
 
 Neither trigger is exposed as a REST endpoint. Internal generation conflicts map to canonical `CONFLICT` semantics — if generation is already running when either trigger fires, the call is silently dropped (the in-progress generation will complete and notify the student).
 

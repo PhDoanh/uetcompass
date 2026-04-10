@@ -71,9 +71,9 @@ A developer can manually trigger the seed job on a development environment to te
 
 ### Edge Cases
 
-- What happens when **all** configured URLs fail? The job logs all errors and exits with status `TOTAL_FAILURE`; no data is written or modified.
-- What happens when the URL configuration list is empty? The job exits immediately with a log warning and `SUCCESS` status — nothing to process is a valid no-op.
-- What happens when the same course code + major appears successfully in multiple URLs within a single run? The last successful upsert within the batch wins (last-write-wins per batch).
+- What happens when **all** configured URLs fail? The job logs all errors and exits with status `PARTIAL_FAILURE`; no data is written or modified.
+- What happens when the Program configuration list is empty? The job exits immediately with a log warning and `SUCCESS` status — nothing to process is a valid no-op.
+- What happens when the same course code + `programId` appears successfully in multiple URLs within a single run? The last successful upsert within the batch wins (last-write-wins per batch).
 - What happens when cycle detection itself fails at runtime (unexpected error)? The error is logged and the job exits with `FAILED`; existing data in the store is preserved.
 - What happens when a CourseUnit references a prerequisite that does not exist in the data store? The node is stored as-is; the dangling reference is flagged in the log as an unresolved prerequisite.
 - What happens when Call 2 fails for one Program while other Programs succeed? The failing Program is logged and flagged, successful Programs continue, and the run exits with `PARTIAL_FAILURE` unless a global `FAILED` condition occurs.
@@ -133,9 +133,9 @@ A developer can manually trigger the seed job on a development environment to te
 
 ## Assumptions
 
-- The list of curriculum URLs is stable enough to be maintained in a configuration file; dynamic URL discovery is out of scope for this feature.
-- Course code + major is a sufficient unique identifier for a CourseUnit within the system.
-- A cycle in the prerequisite graph is treated as a data quality warning, not a blocking error — data is preserved and the issue is surfaced rather than causing a rollback.
+- The Program/source URL configuration is stable enough to be maintained in a configuration file; dynamic source discovery is out of scope for this feature.
+- Course code + `programId` is a sufficient unique identifier for a CourseUnit within the system.
+- A cycle in the prerequisite graph results in a `FAILED` job status to signal invalid graph state, but data is preserved (no rollback) to allow manual correction.
 - The development environment is identifiable by the system at runtime to gate manual trigger availability.
 - Running the seed job on an already-populated data store is expected behavior; overwrite semantics (via upsert) apply at all times.
 - `CourseOutcome` records are not populated in MVP. The `courseOutcomeId` field in `CourseUnit` is nullable by design; CLO enrichment is deferred to a future feature.

@@ -5,17 +5,17 @@
 
 ## Summary
 
-Feature 005 implements account self-management for users who already passed authentication and UET verification in Feature 011-authentication. Scope includes basic profile update, password change, and soft-delete account with email confirmation. Implementation will reuse existing Express + Mongoose backend and React + Zustand frontend patterns, with strict ownership checks and auditable security events.
+Feature 005 implements account self-management for users who already passed authentication and UET verification in Feature 011-authentication. Scope includes basic profile update and password change. Implementation uses a dedicated account module on backend and a dedicated account API client/UI flow on frontend, with strict ownership checks and auditable security events.
 
 ## Technical Context
 
 **Language/Version**: JavaScript (Node.js 20 LTS backend, React 18 frontend)
-**Primary Dependencies**: Express 4, Mongoose 8, bcryptjs, jsonwebtoken, nodemailer, React 18, Zustand, Axios
+**Primary Dependencies**: Express 4, Mongoose 8, bcryptjs, jsonwebtoken, React 18, Zustand, Axios
 **Storage**: MongoDB Atlas/local MongoDB via Mongoose
-**Testing**: Jest 29, Supertest (backend integration), React Testing Library/Jest (frontend guard + settings flows)
+**Testing**: Jest 29 (backend + frontend unit tests), React Testing Library/Jest (frontend guard + settings flows)
 **Target Platform**: Web app (Vercel frontend + Render backend)
 **Project Type**: Web application (frontend + backend monorepo)
-**Performance Goals**: Profile read/update p95 < 300ms (excluding avatar upload transfer), password change p95 < 400ms, deletion confirmation completes and revokes session <= 5s
+**Performance Goals**: Profile read/update p95 < 300ms, password change p95 < 400ms
 **Constraints**: Must require Feature 011-authentication session + UET-verified state for every endpoint; no cross-account access; privacy fallback rendering must be consistent across surfaces
 **Scale/Scope**: UET student-only product scope; initial deployment target up to 10k student accounts
 
@@ -32,7 +32,7 @@ Feature 005 implements account self-management for users who already passed auth
 - Principle IV (AI-Assisted, Human-Controlled): PASS
   - No new AI decision path introduced by this feature.
 - Principle V (Test What Matters): PASS
-  - Plan includes unit/integration tests for ownership checks, password-change verification, and deletion token flow.
+  - Plan includes unit tests for ownership checks and password-change verification.
 
 ## Project Structure
 
@@ -60,8 +60,7 @@ backend/
 │       ├── account/
 │       └── notifications/
 └── tests/
-    ├── integration/
-    └── unit/
+  └── unit/
 
 frontend/
 ├── src/
@@ -70,6 +69,7 @@ frontend/
 │   │   └── general/
 │   ├── guards/
 │   ├── services/
+│   │   └── account.api.js
 │   └── stores/
 ```
 
@@ -79,7 +79,6 @@ frontend/
 
 Resolved research topics:
 - Access precondition pattern from Feature 011-authentication (session + UET-verified gate).
-- Soft-delete strategy and deletion-token lifecycle.
 - Identity rendering fallback + privacy consistency policy.
 - Audit event boundaries for sensitive account changes.
 
@@ -90,7 +89,7 @@ Output artifact:
 
 Design outputs:
 - [data-model.md](./data-model.md) with entities and state constraints.
-- [contracts/rest-api.md](./contracts/rest-api.md) for profile/password/deletion APIs.
+- [contracts/rest-api.md](./contracts/rest-api.md) for profile/password APIs.
 - [quickstart.md](./quickstart.md) with local validation flow and test checklist.
 
 Agent context update:

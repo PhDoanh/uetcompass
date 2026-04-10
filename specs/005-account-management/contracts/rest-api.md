@@ -50,6 +50,7 @@ Returns Account Settings payload for current user.
 ```json
 {
   "identity": {
+    "email": "student@vnu.edu.vn",
     "displayName": "anhdev",
     "fullName": "Nguyen Van A",
     "privacySetting": "identified",
@@ -80,7 +81,7 @@ Updates account profile fields owned by current user.
 
 Rules:
 - Identity fields are always editable by owner.
-- `avatarUrl` accepts hosted URL or image Data URL generated from frontend upload.
+- `avatarUrl` accepts hosted URL or image Data URL generated from frontend `Import Image`; delete-image action sends empty/null avatar state.
 
 ### 200 OK
 
@@ -88,6 +89,7 @@ Rules:
 {
   "message": "Profile updated",
   "profile": {
+    "email": "student@vnu.edu.vn",
     "displayName": "anhdev",
     "fullName": "Nguyen Van A",
     "privacySetting": "anonymous",
@@ -146,68 +148,6 @@ Current password does not match.
   "error": {
     "code": "FORBIDDEN",
     "message": "Current password is incorrect"
-  }
-}
-```
-
-## POST /api/account/deletion/request
-
-Creates deletion confirmation token and sends confirmation email. No deletion is executed here.
-
-### Request body
-
-```json
-{}
-```
-
-### 202 Accepted
-
-```json
-{
-  "message": "Deletion confirmation email sent"
-}
-```
-
-### Notes
-
-- Multiple requests may invalidate previous pending tokens per implementation policy.
-- Event `ACCOUNT_DELETION_REQUESTED` must be recorded.
-
-## POST /api/account/deletion/confirm
-
-Consumes confirmation token and performs account soft delete.
-
-### Request body
-
-```json
-{
-  "token": "raw-email-token"
-}
-```
-
-### 200 OK
-
-```json
-{
-  "message": "Account soft-deleted"
-}
-```
-
-Effects:
-- User status becomes soft-deleted.
-- Active sessions revoked.
-- Subsequent protected-route access denied.
-- Event `ACCOUNT_SOFT_DELETED` recorded.
-
-### 400 INVALID_INPUT
-
-Expired/used/invalid token.
-
-```json
-{
-  "error": {
-    "code": "INVALID_INPUT",
-    "message": "Deletion token is invalid or expired"
   }
 }
 ```

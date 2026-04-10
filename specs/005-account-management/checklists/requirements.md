@@ -31,18 +31,23 @@
 
 ## Notes
 
-- All 3 user stories pass independently with no blocking issues.
-- Cross-feature integration points are clearly bounded: Feature 011-authentication is a strict precondition, and account recovery after soft delete is outside this feature.
+- User stories pass independently with no blocking issues.
+- Cross-feature integration points are clearly bounded: Feature 011-authentication is a strict precondition.
 - No [NEEDS CLARIFICATION] markers remain in the specification.
 - Spec is ready to proceed to `/speckit.clarify` or `/speckit.plan`.
 - 2026-04-09 scope update:
 - Scope-alignment references removed from Feature 005 artifacts to match current specification.
-- Primary coverage now includes profile update, password change, and soft-delete account flow.
+- Primary coverage now includes profile update and password change.
 - 2026-04-09 implementation test run (T051):
-- Targeted Feature 005 account suites passed: 8/8 suites, 21/21 tests (`backend/tests/unit/account/*`, `backend/tests/integration/account/account.deletion.sla.test.js`).
-- Frontend suites passed: 6/6 suites, 19/19 tests.
+- Targeted Feature 005 account suites passed in current scope (profile + password).
+- Frontend suites passed: 5/5 suites, 17/17 tests.
 - Full repository run result: 61 passed, 6 failed, 2 skipped suites; failures are outside Feature 005 scope (existing roadmap/scrapping test areas).
+- 2026-04-10 implementation re-run (T051 refresh):
+- Targeted Feature 005 account suites passed: 9/9 suites, 24/24 tests (legacy account scope before deletion removal).
+- 2026-04-10 scope-reduction validation:
+- Backend account suites passed: 4/4 suites, 7/7 tests.
+- Frontend suites passed: 5/5 suites, 17/17 tests.
+- Validation command: `npm --prefix backend test -- tests/unit/account; npm run test:frontend`.
 - 2026-04-09 security review (T052):
 - Verified ownership enforcement via authenticated subject only (`req.user.userId`) and account guard active UET checks.
-- Verified soft-delete revokes active refresh sessions and blocks account access by status gate (`soft-deleted`).
 - Verified identity fallback and privacy behavior path in account identity policy and response mapping.

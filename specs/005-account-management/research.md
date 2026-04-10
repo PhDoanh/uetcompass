@@ -12,13 +12,13 @@
   - Re-check UET verification in every Feature 005 handler (rejected: duplication and drift risk).
   - Add separate session mechanism for account management (rejected: violates simplicity and existing architecture).
 
-## Decision 2: Soft Delete for Account Deletion
+## Decision 2: Feature Scope Excludes Account Deletion
 
-- Decision: Deletion flow is email-confirmed soft delete, not hard delete. Confirmation token is single-use and time-limited.
-- Rationale: Meets product requirement for recoverability while still revoking access immediately after confirmation.
+- Decision: Feature 005 only handles profile update and password change. Account deletion flows are explicitly out of scope.
+- Rationale: Keeps feature focused on stable account self-management operations and avoids dependency on email delivery behavior.
 - Alternatives considered:
-  - Immediate delete without email confirmation (rejected: high-risk accidental deletion).
-  - Hard delete on confirmation (rejected: conflicts with requested soft-delete policy).
+  - Include deletion with OTP/email confirmation in this feature (rejected: introduces external delivery dependency and operational complexity).
+  - Hard delete in this feature (rejected: not aligned with current business scope).
 
 ## Decision 3: Password Change Security Baseline
 
@@ -38,7 +38,7 @@
 
 ## Decision 5: Audit Events for Sensitive Changes
 
-- Decision: Emit immutable account audit events for `PROFILE_UPDATED`, `PASSWORD_CHANGED`, `ACCOUNT_DELETION_REQUESTED`, `ACCOUNT_SOFT_DELETED`.
+- Decision: Emit immutable account audit events for `PROFILE_UPDATED`, `PASSWORD_CHANGED`.
 - Rationale: Supports operational incident analysis and aligns with NFR auditability requirement.
 - Alternatives considered:
   - Store only latest state without event trail (rejected: no forensic history).

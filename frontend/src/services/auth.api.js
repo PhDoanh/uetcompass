@@ -141,19 +141,6 @@ function unlinkGoogle(token, googleId) {
   });
 }
 
-function requestDeletion(token) {
-  return requestAuthed('/account/deletion/request', token, {
-    method: 'POST',
-  });
-}
-
-function confirmDeletion(token, deletionToken) {
-  return requestAuthed('/account/deletion/confirm', token, {
-    method: 'POST',
-    body: JSON.stringify({ token: deletionToken }),
-  });
-}
-
 function logout() {
   return request('/auth/logout', {
     method: 'POST',
@@ -176,8 +163,6 @@ const authApi = {
   changePassword,
   linkGoogle,
   unlinkGoogle,
-  requestDeletion,
-  confirmDeletion,
   logout,
 };
 

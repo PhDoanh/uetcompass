@@ -66,11 +66,11 @@ npm run dev
 ## 3. Frontend setup
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-Create `frontend/.env.local` (never commit this file):
+Create `frontend/.env` (never commit this file):
 
 ```env
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -178,7 +178,8 @@ curl http://localhost:3001/api/onboarding/draft \
 ### Step D — Open SSE stream in one terminal
 
 ```bash
-curl -N "http://localhost:3001/api/onboarding/status?token=$TOKEN"
+SSE_TOKEN="user-123"  # short-lived token minted by authenticated backend flow
+curl -N "http://localhost:3001/api/onboarding/status?sseToken=$SSE_TOKEN"
 # Keeps connection open, prints heartbeat comments every 15s
 ```
 
@@ -188,7 +189,7 @@ curl -N "http://localhost:3001/api/onboarding/status?token=$TOKEN"
 curl -X POST http://localhost:3001/api/onboarding/submit \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"major":"Computer Science","completedCourseIds":[]}'
+  -d '{"major":"Computer Science","completedCourses":[]}'
 # → 202 { "message": "...", "isGeneric": true }
 ```
 

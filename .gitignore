@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+backend/logs/seed-ctdt.log
+.env
+.env.*
+!*.env.example
+
+# Python/cache artifacts (for mixed tooling)
+__pycache__/
+*.pyc
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+

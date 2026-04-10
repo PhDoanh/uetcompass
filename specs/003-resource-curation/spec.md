@@ -2,73 +2,54 @@
 
 **Feature Branch**: `003-resource-curation`  
 **Created**: 2026-03-11  
+**Revised**: 2026-03-28  
 **Status**: Draft  
-**Input**: User description: "Build the Resource Curation feature for UETCompass — a brand-new subsystem responsible for automatically gathering, classifying, and surfacing external learning resources for students."
+**Architecture Dependency**: Feature 009 (Roadmap with RoadmapNodeSchema) and Feature 001 (Profile Onboarding with StudentProfile)  
+**External Service**: Tavily Search API (free tier, 100 searches/month)  
+**Input**: User description: "Build the Resource Curation feature for UETCompass — a brand-new subsystem responsible for automatically gathering, classifying, and surfacing external learning resources for students grouped by courses in their personalized roadmaps."
 
 ---
 
 ## Context & Scope
 
-Resource Curation introduces a brand-new data-acquisition and presentation layer to UETCompass. It consists of three interconnected capabilities that automatically gather external signals and surface them to students, enriching skill-based learning and career planning:
+Resource Curation introduces a brand-new data-acquisition and presentation layer to UETCompass. It consists of three interconnected capabilities that automatically gather external signals and surface them to students, enriching course-based learning and career planning:
 
-1. **Learning Resource Crawler** — automatically collects free and paid courses, videos, and documents for each skill in the catalog, sourced from Udemy, Coursera, YouTube, and other platforms.
-2. **Academic Slide & Lecture Finder** — discovers publicly accessible slides, lecture notes, and syllabi linked to UET-VNU courses and maps them to skills automatically.
-3. **Market Skill Trend Tracker** — harvests job posting signals from Vietnamese and regional tech job boards to rank skills by current industry demand.
+1. **Academic Material Finder** — automatically discovers publicly accessible slides, lecture notes, and syllabi linked to each course in a student's roadmap using Tavily Search API with the course name as the primary query term. Results are **generic** — identical for all students taking that course.
+2. **Market Skill Trend Tracker** — harvests trending skills from job posting data for each course, using Tavily Search API with a combined query of course name PLUS student's declared major, career goal, and company type preferences (from onboarding profile Feature 001) to ensure **personalized, contextually relevant** skill recommendations. **Only this capability uses StudentProfile data for personalization.**
+3. **Learning Resource Crawler** — automatically collects free and paid courses, videos, and documents for each trending skill discovered by the tracker, using Tavily Search API with skill name as the search query. Results are **generic** — the same for all students interested in that skill, regardless of their StudentProfile.
 
-All three capabilities share a common design principle: **students are passive consumers of curated data** — they never need to trigger crawling, approve content, or configure sources. Every collection job runs on a schedule without any user interaction.
+All three capabilities share a common design principle: **students are passive consumers of curated data organized by their course roadmap** — they never need to trigger crawling, approve content, or configure sources. Every collection job runs on a schedule without any user interaction.
+
+The feature is structured as a **three-tier hierarchy**:
+- **RoadmapNodeSchema** (course/node level) → provides `courseName`
+- **AcademicDocument** & **SkillTrendSnapshot** (course-linked tier) → crawl using course name + Regex
+- **LearningResource** (skill-focused tier) → crawl using skill name extracted from trends
 
 **What this feature does NOT do:**
 
 - Does not allow students to upload, submit, or manually add resources.
-- Does not create a new course catalog or modify existing skill definitions — it reads from the existing UETCompass skill catalog.
-- Does not send push notifications or proactively recommend resources — it surfaces curated data when a student visits a skill or market insight section.
+- Does not create new learning materials, skills, or courses — it only crawls and organizes external public content.
+- Does not modify existing roadmap definitions — it reads from RoadmapNodeSchema and displays supplementary materials.
+- Does not send push notifications or proactively recommend resources — it surfaces curated data when a student views their roadmap or a course node.
 - Does not require admin approval before displaying collected resources.
+
+---
+
+## Clarification: User Stories ↔ Capabilities Mapping
+
+To avoid confusion across documents, this table consolidates terminology:
+
+| User Story | Capability | Priority | Crawl Input | Output Data |
+|---|---|---|---|---|
+| **US1** = Academic Materials | **Cap.1** | **P1** | RoadmapNode.courseName | AcademicDocument (slides, notes, syllabi, exercises from UET/GitHub/external) |
+| **US2** = Trending Skills | **Cap.2** | **P2** | RoadmapNode.courseName + StudentProfile | SkillTrendSnapshot (job counts, salary, trend, personalized by career goals) |
+| **US3** = Learning Resources | **Cap.3** | **P3** | SkillTrendSnapshot.skillName | LearningResource (courses, videos, articles from Udemy, Coursera, YouTube, etc.) |
 
 ---
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 — Browse Curated Learning Resources for a Skill (Priority: P1)
-
-A student exploring their personalized roadmap selects a skill (e.g., "React"). Without leaving UETCompass, they see a curated list of learning resources for that skill — courses, videos, and articles drawn from Udemy, Coursera, YouTube, and other platforms. Every resource shows whether it is free or paid, so the student can weigh cost against quality at a glance and pick the best fit for their situation.
-
-**Why this priority**: This is the foundational value of the entire feature. Students spend most of their discovery time on skill pages, and surfacing pre-classified resources directly on the skill page eliminates the need to search externally. It is the capability that makes the overall system immediately useful to every student.
-
-**Independent Test**: Can be fully tested by selecting any skill from a student's active roadmap and verifying that a resource list appears with items from at least two different platforms, each correctly labeled free or paid, with title, source, and resource type visible — without any manual action needed to populate the list.
-
-**Acceptance Scenarios**:
-
-1. **Given** a student navigates to a skill page, **When** the resource section loads, **Then** a list of curated learning resources for that skill is shown — each entry displaying title, source platform, resource type, and free/paid indicator.
-2. **Given** a skill's resources include both free and paid items, **When** the student views the list, **Then** free and paid status is visible on each entry without requiring the student to open a detail view.
-3. **Given** resources come from multiple platforms, **When** the student views the list, **Then** the source platform name is shown for each resource so the student knows where the link leads.
-4. **Given** a resource has a quality signal (e.g., rating, enrollment count), **When** the resource is displayed, **Then** that signal is shown alongside the entry to help the student assess quality.
-5. **Given** no resources have been collected yet for a skill, **When** a student views that skill, **Then** an appropriate "no resources available yet" message is shown — not a blank section or an error.
-
----
-
-### User Story 2 — Explore Market Skill Demand Trends (Priority: P2)
-
-A student considering their career path opens the Market Insight section. They see a flat ranked list of skills ordered by current job market demand, compiled from job board data across TopDev, ITviec, LinkedIn, and JobOKO. Each entry shows how many job postings require that skill, the average salary range, and a trend direction (increasing / stable / decreasing) compared to the previous week. In under 30 seconds, the student uses this list to decide which skills to prioritize on their learning roadmap.
-
-**Why this priority**: This capability is self-contained and delivers direct strategic value for career planning — a use case that extends beyond any individual skill page. It is P2 because it provides the broadest strategic signal but does not depend on Capability 1 being complete, and its audience (career-oriented students) is slightly narrower than the general resource browsing use case.
-
-**Independent Test**: Can be fully tested by opening the Market Insight section and verifying a ranked skill list is displayed, each entry showing job count, salary range, and trend indicator, and confirming the last refresh timestamp is within the past 24 hours.
-
-**Acceptance Scenarios**:
-
-1. **Given** the student opens the Market Insight section, **When** the page loads, **Then** a flat list of skills is displayed, ranked from highest to lowest job demand, with no complex charts required.
-2. **Given** the ranked list is shown, **When** the student reviews any entry, **Then** it displays: skill name, job posting count, average salary range (or "not specified" if unavailable), and a trend direction indicator (up / stable / down).
-3. **Given** the list was last refreshed today, **When** the student views it, **Then** the data reflects signals from at least 3 of the 4 specified job boards (TopDev, ITviec, LinkedIn, JobOKO).
-4. **Given** a skill's job count increased ≥10% compared to the previous 7-day period, **When** displayed, **Then** its trend shows "increasing"; if it decreased ≥10%, "decreasing"; if within ±10%, "stable."
-5. **Given** the market insight list is loaded, **When** a student scans it, **Then** they can identify the top 5 in-demand skills and their trend directions within 30 seconds — the layout is a simple, scannable list.
-
----
-
-### User Story 3 — Discover Academic Materials for a UET Course (Priority: P3)
-
-A student preparing for the "Lập trình web" course looks for supplementary study materials. The system surfaces publicly accessible slides, lecture notes, and course syllabi associated with that course — drawn from UET faculty pages, GitHub, and open educational sources — automatically mapped to the relevant skills (HTML, CSS, JavaScript). The student can tell at a glance which documents are from official UET sources and which come from external repositories, making it easy to prioritize authoritative materials.
-
-**Why this priority**: This capability targets a specific academic use case — UET course preparation — supplementing the general learning resource crawler but serving a narrower audience. The requirement for automatic skill-to-course inference adds complexity that justifies deferring it after the foundational capabilities (P1, P2) are established.
+### User Story 1 — Discover Academic Materials for a UET Course (Priority: P1)
 
 **Independent Test**: Can be fully tested by navigating to a UET course or skill known to have publicly accessible slides, verifying at least one document appears labeled with the correct source type (UET official / GitHub / external), document type (slide / lecture note / syllabus / exercise), and an associated skill name.
 
@@ -79,6 +60,32 @@ A student preparing for the "Lập trình web" course looks for supplementary st
 3. **Given** a document was retrieved from a UET faculty page, **When** displayed, **Then** its source type is clearly marked as "UET official" — distinguishable from "GitHub" or "external."
 4. **Given** the system has inferred a skill association for a document based on course name and content, **When** the document is shown, **Then** the inferred skill name is visible on the entry so the student understands the connection.
 5. **Given** no public documents are found for a course, **When** the academic materials section is rendered, **Then** an appropriate "no materials found" empty state is shown — not a broken layout or error.
+
+---
+
+### User Story 2 — Discover Trending Skills for a Course (Personalized by Career Goal) (Priority: P2)
+
+A student preparing for "Phát triển ứng dụng web" wants to know which skills are currently most demanded in the job market for THEIR specific career goals. In a dedicated "Market Trends" section on their course node, they see a list of trending skills extracted from recent job postings, but crucially, the results are personalized: if they selected "Software Engineer" as their role and "Startup" as preferred company type during onboarding (Feature 001), the system surfaces exactly the skills that startups are actively hiring for, ranked by relevance to the startup-SWE career path. If instead they prefer "Enterprise" companies, entirely different skills appear (since enterprise hiring differs from startup hiring). Each entry shows job posting count, salary range, and trend indicator (increasing/stable/decreasing). This personalized curation means the student sees market data tailored to THEIR career goal, not generic market trends for the course.
+
+**Why this priority**: This bridges gap between course study and market readiness while personalizing insights to individual career aspirations: course context + market signal + personal relevance = highly actionable guidance. Though it depends on P1 (academic materials), it is strategic enough to justify P2 priority because it compounds value through personalization.
+
+---
+
+### User Story 3 — Browse Learning Resources for Trending Skills (Priority: P3)
+
+A student has discovered trending skills from the Market Insight page for courses they're taking. Now they want to deepen their knowledge by finding high-quality learning resources — courses, videos, tutorials, articles — specifically tailored to master each trending skill. For the skill "React" discovered from "Phát triển ứng dụng web", the system surfaces free and paid courses from Udemy, Coursera, YouTube, and other platforms, ranked by quality signal (rating, view count, enrollment). The student can quickly filter and access learning materials without needing to search the web manually.
+
+**Why this priority**: This capability depends on US2 generating trending skills; it extends the value chain from market insight (US2) to actionable learning resources. Though it comes last in execution, it provides essential learner agency — students can immediately act on trending skill insights by accessing curated resources.
+
+**Independent Test**: Can be fully tested by selecting any trending skill and verifying that a resource list appears with items from at least two different platforms, each correctly labeled free or paid, with title, source, and resource type visible — without any manual action needed to populate the list.
+
+**Acceptance Scenarios**:
+
+1. **Given** a student navigates to a skill page (via Market Insight or skill catalog), **When** the learning resources section loads, **Then** a list of curated learning resources for that skill is shown — each entry displaying title, source platform, resource type, and free/paid indicator.
+2. **Given** a skill's resources include both free and paid items, **When** the student views the list, **Then** free and paid status is visible on each entry without requiring the student to open a detail view.
+3. **Given** resources come from multiple platforms, **When** the student views the list, **Then** the source platform name is shown for each resource so the student knows where the link leads.
+4. **Given** a resource has a quality signal (e.g., rating, enrollment count), **When** the resource is displayed, **Then** that signal is shown alongside the entry to help the student assess quality.
+5. **Given** no resources have been collected yet for a skill, **When** a student views that skill, **Then** an appropriate "no resources available yet" message is shown — not a blank section or an error.
 
 ---
 
@@ -100,17 +107,7 @@ A student preparing for the "Lập trình web" course looks for supplementary st
 
 ### Functional Requirements
 
-**Capability 1 — Learning Resource Crawler**
-
-- **FR-001**: The system MUST automatically collect learning resources for each skill in the UETCompass skill catalog on a recurring scheduled basis, without any student or administrator action.
-- **FR-002**: The system MUST collect resources from at minimum Udemy, Coursera, and YouTube; additional publicly accessible educational platforms (e.g., edX, freeCodeCamp, Viblo) are permitted.
-- **FR-003**: Each collected resource MUST record at minimum: title, URL, source platform, resource type (video / article / course / document), free/paid status, quality signal (if available from source), and the linked skill ID.
-- **FR-004**: Free or paid status MUST be determined solely from data returned by the source (e.g., price field, free-enrollment indicator) — no manual admin classification is required or permitted.
-- **FR-005**: Students MUST be able to view all curated resources for any skill they visit; free/paid status MUST be visible on each resource entry without requiring additional navigation.
-- **FR-006**: Resources MUST be associated to skill entities, not to individual student accounts.
-- **FR-007**: The system MUST deduplicate resources by URL per skill, ensuring the same resource does not appear multiple times under a single skill.
-
-**Capability 2 — Academic Slide & Lecture Finder**
+**Capability 1 — Academic Material Finder**
 
 - **FR-008**: The system MUST automatically search for and retrieve publicly accessible academic documents (slides, lecture notes, syllabi, exercises) related to UET-VNU courses on a recurring scheduled basis.
 - **FR-009**: Sources MUST include UET-VNU official public and faculty pages; external sources (GitHub repositories, open educational resource sites) MAY also be included.
@@ -119,7 +116,7 @@ A student preparing for the "Lập trình web" course looks for supplementary st
 - **FR-012**: Academic documents from UET-VNU official sources MUST be ranked above documents from external sources in all display contexts.
 - **FR-013**: Only documents accessible without authentication MUST be surfaced; any document requiring a login MUST be excluded.
 
-**Capability 3 — Market Skill Trend Tracker**
+**Capability 2 — Market Skill Trend Tracker**
 
 - **FR-014**: The system MUST collect job posting data from at least 3 of the following 4 sources: TopDev, ITviec, LinkedIn, JobOKO.
 - **FR-015**: For each skill, the system MUST extract: job posting count, average salary range (when salary information is present in postings), and trend direction (increasing / stable / decreasing) compared to the previous 7-day period.
@@ -127,6 +124,16 @@ A student preparing for the "Lập trình web" course looks for supplementary st
 - **FR-017**: Job posting data MUST be refreshed once every 24 hours via an automatic background job — no manual trigger is required.
 - **FR-018**: Students MUST be able to access a flat ranked list of skills ordered by job demand; each entry MUST display skill name, job posting count, average salary range, and trend direction indicator.
 - **FR-019**: Skills with no job postings found MUST still appear in the Market Insight list with a count of 0 and a "stable" trend indicator.
+
+**Capability 3 — Learning Resource Crawler**
+
+- **FR-001**: The system MUST automatically collect learning resources for each skill in the UETCompass skill catalog on a recurring scheduled basis, without any student or administrator action.
+- **FR-002**: The system MUST collect resources from at minimum Udemy, Coursera, and YouTube; additional publicly accessible educational platforms (e.g., edX, freeCodeCamp, Viblo) are permitted.
+- **FR-003**: Each collected resource MUST record at minimum: title, URL, source platform, resource type (video / article / course / document), free/paid status, quality signal (if available from source), and the linked skill ID.
+- **FR-004**: Free or paid status MUST be determined solely from data returned by the source (e.g., price field, free-enrollment indicator) — no manual admin classification is required or permitted.
+- **FR-005**: Students MUST be able to view all curated resources for any skill they visit; free/paid status MUST be visible on each resource entry without requiring additional navigation.
+- **FR-006**: Resources MUST be associated to skill entities, not to individual student accounts.
+- **FR-007**: The system MUST deduplicate resources by URL per skill, ensuring the same resource does not appear multiple times under a single skill.
 
 **Cross-Capability**
 

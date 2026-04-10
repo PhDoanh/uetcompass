@@ -5,7 +5,7 @@
 
 ## Summary
 
-Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (global account preferences + profile edits + re-personalization signal → Feature 004, change password, Google link/unlink, hard-delete with email confirmation), and logout. Feature 005 is the owner of global account preferences on `users`: `privacySetting` (`identified | anonymous`) and identity split (`displayName` as primary public field, `fullName` editable independently). Identity rendering follows a unified fallback policy: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
+Build the authentication and account-management foundation for UETCompass: email/password registration (OTP-based email verification), Google Sign-In (GIS with `@vnu.edu.vn` domain enforcement), login with 5-attempt lockout, forgot-password via OTP, post-login routing by onboarding state, Account Settings (global account preferences + profile edits + re-personalization signal, change password, Google link/unlink, hard-delete with email confirmation), and logout. Feature 005 is the owner of global account preferences on `users`: `privacySetting` (`identified | anonymous`) and identity split (`displayName` as primary public field, `fullName` editable independently). Identity rendering follows a unified fallback policy: valid `displayName` → `fullName` → sanitized email local-part → `"Student"`. Sessions are managed with short-lived JWTs (15 min access token in memory) + opaque refresh tokens stored as SHA-256 hashes in a `refresh_tokens` MongoDB collection with httpOnly cross-site cookies. Passwords are hashed with `bcryptjs`. All auth logic lives in `backend/src/modules/auth/`. A shared `notifications` module handles in-app notification delivery (SSE + persistence) consumed by both this feature and Feature 004.
 
 ## Technical Context
 
@@ -24,11 +24,11 @@ Build the authentication and account-management foundation for UETCompass: email
 
 ## Constitution Check
 
-*Pre-design gate — re-checked after Phase 1 design: all items pass.*
+*Pre-design gate — re-checked after Phase 1 design: one constitutional conflict is acknowledged; implementation proceeds with a documented risk note while governance decision remains pending.*
 
 - [x] **Modular Monolithic**: All auth logic is isolated in `backend/src/modules/auth/`. Shared notification delivery lives in `backend/src/modules/notifications/`. The re-personalization signal is written to `student_profiles.repersonalizationPending` via `studentProfileService` (service-layer call only — no direct cross-module import). No microservice split introduced.
 - [x] **UET-First**: `@vnu.edu.vn` domain constraint is hardcoded in both client-side form validation and server-side Google ID token verification. No abstraction for other universities.
-- [x] **Privacy**: Passwords are stored as bcrypt hashes only — never plaintext, never logged. UET portal credentials are not involved in this feature. No password history surfaced to users. Only the minimum account data (display/public name, legal/full name, privacy preference, email, avatar, lockout counters, OTP state) is stored — no grades, transcripts, or credential scraping.
+- [x] **Privacy (Risk Note)**: Passwords are stored as bcrypt hashes only — never plaintext, never logged. UET portal credentials are not involved in this feature. No password history is surfaced to users. Only the minimum account data (display/public name, legal/full name, privacy preference, email, avatar, lockout counters, OTP state) is stored — no grades, transcripts, or credential scraping. This still conflicts with Constitution Principle III wording and is tracked as a pending governance decision without modifying `constitution.md` in this feature.
 - [x] **AI-Assisted**: Gemini API is **not called** in this feature. All validation (email domain, OTP check, password confirmation) is pure code logic. No LLM involved.
 - [x] **Test What Matters**: Unit tests mandatory for: OTP expiry + lockout logic (`auth.service.test.js`), bcrypt hash/verify (`password.service.test.js`), refresh token rotation + reuse detection (`token.service.test.js`), re-personalization change detection (`profileSettings.service.test.js`), identity fallback + privacy rendering policy (`profileSettings.service.test.js` or dedicated identity policy unit test).
 
@@ -89,9 +89,7 @@ frontend/
 │   │       ├── RegisterPage.jsx           # Registration form + OTP verification step
 │   │       ├── ForgotPasswordPage.jsx     # Email input → OTP → new password
 │   │       ├── AccountSettingsPage.jsx    # Identity/privacy prefs + profile fields + password change + Google links + delete
-│   │       ├── useAuth.js                 # Hook: login, logout, silentRefresh (60s timeout + 2 retries)
-│   │       ├── useGoogleAuth.js           # Hook: @react-oauth/google useGoogleLogin wrapper
-│   │       └── auth.api.js                # Fetch wrappers for all /api/auth/* endpoints
+│   │       └── auth.api.js                # Single frontend API client for auth + account endpoints
 │   ├── providers/
 │   │   └── AuthProvider.jsx              # Context + silent refresh on mount + AT in-memory store
 │   └── guards/
@@ -102,9 +100,8 @@ frontend/
 
 ## Complexity Tracking
 
-No Constitution violations — complexity tracking table not required.
+One constitution-related risk is tracked and explicitly accepted in this plan pending governance decision.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Principle III — Privacy by Minimalism | Feature 005 requires persisted account identity/profile data to satisfy FR-026 through FR-039 and account lifecycle behavior. | Avoiding persisted account/profile data would break required account settings, privacy preference management, and profile update flows. |

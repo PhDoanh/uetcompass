@@ -34,22 +34,25 @@ Use an existing verified student account from Feature 011-authentication.
 ## 3. Validate profile read/write
 
 1. Open Account Settings.
-2. Update `displayName`, `fullName`, `privacySetting`, and avatar.
+2. Update `displayName`, `fullName`, `privacySetting`, and upload avatar image by upload button.
 3. Save and refresh page.
 
 Expected:
 - Changes persist.
+- Uploaded avatar preview is shown before save.
 - No cross-account data leakage.
 - `effectiveDisplayName` resolves consistently by fallback rule.
 
 ## 4. Validate password change
 
 1. Open Change Password in Account Settings.
-2. Submit wrong current password + valid new password.
-3. Submit correct current password + valid new password.
-4. Re-login using old and new passwords.
+2. Submit correct current password + invalid new password (e.g., less than 8 chars or missing one character class).
+3. Submit wrong current password + valid new password.
+4. Submit correct current password + valid new password (>= 8 chars with letter, number, special).
+5. Re-login using old and new passwords.
 
 Expected:
+- Invalid new password is rejected by password policy validation.
 - Wrong current password is rejected.
 - Correct current password allows change.
 - Old password no longer works.
@@ -59,12 +62,13 @@ Expected:
 
 1. In Account Settings, request account deletion.
 2. Confirm email received with single-use link.
-3. Click confirmation link once.
+3. Click confirmation link once and measure time from successful confirm response to authenticated-route denial.
 4. Retry using same link.
 
 Expected:
 - Request step does not delete immediately.
 - First valid click soft-deletes account and revokes active sessions.
+- Session revocation and access denial happen within 5 seconds.
 - Replayed/used link is rejected safely.
 - Soft-deleted account is blocked from authenticated routes.
 
@@ -73,7 +77,9 @@ Expected:
 Backend unit/integration:
 - Ownership enforcement for profile read/update.
 - Password change current-password verification.
+- Password policy validation for new password (>= 8 chars with letter/number/special).
 - Deletion token issue/consume/expire/replay handling.
+- Deletion confirmation to session-revocation SLA verification (`<= 5s`).
 - Soft-delete authorization denial on protected endpoints.
 
 Frontend tests:

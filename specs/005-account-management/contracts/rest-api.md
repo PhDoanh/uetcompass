@@ -53,7 +53,7 @@ Returns Account Settings payload for current user.
     "displayName": "anhdev",
     "fullName": "Nguyen Van A",
     "privacySetting": "identified",
-    "avatarUrl": "https://cdn.example/avatar.jpg",
+    "avatarUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...",
     "effectiveDisplayName": "anhdev"
   }
 }
@@ -74,12 +74,13 @@ Updates account profile fields owned by current user.
   "displayName": "anhdev",
   "fullName": "Nguyen Van A",
   "privacySetting": "anonymous",
-  "avatarUrl": "https://cdn.example/new-avatar.jpg"
+  "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
 }
 ```
 
 Rules:
 - Identity fields are always editable by owner.
+- `avatarUrl` accepts hosted URL or image Data URL generated from frontend upload.
 
 ### 200 OK
 
@@ -90,7 +91,7 @@ Rules:
     "displayName": "anhdev",
     "fullName": "Nguyen Van A",
     "privacySetting": "anonymous",
-    "avatarUrl": "https://cdn.example/new-avatar.jpg",
+    "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...",
     "effectiveDisplayName": "anhdev"
   }
 }
@@ -109,6 +110,9 @@ Changes current user's password.
 }
 ```
 
+Rules:
+- `newPassword` must be at least 8 characters and include at least one letter, one number, and one special character.
+
 ### 200 OK
 
 ```json
@@ -120,6 +124,18 @@ Changes current user's password.
 ### 400 INVALID_INPUT
 
 Invalid new password format/policy.
+
+```json
+{
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "New password must be at least 8 characters and include letters, numbers, and special characters",
+    "details": {
+      "field": "newPassword"
+    }
+  }
+}
+```
 
 ### 403 FORBIDDEN
 

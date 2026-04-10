@@ -122,7 +122,7 @@ function markNotificationRead(token, notificationId) {
 }
 
 function changePassword(token, body) {
-  return requestAuthed('/account/change-password', token, {
+  return requestAuthed('/account/password/change', token, {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -142,14 +142,15 @@ function unlinkGoogle(token, googleId) {
 }
 
 function requestDeletion(token) {
-  return requestAuthed('/account/request-deletion', token, {
+  return requestAuthed('/account/deletion/request', token, {
     method: 'POST',
   });
 }
 
-function confirmDeletion(token) {
-  return requestAuthed(`/account/confirm-deletion?token=${encodeURIComponent(token)}`, null, {
-    method: 'GET',
+function confirmDeletion(token, deletionToken) {
+  return requestAuthed('/account/deletion/confirm', token, {
+    method: 'POST',
+    body: JSON.stringify({ token: deletionToken }),
   });
 }
 

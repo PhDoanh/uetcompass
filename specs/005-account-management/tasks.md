@@ -7,11 +7,11 @@
 
 **Purpose**: Prepare account-focused module scaffolding and shared wiring.
 
-- [ ] T001 Create backend account module scaffold in `backend/src/modules/account/index.js`
-- [ ] T002 [P] Create backend account constants/errors scaffold in `backend/src/modules/account/account.constants.js`
-- [ ] T003 [P] Create frontend account feature scaffold in `frontend/src/features/account/AccountModule.jsx`
-- [ ] T004 Create frontend account API service scaffold in `frontend/src/features/account/account.api.js`
-- [ ] T005 Update feature quickstart references to account module paths in `specs/005-account-management/quickstart.md`
+- [X] T001 Create backend account module scaffold in `backend/src/modules/account/index.js`
+- [X] T002 [P] Create backend account constants/errors scaffold in `backend/src/modules/account/account.constants.js`
+- [X] T003 [P] Create frontend account feature scaffold in `frontend/src/features/account/AccountModule.jsx`
+- [X] T004 Create frontend account API service scaffold in `frontend/src/features/account/account.api.js`
+- [X] T005 Update feature quickstart references to account module paths in `specs/005-account-management/quickstart.md`
 
 ---
 
@@ -21,16 +21,16 @@
 
 **CRITICAL**: No user story work starts before this phase is complete.
 
-- [ ] T006 Implement account domain models (`StudentAccount`, `AccountDeletionToken`, `AccountAuditEvent`) in `backend/src/modules/account/account.model.js`
-- [ ] T007 [P] Implement account audit repository/service in `backend/src/modules/account/accountAudit.service.js`
-- [ ] T008 [P] Implement identity fallback and privacy policy helpers in `backend/src/modules/account/identity.policy.js`
-- [ ] T009 Implement account authorization precondition guard (requires Feature 011 authenticated + UET-verified context) in `backend/src/modules/account/account.guard.js`
-- [ ] T010 Implement base account service skeleton for profile/password/deletion operations in `backend/src/modules/account/account.service.js`
-- [ ] T011 Implement base account controller + router skeleton in `backend/src/modules/account/account.controller.js`
-- [ ] T012 Mount account routes with guard in `backend/src/app.js`
-- [ ] T013 [P] Create frontend account settings store (loading/error/success state) in `frontend/src/stores/accountSettings.store.js`
-- [ ] T014 [P] Create frontend reusable account settings form schema/validators in `frontend/src/features/account/accountSettings.validation.js`
-- [ ] T015 Create account settings route entry integration in `frontend/src/App.jsx`
+- [X] T006 Implement account domain models (`StudentAccount`, `AccountDeletionToken`, `AccountAuditEvent`) in `backend/src/modules/account/account.model.js`
+- [X] T007 [P] Implement account audit repository/service in `backend/src/modules/account/accountAudit.service.js`
+- [X] T008 [P] Implement identity fallback and privacy policy helpers in `backend/src/modules/account/identity.policy.js`
+- [X] T009 Implement account authorization precondition guard (requires Feature 011 authenticated + UET-verified context) in `backend/src/modules/account/account.guard.js`
+- [X] T010 Implement base account service skeleton for profile/password/deletion operations in `backend/src/modules/account/account.service.js`
+- [X] T011 Implement base account controller + router skeleton in `backend/src/modules/account/account.controller.js`
+- [X] T012 Mount account routes with guard in `backend/src/app.js`
+- [X] T013 [P] Create frontend account settings store (loading/error/success state) in `frontend/src/stores/accountSettings.store.js`
+- [X] T014 [P] Create frontend reusable account settings form schema/validators in `frontend/src/features/account/accountSettings.validation.js`
+- [X] T015 Create account settings route entry integration in `frontend/src/App.jsx`
 
 **Checkpoint**: Foundation ready; user stories can now be developed independently.
 
@@ -38,24 +38,24 @@
 
 ## Phase 3: User Story 1 - Update Basic Account Profile (Priority: P1) 🎯 MVP
 
-**Goal**: Authenticated UET student updates `displayName`, `fullName`, `privacySetting`, and avatar from Account Settings.
+**Goal**: Authenticated UET student updates `displayName`, `fullName`, `privacySetting`, and avatar image from Account Settings (frontend upload button, API field `avatarUrl`).
 
 **Independent Test**: Save profile updates and verify persisted values are returned on refresh with ownership enforcement.
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Add backend unit test for profile read mapper and ownership guard behavior in `backend/tests/unit/account/account.profile.get.test.js`
-- [ ] T017 [P] [US1] Add backend unit test for profile patch validation and field update rules in `backend/tests/unit/account/account.profile.patch.test.js`
-- [ ] T018 [P] [US1] Add frontend unit test for basic account profile save form logic in `frontend/src/features/account/AccountSettings.basic.test.jsx`
+- [X] T016 [P] [US1] Add backend unit test for profile read mapper and ownership guard behavior in `backend/tests/unit/account/account.profile.get.test.js`
+- [X] T017 [P] [US1] Add backend unit test for profile patch validation and field update rules in `backend/tests/unit/account/account.profile.patch.test.js`
+- [X] T018 [P] [US1] Add frontend unit test for basic account profile save form logic in `frontend/src/features/account/AccountSettings.basic.test.jsx`
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Implement `GET /api/account/profile` identity payload (`displayName`, `fullName`, `privacySetting`, `avatarUrl`, `effectiveDisplayName`) in `backend/src/modules/account/account.service.js`
-- [ ] T020 [US1] Implement basic profile update logic and field validation in `backend/src/modules/account/account.service.js`
-- [ ] T021 [US1] Implement profile API handlers in `backend/src/modules/account/account.controller.js`
-- [ ] T022 [P] [US1] Implement account settings basic profile UI section in `frontend/src/features/account/AccountSettingsPage.jsx`
-- [ ] T023 [P] [US1] Implement frontend profile API calls (`getProfile`, `updateProfile`) in `frontend/src/features/account/account.api.js`
-- [ ] T024 [US1] Emit `PROFILE_UPDATED` audit event on successful basic profile change in `backend/src/modules/account/accountAudit.service.js`
+- [X] T019 [US1] Implement `GET /api/account/profile` identity payload (`displayName`, `fullName`, `privacySetting`, `avatarUrl`, `effectiveDisplayName`) in `backend/src/modules/account/account.service.js`
+- [X] T020 [US1] Implement basic profile update logic and field validation in `backend/src/modules/account/account.service.js`
+- [X] T021 [US1] Implement profile API handlers in `backend/src/modules/account/account.controller.js`
+- [X] T022 [P] [US1] Implement account settings basic profile UI section (including avatar upload button) in `frontend/src/features/account/AccountSettingsPage.jsx`
+- [X] T023 [P] [US1] Implement frontend profile API calls (`getProfile`, `updateProfile`) in `frontend/src/features/account/account.api.js`
+- [X] T024 [US1] Emit `PROFILE_UPDATED` audit event on successful basic profile change in `backend/src/modules/account/accountAudit.service.js`
 
 **Checkpoint**: User Story 1 works end-to-end and is independently testable.
 
@@ -69,18 +69,18 @@
 
 ### Tests for User Story 3
 
-- [ ] T033 [P] [US3] Add backend unit test for deletion request token issuance + audit call in `backend/tests/unit/account/account.deletion.request.test.js`
-- [ ] T034 [P] [US3] Add backend unit test for deletion token consume logic (valid/expired/replayed) in `backend/tests/unit/account/account.deletion.confirm.test.js`
-- [ ] T035 [P] [US3] Add backend unit test for soft-delete access gate decision logic in `backend/tests/unit/account/account.soft-delete-access.test.js`
-- [ ] T036 [P] [US3] Add frontend unit test for deletion request/confirm UI state transitions in `frontend/src/features/account/AccountDeletionFlow.test.jsx`
+- [X] T033 [P] [US3] Add backend unit test for deletion request token issuance + audit call in `backend/tests/unit/account/account.deletion.request.test.js`
+- [X] T034 [P] [US3] Add backend unit test for deletion token consume logic (valid/expired/replayed) in `backend/tests/unit/account/account.deletion.confirm.test.js`
+- [X] T035 [P] [US3] Add backend unit test for soft-delete access gate decision logic in `backend/tests/unit/account/account.soft-delete-access.test.js`
+- [X] T036 [P] [US3] Add frontend unit test for deletion request/confirm UI state transitions in `frontend/src/features/account/AccountDeletionFlow.test.jsx`
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] Implement deletion token issue + email dispatch in `backend/src/modules/account/account.service.js`
-- [ ] T038 [US3] Implement deletion token consume + soft-delete execution + session revocation in `backend/src/modules/account/account.service.js`
-- [ ] T039 [US3] Implement deletion request/confirm handlers in `backend/src/modules/account/account.controller.js`
-- [ ] T040 [US3] Emit `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_SOFT_DELETED` audit events in `backend/src/modules/account/accountAudit.service.js`
-- [ ] T041 [P] [US3] Implement frontend account deletion section (request + confirm token flow messaging) in `frontend/src/features/account/AccountDeletionSection.jsx`
+- [X] T037 [US3] Implement deletion token issue + email dispatch in `backend/src/modules/account/account.service.js`
+- [X] T038 [US3] Implement deletion token consume + soft-delete execution + session revocation in `backend/src/modules/account/account.service.js`
+- [X] T039 [US3] Implement deletion request/confirm handlers in `backend/src/modules/account/account.controller.js`
+- [X] T040 [US3] Emit `ACCOUNT_DELETION_REQUESTED` and `ACCOUNT_SOFT_DELETED` audit events in `backend/src/modules/account/accountAudit.service.js`
+- [X] T041 [P] [US3] Implement frontend account deletion section (request + confirm token flow messaging) in `frontend/src/features/account/AccountDeletionSection.jsx`
 
 **Checkpoint**: User Story 3 soft-delete lifecycle works and is independently testable.
 
@@ -94,16 +94,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T042 [P] [US2] Add backend unit test for password change success/failure cases in `backend/tests/unit/account/account.password-change.test.js`
-- [ ] T043 [P] [US2] Add backend unit test for password change verification helper in `backend/tests/unit/account/password-change.service.test.js`
-- [ ] T044 [P] [US2] Add frontend test for password change form validation and submit states in `frontend/src/features/account/AccountPasswordChange.test.jsx`
+- [X] T042 [P] [US2] Add backend unit test for password change success/failure cases, including password policy validation (>= 8 chars with letter/number/special), in `backend/tests/unit/account/account.password-change.test.js`
+- [X] T043 [P] [US2] Add backend unit test for password change verification helper in `backend/tests/unit/account/password-change.service.test.js`
+- [X] T044 [P] [US2] Add frontend test for password change form validation (>= 8 chars with letter/number/special) and submit states in `frontend/src/features/account/AccountPasswordChange.test.jsx`
 
 ### Implementation for User Story 2
 
-- [ ] T045 [US2] Implement password change service (verify current password, update hash) in `backend/src/modules/account/account.service.js`
-- [ ] T046 [US2] Implement password change endpoint handler in `backend/src/modules/account/account.controller.js`
-- [ ] T047 [US2] Emit `PASSWORD_CHANGED` audit event in `backend/src/modules/account/accountAudit.service.js`
-- [ ] T048 [P] [US2] Implement frontend password change section in `frontend/src/features/account/AccountPasswordSection.jsx`
+- [X] T045 [US2] Implement password change service (verify current password, enforce password policy, update hash) in `backend/src/modules/account/account.service.js`
+- [X] T046 [US2] Implement password change endpoint handler in `backend/src/modules/account/account.controller.js`
+- [X] T047 [US2] Emit `PASSWORD_CHANGED` audit event in `backend/src/modules/account/accountAudit.service.js`
+- [X] T048 [P] [US2] Implement frontend password change section in `frontend/src/features/account/AccountPasswordSection.jsx`
 
 **Checkpoint**: User Story 2 is independently testable and does not regress other stories.
 
@@ -113,10 +113,11 @@
 
 **Purpose**: Final consistency, documentation, and regression hardening across all stories.
 
-- [ ] T049 [P] Update API examples and validation notes in `specs/005-account-management/contracts/rest-api.md`
-- [ ] T050 [P] Update manual verification checklist with final endpoint names and expected errors in `specs/005-account-management/quickstart.md`
-- [ ] T051 Run backend + frontend test suites and document results in `specs/005-account-management/checklists/requirements.md`
-- [ ] T052 Perform security review pass for ownership/soft-delete/privacy fallback regressions in `backend/src/modules/account/account.service.js`
+- [X] T049 [P] Update API examples and validation notes in `specs/005-account-management/contracts/rest-api.md`
+- [X] T050 [P] Update manual verification checklist with final endpoint names and expected errors in `specs/005-account-management/quickstart.md`
+- [X] T051 Run backend + frontend test suites and document results in `specs/005-account-management/checklists/requirements.md`
+- [X] T052 Perform security review pass for ownership/soft-delete/privacy fallback regressions in `backend/src/modules/account/account.service.js`
+- [X] T053 Add integration SLA verification for deletion confirmation to session revocation (`<= 5s`) in `backend/tests/integration/account/account.deletion.sla.test.js`
 
 ---
 

@@ -31,7 +31,7 @@ Excluded from this feature:
 
 ### User Story 1 - Update Basic Account Profile (Priority: P1)
 
-An authenticated UET student opens Account Settings and updates basic profile fields (`displayName`, `fullName`, `privacySetting`, avatar).
+An authenticated UET student opens Account Settings and updates basic profile fields (`displayName`, `fullName`, `privacySetting`) and avatar image via upload button.
 
 **Why this priority**: Core account self-management must be available at all times for authenticated users.
 
@@ -39,7 +39,7 @@ An authenticated UET student opens Account Settings and updates basic profile fi
 
 **Acceptance Scenarios**:
 
-1. **Given** an authenticated student in Account Settings, **When** they update `displayName`, `fullName`, `privacySetting`, or avatar and save, **Then** the system persists the changes successfully.
+1. **Given** an authenticated student in Account Settings, **When** they update `displayName`, `fullName`, `privacySetting`, or upload/remove avatar image and save, **Then** the system persists the changes successfully.
 2. **Given** invalid input in any editable field, **When** the student submits, **Then** the system rejects the update with clear inline validation errors.
 3. **Given** `privacySetting = anonymous`, **When** the student appears on public-facing surfaces, **Then** personally identifying fields are hidden according to privacy rules.
 4. **Given** profile changes are saved, **When** the student refreshes or logs in later, **Then** the latest profile data is shown consistently.
@@ -52,13 +52,14 @@ An authenticated student changes their password from Account Settings by providi
 
 **Why this priority**: Password hygiene is essential for account safety and user control.
 
-**Independent Test**: Enter valid current password and valid new password, save, then confirm login works with new password and old password no longer works.
+**Independent Test**: Enter valid current password and a valid new password (at least 8 characters including letters, numbers, and special characters), save, then confirm login works with new password and old password no longer works.
 
 **Acceptance Scenarios**:
 
 1. **Given** an authenticated student selects Change Password, **When** they provide correct current password and valid new password, **Then** the password is updated.
-2. **Given** incorrect current password, **When** the student submits, **Then** the system rejects the change and does not update the password.
-3. **Given** password change completes successfully, **When** the student logs in later, **Then** only the new password is accepted.
+2. **Given** a new password that does not meet password policy (minimum 8 characters with letters, numbers, and special characters), **When** the student submits, **Then** the system rejects the change with clear validation error.
+3. **Given** incorrect current password, **When** the student submits, **Then** the system rejects the change and does not update the password.
+4. **Given** password change completes successfully, **When** the student logs in later, **Then** only the new password is accepted.
 
 ---
 
@@ -87,6 +88,7 @@ An authenticated student requests account deletion. The system sends an email co
 - Student requests deletion multiple times; only the latest valid token should be usable (or earlier tokens are invalidated by policy).
 - Deletion link is replayed after successful soft delete; system responds idempotently without changing state again.
 - Password change and account deletion are requested concurrently; deletion completion revokes session and takes precedence for access control.
+- New password meets length but misses one required character class (letter, number, or special character); update is rejected by password policy.
 
 ---
 
@@ -96,9 +98,9 @@ An authenticated student requests account deletion. The system sends an email co
 
 **Account/Profile Update**
 
-- **FR-001**: The system MUST allow an authenticated student to update `displayName`, `fullName`, `privacySetting` (`identified | anonymous`), and avatar.
+- **FR-001**: The system MUST allow an authenticated student to update `displayName`, `fullName`, `privacySetting` (`identified | anonymous`), and avatar image.
 - **FR-002**: Profile update APIs MUST only allow a student to read and modify their own account data.
-- **FR-003**: The system MUST expose and accept `displayName`, `fullName`, and `privacySetting` explicitly in account/profile APIs.
+- **FR-003**: The system MUST expose and accept `displayName`, `fullName`, `privacySetting`, and `avatarUrl` explicitly in account/profile APIs, where `avatarUrl` may be a hosted URL or image Data URL from frontend upload.
 - **FR-004**: `displayName` MUST be treated as the primary public identity field and editable independently from `fullName`.
 - **FR-005**: The system MUST support `privacySetting` with enum values `identified | anonymous`, defaulting to `identified`.
 - **FR-006**: Any UI that renders student identity MUST apply fallback order: valid `displayName` -> `fullName` -> sanitized email local-part -> `"Student"`.
@@ -108,15 +110,16 @@ An authenticated student requests account deletion. The system sends an email co
 
 - **FR-007**: The system MUST allow authenticated students to change password by providing current password and new password.
 - **FR-008**: The current password MUST be verified before applying a password change.
-- **FR-009**: After password change, old password MUST no longer be accepted.
+- **FR-009**: New password MUST be at least 8 characters and include at least one letter, one number, and one special character.
+- **FR-010**: After password change, old password MUST no longer be accepted.
 
 **Account Deletion (Soft Delete)**
 
-- **FR-010**: The system MUST allow authenticated students to request account deletion from Account Settings.
-- **FR-011**: On deletion request, the system MUST send a time-limited, single-use confirmation link to the account email and MUST NOT delete/disable immediately.
-- **FR-012**: Account deletion MUST execute only after a valid confirmation link is clicked.
-- **FR-013**: Deletion execution for this feature MUST be soft delete: account status changes to disabled/deleted, sign-in access is blocked, and current sessions are revoked.
-- **FR-014**: Expired or consumed deletion tokens MUST be rejected safely with no state change.
+- **FR-011**: The system MUST allow authenticated students to request account deletion from Account Settings.
+- **FR-012**: On deletion request, the system MUST send a time-limited, single-use confirmation link to the account email and MUST NOT delete/disable immediately.
+- **FR-013**: Account deletion MUST execute only after a valid confirmation link is clicked.
+- **FR-014**: Deletion execution for this feature MUST be soft delete: account status changes to disabled/deleted, sign-in access is blocked, and current sessions are revoked.
+- **FR-015**: Expired or consumed deletion tokens MUST be rejected safely with no state change.
 
 ---
 
@@ -132,7 +135,7 @@ An authenticated student requests account deletion. The system sends an email co
 
 ### Key Entities
 
-- **StudentAccount**: Authenticated UET student account. Key attributes: `displayName`, `fullName`, `privacySetting`, email, password credential, avatar, account status (`active | soft-deleted`), timestamps.
+- **StudentAccount**: Authenticated UET student account. Key attributes: `displayName`, `fullName`, `privacySetting`, email, password credential, `avatarUrl` (URL/Data URL), account status (`active | soft-deleted`), timestamps.
 - **AccountDeletionToken**: Time-limited, single-use token used to confirm account soft deletion by email link.
 - **AccountAuditEvent**: Immutable event records for account-sensitive actions.
 
@@ -142,7 +145,7 @@ An authenticated student requests account deletion. The system sends an email co
 
 ### Measurable Outcomes
 
-- **SC-001**: `GET/PATCH /api/account/profile` consistently read/write `displayName`, `fullName`, `privacySetting`, avatar, with ownership enforcement.
+- **SC-001**: `GET/PATCH /api/account/profile` consistently read/write `displayName`, `fullName`, `privacySetting`, `avatarUrl` (URL/Data URL), with ownership enforcement.
 - **SC-002**: Identity rendering always resolves with fallback order (`displayName` -> `fullName` -> sanitized email local-part -> `"Student"`).
 - **SC-003**: Password change succeeds only with correct current password, and old password is unusable immediately after successful change.
 - **SC-004**: After deletion confirmation link is validated, the account is soft-deleted and all active sessions are revoked within 5 seconds.

@@ -1,6 +1,5 @@
-const { authRouter, accountRouter } = require('./auth.routes');
+const { authRouter } = require('./auth.routes');
 
 module.exports = {
   authRouter,
-  accountRouter,
 };

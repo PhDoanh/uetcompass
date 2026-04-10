@@ -10,7 +10,13 @@ const securityAuditSchema = new mongoose.Schema(
     eventType: {
       type: String,
       required: true,
-      enum: ['PASSWORD_CHANGED', 'PASSWORD_RESET_COMPLETED'],
+      enum: [
+        'PROFILE_UPDATED',
+        'PASSWORD_CHANGED',
+        'PASSWORD_RESET_COMPLETED',
+        'ACCOUNT_DELETION_REQUESTED',
+        'ACCOUNT_SOFT_DELETED',
+      ],
       index: true,
     },
     metadata: {

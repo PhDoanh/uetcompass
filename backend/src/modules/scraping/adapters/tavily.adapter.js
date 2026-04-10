@@ -12,8 +12,20 @@ const ACADEMIC_MAX_RESULTS = 10;
 const TREND_MAX_RESULTS = 15;
 const RESOURCE_MAX_RESULTS = 10;
 
-// Initialize Tavily client
-const client = tavily({ apiKey: TAVILY_API_KEY });
+let client = null;
+
+function getClient() {
+  if (client) {
+    return client;
+  }
+
+  if (!TAVILY_API_KEY) {
+    return null;
+  }
+
+  client = tavily({ apiKey: TAVILY_API_KEY });
+  return client;
+}
 
 const FALLBACK_ACADEMIC = [
   'https://ocw.mit.edu',
@@ -200,9 +212,14 @@ function buildFallbackResults(urls, prefix, keyword) {
  */
 async function academicSearch(courseName) {
   try {
+    const searchClient = getClient();
+    if (!searchClient) {
+      throw new Error('Missing TAVILY_API_KEY');
+    }
+
     const query = `${courseName} slides lecture notes UET education`;
     
-    const response = await client.search(query, {
+    const response = await searchClient.search(query, {
       include_raw_content: false,
       max_results: ACADEMIC_MAX_RESULTS,
       include_images: false,
@@ -247,6 +264,11 @@ async function academicSearch(courseName) {
  */
 async function trendSearch(courseName, personalizationContext = null) {
   try {
+    const searchClient = getClient();
+    if (!searchClient) {
+      throw new Error('Missing TAVILY_API_KEY');
+    }
+
     // Build enriched query with personalization context
     let query = `${courseName} skills job market demand trending`;
     
@@ -257,7 +279,7 @@ async function trendSearch(courseName, personalizationContext = null) {
       if (companyType) query += ` ${companyType}`;
     }
 
-    const response = await client.search(query, {
+    const response = await searchClient.search(query, {
       include_raw_content: false,
       max_results: TREND_MAX_RESULTS,
       include_images: false,
@@ -301,6 +323,11 @@ async function trendSearch(courseName, personalizationContext = null) {
  */
 async function resourceSearch(skillName, mode = 'mixed') {
   try {
+    const searchClient = getClient();
+    if (!searchClient) {
+      throw new Error('Missing TAVILY_API_KEY');
+    }
+
     let query = `learn ${skillName} course tutorial`;
     if (mode === 'free') {
       query += ' free open source';
@@ -310,7 +337,7 @@ async function resourceSearch(skillName, mode = 'mixed') {
       query += ' free paid';
     }
     
-    const response = await client.search(query, {
+    const response = await searchClient.search(query, {
       include_raw_content: false,
       max_results: RESOURCE_MAX_RESULTS,
       include_images: false,
@@ -355,5 +382,8 @@ module.exports = {
   ACADEMIC_MAX_RESULTS,
   TREND_MAX_RESULTS,
   RESOURCE_MAX_RESULTS,
-  client // Export for testing/mocking
+  getClient,
+  get client() {
+    return client;
+  }
 };

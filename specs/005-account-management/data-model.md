@@ -15,7 +15,7 @@ Purpose: Primary account aggregate for authenticated UET students using Account 
 | `displayName` | String\|null | no | Trimmed, length 1-120 when present | Primary public identity |
 | `fullName` | String | yes | Trimmed, non-empty | Owner-visible personal name |
 | `privacySetting` | Enum | yes | `identified` \| `anonymous` | Default `identified` |
-| `avatarUrl` | String\|null | no | Valid URL when present | |
+| `avatarUrl` | String\|null | no | Valid URL or image Data URL when present | Frontend avatar upload stores Data URL |
 | `passwordHash` | String | yes | Non-reversible hash | Updated via password change flow |
 | `status` | Enum | yes | `active` \| `soft-deleted` | Soft delete blocks access |
 | `softDeletedAt` | Date\|null | no | Null unless deleted | |

@@ -2,7 +2,7 @@ import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
-import AccountSettingsPage from './features/auth/AccountSettingsPage';
+import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
 import NavBar from './features/general/NavBar';
 import OnboardingGuard from './guards/OnboardingGuard';
@@ -91,11 +91,5 @@ export default function App() {
 				<AppContent />
 			</AuthGuard>
 		</AuthProvider>
-	);
-}
-
-export default function App() {
-	return (
-		<AppContent />
 	);
 }

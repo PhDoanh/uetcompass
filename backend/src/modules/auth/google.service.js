@@ -1,4 +1,5 @@
 const { OAuth2Client } = require('google-auth-library');
+const { emitAuthEvent } = require('./audit.service');
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -12,7 +13,7 @@ function getGoogleClientId() {
   return process.env.GOOGLE_CLIENT_ID || '';
 }
 
-async function verifyGoogleIdToken(credential) {
+async function verifyGoogleIdToken(credential, context = {}) {
   const idToken = String(credential || '').trim();
   if (!idToken) {
     throw buildError(400, 'GOOGLE_TOKEN_INVALID', 'Invalid Google credential.');
@@ -38,6 +39,16 @@ async function verifyGoogleIdToken(credential) {
   }
 
   if (!/@vnu\.edu\.vn$/i.test(email)) {
+    try {
+      await emitAuthEvent('google_login_denied_domain', {
+        actorType: 'system',
+        requestIp: String(context?.requestIp || '').trim() || null,
+        outcome: 'fail',
+        metadata: { email },
+      });
+    } catch (_) {
+      // Ignore audit emission failures on deny path.
+    }
     throw buildError(403, 'GOOGLE_DOMAIN_RESTRICTED', 'Only @vnu.edu.vn accounts are allowed.');
   }
 

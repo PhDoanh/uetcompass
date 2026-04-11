@@ -66,7 +66,6 @@ app.get('/health', (req, res) => {
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/auth', authRouter);
-app.use('/api/account', accountRouter);
 app.use('/api/roadmaps', roadmapRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/resources', academicRouter);

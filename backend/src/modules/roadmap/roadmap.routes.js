@@ -10,6 +10,10 @@ const { addConnection } = require('./roadmap.sse');
 
 const roadmapRouter = express.Router();
 
+// Public endpoints - no auth required
+roadmapRouter.get('/sample', controller.getSampleRoadmap);
+roadmapRouter.get('/public/:shareId', controller.getPublicSharedRoadmap);
+
 // SSE connection endpoint for roadmap notifications
 roadmapRouter.get('/sse', (req, res) => {
 	const sseToken = req.query?.sseToken;

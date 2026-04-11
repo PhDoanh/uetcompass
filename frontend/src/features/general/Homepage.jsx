@@ -80,6 +80,27 @@ export default function Homepage() {
       <div style={{ padding: '24px' }}>
         <h1>Welcome to UET Compass</h1>
         <p>Your personalized learning and skill development platform.</p>
+
+        {!accessToken && (
+          <div style={{ marginTop: '32px' }}>
+            <h2>Public Capabilities</h2>
+            <p>Explore without logging in:</p>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+              <a
+                href="/sample-roadmap"
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px',
+                }}
+              >
+                View Sample Roadmap
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       {popupMessage ? (

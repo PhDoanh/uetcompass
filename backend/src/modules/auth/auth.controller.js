@@ -1,9 +1,5 @@
 const authService = require('./auth.service');
 const passwordService = require('./password.service');
-const profileSettingsService = require('./profileSettings.service');
-const notificationService = require('../notifications/notification.service');
-const googleService = require('./google.service');
-const deletionService = require('./deletion.service');
 const { getRefreshCookieOptions } = require('./token.service');
 
 function sendError(res, err) {
@@ -34,7 +30,10 @@ function notImplemented(routeName) {
 module.exports = {
   register: async (req, res) => {
     try {
-      const result = await authService.registerWithEmail(req.body || {});
+      const result = await authService.registerWithEmail({
+        ...(req.body || {}),
+        requestIp: req.ip,
+      });
       return res.status(201).json({ message: result.message, code: result.code });
     } catch (err) {
       return sendError(res, err);
@@ -50,7 +49,10 @@ module.exports = {
   },
   resendOtp: async (req, res) => {
     try {
-      const result = await authService.resendVerificationOtp(req.body || {});
+      const result = await authService.resendVerificationOtp({
+        ...(req.body || {}),
+        requestIp: req.ip,
+      });
       return res.status(200).json({ message: result.message, code: result.code });
     } catch (err) {
       return sendError(res, err);
@@ -58,7 +60,10 @@ module.exports = {
   },
   login: async (req, res) => {
     try {
-      const result = await authService.loginWithPassword(req.body || {});
+      const result = await authService.loginWithPassword({
+        ...(req.body || {}),
+        requestIp: req.ip,
+      });
       return res.status(200).json({
         code: result.code,
         accessToken: result.accessToken,
@@ -71,7 +76,10 @@ module.exports = {
   },
   googleLogin: async (req, res) => {
     try {
-      const result = await authService.loginWithGoogle(req.body || {});
+      const result = await authService.loginWithGoogle({
+        ...(req.body || {}),
+        requestIp: req.ip,
+      });
       return res.status(result.isNewUser ? 201 : 200).json({
         code: result.code,
         accessToken: result.accessToken,
@@ -94,7 +102,10 @@ module.exports = {
   },
   forgotPassword: async (req, res) => {
     try {
-      const result = await passwordService.requestPasswordReset(req.body || {});
+      const result = await passwordService.requestPasswordReset({
+        ...(req.body || {}),
+        requestIp: req.ip,
+      });
       return res.status(200).json({ message: result.message, code: result.code });
     } catch (err) {
       return sendError(res, err);
@@ -114,94 +125,14 @@ module.exports = {
   },
   resetPassword: async (req, res) => {
     try {
-      const result = await passwordService.resetPasswordWithToken(req.body || {});
+      const currentRefreshToken = req.cookies?.refreshToken || null;
+      const result = await passwordService.resetPasswordWithToken({
+        ...(req.body || {}),
+        currentSessionId: currentRefreshToken ? String(currentRefreshToken).trim() : null,
+      });
       return res.status(200).json({ message: result.message, code: result.code });
     } catch (err) {
       return sendError(res, err);
     }
   },
-  getProfile: async (req, res) => {
-    try {
-      const result = await profileSettingsService.getProfile(req.user.userId);
-      return res.status(200).json(result);
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  patchProfile: async (req, res) => {
-    try {
-      const result = await profileSettingsService.updateProfile(req.user.userId, req.body || {});
-      return res.status(200).json(result);
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  changePassword: async (req, res) => {
-    try {
-      const result = await profileSettingsService.changePassword(req.user.userId, req.body || {});
-      return res.status(200).json({ code: result.code, message: result.message });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  linkGoogle: async (req, res) => {
-    try {
-      const result = await googleService.linkGoogleAccount(req.user.userId, req.body?.credential);
-      return res.status(200).json({ code: result.code, message: result.message });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  unlinkGoogle: async (req, res) => {
-    try {
-      const result = await googleService.unlinkGoogleAccount(req.user.userId, req.params.googleId);
-      return res.status(200).json({ code: result.code, message: result.message });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  requestDeletion: async (req, res) => {
-    try {
-      const result = await deletionService.requestDeletion(req.user.userId);
-      return res.status(200).json({ code: result.code, message: result.message });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  confirmDeletion: async (req, res) => {
-    try {
-      const result = await deletionService.confirmDeletionByToken(req.query.token || '');
-      return res.status(200).json({ code: result.code, message: result.message });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  getNotifications: async (req, res) => {
-    try {
-      const readParam = req.query.read;
-      const read = readParam === 'true' ? true : readParam === 'false' ? false : undefined;
-      const result = await notificationService.getNotifications(req.user.userId, read);
-      return res.status(200).json({ notifications: result });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  markNotificationRead: async (req, res) => {
-    try {
-      const result = await notificationService.markNotificationRead(req.user.userId, req.params.id);
-      if (!result) {
-        return res.status(404).json({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Notification not found.',
-          },
-        });
-      }
-
-      return res.status(200).json({ notification: result });
-    } catch (err) {
-      return sendError(res, err);
-    }
-  },
-  notificationsSse: notImplemented('notificationsSse'),
 };

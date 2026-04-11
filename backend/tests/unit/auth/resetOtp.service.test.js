@@ -30,7 +30,7 @@ describe('reset OTP verification', () => {
     });
   });
 
-  test('invalidates reset flow after 10 wrong attempts', async () => {
+  test('keeps reset flow active after wrong attempts within TTL', async () => {
     User.findOne.mockResolvedValueOnce({
       _id: 'u1',
       email: 'a@vnu.edu.vn',
@@ -43,7 +43,7 @@ describe('reset OTP verification', () => {
 
     await expect(passwordService.verifyResetOtp({ email: 'a@vnu.edu.vn', otp: '9999' })).rejects.toMatchObject({
       status: 400,
-      code: 'RESET_OTP_ATTEMPTS_EXCEEDED',
+      code: 'RESET_OTP_INVALID',
     });
     expect(User.updateOne).toHaveBeenCalled();
   });

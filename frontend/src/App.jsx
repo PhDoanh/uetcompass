@@ -19,7 +19,9 @@ function normalizePathname(pathname) {
 function AppContent() {
 	const { isAuthenticated } = useAuth();
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
-	const isPublicPath = ['/login', '/register', '/forgot-password'].includes(pathname);
+	const isPublicPath =
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
+		pathname.startsWith('/roadmaps/public/');
 
 	if (pathname === '/login') {
 		return <LoginPage />;
@@ -44,6 +46,19 @@ function AppContent() {
 
 	if (pathname === '/') {
 		content = <Homepage />;
+	}
+
+	// Route to sample roadmap
+	if (!content && pathname === '/sample-roadmap') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<div style={{ padding: '24px' }}>
+					<h1>Sample Roadmap</h1>
+					<p>This is a sample roadmap showing typical course progression.</p>
+					<p>To create your personalized roadmap, please log in or register.</p>
+				</div>
+			</main>
+		);
 	}
 
 	// Route to Skill Tree if pathname includes /skill-tree
@@ -87,9 +102,7 @@ function AppContent() {
 export default function App() {
 	return (
 		<AuthProvider>
-			<AuthGuard>
-				<AppContent />
-			</AuthGuard>
+			<AppContent />
 		</AuthProvider>
 	);
 }

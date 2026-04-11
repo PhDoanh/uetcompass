@@ -1,6 +1,6 @@
 # Data Model: AI-Powered Personalised Roadmap Generator
 
-**Feature**: `009-roadmap-generator`
+**Feature**: `009-automated-roadmap-generator`
 **Date**: 2026-03-14
 **Research dependency**: [research.md](research.md) (R-001, R-003, R-004)
 
@@ -18,6 +18,7 @@
 |---|---|---|---|---|---|
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `userId` | ObjectId | yes | — | Indexed; ref: `users` | Foreign key to authenticated user (Feature 005) |
+| `roadmapName` | String | yes | — | ref: `careerTrack` | Distinguishable
 | `isPrimary` | Boolean | yes | `false` | Partial unique index scope (`isPrimary: true`) | Exactly one primary roadmap per user |
 | `studentProfileId` | ObjectId | yes | — | ref: `student_profiles` | The profile snapshot that drove this generation (Feature 001) |
 | `personalisationLevel` | String | yes | — | Enum: `full` \| `low` | `low` when no career goal provided (FR-020) |
@@ -61,7 +62,7 @@
 | `parentNodeId` | String \| null | yes | `null` | Non-null only when `nodeType = subtopic` | Links subtopic to its parent topic node within the same roadmap |
 | `relatedCourses` | RelatedCourse[] | yes | `[]` | Non-null array | Course(s) from the DAG that deliver this skill |
 | `reason` | String | yes | — | Non-empty | Why this skill is included and how it contributes to the student's career goal |
-| `resources` | Any[] | yes | `[]` | Always `[]` at generation time | Reserved for Feature 003 to populate later |
+| `resources` | Any[] | yes | `[]` | Never null at generation time; template-matched nodes inherit from `TemplateNode.resources` (null or absent → `[]`); off-template nodes always `[]` | Reserved for Feature 003 to populate later |
 
 ### RelatedCourse (embedded shape)
 
@@ -111,6 +112,7 @@ const roadmapNodeSchema = new Schema(
 const roadmapSchema = new Schema(
   {
     userId:             { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    roadmapName:        { type: String, required: true, trim: true },
     isPrimary:          { type: Boolean, required: true, default: false },
     studentProfileId:   { type: Schema.Types.ObjectId, ref: 'StudentProfile', required: true },
     personalisationLevel: { type: String, enum: ['full', 'low'], required: true },
@@ -233,7 +235,7 @@ Feature 009 enforces this invariant using a partial unique index and transaction
 | Value | `{ nodes, personalisationLevel, triggerReason, studentProfileId }` |
 | Max entries | One per user with a pending review (typically low) |
 | Cleanup | `clearPendingPreview(userId)` called on superseded preview, explicit discard, or generation failure |
-| Restart handling | `SIGTERM` handler iterates all keys, calls `upsertFailed`, clears all entries |
+| Restart handling | `SIGTERM` handler iterates all keys, reads each preview via `getPendingPreview(userId)`, calls `upsertFailedWithProfile(userId, preview.studentProfileId, msg, preview.personalisationLevel)`, clears all entries |
 
 **See**: [research.md R-004](research.md) for implementation pattern and SIGTERM handler.
 
@@ -254,22 +256,35 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 | `major` | String | Major this template applies to |
 | `careerTrack` | String \| null | Career track scope; `null` = generic major-wide template |
 | `personalisationLevel` | String | Always `'low'` |
-| `nodes` | TemplateNode[] | Ordered nodes; each has `id`, `nodeType` (`topic`\|`subtopic`), `skillName` |
+| `nodes` | TemplateNode[] | Ordered nodes; each has `id`, `nodeType` (`topic`\|`subtopic`), `skillName`, `reason`, optional `resources` |
 | `edges` | TemplateEdge[] | Connections; `edgeStyle: 'solid'` = main-line flow, `edgeStyle: 'dashed'` = topic→subtopic branch |
 
-**TemplateNode fields**: `id`, `nodeType` (`topic` \| `subtopic`), `skillName`
+**TemplateNode fields**: `id`, `nodeType` (`topic` \| `subtopic`), `skillName`, `reason` (String — required), `resources` (Any[] — optional, defaults to `[]` if absent in template)
 
 **TemplateEdge fields**: `source` (nodeId), `target` (nodeId), `edgeStyle` (`solid` \| `dashed`)
 
 ### Access pattern from this feature
 
 - Loaded from the bundled JSON file at generation time.
-- Lookup: match by `major` and `careerTrack`; fall back to `careerTrack: null` if no career-track-specific template exists.
+- Lookup: match by `careerTrack` only — use `profile.careerGoal.role` as the match key (values are identical to `CareerTrack.trackId` from Feature 002's config); fall back to `{ careerTrack: null }` if `careerGoal.role` is absent or does not match any known `careerTrack`. The `major` field on the template is metadata only and is NOT used as a lookup key.
 - Feature 009 performs **no writes** to this file.
 
 ---
 
 ## Referenced Entities (read-only from this feature)
+
+### Program
+
+**MongoDB collection**: `programs`
+**Owned by**: Feature 002 (Seed CTĐT DAG)
+**Access from this feature**: `findOne({ nameEN: profile.major })` to resolve `nameEN` → `programId` before fetching CourseUnits. No writes.
+
+| Field | Type | Notes |
+|---|---|---|
+| `_id` | ObjectId | Used as `programId` filter key for `course_units` lookup |
+| `nameEN` | String | English program name — this is the value stored in `StudentProfile.major` |
+| `nameVI` | String | Vietnamese program name (not used by Feature 009) |
+| `objectives` | String | Full program objective text — passed as `program.objectives` in the Gemini prompt for off-template skill evaluation (FR-008; see research.md R-001) |
 
 ### StudentProfile
 
@@ -280,7 +295,7 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 | Field | Type | Notes |
 |---|---|---|
 | `userId` | ObjectId | Used to link roadmap → profile |
-| `major` | String | Primary filter for DAG retrieval |
+| `major` | String | Stores `program.nameEN`; used to look up the `Program` document to obtain `programId` for DAG retrieval |
 | `completedCourseIds` | ObjectId[] | Used as satisfied prerequisite anchors (not nodes) |
 | `careerGoal.role` | String \| null | Determines `personalisationLevel` |
 | `careerGoal.companyType` | String \| null | Determines `personalisationLevel` |
@@ -291,7 +306,7 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 
 **MongoDB collection**: `course_units`
 **Owned by**: Feature 002 (Seed CTĐT DAG)
-**Access from this feature**: `find({ major })` to retrieve the full DAG for the student's major. No writes.
+**Access from this feature**: Two-step — (1) resolve `programId` from `Program` where `nameEN = profile.major`; (2) `find({ programId })` to retrieve the full DAG. No writes.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -301,17 +316,18 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 | `type` | String | `required` \| `elective` — used for AI course selection instructions |
 | `skills` | String[] | Pre-seeded skill names — source for roadmap node `skillName` values |
 | `prerequisites` | String[] | Array of `code` values — used in topological sort validation |
-| `major` | String | Filter key for DAG retrieval |
+| `programId` | ObjectId | ref: `programs` — filter key for DAG retrieval (resolved from `profile.major` via `Program.nameEN`) |
 
 ---
 
 ## Entity: RoadmapProgress
 
 **MongoDB collection**: `roadmap_progress`
-**Owned by**: Feature 007 (Progress Tracking)
-**Access from Feature 009**: Read-only where needed. Feature 009 does not write to this collection.
+**Owned by**: Feature 009 (AI-Powered Personalised Roadmap Generator)
+**Created by**: `roadmapProgress.service.createProgress(userId, roadmapId, nodeIds)` — called immediately after `commitAccepted` in the acceptance pipeline; seeds `pending` with all `nodeId` values from the accepted `Roadmap.nodes`, all other arrays empty.
+**Updated by**: `roadmapProgress.service.updateNodeState(userId, roadmapId, nodeId, fromState, toState)` — atomic pull-from-source + push-to-target; enforces the exactly-one-array invariant.
 
-**Purpose**: Tracks per-node progress state for a given roadmap, decoupled from the `Roadmap` document. Uses a set-membership model — a `nodeId` appears in exactly one of the three arrays, or in none (implying `pending`).
+**Purpose**: Tracks per-node progress state for a given roadmap, fully decoupled from the `Roadmap` document — no progress fields live on the `Roadmap` schema. Uses an explicit four-state set-membership model — every `nodeId` in the roadmap appears in exactly one of the four arrays at any time.
 
 ### Schema
 
@@ -320,9 +336,10 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `userId` | ObjectId | yes | — | ref: `users` | Owner of the roadmap |
 | `roadmapId` | ObjectId | yes | — | ref: `roadmaps` | The roadmap being tracked |
-| `done` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has completed |
-| `learning` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student is currently working on |
-| `skipped` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has explicitly skipped |
+| `pending` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes not yet started; seeded with all `nodeId` values from the accepted `Roadmap.nodes` on document creation |
+| `inProgress` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student is currently working on |
+| `completed` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has finished |
+| `skip` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has explicitly skipped |
 | `updatedAt` | Date | auto | `Date.now()` | — | Last modification timestamp |
 
 ### Indexes
@@ -333,16 +350,17 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 
 ### State model
 
-A `nodeId` absent from all three arrays is implicitly `pending`. Transitions:
+Every `nodeId` lives in exactly one of the four arrays. Allowed transitions:
 
 ```text
-  [pending] → [learning] → [done]
+  [pending] → [inProgress] → [completed]
       │
-      └──────────────────→ [skipped]
+      └─────────────────────→ [skip]
 ```
 
-- A `nodeId` MUST appear in at most one array at any time.
-- No reversals permitted.
+- A `nodeId` MUST appear in exactly one array at any time; moving it = atomic pull from source + push to target.
+- `pending` is populated at document creation time with all `nodeId` values from the roadmap's `nodes` array.
+- `skip` is a terminal state alongside `completed` — no reversals permitted.
 
 ### Frontend atom shape
 
@@ -350,8 +368,9 @@ This collection maps directly to the frontend progress atom:
 
 ```ts
 export const roadmapProgress = atom<{
-  done: string[];       // nodeId[]
-  learning: string[];   // nodeId[]
-  skipped: string[];    // nodeId[]
+  pending:    string[];   // nodeId[]
+  inProgress: string[];   // nodeId[]
+  completed:  string[];   // nodeId[]
+  skip:       string[];   // nodeId[]
 } | null>(null);
 ```

@@ -1,6 +1,6 @@
 # Research: AI-Powered Personalised Roadmap Generator
 
-**Feature**: `009-roadmap-generator`
+**Feature**: `009-automated-roadmap-generator`
 **Date**: 2026-03-14
 **Status**: Refined — canonical lifecycle ownership + multi-roadmap model applied
 
@@ -10,7 +10,7 @@
 
 **Decision**: Use `@google/generative-ai` SDK (already in-codebase from Feature 002) with `responseMimeType: 'application/json'` and `responseSchema` set to a JSON Schema matching a simple `string[]` of approved skill names. The AI call is scoped to a single task: given a list of off-template skills, return only those that are career-relevant for the student's stated role. Template-matched skill node construction, ordering, and topological validation are handled entirely by system logic; the AI is not involved in those steps.
 
-**Rationale**: `responseSchema` enforcement ensures the AI returns a valid JSON array of strings — no post-response parsing required. Scoping the AI to off-template skill evaluation only (rather than full roadmap generation) minimises token usage and keeps AI responsibility narrow: the system owns template matching, ordering, and node enrichment; the AI only judges career relevance for skills absent from the template. `resources` is **not** included in the AI schema — the system appends an empty array to every node after construction.
+**Rationale**: `responseSchema` enforcement ensures the AI returns a valid JSON array of strings — no post-response parsing required. Scoping the AI to off-template skill evaluation only (rather than full roadmap generation) minimises token usage and keeps AI responsibility narrow: the system owns template matching, ordering, and node enrichment; the AI only judges career relevance for skills absent from the template. `resources` is **not** included in the AI schema — all nodes receive `resources: []` at generation time; template-matched nodes inherit `resources` from the template if the value is non-null, otherwise the system defaults to `[]`.
 
 **Pattern**:
 ```js
@@ -176,17 +176,21 @@ async function triggerGeneration(userId, studentProfileId, triggerReason) {
 
 async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
   activeGenerations.add(userId.toString());
+  let personalisationLevel = 'low'; // safe fallback; overwritten after profile is loaded
   try {
     const profile        = await loadStudentProfile(studentProfileId);
-    const courseUnits    = await loadCourseUnitDAG(profile.major);   // all courses for major
-    const program        = await loadProgram(profile.major);
-    const template       = await loadRoadmapTemplate(profile.major);
+    personalisationLevel = profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
+    const program        = await loadProgram(profile.major);          // resolves nameEN → programId
+    const courseUnits    = await loadCourseUnitDAG(program._id);      // find({ programId }) — all courses for major
+    const template       = await loadRoadmapTemplate(profile.careerGoal?.role ?? null);
+    // loads career-track-specific template if careerGoal.role matches a known careerTrack;
+    // falls back to { careerTrack: null } generic template if no match or role absent
 
     // Step 2: collect skills from all non-completed courses, build reverse map
     const skillCoursesMap = buildSkillCoursesMap(courseUnits, profile.completedCourseCodes ?? []);
     // skillCoursesMap: Map<skillName, CourseUnit[]>
 
-    // Step 3: match skills against template; inherit nodeType/parentNodeId/order from template
+    // Step 3: match skills against template; inherit nodeType/parentNodeId/order/reason/resources from template
     const { templateNodes, offTemplateSkills } = matchSkillsToTemplate(skillCoursesMap, template);
 
     // Step 4: AI evaluates off-template skills for career relevance (skipped if no career goal)
@@ -198,9 +202,6 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
     const nodes = [...templateNodes, ...offTemplateNodes];
     validateTopologicalOrder(nodes, courseUnits);
 
-    const personalisationLevel =
-      profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
-
     previewStore.storePendingPreview(userId, {
       nodes,
       personalisationLevel,
@@ -210,7 +211,7 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 
     await notifyPreviewReady(userId, { nodes, personalisationLevel });
   } catch (err) {
-    await roadmapService.upsertFailed(userId, err.message);
+    await roadmapService.upsertFailedWithProfile(userId, studentProfileId, err.message, personalisationLevel);
     await notifyGenerationFailed(userId);
   } finally {
     activeGenerations.delete(userId.toString());
@@ -218,7 +219,7 @@ async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
 }
 ```
 
-Worker restart recovery: the `finally` block always runs on normal termination. On `SIGTERM` (graceful Render shutdown), any `userId` whose generation was in-flight has the preview lost; the `SIGTERM` handler should iterate `pendingPreviews` (R-004) and call `upsertFailed` for each. On ungraceful crash, the student will receive no notification — the retry mechanism is available from the Skill Tree once they reload and find their roadmap without `acceptedAt` (if a previous roadmap document existed).
+Worker restart recovery: the `finally` block always runs on normal termination. On `SIGTERM` (graceful Render shutdown), any `userId` whose generation was in-flight has the preview lost; the `SIGTERM` handler should iterate `pendingPreviews` (R-004) and call `upsertFailedWithProfile` for each. On ungraceful crash, the student will receive no notification — the retry mechanism is available from the Skill Tree once they reload and find their roadmap without `acceptedAt` (if a previous roadmap document existed).
 
 **Alternatives considered**:
 - BullMQ + Redis queue (rejected — requires Redis; Render free-tier constraint from Feature 001)
@@ -261,7 +262,7 @@ module.exports = { storePendingPreview, getPendingPreview, clearPendingPreview, 
 **Preview payload shape** (unchanged):
 ```js
 {
-  nodes: RoadmapNode[],            // AI output with resources: [] appended
+  nodes: RoadmapNode[],            // all nodes; resources: [] on every node (template-inherited with null→[] coercion, or [] for off-template)
   personalisationLevel: 'full' | 'low',
   triggerReason: 'profile_submission' | 'retry' | 'repersonalization',
   studentProfileId: ObjectId,
@@ -273,7 +274,8 @@ module.exports = { storePendingPreview, getPendingPreview, clearPendingPreview, 
 process.on('SIGTERM', async () => {
   const pendingUserIds = previewStore.getAllPendingUserIds();
   for (const userId of pendingUserIds) {
-    await roadmapService.upsertFailed(userId, 'Worker restart — generation preview lost');
+    const preview = previewStore.getPendingPreview(userId);
+    await roadmapService.upsertFailedWithProfile(userId, preview.studentProfileId, 'Worker restart — generation preview lost', preview.personalisationLevel);
     await notifyGenerationFailed(userId);
     previewStore.clearPendingPreview(userId);
   }
@@ -312,7 +314,7 @@ notifyUser(userId, 'roadmap_preview_ready', {
 notifyUser(userId, 'roadmap_generation_failed', {
   type:           'roadmap_generation_failed',
   retryable:      true,
-  retryEndpoint:  'POST /api/roadmap/retry',
+  retryEndpoint:  'POST /api/roadmaps/primary/regenerate',
   message:        'Roadmap generation failed. You can retry from the Skill Tree.',
 });
 ```

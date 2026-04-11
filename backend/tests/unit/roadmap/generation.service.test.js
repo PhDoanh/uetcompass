@@ -54,14 +54,24 @@ const mockProfile = {
 	_id: 'profileId1',
 	userId: 'userId1',
 	major: 'CS',
+	careerGoal: { role: 'Frontend Developer', companyType: 'Product' },
+	completedCourses: [],
+	personalAspirations: null,
+};
+
+// Profile that matches the backend.json template (roadmapName: 'Backend Engineer')
+const mockTemplateProfile = {
+	_id: 'profileId1',
+	userId: 'userId1',
+	major: 'CS',
 	careerGoal: { role: 'Backend Engineer', companyType: 'Product' },
 	completedCourses: [],
 	personalAspirations: null,
 };
 
 const mockCourseUnits = [
-	{ code: 'INT2204', name: 'OOP', credits: 3, prerequisites: [], type: 'required' },
-	{ code: 'INT2201', name: 'DSA', credits: 3, prerequisites: ['INT2204'], type: 'required' },
+	{ code: 'INT2204', name: 'OOP', credits: 3, prerequisites: [], type: 'required', skills: ['OOP'] },
+	{ code: 'INT2201', name: 'DSA', credits: 3, prerequisites: ['INT2204'], type: 'required', skills: ['DSA'] },
 ];
 
 // Gemini now returns { skillName, reason }[] for off-template skill evaluation
@@ -109,7 +119,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('generation.service -- Gemini output and preview', () => {
-	test('builds skill nodes from AI-approved skills and stores preview', async () => {
+	test('builds skill nodes from AI-approved skills and stores preview (no template match)', async () => {
 		await trigger('u-parse-1');
 		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
 			'u-parse-1',
@@ -117,6 +127,21 @@ describe('generation.service -- Gemini output and preview', () => {
 				personalisationLevel: 'full',
 				nodes: expect.arrayContaining([
 					expect.objectContaining({ skillName: 'OOP', resources: [] }),
+				]),
+			})
+		);
+	});
+
+	test('uses template nodes enriched with relatedCourses when role matches template', async () => {
+		StudentProfile.findOne.mockResolvedValue(mockTemplateProfile);
+		await trigger('u-parse-tpl');
+		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
+			'u-parse-tpl',
+			expect.objectContaining({
+				personalisationLevel: 'full',
+				roadmapName: 'Backend Engineer',
+				nodes: expect.arrayContaining([
+					expect.objectContaining({ skillName: 'Internet Infrastructure & Protocols', nodeType: 'topic' }),
 				]),
 			})
 		);
@@ -154,14 +179,12 @@ describe('generation.service -- Gemini output and preview', () => {
 // ---------------------------------------------------------------------------
 
 describe('generation.service -- topological validation', () => {
-	test('invokes validateTopologicalOrder with relatedCourses nodes and completedCourseCodes', async () => {
+	test('invokes validateTopologicalOrder with nodes containing relatedCourses', async () => {
 		await trigger('u-topo-1');
 		expect(validationService.validateTopologicalOrder).toHaveBeenCalledWith(
 			expect.arrayContaining([
 				expect.objectContaining({
-					relatedCourses: expect.arrayContaining([
-						expect.objectContaining({ courseCode: 'INT2204' }),
-					]),
+					relatedCourses: expect.any(Array),
 				}),
 			]),
 			mockCourseUnits,

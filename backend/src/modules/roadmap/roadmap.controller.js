@@ -149,7 +149,7 @@ async function retryGeneration(req, res) {
 			return res.status(409).json({
 				error: {
 					code: 'CONFLICT',
-					message: 'No failed roadmap found to retry. Generate a new roadmap first.',
+					message: 'No incomplete roadmap found. Retry is only available after a generation failure.',
 				},
 			});
 		}
@@ -166,7 +166,7 @@ async function retryGeneration(req, res) {
 		await triggerGeneration(userId, 'retry');
 
 		return res.status(202).json({
-			message: 'Roadmap generation started. You will be notified when it completes.',
+			message: 'Roadmap generation retry started. You will be notified when it completes.',
 		});
 	} catch (err) {
 		return mapError(err, res);
@@ -177,7 +177,7 @@ async function rejectRoadmap(req, res) {
 	try {
 		const userId = req.user.userId;
 		previewStore.clearPendingPreview(userId);
-		return res.json({ message: 'Roadmap preview rejected.' });
+		return res.json({ message: 'Roadmap preview rejected. Your previous roadmap remains active.' });
 	} catch (err) {
 		return mapError(err, res);
 	}

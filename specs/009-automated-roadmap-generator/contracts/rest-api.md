@@ -1,6 +1,6 @@
 # REST API Contract: Roadmap Module
 
-**Feature**: `009-roadmap-generator`
+**Feature**: `009-automated-roadmap-generator`
 **Date**: 2026-03-14
 **Base path**: `/api`
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`. The middleware attaches `req.user.userId` (ObjectId) to every request.
@@ -34,17 +34,14 @@ Content-Type: application/json
 | 409 | `CONFLICT` | Conflict with current lifecycle state (generation in progress / primary switch race / duplicate transition) |
 | 422 | `PREREQUISITE_VIOLATION` | Submitted roadmap nodes violate prerequisite constraints |
 | 422 | `ALL_COMPLETED` | All submitted nodes were filtered out because they are already completed |
+| 422 | `INVALID_TRANSITION` | Node state transition is invalid (nodeId not found in declared source state array) |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
 
 ---
 
-## GET /api/primary-roadmap
+## GET /api/roadmaps/primary
 
 Retrieve the authenticated student's current primary roadmap document.
-
-### Compatibility note
-
-`GET /api/roadmap` is deprecated and maintained only as a compatibility alias to this endpoint during migration.
 
 ### Request
 
@@ -58,18 +55,16 @@ No body.
   "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
   "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
   "personalisationLevel": "full",
-  "status": "completed",
-  "errorMessage": null,
   "nodes": [
     {
-      "courseCode": "INT2204",
-      "courseName": "Object-Oriented Programming",
-      "credits": 3,
-      "suggestedSemester": 2,
-      "gainedSkills": ["OOP principles", "Java fundamentals", "design patterns"],
-      "supportingSkills": ["SOLID principles", "unit testing with JUnit"],
+      "nodeId": "node-01",
+      "nodeType": "topic",
+      "skillName": "Object-Oriented Programming",
+      "parentNodeId": null,
+      "relatedCourses": [
+        { "courseCode": "INT2204", "courseName": "Object-Oriented Programming", "credits": 3 }
+      ],
       "reason": "Foundation for all software engineering courses in the roadmap.",
-      "careerRelevanceNote": "Backend engineers at product companies rely on OOP daily for service design.",
       "resources": []
     }
   ],
@@ -87,43 +82,6 @@ No body.
   "error": {
     "code": "ROADMAP_NOT_FOUND",
     "message": "No roadmap has been generated for this user yet."
-  }
-}
-```
-
----
-
-## GET /api/roadmaps
-
-List roadmap documents for the authenticated user.
-
-### Query parameters
-
-- `status` (optional): `completed` | `failed`
-- `page` (optional, default `1`)
-- `limit` (optional, default `20`, max `100`)
-
-### Response — 200 OK
-
-```json
-{
-  "items": [
-    {
-      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
-      "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
-      "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
-      "personalisationLevel": "full",
-      "status": "completed",
-      "isPrimary": true,
-      "errorMessage": null,
-      "updatedAt": "2026-03-14T06:05:00.000Z",
-      "acceptedAt": "2026-03-11T08:05:00.000Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 1
   }
 }
 ```
@@ -193,7 +151,7 @@ No body.
 
 ---
 
-## POST /api/roadmaps/accept
+## POST /api/roadmaps/primary/accept
 
 Fork-consumable acceptance endpoint. The caller submits full roadmap nodes payload. Server performs canonical acceptance pipeline:
 
@@ -212,14 +170,14 @@ This endpoint does not depend on old preview-accept lookup.
   "isPrimary": true,
   "nodes": [
     {
-      "courseCode": "INT2204",
-      "courseName": "Object-Oriented Programming",
-      "credits": 3,
-      "suggestedSemester": 2,
-      "gainedSkills": ["OOP principles", "Java fundamentals"],
-      "supportingSkills": ["SOLID principles"],
+      "nodeId": "node-01",
+      "nodeType": "topic",
+      "skillName": "Object-Oriented Programming",
+      "parentNodeId": null,
+      "relatedCourses": [
+        { "courseCode": "INT2204", "courseName": "Object-Oriented Programming", "credits": 3 }
+      ],
       "reason": "Foundation for software engineering.",
-      "careerRelevanceNote": "Useful for backend development at product companies.",
       "resources": []
     }
   ]
@@ -236,15 +194,15 @@ Returns the committed roadmap document.
   "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
   "studentProfileId": "64a1b2c3d4e5f6a7b8c9d0e3",
   "personalisationLevel": "full",
-  "status": "completed",
   "isPrimary": true,
-  "errorMessage": null,
   "nodes": [ /* … same shape as primary roadmap response … */ ],
   "createdAt": "2026-03-11T08:00:00.000Z",
   "acceptedAt": "2026-03-11T08:05:12.000Z",
   "updatedAt": "2026-03-14T06:05:12.000Z"
 }
 ```
+
+> **Side effect**: A `RoadmapProgress` document is also created as a side effect of acceptance, seeding all node IDs into `pending` (FR-042). Retrieve it via `GET /api/roadmaps/:roadmapId/progress`.
 
 ### Response — 422 Unprocessable Entity (`ALL_COMPLETED`)
 
@@ -281,11 +239,136 @@ Returns the committed roadmap document.
 
 ---
 
-## POST /api/roadmap/retry
+## POST /api/roadmaps/primary/reject
 
-Trigger a retry of a failed roadmap generation. The system re-reads the existing `StudentProfile` and re-runs the full generation lifecycle from the input retrieval step. Returns 202 Accepted immediately — the generation runs asynchronously and the student is notified via SSE on completion or failure (FR-030).
+Discard the current roadmap preview. If the student has an existing accepted roadmap, it remains unchanged as their active primary. If no accepted roadmap exists, the student is left without an active roadmap and the retry mechanism becomes available.
 
-**Preconditions**: A `roadmaps` document with `status: failed` must exist for this user. An in-progress generation for this user must not be active.
+### Request
+
+No body.
+
+### Response — 200 OK
+
+```json
+{
+  "message": "Roadmap preview rejected. Your previous roadmap remains active."
+}
+```
+
+### Response — 404 Not Found
+
+```json
+{
+  "error": {
+    "code": "ROADMAP_NOT_FOUND",
+    "message": "No pending preview found to reject."
+  }
+}
+```
+
+---
+
+## GET /api/roadmaps/:roadmapId/progress
+
+Retrieve the progress document for a specific roadmap (auth-scoped to requester).
+
+### Request
+
+No body.
+
+### Response — 200 OK
+
+```json
+{
+  "_id": "64a1b2c3d4e5f6a7b8c9d0e4",
+  "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+  "roadmapId": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "pending":    ["version-control-systems", "repo-hosting"],
+  "inProgress": ["object-oriented-programming"],
+  "completed":  [],
+  "skip":       [],
+  "updatedAt":  "2026-04-11T08:00:00.000Z"
+}
+```
+
+### Response — 404 Not Found
+
+```json
+{
+  "error": {
+    "code": "ROADMAP_NOT_FOUND",
+    "message": "Roadmap or progress not found."
+  }
+}
+```
+
+---
+
+## PATCH /api/roadmaps/:roadmapId/progress/node
+
+Move a single node from one state to another. The operation is atomic: the node is pulled from `fromState` and pushed to `toState` in a single `findOneAndUpdate`. If `nodeId` is not found in `fromState`, the request fails with `INVALID_TRANSITION`.
+
+**Valid transitions**:
+- `pending` → `inProgress`
+- `pending` → `skip`
+- `inProgress` → `completed`
+
+**Valid `fromState`/`toState` values**: `pending`, `inProgress`, `completed`, `skip`. Any other value returns `400 INVALID_PAYLOAD`.
+
+### Request
+
+```json
+{
+  "nodeId":    "version-control-systems",
+  "fromState": "pending",
+  "toState":   "inProgress"
+}
+```
+
+### Response — 200 OK
+
+Returns the updated progress document (same shape as GET above).
+
+### Response — 422 Unprocessable Entity (`INVALID_TRANSITION`)
+
+```json
+{
+  "error": {
+    "code": "INVALID_TRANSITION",
+    "message": "Node 'version-control-systems' is not in state 'pending'."
+  }
+}
+```
+
+### Response — 404 Not Found
+
+```json
+{
+  "error": {
+    "code": "ROADMAP_NOT_FOUND",
+    "message": "Roadmap or progress not found."
+  }
+}
+```
+
+### Response — 400 Bad Request (`INVALID_PAYLOAD`)
+
+```json
+{
+  "error": {
+    "code": "INVALID_PAYLOAD",
+    "message": "'fromState' must be one of: pending, inProgress, completed, skip."
+  }
+}
+```
+
+---
+
+## POST /api/roadmaps/primary/regenerate
+
+Trigger a retry/re-generation of a failed or updated roadmap. The system re-reads the existing `StudentProfile` and re-runs the full generation lifecycle from the input retrieval step. Returns 202 Accepted immediately — the generation runs asynchronously and the student is notified via SSE on completion or failure (FR-030).
+
+**Preconditions**: A `roadmaps` document without `acceptedAt` must exist for this user. An in-progress generation for this user must not be active.
 
 ### Request
 
@@ -316,7 +399,7 @@ No body.
 {
   "error": {
     "code": "CONFLICT",
-    "message": "No failed roadmap generation found. Retry is only available after a generation failure."
+    "message": "No incomplete roadmap found. Retry is only available after a generation failure."
   }
 }
 ```
@@ -329,7 +412,7 @@ Generation is triggered internally by two system events (FR-033):
 
 1. **Profile submission** — emitted by Feature 001's `POST /api/onboarding/submit` handler after successfully persisting the `StudentProfile`. The roadmap module exports a `triggerGeneration(userId, studentProfileId, 'profile_submission')` function called directly within the same process.
 
-2. **Repersonalization** — emitted by Feature 005's account settings handler after setting `repersonalizationPending: true` on the `StudentProfile`. The roadmap module exports `triggerGeneration(userId, studentProfileId, 'repersonalization')` called via the service layer.
+2. **Repersonalization** — emitted by Feature 005's account settings handler when the student requests roadmap regeneration. The roadmap module exports `triggerGeneration(userId, studentProfileId, 'repersonalization')` called via the service layer.
 
 Neither trigger is exposed as a REST endpoint. Internal generation conflicts map to canonical `CONFLICT` semantics — if generation is already running when either trigger fires, the call is silently dropped (the in-progress generation will complete and notify the student).
 

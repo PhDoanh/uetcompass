@@ -37,7 +37,7 @@ function AppContent() {
 
 	if (!isAuthenticated && !isPublicPath) {
 		if (typeof window !== 'undefined') {
-			window.location.replace('/login');
+			window.location.replace('/');
 		}
 		return null;
 	}
@@ -83,6 +83,21 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/learning-profile') {
+		content = (
+			<AuthGuard>
+				<OnboardingGuard>
+					<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+						<div style={{ padding: '24px' }}>
+							<h1>Learning Profile</h1>
+							<p>Trang Learning Profile đang được phát triển.</p>
+						</div>
+					</main>
+				</OnboardingGuard>
+			</AuthGuard>
+		);
+	}
+
 	if (content) {
 		return (
 			<>
@@ -93,7 +108,7 @@ function AppContent() {
 	}
 
 	if (typeof window !== 'undefined') {
-		window.location.replace(isAuthenticated ? '/' : '/login');
+		window.location.replace('/');
 	}
 
 	return null;

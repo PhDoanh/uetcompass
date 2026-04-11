@@ -135,7 +135,7 @@ export function AuthProvider({ children }) {
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
         if (typeof window !== 'undefined') {
-          window.location.assign('/login');
+          window.location.assign('/');
         }
       },
 
@@ -151,7 +151,7 @@ export function AuthProvider({ children }) {
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
         if (typeof window !== 'undefined') {
-          window.location.assign('/login');
+          window.location.assign('/');
         }
       },
     }),

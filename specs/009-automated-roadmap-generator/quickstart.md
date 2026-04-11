@@ -1,8 +1,8 @@
 # Developer Quickstart: AI-Powered Personalised Roadmap Generator
 
-**Feature**: `009-roadmap-generator`
+**Feature**: `009-automated-roadmap-generator`
 **Date**: 2026-03-11
-**Branch**: `009-roadmap-generator`
+**Branch**: `009-automated-roadmap-generator`
 
 ---
 
@@ -14,7 +14,7 @@
 | npm | 10+ | Bundled with Node 20 |
 | MongoDB | Local instance **or** [MongoDB Atlas](https://cloud.mongodb.com) free cluster | Must have `student_profiles` and `course_units` collections seeded (Features 001 and 002) |
 | Gemini API key | Any | [Google AI Studio](https://aistudio.google.com/app/apikey) — free tier is sufficient |
-| Git | Any | Branch: `009-roadmap-generator` |
+| Git | Any | Branch: `009-automated-roadmap-generator` |
 
 **Dependency order**: Feature 001 (Profile Onboarding) and Feature 002 (Seed CTĐT DAG) must be set up and have data seeded before this feature can generate anything.
 
@@ -25,7 +25,7 @@
 ```bash
 git clone https://github.com/PhDoanh/uetcompass.git
 cd uetcompass
-git checkout 009-roadmap-generator
+git checkout 009-automated-roadmap-generator
 ```
 
 ---
@@ -120,17 +120,22 @@ Authorization: Bearer <JWT>
 
 **Step 4a — Accept the preview**:
 ```
-POST /api/roadmap/preview/accept
+POST /api/roadmaps/accept
 Authorization: Bearer <JWT>
+Content-Type: application/json
+
+{
+  "studentProfileId": "<studentProfileId>",
+  "personalisationLevel": "full",
+  "isPrimary": true,
+  "nodes": [ /* ... nodes from the preview payload ... */ ]
+}
 ```
-Expected: `200 OK` with the committed Roadmap document. Verify the `roadmaps` collection now has a document with `status: completed` for this user.
+Expected: `200 OK` with the committed Roadmap document. Verify the `roadmaps` collection now has a document with `acceptedAt` set for this user.
 
 **Step 4b — Reject the preview** (alternative):
-```
-POST /api/roadmap/preview/reject
-Authorization: Bearer <JWT>
-```
-Expected: `200 OK`. The `roadmaps` collection should NOT have a new document (or the existing one remains unchanged for re-generation rejections).
+
+Rejection is handled via the service layer — call `rejectRoadmap(userId)` directly in the REPL or by the frontend discarding the preview payload. The `roadmaps` collection should NOT have a new document (or the existing one remains unchanged for re-generation rejections).
 
 ---
 
@@ -138,7 +143,7 @@ Expected: `200 OK`. The `roadmaps` collection should NOT have a new document (or
 
 **Step 1** — Simulate a generation failure by temporarily setting an invalid `GEMINI_API_KEY` in `.env` and restarting the server, then triggering generation.
 
-**Step 2** — Check the `roadmaps` collection for a document with `status: failed` and a non-null `errorMessage`.
+**Step 2** — Check the `roadmaps` collection for a document **without `acceptedAt`** for this user (absence of `acceptedAt` is the sole indicator of a failed/retryable state — no `status` or `errorMessage` fields exist).
 
 **Step 3** — Check the `notifications` collection for a `roadmap_generation_failed` event with `retryable: true`.
 
@@ -151,18 +156,15 @@ Authorization: Bearer <JWT>
 ```
 Expected: `202 Accepted`. Wait for the `roadmap_preview_ready` SSE notification, then accept to confirm the full retry lifecycle completes.
 
-**Step 6** — Verify concurrency guard: trigger retry twice in rapid succession. The second call should return `409 GENERATION_IN_PROGRESS`.
+**Step 6** — Verify concurrency guard: trigger retry twice in rapid succession. The second call should return `409 CONFLICT`.
 
 ---
 
 ## 7. Test re-generation (repersonalization)
 
-**Step 1** — Ensure the user has an accepted roadmap (`status: completed`).
+**Step 1** — Ensure the user has an accepted roadmap (a `roadmaps` document with `acceptedAt` set for this user).
 
-**Step 2** — Set `repersonalizationPending: true` on their `StudentProfile` directly in MongoDB (Feature 005 does this via Account Settings in the full flow):
-```js
-db.student_profiles.updateOne({ userId: ObjectId('<userId>') }, { $set: { repersonalizationPending: true } });
-```
+**Step 2** — Simulate Feature 005 emitting the `careerGoalUpdated` event (Feature 005 emits this when the student updates their career goal in Account Settings).
 
 **Step 3** — Trigger generation with `triggerReason: 'repersonalization'`:
 ```js
@@ -170,11 +172,11 @@ triggerGeneration('<userId>', '<studentProfileId>', 'repersonalization');
 ```
 
 **Expected behaviour**: 
-- The existing `completed` roadmap document remains unchanged until the student accepts
+- The existing accepted roadmap document (with `acceptedAt`) remains unchanged until the student accepts the new preview
 - The Gemini prompt includes the existing roadmap nodes as base context
 - The SSE event fires with the new preview
-- On acceptance: existing document is replaced with the new one; `repersonalizationPending` is cleared
-- On rejection: existing document unchanged; `repersonalizationPending` cleared
+- On acceptance: existing document is replaced with the new one
+- On rejection: existing document unchanged
 
 ---
 

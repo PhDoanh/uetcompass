@@ -11,7 +11,7 @@
 
 **Purpose**: Prepare shared auth/access wiring and client entry points.
 
-- [X] T001 Update backend auth module export and route mounting in `backend/src/modules/auth/index.js` and `backend/src/modules/auth/auth.routes.js`
+- [X] T001 Update backend auth route mounting in `backend/src/modules/auth/auth.routes.js` and `backend/src/app.js`
 - [X] T002 [P] Update frontend auth API surface in `frontend/src/services/auth.api.js`
 - [X] T003 [P] Update frontend auth provider bootstrap and post-login route decisions in `frontend/src/providers/AuthProvider.jsx`
 - [X] T004 Update top-level app route wiring for public/private path handling in `frontend/src/App.jsx`

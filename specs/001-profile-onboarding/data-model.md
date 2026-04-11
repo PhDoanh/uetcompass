@@ -21,8 +21,8 @@
 | `isDraft` | Boolean | yes | `true` | — | `false` = submitted; **irreversible once false** |
 | `major` | String | on submit | `null` | Non-empty when `isDraft: false` | Selected from `programs.nameEN` |
 | `completedCourses` | Array<{ major, courseCode, courseUnitId? }> | no | `[]` | Canonical identity = (`major`, `courseCode`); `courseUnitId` optional ObjectId ref `course_units` | Completion flag only — no grade stored |
-| `careerGoal.role` | String\|null | no | `null` | Must be in configured role option set | Dropdown-selected value only |
-| `careerGoal.graduationTimeline` | String\|null | no | `null` | Must be in configured timeline option set | Dropdown-selected value only |
+| `careerGoal.role` | String\|null | no | `null` | Must exist in selected major's `programs.careerTracks` | Dropdown-selected value only |
+| `careerGoal.graduationTimeline` | String\|null | no | `null` | Must be a valid `YYYY-MM-DD` date | Date-picker selected value |
 | `submittedAt` | Date\|null | no | `null` | Set once on submit; never overwritten | `null` while draft |
 | `createdAt` | Date | auto | `Date.now()` | Set on first upsert (`$setOnInsert`) | |
 | `updatedAt` | Date | auto | `Date.now()` | Updated on every `PUT /onboarding/draft` and on submit | |
@@ -42,7 +42,7 @@
 
 ### Validation rules applied at service layer
 
-Dropdown-backed fields (`careerGoal.role`, `careerGoal.graduationTimeline`) are validated against the current predefined option lists (see [research.md R-004](research.md)) before upsert/submit. `null` and empty values both pass for optional fields and are treated as "not provided".
+Career-goal fields are validated before upsert/submit: `careerGoal.role` must be a member of `programs.careerTracks` for the currently selected major (`programId`), and `careerGoal.graduationTimeline` must be a valid `YYYY-MM-DD` date string (see [research.md R-004](research.md)). `null` and empty values both pass for optional fields and are treated as "not provided".
 
 For `completedCourses`, service layer canonicalizes identity by (`major`, `courseCode`) and de-duplicates repeated entries in the same payload. Only courses that map to `course_units` rows with resolved selected `programId` and `type = "elective"` are accepted. `courseUnitId` is optional and does not change identity semantics.
 
@@ -93,13 +93,14 @@ This specification update is contract-alignment only. No runtime data migration/
 |---|---|---|
 | `programId` | String | Unique identifier for a program; used to join to `course_units.programId` |
 | `nameEN` | String | Source of major dropdown display values in onboarding |
-| `source.url` | String | Source of the link labeled "Các môn học bắt buộc" |
+| `careerTracks` | Array<String> | Source of Target role dropdown options for students selecting this program |
 
 See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
 
 **Access pattern from onboarding module**:
 - Fetch all `programs` to populate major dropdown from `nameEN`.
-- Resolve selected `nameEN` to its `programId` and `source.url`.
+- Resolve selected `nameEN` to its `programId`.
+- Read selected program's `careerTracks` to populate and validate Target role options.
 
 ---
 
@@ -115,10 +116,14 @@ See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-d
 | `name` | String | Display name for the multi-select UI |
 | `programId` | String | Filter anchor resolved from selected program |
 | `type` | String | Only rows with `type = "elective"` are displayed in completed-courses selector |
+| `source.url` | String | Source of the link labeled "Required Courses" (picked from any row matching selected `programId`) |
 
 See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
 
-**Access pattern from onboarding module**: `find({ programId, type: "elective" })` on draft hydration and on major change. No writes. `courseUnitId` (when present) is used as join optimization only; canonical matching remains (`major`, `courseCode`).
+**Access pattern from onboarding module**:
+- `find({ programId, type: "elective" })` on draft hydration and on major change for completed-courses options.
+- `find({ programId })` and select one row with non-empty `source.url` to populate the "Required Courses" link.
+- No writes. `courseUnitId` (when present) is used as join optimization only; canonical matching remains (`major`, `courseCode`).
 
 ---
 

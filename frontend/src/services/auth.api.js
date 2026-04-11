@@ -122,7 +122,7 @@ function markNotificationRead(token, notificationId) {
 }
 
 function changePassword(token, body) {
-  return requestAuthed('/account/change-password', token, {
+  return requestAuthed('/account/password/change', token, {
     method: 'POST',
     body: JSON.stringify(body),
   });

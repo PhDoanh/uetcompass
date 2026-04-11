@@ -75,9 +75,13 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending-verification', 'active', 'locked', 'deleted'],
+      enum: ['pending-verification', 'active', 'locked', 'soft-deleted'],
       default: 'pending-verification',
       required: true,
+    },
+    softDeletedAt: {
+      type: Date,
+      default: null,
     },
     failedLoginAttempts: {
       type: Number,

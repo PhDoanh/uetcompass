@@ -43,6 +43,7 @@ authRouter.post('/logout', controller.logout);
 authRouter.post('/forgot-password', requireBody(['email']), controller.forgotPassword);
 authRouter.post('/verify-reset-otp', requireBody(['email', 'otp']), controller.verifyResetOtp);
 authRouter.post('/reset-password', requireBody(['resetToken', 'newPassword']), controller.resetPassword);
+authRouter.get('/sse/notifications', controller.notificationsSse);
 
 module.exports = {
   authRouter,

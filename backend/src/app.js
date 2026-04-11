@@ -7,6 +7,7 @@ const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
 const { academicRouter, trendsRouter, resourcesRouter } = require('./modules/scraping');
 const { authRouter } = require('./modules/auth');
+const { accountRouter } = require('./modules/account');
 const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');

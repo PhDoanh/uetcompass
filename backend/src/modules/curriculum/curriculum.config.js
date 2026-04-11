@@ -44,58 +44,27 @@ const careerTracks = [
 ];
 
 const skillVocabulary = [
-    // CS Foundations
-    'oop',
-    'data-structures',
-    'algorithms',
-    'discrete-mathematics',
-    'linear-algebra',
-    'calculus',
-    'probability-and-statistics',
-    'computer-architecture',
-
-    // Systems & Infrastructure
-    'linux',
-    'operating-systems',
-    'networking',
-    'network-security',
-    'embedded-systems',
-    'real-time-programming',
-    'signal-and-systems',
-
-    // Software Engineering
-    'software-engineering',
-    'requirements-analysis',
-    'object-oriented-analysis-and-design',
-    'software-architecture',
-    'design-patterns',
-    'software-testing-and-qa',
-    'software-project-management',
-    'ui-ux-design',
-    'version-control',
-
-    // Data & AI
-    'sql',
-    'database-management-systems',
-    'data-mining',
-    'machine-learning',
-    'natural-language-processing',
-    'image-processing',
-    'artificial-intelligence',
-
-    // Web & Mobile
-    'web-development',
-    'mobile-app-development',
-    'restful-api-design',
-    'e-commerce-systems',
-
-    // Japanese Market & Cross-cutting
-    'japanese-language-technical',
-    'japanese-business-culture',
-    'itss-competency-standards',
-    'bridge-se-communication',
-    'it-project-internship',
-    'entrepreneurship-and-startup',
+    'internet-fundamentals',
+    'http-protocol-mastery',
+    'dns-management',
+    'server-side-programming',
+    'nodejs-development',
+    'golang-engineering',
+    'relational-persistence',
+    'postgresql-optimization',
+    'sql-query-indexing',
+    'api-architecture-design',
+    'restful-interface-design',
+    'graphql-schema-management',
+    'distributed-system-patterns',
+    'microservices-orchestration',
+    'message-broker-integration',
+    'infrastructure-containerization',
+    'docker-image-optimization',
+    'kubernetes-cluster-ops',
+    'observability-instrumentation',
+    'distributed-tracing',
+    'structured-logging',
 ];
 
 module.exports = {

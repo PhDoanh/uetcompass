@@ -13,28 +13,32 @@ const programs = [
 ];
 
 const careerTracks = [
+    {
+		trackId: 'Backend Engineer',
+		description: 'A backend engineering profile focused on server-side development, database management, and API design. Graduates are proficient in building scalable and secure backend systems using languages like Java, Python, or Node.js, and are familiar with cloud platforms and microservices architecture. Suitable for roles in both domestic Vietnamese IT companies and international product firms.',
+	},
 	{
-		trackId: 'software-engineer-japan',
+		trackId: 'Software Engineer Japan',
 		description: 'A software engineer profile oriented toward the Japanese IT market, where graduates work in Japanese or Japan-affiliated companies as BrSE, offshore developer, or on-site project member. Key differentiators include Japanese language proficiency (JLPT N3–N2), knowledge of Japanese business culture and ITSS standards, and experience from mandatory internships at Japanese partner companies.',
 	},
 	{
-		trackId: 'software-engineer-general',
+		trackId: 'Software Engineer General',
 		description: 'A general software engineering profile covering the full development lifecycle — from requirements analysis and OOP design to testing, deployment, and project management. Graduates are versatile across frontend, backend, and full-stack roles at both domestic Vietnamese IT companies and international product firms.',
 	},
 	{
-		trackId: 'ai-data-engineer',
+		trackId: 'AI Data Engineer',
 		description: 'An AI and data-oriented profile built on elective courses in machine learning, NLP, image processing, and data mining, grounded in strong mathematical foundations (probability, statistics, linear algebra). Suited for roles such as ML engineer, data engineer, or AI application developer at product and research-oriented companies.',
 	},
 	{
-		trackId: 'systems-infrastructure',
+		trackId: 'Systems Infrastructure',
 		description: 'A systems and infrastructure profile covering computer architecture, operating systems, computer networks, embedded programming, and network security. Aligned with roles in systems programming, DevOps, embedded software, and cybersecurity at platform-level or hardware-adjacent companies.',
 	},
 	{
-		trackId: 'mobile-app-developer',
+		trackId: 'Mobile App Developer',
 		description: 'A mobile application development profile focused on building native or cross-platform apps, supported by dedicated mobile courses co-facilitated by Japanese tech industry experts. Graduates are proficient in OOP design patterns, mobile UI implementation, and backend API integration for Japanese or international clients.',
 	},
 	{
-		trackId: 'full-stack-web-developer',
+		trackId: 'Full Stack Web Developer',
 		description: 'A full-stack web development profile covering frontend, backend, database management, and systems integration, with hands-on web project practicals involving Japanese IT industry experts. Particularly relevant for Vietnamese outsourcing companies serving Japanese clients and domestic product startups.',
 	},
 ];

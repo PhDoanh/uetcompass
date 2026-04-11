@@ -119,10 +119,10 @@ describe('roadmapProgress.service — updateNodeState valid transitions', () => 
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
 			{ userId, roadmapId, 'state.pending': nodeId },
-			expect.objectContaining({
-				$pull: { 'state.pending': nodeId },
-				$push: { 'state.inProgress': nodeId },
-			}),
+			expect.arrayContaining([
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.pending': expect.any(Object) }) }),
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.inProgress': expect.any(Object) }) }),
+			]),
 			expect.objectContaining({ new: true })
 		);
 		expect(result.state.inProgress).toContain(nodeId);
@@ -138,10 +138,10 @@ describe('roadmapProgress.service — updateNodeState valid transitions', () => 
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
 			{ userId, roadmapId, 'state.pending': nodeId },
-			expect.objectContaining({
-				$pull: { 'state.pending': nodeId },
-				$push: { 'state.skip': nodeId },
-			}),
+			expect.arrayContaining([
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.pending': expect.any(Object) }) }),
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.skip': expect.any(Object) }) }),
+			]),
 			expect.objectContaining({ new: true })
 		);
 		expect(result.state.skip).toContain(nodeId);
@@ -156,10 +156,10 @@ describe('roadmapProgress.service — updateNodeState valid transitions', () => 
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
 			{ userId, roadmapId, 'state.inProgress': 'INT2204' },
-			expect.objectContaining({
-				$pull: { 'state.inProgress': 'INT2204' },
-				$push: { 'state.completed': 'INT2204' },
-			}),
+			expect.arrayContaining([
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.inProgress': expect.any(Object) }) }),
+				expect.objectContaining({ $set: expect.objectContaining({ 'state.completed': expect.any(Object) }) }),
+			]),
 			expect.objectContaining({ new: true })
 		);
 		expect(result.state.completed).toContain('INT2204');

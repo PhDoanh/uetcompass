@@ -1,6 +1,7 @@
 'use strict';
 
-const connections = new Map();
+const connections = new Map();      // sseToken → res
+const userConnections = new Map(); // userId   → res
 
 function addConnection(sseToken, res) {
 	console.info('[roadmap:sse:open]', { sseToken });
@@ -25,6 +26,14 @@ function addConnection(sseToken, res) {
 	});
 }
 
+function addUserConnection(userId, res) {
+	const key = userId.toString();
+	userConnections.set(key, res);
+	res.on('close', () => {
+		userConnections.delete(key);
+	});
+}
+
 function notifyClientByToken(sseToken, eventName, data) {
 	const res = connections.get(sseToken);
 	if (!res) {
@@ -33,6 +42,17 @@ function notifyClientByToken(sseToken, eventName, data) {
 	}
 	res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
 	console.info('[roadmap:sse:sent]', { sseToken, eventName });
+	return true;
+}
+
+function notifyUser(userId, eventName, data) {
+	const res = userConnections.get(userId.toString());
+	if (!res) {
+		console.warn('[roadmap:sse:missed]', { userId, eventName });
+		return false;
+	}
+	res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
+	console.info('[roadmap:sse:sent]', { userId, eventName });
 	return true;
 }
 
@@ -62,9 +82,11 @@ function notifyGenerationFailed(sseToken) {
 }
 module.exports = {
 	addConnection,
+	addUserConnection,
 	closeConnection,
 	connections,
 	notifyClientByToken,
+	notifyUser,
 	notifyPreviewReady,
 	notifyGenerationFailed,
 };

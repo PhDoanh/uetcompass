@@ -324,10 +324,10 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 
 **MongoDB collection**: `roadmap_progress`
 **Owned by**: Feature 009 (AI-Powered Personalised Roadmap Generator)
-**Created by**: `roadmapProgress.service.createProgress(userId, roadmapId, nodeIds)` — called immediately after `commitAccepted` in the acceptance pipeline; seeds `pending` with all `nodeId` values from the accepted `Roadmap.nodes`, all other arrays empty.
-**Updated by**: `roadmapProgress.service.updateNodeState(userId, roadmapId, nodeId, fromState, toState)` — atomic pull-from-source + push-to-target; enforces the exactly-one-array invariant.
+**Created by**: `roadmapProgress.service.createProgress(userId, roadmapId, nodeIds)` — called immediately after `commitAccepted` in the acceptance pipeline; seeds `state.pending` with all `nodeId` values from the accepted `Roadmap.nodes`, all other arrays empty.
+**Updated by**: `roadmapProgress.service.updateNodeState(userId, roadmapId, nodeId, fromState, toState)` — atomic pull-from-source + push-to-target inside `state`; enforces the exactly-one-array invariant.
 
-**Purpose**: Tracks per-node progress state for a given roadmap, fully decoupled from the `Roadmap` document — no progress fields live on the `Roadmap` schema. Uses an explicit four-state set-membership model — every `nodeId` in the roadmap appears in exactly one of the four arrays at any time.
+**Purpose**: Tracks per-node progress state for a given roadmap, fully decoupled from the `Roadmap` document — no progress fields live on the `Roadmap` schema. Uses an explicit four-state set-membership model inside a `state` sub-object — every `nodeId` in the roadmap appears in exactly one of the four arrays at any time.
 
 ### Schema
 
@@ -336,10 +336,11 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `userId` | ObjectId | yes | — | ref: `users` | Owner of the roadmap |
 | `roadmapId` | ObjectId | yes | — | ref: `roadmaps` | The roadmap being tracked |
-| `pending` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes not yet started; seeded with all `nodeId` values from the accepted `Roadmap.nodes` on document creation |
-| `inProgress` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student is currently working on |
-| `completed` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has finished |
-| `skip` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has explicitly skipped |
+| `state` | Object | yes | — | — | Sub-object grouping all progress arrays for easy state management |
+| `state.pending` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes not yet started; seeded with all `nodeId` values from the accepted `Roadmap.nodes` on document creation |
+| `state.inProgress` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student is currently working on |
+| `state.completed` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has finished |
+| `state.skip` | String[] | yes | `[]` | Elements are `nodeId` strings | Nodes the student has explicitly skipped |
 | `updatedAt` | Date | auto | `Date.now()` | — | Last modification timestamp |
 
 ### Indexes
@@ -350,17 +351,17 @@ The template JSON mirrors the roadmap.sh node/edge structure. Feature 009 reads 
 
 ### State model
 
-Every `nodeId` lives in exactly one of the four arrays. Allowed transitions:
+Every `nodeId` lives in exactly one of the four arrays inside `state`. Allowed transitions:
 
 ```text
-  [pending] → [inProgress] → [completed]
+  [state.pending] → [state.inProgress] → [state.completed]
       │
-      └─────────────────────→ [skip]
+      └─────────────────────────────────→ [state.skip]
 ```
 
 - A `nodeId` MUST appear in exactly one array at any time; moving it = atomic pull from source + push to target.
-- `pending` is populated at document creation time with all `nodeId` values from the roadmap's `nodes` array.
-- `skip` is a terminal state alongside `completed` — no reversals permitted.
+- `state.pending` is populated at document creation time with all `nodeId` values from the roadmap's `nodes` array.
+- `state.skip` is a terminal state alongside `state.completed` — no reversals permitted.
 
 ### Frontend atom shape
 
@@ -368,9 +369,11 @@ This collection maps directly to the frontend progress atom:
 
 ```ts
 export const roadmapProgress = atom<{
-  pending:    string[];   // nodeId[]
-  inProgress: string[];   // nodeId[]
-  completed:  string[];   // nodeId[]
-  skip:       string[];   // nodeId[]
+  state: {
+    pending:    string[];   // nodeId[]
+    inProgress: string[];   // nodeId[]
+    completed:  string[];   // nodeId[]
+    skip:       string[];   // nodeId[]
+  };
 } | null>(null);
 ```

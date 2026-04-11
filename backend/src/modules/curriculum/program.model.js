@@ -9,6 +9,7 @@ const ProgramSchema = new mongoose.Schema(
 		durationYears: { type: Number, default: null },
 		totalCredits: { type: Number, default: null },
 		objectives: { type: String, default: '' },
+		careerTracks: { type: [String], default: [] },
 		creditBlocks: {
 			type: [
 				new mongoose.Schema(

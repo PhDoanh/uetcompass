@@ -63,6 +63,12 @@ const CALL2_RESPONSE_SCHEMA = {
 	type: 'object',
 	required: ['courseUnits', 'programOutcomes'],
 	properties: {
+		program: {
+			type: 'object',
+			properties: {
+				careerTracks: { type: 'array', items: { type: 'string' } },
+			},
+		},
 		courseUnits: {
 			type: 'array',
 			items: {
@@ -251,6 +257,7 @@ SINGLE response. Reason holistically - assess each item in relation to all other
 - Use ONLY the provided program data. No external knowledge.
 - difficultyLevel is RELATIVE within this program (1=easiest, 5=hardest).
 - careerTracks must be chosen ONLY from the trackIds listed in CAREER_TRACKS above.
+- Infer program.careerTracks as tracks that are strongly supported by the full curriculum evidence.
 - skills must be chosen ONLY from the skill tags listed in SKILL_VOCABULARY above. Assign max 5 skills per course. Only assign if highly confident.
 - For ProgramOutcome.careerTracks: assign ALL tracks this outcome is relevant to.
 
@@ -261,6 +268,9 @@ For skills: consider what a student can DO after completing this course.
 
 ## OUTPUT EXAMPLE (return only valid JSON, no other text)
 {
+	"program": {
+		"careerTracks": ["software-engineer-general", "ai-data-engineer"]
+	},
 	"courseUnits": [
 		{
 			"code": "INT2210",

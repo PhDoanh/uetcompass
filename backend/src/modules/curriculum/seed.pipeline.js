@@ -311,6 +311,7 @@ async function runSeedPipeline(
 					programOutcomes: currentOutcomes,
 					careerTracks: config.careerTracks,
 					skillVocabulary: config.skillVocabulary,
+					ProgramModel: programModel,
 					CourseUnitModel: courseUnitModel,
 					ProgramOutcomeModel: programOutcomeModel,
 					logger,

@@ -11,7 +11,7 @@
 
 ### User Story 1 - Complete Onboarding and Receive Roadmap (Priority: P1)
 
-A first-time student logs into UETCompass and is greeted by the onboarding panel. The student selects their major, optionally fills in completed courses and career goals, then submits. The system triggers roadmap generation in the background and notifies the student when the roadmap is ready. The student can continue exploring the system while generation is in progress.
+A first-time student logs into UETCompass and is greeted by the onboarding panel. The student selects their major from program names sourced from `programs.nameEN`, and the system immediately resolves that selected program to `programs.source.url` and shows a link labeled "Các môn học bắt buộc". The student can open that link, optionally selects completed elective courses from `course_units` filtered by selected `programId` and `type = "elective"`, then submits. The system triggers roadmap generation in the background and notifies the student when the roadmap is ready. The student can continue exploring the system while generation is in progress.
 
 **Why this priority**: This is the core end-to-end value path. Without the ability to submit a profile and receive a roadmap, the feature provides no utility.
 
@@ -20,10 +20,11 @@ A first-time student logs into UETCompass and is greeted by the onboarding panel
 **Acceptance Scenarios**:
 
 1. **Given** a student logs in for the first time, **When** the homepage loads, **Then** the onboarding panel is visible above the homepage main content (without scrolling on a 1366x768 viewport) and remains non-blocking for navigation.
-2. **Given** the onboarding panel is open, **When** the student selects a major, **Then** the completed-courses multi-select list is filtered to show only courses belonging to that major.
-3. **Given** the student has filled in at least the required major field, **When** the student clicks Submit, **Then** the system accepts the submission, closes the onboarding panel permanently, and triggers roadmap generation asynchronously.
-4. **Given** roadmap generation has been triggered, **When** generation completes, **Then** the student receives an in-app notification indicating the roadmap is ready to view.
-5. **Given** the student has submitted, **When** the student navigates to the onboarding URL directly, **Then** the system redirects to the homepage.
+2. **Given** the onboarding panel is open, **When** the student selects a major from the `programs.nameEN` list, **Then** the completed-courses dropdown is filtered to show only `course_units` records where `programId` equals the selected program and `type = "elective"`.
+3. **Given** a major has been selected, **When** the selection is committed, **Then** the system immediately displays a link labeled "Các môn học bắt buộc" above the course selector and binds it to `programs.source.url` of the selected program.
+4. **Given** the student has filled in at least the required major field, **When** the student clicks Submit, **Then** the system accepts the submission, closes the onboarding panel permanently, and triggers roadmap generation asynchronously.
+5. **Given** roadmap generation has been triggered, **When** generation completes, **Then** the student receives an in-app notification indicating the roadmap is ready to view.
+6. **Given** the student has submitted, **When** the student navigates to the onboarding URL directly, **Then** the system redirects to the homepage.
 
 ---
 
@@ -60,30 +61,31 @@ A student submits the onboarding form with only the required major field filled 
 
 ---
 
-### User Story 4 - Enter Free-Text Career Goals (Priority: P3)
+### User Story 4 - Select Career Goals from Predefined Dropdowns (Priority: P3)
 
-A student whose desired job role or target company type is not in the predefined list enters a custom value using the free-text input. The system validates the input and includes it in the submitted profile.
+A student selects career-goal fields only from predefined dropdown lists. The system accepts only values that exist in these lists and persists them in the submitted profile.
 
-**Why this priority**: Free-text entry future-proofs the feature for edge-case career goals without requiring constant maintenance of predefined lists.
+**Why this priority**: A dropdown-only MVP reduces ambiguity and logic complexity while still collecting consistent personalization signals.
 
-**Independent Test**: Can be fully tested by entering a custom role and company type, submitting, and verifying the values are accepted and persisted to the profile.
+**Independent Test**: Can be fully tested by selecting target role and graduation timeline from dropdowns, submitting, and verifying the selected values are persisted.
 
 **Acceptance Scenarios**:
 
-1. **Given** the student selects the free-text option for job role or company type, **When** the student types a value, **Then** the input is accepted if it meets minimum length requirements and does not consist solely of special characters or whitespace.
-2. **Given** the student enters a value that is too short or consists only of special characters, **When** the student attempts to submit or leaves the field, **Then** the system displays a clear inline validation message without blocking the rest of the form.
-3. **Given** a valid free-text value is entered, **When** the student submits, **Then** the custom value is stored as part of the student profile.
+1. **Given** the onboarding panel is open, **When** the student opens target-role and graduation-timeline fields, **Then** both fields are rendered as dropdowns with predefined options only.
+2. **Given** a student has a saved draft value that is no longer present in the current dropdown options, **When** the student returns to onboarding or submits, **Then** the system asks the student to re-select a valid option from the latest list.
+3. **Given** the student selects valid dropdown values, **When** the student submits, **Then** the selected values are stored as part of the student profile.
 
 ---
 
 ### Edge Cases
 
-- **Major changed mid-fill**: If a student selects a major, populates completed courses, then changes the major, the system prompts the student before clearing — informing them that their selected courses will be reset — then clears and reloads the course list for the new major.
+- **Major changed mid-fill**: If a student selects a major, populates completed elective courses, then changes the major, the system prompts the student before clearing — informing them that their selected courses will be reset — then clears and reloads the elective-course list from `course_units` (`programId`, `type = "elective"`) and mandatory-courses link from `programs.source.url` for the new major.
 - **Duplicate submission attempt**: If a student who has already submitted somehow triggers a second submission (e.g., two browser tabs open simultaneously), the system rejects the duplicate and redirects to the homepage.
 - **Roadmap generation failure**: If asynchronous roadmap generation fails after submission, the system displays an error notification with a retry action. The submitted profile is preserved; only generation is retried — the student does not need to resubmit.
-- **Empty course catalog for selected major**: If a major has no courses seeded yet (edge case during early deployment), the completed-courses field is hidden or shown as empty with an explanatory message; the form remains submittable.
+- **Empty elective course catalog for selected major**: If a major has no elective courses seeded yet (edge case during early deployment), the completed-courses field is hidden or shown as empty with an explanatory message; the form remains submittable.
+- **Missing curriculum link for selected major**: If curriculum page URL for the selected major is unavailable, the system hides or disables the "Các môn học bắt buộc" link with a clear explanatory message and keeps the form submittable.
 - **Session expires immediately after submission**: The submission is confirmed server-side before expiry. On re-login, the student lands on the homepage (onboarding is permanently closed) and roadmap generation continues in the background.
-- **Free-text input with only whitespace**: Whitespace-only inputs in free-text fields are treated as empty and handled the same as no input — they do not pass validation as meaningful content.
+- **Stale dropdown option**: If a previously saved draft value is removed from the predefined dropdown list before submission, the system prompts the student to pick a replacement valid option.
 
 ---
 
@@ -101,24 +103,28 @@ A student whose desired job role or target company type is not in the predefined
 
 **Major & Course Selection**
 
-- **FR-006**: The student MUST select one major from a predefined list before the completed-courses field becomes available.
-- **FR-007**: The completed-courses multi-select list MUST display only courses belonging to the student's currently selected major.
-- **FR-008**: If the student changes their major selection, the system MUST prompt the student before clearing previously selected courses, then reset the course list to reflect the new major.
-- **FR-009**: Only course completion status (completed / not completed) is recorded — no grade or score data is collected or prompted for.
+- **FR-006**: The student MUST select one major from a predefined list populated from `nameEN` of all records in the `programs` collection before the completed-courses field becomes available.
+- **FR-006a**: Immediately after a major is selected, the system MUST resolve the selected major's `programId` and use that program record as the source context for downstream course and curriculum-link queries.
+- **FR-007**: The completed-courses dropdown MUST display only records from `course_units` where `programId` equals the selected program and `type` equals `"elective"`.
+- **FR-008**: If the student changes their major selection, the system MUST prompt the student before clearing previously selected courses, then reset the elective-course list to reflect the new major.
+- **FR-009**: Only elective-course completion status (completed / not completed) is recorded — no grade or score data is collected or prompted for.
+- **FR-009a**: Before the completed-courses selector, the system MUST display a link labeled "Các môn học bắt buộc" that opens `source.url` of the currently selected program record in `programs`.
+- **FR-009b**: The elective-course list and curriculum-link target MUST be read from seeded curriculum data managed by feature 002 (`programs`, `course_units`).
+- **FR-009c**: The curriculum-link target MUST always correspond to the currently selected major and MUST update immediately when the major selection changes by resolving the new program's `source.url`.
 
-**Career Goal Inputs**
+**Career Goal Inputs (Dropdown-Only MVP)**
 
-- **FR-010**: The student MUST be able to select a target job role from a predefined list OR enter a custom free-text value if their desired role is not listed.
-- **FR-011**: The student MUST be able to select a target company type from a predefined list (Startup, Outsource, Product company, Japanese company, Big Tech) OR enter a custom free-text value.
-- **FR-012**: The student MUST be able to specify a graduation timeline as a number of semesters remaining or an expected graduation date.
-- **FR-013**: The student MUST be able to enter personal aspirations, constraints, or preferences as free-text.
-- **FR-014**: All optional fields MUST be clearly marked as optional, and the system MUST communicate that omitting them reduces personalisation quality with a visible Settings CTA.
-- **FR-014a**: Career-goal payloads MUST preserve `careerGoal` as a nested object. Any downstream `careerGoalRole` projection MUST be derived from `careerGoal.role` (read-only alias, no separate source-of-truth field).
+- **FR-010**: The student MUST be able to select a target job role only from a predefined dropdown list.
+- **FR-011**: The student MUST be able to select a graduation timeline only from a predefined dropdown list.
+- **FR-012**: All optional fields MUST be clearly marked as optional, and the system MUST communicate that omitting them reduces personalisation quality with a visible Settings CTA.
+- **FR-012a**: Career-goal payloads MUST preserve `careerGoal` as a nested object. Any downstream `careerGoalRole` projection MUST be derived from `careerGoal.role` (read-only alias, no separate source-of-truth field).
+- **FR-013**: The onboarding payload MUST only include MVP fields: major, completedCourses, and dropdown-selected career goal values.
+- **FR-014**: Any non-MVP onboarding attributes MUST be rejected or ignored consistently by both client and server.
 
 **Validation**
 
 - **FR-015**: Major selection MUST be the only field required for submission; all other fields are optional.
-- **FR-016**: Free-text fields (job role, company type, personal aspirations) MUST be validated client-side and server-side to ensure input meets a minimum character length and is not composed solely of special characters or whitespace. This validation MUST NOT use an LLM.
+- **FR-016**: Dropdown-backed fields MUST be validated client-side and server-side to ensure submitted values are members of the current predefined option lists.
 - **FR-017**: Submitting with all optional fields empty MUST be permitted without error.
 
 **Draft Persistence**
@@ -155,17 +161,18 @@ A student whose desired job role or target company type is not in the predefined
 - **NFR-002 (Responsiveness)**: The onboarding panel MUST remain fully interactive during real-time draft saves; save operations MUST NOT block or delay user input.
 - **NFR-003 (Security)**: Only the authenticated student may read or modify their own onboarding draft and submitted profile — no cross-account access is permitted.
 - **NFR-004 (Privacy)**: No grade, GPA, or transcript data is collected during onboarding; the system MUST NOT prompt for such data.
-- **NFR-005 (Validation Safety)**: Free-text input validation MUST be performed without invoking an LLM to avoid latency, cost, and unpredictability in the form validation path.
+- **NFR-005 (Validation Safety)**: Dropdown value validation MUST be deterministic and list-based (no probabilistic parsing), ensuring predictable behavior and low latency in the form validation path.
 - **NFR-006 (UX Clarity)**: The low-personalisation message MUST include: (a) plain-language explanation, (b) Settings CTA, and (c) at least one concrete optional field example to improve recommendations.
 
 ---
 
 ### Key Entities
 
-- **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed courses canonically identified by (`major`, `courseCode`) with optional `courseUnitId`, nested `careerGoal` object (where downstream `careerGoalRole` is derived from `careerGoal.role`), personal aspirations, submission status (draft / submitted), and timestamps for creation and submission. Does **not** contain `privacySetting`.
+- **StudentProfile**: Represents the student's academic and career profile collected during onboarding. Contains: major selection, list of completed elective courses canonically identified by (`major`, `courseCode`) with optional `courseUnitId`, nested `careerGoal` object limited to dropdown-selected role and graduation timeline (where downstream `careerGoalRole` is derived from `careerGoal.role`), submission status (draft / submitted), and timestamps for creation and submission. Does **not** contain non-MVP onboarding attributes or `privacySetting`.
 - **OnboardingDraft**: The intermediate state of the onboarding form before submission. Tied 1:1 to a StudentProfile. Overwritten on each real-time save; promoted to submitted status on explicit student confirmation.
-- **Major**: A predefined academic program offered at UET-VNU. Has a unique identifier, a display name, and an associated list of Course entries. Catalog data is pre-seeded by a separate system process.
-- **Course**: An academic course belonging to one or more Majors. Has a unique identifier and display name. Used for completed-course multi-select during onboarding. Catalog data is pre-seeded by a separate system process outside this feature's scope.
+- **Major (Program)**: A program record in `programs` identified by `programId` with display value from `nameEN`. Used as the source for major dropdown options.
+- **Course**: A course record in `course_units` identified by (`programId`, `code`) with a `type` classifier. Only records with `type = "elective"` and matching selected `programId` are shown in the completed-courses selector during onboarding.
+- **MajorCurriculumLink**: The curriculum URL from `programs.source.url` of the selected program. Displayed in onboarding as a link labeled "Các môn học bắt buộc" above the completed-courses selector.
 - **RoadmapGenerationJob**: Represents an asynchronous job to generate a learning roadmap from a submitted StudentProfile. Has a status (pending / in progress / completed / failed) and is linked to the originating StudentProfile.
 
 ---
@@ -186,8 +193,9 @@ A student whose desired job role or target company type is not in the predefined
 
 ## Assumptions
 
-- The course catalog for all available majors is pre-seeded into the system before any student attempts onboarding (separate feature, out of scope here).
-- The predefined lists for job roles and company types are maintained by a system administrator and are available at onboarding time; their content and management are outside the scope of this feature.
+- The `programs` collection is pre-seeded with valid `programId`, `nameEN`, and `source.url` values before any student attempts onboarding (provided by feature 002).
+- The `course_units` collection is pre-seeded with valid `programId` and `type` values so onboarding can filter completed courses by selected `programId` and `type = "elective"`.
+- The predefined lists for job roles and graduation timeline options are maintained by a system administrator and are available at onboarding time; their content and management are outside the scope of this feature.
 - Students are fully authenticated before reaching the onboarding panel — this feature does not handle login, registration, or account creation.
 - "Real-time" draft saving is implemented as debounced save-on-change with target 800ms and maximum 1 second after the last input change.
 - The asynchronous roadmap generation system exists as a separate component; this feature is only responsible for triggering it on submission and displaying its completion or failure notification.
@@ -201,4 +209,4 @@ A student whose desired job role or target company type is not in the predefined
 - Playwright-based transcript scraping for automated course detection
 - Profile editing after onboarding completion (handled in Settings / Profile page)
 - Grade, GPA, or academic performance data collection
-- Admin tooling for managing predefined lists (majors, job roles, company types)
+- Admin tooling for managing predefined lists (majors, job roles, graduation timeline options)

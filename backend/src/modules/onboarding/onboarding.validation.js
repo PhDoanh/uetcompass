@@ -1,28 +1,53 @@
-const MIN_FREE_TEXT_LENGTH = 3;
-const HAS_UNICODE_LETTER = /\p{L}/u;
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function validateFreeText(value) {
+function normalizeOptionalValue(value) {
 	if (value == null) {
+		return null;
+	}
+	const normalized = String(value).trim();
+	return normalized.length === 0 ? null : normalized;
+}
+
+function validateDropdownValue(value, options) {
+	const normalized = normalizeOptionalValue(value);
+	if (normalized == null) {
 		return { valid: true };
 	}
 
-	const trimmed = String(value).trim();
-
-	if (trimmed.length === 0) {
-		return { valid: true };
-	}
-
-	if (trimmed.length < MIN_FREE_TEXT_LENGTH) {
+	if (!Array.isArray(options) || !options.includes(normalized)) {
 		return {
 			valid: false,
-			reason: `Must be at least ${MIN_FREE_TEXT_LENGTH} characters`,
+			reason: 'Value must be selected from predefined options',
 		};
 	}
 
-	if (!HAS_UNICODE_LETTER.test(trimmed)) {
+	return { valid: true };
+}
+
+function validateDateValue(value) {
+	const normalized = normalizeOptionalValue(value);
+	if (normalized == null) {
+		return { valid: true };
+	}
+
+	if (!DATE_ONLY_REGEX.test(normalized)) {
 		return {
 			valid: false,
-			reason: 'Must contain at least one letter',
+			reason: 'Value must be a valid date in YYYY-MM-DD format',
+		};
+	}
+
+	const [year, month, day] = normalized.split('-').map((part) => Number(part));
+	const date = new Date(Date.UTC(year, month - 1, day));
+	const isValidDate =
+		date.getUTCFullYear() === year &&
+		date.getUTCMonth() === month - 1 &&
+		date.getUTCDate() === day;
+
+	if (!isValidDate) {
+		return {
+			valid: false,
+			reason: 'Value must be a valid date in YYYY-MM-DD format',
 		};
 	}
 
@@ -30,7 +55,7 @@ function validateFreeText(value) {
 }
 
 module.exports = {
-	HAS_UNICODE_LETTER,
-	MIN_FREE_TEXT_LENGTH,
-	validateFreeText,
+	normalizeOptionalValue,
+	validateDateValue,
+	validateDropdownValue,
 };

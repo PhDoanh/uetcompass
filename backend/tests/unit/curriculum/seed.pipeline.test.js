@@ -1,115 +1,171 @@
 async function loadPipeline({
-	urls = [],
-	extractImpl = async () => '# mock',
-	parseImpl = async (markdown, major) => [{ code: 'INT1001', name: 'A', credits: 3, major, prerequisites: [] }],
-	bulkWriteImpl = async () => ({ ok: 1 }),
-	distinctImpl = async () => [],
-	findImpl = async () => [],
-	detectCyclesImpl = () => [],
+	programs,
+	extractImpl = async () => '# markdown',
+	callGeminiImpl = async () => ({
+		program: { nameVI: 'CNTT' },
+		programOutcomes: [{ poId: 'PO-1', description: 'desc' }],
+		courseUnits: [{ code: 'INT1001', name: 'Intro', credits: 3, prerequisites: [] }],
+	}),
+	hasSnapshotChangedImpl = () => true,
+	runEnrichmentImpl = async () => ({ courseUnitsUpdated: 1, programOutcomesUpdated: 1 }),
+	cyclesImpl = () => [],
+	allUnits = [{ code: 'INT1001', programId: 'P1', prerequisites: [] }],
 } = {}) {
 	jest.resetModules();
 
-	jest.doMock('../../../src/modules/curriculum/curriculum.config', () => ({
-		urls,
-		cronSchedule: '0 0 1 3,8 *',
+	const logger = {
+		info: jest.fn(),
+		warn: jest.fn(),
+		error: jest.fn(),
+	};
+
+	const CourseUnitModel = {
+		bulkWrite: jest.fn(async () => ({ ok: 1 })),
+		find: jest.fn((query) => ({
+			lean: jest.fn(async () => {
+				if (!query || Object.keys(query).length === 0) return allUnits;
+				return allUnits.filter((item) => item.programId === query.programId);
+			}),
+		})),
+	};
+
+	const ProgramModel = {
+		bulkWrite: jest.fn(async () => ({ ok: 1 })),
+		findOne: jest.fn(() => ({ lean: jest.fn(async () => ({ programId: 'P1' })) })),
+	};
+
+	const ProgramOutcomeModel = {
+		bulkWrite: jest.fn(async () => ({ ok: 1 })),
+		find: jest.fn(() => ({ lean: jest.fn(async () => [{ poId: 'PO-1', programId: 'P1' }]) })),
+	};
+
+	const SeedRunModel = {
+		findOne: jest.fn(() => ({ sort: jest.fn(() => ({ lean: jest.fn(async () => null) })) })),
+		create: jest.fn(async () => ({ _id: 'run1' })),
+		updateOne: jest.fn(async () => ({ matchedCount: 1 })),
+	};
+
+	jest.doMock('../../../src/modules/curriculum/config.loader', () => ({
+		loadAndValidateConfig: () => ({
+			programs:
+				programs ||
+				[
+					{
+						programId: 'P1',
+						sources: { 'curriculum-table': { url: 'https://example.com/p1' } },
+					},
+				],
+			careerTracks: [{ trackId: 'software-engineer-general', description: 'd' }],
+			skillVocabulary: ['oop'],
+		}),
 	}));
+
 	jest.doMock('../../../src/modules/curriculum/tavily.service', () => ({
 		extractContent: jest.fn(extractImpl),
 	}));
+
 	jest.doMock('../../../src/modules/curriculum/gemini.service', () => ({
-		parseCourseUnits: jest.fn(parseImpl),
-	}));
-	jest.doMock('../../../src/modules/curriculum/courseUnit.model', () => ({
-		CourseUnit: {
-			bulkWrite: jest.fn(bulkWriteImpl),
-			distinct: jest.fn(distinctImpl),
-			find: jest.fn(() => ({ lean: findImpl })),
-		},
-	}));
-	jest.doMock('../../../src/modules/curriculum/cycle.detector', () => ({
-		detectCycles: jest.fn(detectCyclesImpl),
-	}));
-	jest.doMock('../../../src/modules/curriculum/seed.logger', () => ({
-		logEvent: jest.fn(),
+		callGeminiJSON: jest.fn(callGeminiImpl),
+		buildCall1Prompt: jest.fn(() => 'prompt'),
+		computeEmphasis: jest.fn(() => 'balance'),
 	}));
 
+	jest.doMock('../../../src/modules/curriculum/change-detection', () => ({
+		buildCurrentSnapshot: jest.fn(async (url, options = {}) => {
+			const markdown = await options.extractContent(url);
+			return {
+				url,
+				httpEtag: 'etag',
+				lastModified: 'lm',
+				contentHash: 'h',
+				checkedAt: new Date(),
+				markdown,
+			};
+		}),
+		hasSnapshotChanged: jest.fn(hasSnapshotChangedImpl),
+		defaultHeadFetcher: jest.fn(),
+	}));
+
+	jest.doMock('../../../src/modules/curriculum/enrichment.pipeline', () => ({
+		runProgramEnrichment: jest.fn(runEnrichmentImpl),
+	}));
+
+	jest.doMock('../../../src/modules/curriculum/cycle.detector', () => ({
+		detectCyclesByProgram: jest.fn(cyclesImpl),
+	}));
+
+	jest.doMock('../../../src/modules/curriculum/seed.logger', () => ({
+		log: logger,
+	}));
+
+	jest.doMock('../../../src/modules/curriculum/courseUnit.model', () => ({ CourseUnit: CourseUnitModel }));
+	jest.doMock('../../../src/modules/curriculum/program.model', () => ({ Program: ProgramModel }));
+	jest.doMock('../../../src/modules/curriculum/programOutcome.model', () => ({ ProgramOutcome: ProgramOutcomeModel }));
+	jest.doMock('../../../src/modules/curriculum/seedRun.model', () => ({ SeedRun: SeedRunModel }));
+
 	const pipeline = require('../../../src/modules/curriculum/seed.pipeline');
-	const { logEvent } = require('../../../src/modules/curriculum/seed.logger');
-	return { pipeline, logEvent };
+	return { pipeline, logger, CourseUnitModel, SeedRunModel };
 }
 
 describe('runSeedPipeline', () => {
-	test('processes all URLs successfully and exits with SUCCESS', async () => {
-		const { pipeline } = await loadPipeline({
-			urls: [{ url: 'https://example.com/cntt', major: 'CNTT' }],
-			distinctImpl: async () => ['CNTT'],
-			findImpl: async () => [{ code: 'INT1001', prerequisites: [] }],
-		});
+	test('processes changed program successfully and exits with SUCCESS', async () => {
+		const { pipeline } = await loadPipeline();
+		const result = await pipeline.runSeedPipeline({ triggeredBy: 'manual' });
 
-		const result = await pipeline.runSeedPipeline();
 		expect(result.exitStatus).toBe('SUCCESS');
 		expect(result.successCount).toBe(1);
 		expect(result.failCount).toBe(0);
 	});
 
-	test('skips failing URL and returns PARTIAL_FAILURE', async () => {
+	test('returns PARTIAL_FAILURE when URL extraction fails', async () => {
 		const { pipeline } = await loadPipeline({
-			urls: [
-				{ url: 'https://broken', major: 'CNTT' },
-				{ url: 'https://ok', major: 'CNTT' },
-			],
-			extractImpl: async url => {
-				if (url.includes('broken')) {
-					throw new Error('Tavily request failed');
-				}
-				return '# ok';
-			},
-			distinctImpl: async () => ['CNTT'],
-			findImpl: async () => [{ code: 'INT1001', prerequisites: [] }],
-		});
-
-		const result = await pipeline.runSeedPipeline();
-		expect(result.exitStatus).toBe('PARTIAL_FAILURE');
-		expect(result.successCount).toBe(1);
-		expect(result.failCount).toBe(1);
-	});
-
-	test('returns PARTIAL_FAILURE when all URLs fail', async () => {
-		const { pipeline } = await loadPipeline({
-			urls: [{ url: 'https://broken', major: 'CNTT' }],
 			extractImpl: async () => {
-				throw new Error('Tavily request failed');
+				throw new Error('Tavily failed');
 			},
-			distinctImpl: async () => [],
 		});
 
-		const result = await pipeline.runSeedPipeline();
+		const result = await pipeline.runSeedPipeline({ triggeredBy: 'manual' });
 		expect(result.exitStatus).toBe('PARTIAL_FAILURE');
-		expect(result.successCount).toBe(0);
 		expect(result.failCount).toBe(1);
 	});
 
-	test('returns FAILED when cycle detected after upsert', async () => {
+	test('skips unchanged programs and exits SUCCESS', async () => {
 		const { pipeline } = await loadPipeline({
-			urls: [{ url: 'https://ok', major: 'CNTT' }],
-			distinctImpl: async () => ['CNTT'],
-			findImpl: async () => [
-				{ code: 'A', prerequisites: ['B'] },
-				{ code: 'B', prerequisites: ['A'] },
-			],
-			detectCyclesImpl: () => [{ from: 'A', to: 'B' }],
+			hasSnapshotChangedImpl: () => false,
 		});
 
-		const result = await pipeline.runSeedPipeline();
+		const result = await pipeline.runSeedPipeline({ triggeredBy: 'manual' });
+		expect(result.exitStatus).toBe('SUCCESS');
+		expect(result.skippedPrograms).toBe(1);
+		expect(result.processedPrograms).toBe(0);
+	});
+
+	test('returns FAILED when cycles are detected', async () => {
+		const { pipeline } = await loadPipeline({
+			cyclesImpl: () => [{ programId: 'P1', from: 'A', to: 'B' }],
+			allUnits: [
+				{ code: 'A', programId: 'P1', prerequisites: ['B'] },
+				{ code: 'B', programId: 'P1', prerequisites: ['A'] },
+			],
+		});
+
+		const result = await pipeline.runSeedPipeline({ triggeredBy: 'manual' });
 		expect(result.exitStatus).toBe('FAILED');
 		expect(result.cyclesDetected).toBeGreaterThan(0);
 	});
 
-	test('no-op with SUCCESS when no urls configured', async () => {
-		const { pipeline, logEvent } = await loadPipeline({ urls: [] });
-		const result = await pipeline.runSeedPipeline();
+	test('emits unresolved prerequisite warning', async () => {
+		const { pipeline, logger } = await loadPipeline({
+			allUnits: [{ code: 'INT2001', programId: 'P1', prerequisites: ['INT9999'] }],
+		});
 
-		expect(result.exitStatus).toBe('SUCCESS');
-		expect(logEvent).toHaveBeenCalledWith('warn', 'JOB_NOOP', expect.any(Object));
+		await pipeline.runSeedPipeline({ triggeredBy: 'manual' });
+		expect(logger.warn).toHaveBeenCalledWith(
+			expect.objectContaining({
+				event: 'UNRESOLVED_PREREQUISITE',
+				code: 'INT2001',
+				prerequisite: 'INT9999',
+			})
+		);
 	});
 });

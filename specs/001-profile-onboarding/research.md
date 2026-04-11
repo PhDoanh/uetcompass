@@ -106,59 +106,59 @@ function useOnboardingDraft() {
 
 ---
 
-## R-004: Free-Text Validation Logic
+## R-004: Role Option + Graduation Date Validation Logic
 
-**Decision**: Two-rule pure function — no LLM involved:
-1. After trimming, length must be ≥ **3 characters**
-2. After trimming, must contain at least one **Unicode letter** (`/\p{L}/u`)
+**Decision**: Career-goal fields in MVP are validated deterministically using field-specific rules:
+1. `careerGoal.role` must be either null/empty (optional) or present in selected major's `programs.careerTracks`
+2. `careerGoal.graduationTimeline` must be either null/empty (optional) or a valid date in `YYYY-MM-DD` format
 
-Rule 2 uses the Unicode `\p{L}` class, which matches any letter in any script (Vietnamese, English, CJK, etc.) and correctly rejects inputs that are purely digits, purely special characters, or emoji without letters.
+Validation is executed on both client-side (fast feedback) and server-side (authoritative guard). No open-ended text parsing is involved.
 
-**Rationale**: Minimum 3 chars filters out trivially meaningless inputs. The Unicode letter check is locale-agnostic and handles Vietnamese diacritics correctly without enumerating every special-character code point. This is run both client-side (immediate feedback) and server-side (authoritative guard).
+**Rationale**: This keeps validation deterministic and low-latency while making graduation timeline input more intuitive in UI via date-picker.
 
 **Pattern**:
 ```js
 // backend/src/modules/onboarding/onboarding.validation.js
-const MIN_FREE_TEXT_LENGTH = 3;
-const HAS_UNICODE_LETTER = /\p{L}/u;
+const roleOptions = selectedProgram?.careerTracks || [];
 
-/**
- * Validates a free-text field value.
- * null/undefined/empty → valid (field is optional; absence is allowed)
- * @returns {{ valid: boolean, reason?: string }}
- */
-function validateFreeText(value) {
+function validateDropdownValue(value, options) {
   if (value == null) return { valid: true };
-  const trimmed = String(value).trim();
-  if (trimmed.length === 0) return { valid: true }; // treated as "not provided"
-  if (trimmed.length < MIN_FREE_TEXT_LENGTH)
-    return { valid: false, reason: `Must be at least ${MIN_FREE_TEXT_LENGTH} characters` };
-  if (!HAS_UNICODE_LETTER.test(trimmed))
-    return { valid: false, reason: 'Must contain at least one letter' };
-  return { valid: true };
+  const normalized = String(value).trim();
+  if (!normalized) return { valid: true }; // optional field not provided
+  return options.includes(normalized)
+    ? { valid: true }
+    : { valid: false, reason: 'Value must be selected from predefined options' };
 }
 
-module.exports = { validateFreeText, MIN_FREE_TEXT_LENGTH };
+function validateDateValue(value) {
+  if (value == null || String(value).trim() === '') return { valid: true };
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value).trim())
+    ? { valid: true }
+    : { valid: false, reason: 'Value must be a valid date in YYYY-MM-DD format' };
+}
+
+module.exports = { validateDropdownValue, validateDateValue };
 ```
 
 **Alternatives considered**:
-- Allowlist regex of "safe" characters (rejected — brittle for Vietnamese diacritics; would break legitimate inputs)
-- LLM-based semantic validation (rejected — FR-016 and NFR-005 explicitly prohibit this)
-- Length-only check (rejected — allows `"!!!"` as valid input)
+- Open-ended text with regex checks (rejected — still ambiguous and high-variance for MVP)
+- LLM-based semantic normalization (rejected — non-deterministic and unnecessary for MVP)
+- Client-only validation (rejected — insufficient integrity at API boundary)
 
 ---
 
-## R-005: Free-Text Field Character Upper Limits
+## R-005: Input Source and Validation Rules for MVP
 
 **Decision**:
-- `careerGoal.role`: max **500** characters
-- `careerGoal.companyType`: max **500** characters
-- `careerGoal.graduationTimeline`: max **100** characters (e.g., "3 semesters remaining" or "June 2027")
-- `personalAspirations`: max **1000** characters
+- Role options are sourced from `programs.careerTracks` for the selected program.
+- Graduation timeline uses date-picker input and is validated as `YYYY-MM-DD`.
+- Major dropdown options are sourced from `programs.nameEN`.
+- Curriculum link labeled "Required Courses" is sourced from `course_units.source.url` of any record whose `programId` matches the selected program.
+- Completed-course options are sourced from `course_units` filtered by selected `programId` and `type = "elective"`.
+- Draft and submit paths validate role against selected major's `careerTracks` and graduation timeline against date format rules.
+- If a previously saved draft contains a role removed from selected major's latest `careerTracks`, the value is treated as stale and must be re-selected before submit.
 
-Enforced at both Mongoose schema level (`maxlength`) and by `express-validator` on request body.
-
-**Rationale**: Prevents database bloat and abusive inputs. 500 chars for role/company is generous for any legitimate career goal. 1000 chars for aspirations accommodates a detailed personal statement. These limits are silent to the user (input is truncated client-side with a counter).
+**Rationale**: Mixed sourcing keeps dynamic academic data aligned with seeded curriculum truth (feature 002) while keeping role values bounded and graduation timeline input intuitive.
 
 ---
 
@@ -278,7 +278,8 @@ async function dispatchNotifications(userId, userEmail, displayName, status) {
 2. Treat downstream `careerGoalRole` as derived read-model data sourced from `careerGoal.role` only (no duplicate writable field).
 3. Exclude `privacySetting` from `StudentProfile`; ownership remains in `User` domain (feature 005).
 4. Canonicalize completed-course identity by (`major`, `courseCode`), with optional `courseUnitId` stored only as join optimization metadata.
-5. Pre-implementation policy: no runtime migration/backfill in request path for this alignment update.
+5. Resolve selected major by `programs.nameEN` to obtain `programId`, then derive curriculum link from `course_units.source.url` (any row with matching `programId`) and elective list from `course_units` where (`programId`, `type = "elective"`).
+6. Pre-implementation policy: no runtime migration/backfill in request path for this alignment update.
 
 **Rationale**: This keeps a single source of truth for career goal role, avoids cross-feature ownership leakage for privacy settings, and makes completed-course semantics stable even if `courseUnitId` values evolve. The no-runtime-migration policy reduces risk in hot paths and keeps rollout operationally simple.
 
@@ -290,6 +291,18 @@ async function dispatchNotifications(userId, userEmail, displayName, status) {
   courseCode: 'INT2204',      // canonical identity component
   courseUnitId: '64a1...'     // optional optimization only
 }
+
+// runtime sourcing for selected major
+const selectedProgram = await Program.findOne({ nameEN: selectedMajorName });
+const curriculumRow = await CourseUnit.findOne({
+  programId: selectedProgram?.programId,
+  'source.url': { $exists: true, $ne: null },
+});
+const curriculumUrl = curriculumRow?.source?.url ?? null;
+const electiveCourses = await CourseUnit.find({
+  programId: selectedProgram?.programId,
+  type: 'elective',
+});
 
 // downstream mapping (read model only)
 const careerGoalRole = profile.careerGoal?.role ?? null;

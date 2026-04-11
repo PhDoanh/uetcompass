@@ -1,9 +1,7 @@
 const express = require('express');
 const controller = require('./auth.controller');
-const { requireAuth } = require('../../middleware/auth.middleware');
 
 const authRouter = express.Router();
-const accountRouter = express.Router();
 
 function requireBody(fields = []) {
   return (req, res, next) => {
@@ -47,20 +45,6 @@ authRouter.post('/verify-reset-otp', requireBody(['email', 'otp']), controller.v
 authRouter.post('/reset-password', requireBody(['resetToken', 'newPassword']), controller.resetPassword);
 authRouter.get('/sse/notifications', controller.notificationsSse);
 
-accountRouter.get('/confirm-deletion', controller.confirmDeletion);
-
-accountRouter.use(requireAuth);
-
-accountRouter.get('/profile', controller.getProfile);
-accountRouter.patch('/profile', controller.patchProfile);
-accountRouter.post('/change-password', requireBody(['newPassword']), controller.changePassword);
-accountRouter.post('/link-google', requireBody(['credential']), controller.linkGoogle);
-accountRouter.delete('/link-google/:googleId', controller.unlinkGoogle);
-accountRouter.post('/request-deletion', controller.requestDeletion);
-accountRouter.get('/notifications', controller.getNotifications);
-accountRouter.patch('/notifications/:id/read', controller.markNotificationRead);
-
 module.exports = {
   authRouter,
-  accountRouter,
 };

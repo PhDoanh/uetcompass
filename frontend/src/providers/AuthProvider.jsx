@@ -77,6 +77,10 @@ export function sanitizeOnboardingDraft(draft) {
 
 // --- ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI SYNTAX ---
 export function decidePostLoginRoute(onboardingState) {
+  if (onboardingState === 'NEVER_STARTED' || onboardingState === 'DRAFT_IN_PROGRESS') {
+    return '/onboarding';
+  }
+
   return '/';
 }
 
@@ -131,7 +135,7 @@ export function AuthProvider({ children }) {
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
         if (typeof window !== 'undefined') {
-          window.location.assign('/login');
+          window.location.assign('/');
         }
       },
 
@@ -147,7 +151,7 @@ export function AuthProvider({ children }) {
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
         if (typeof window !== 'undefined') {
-          window.location.assign('/login');
+          window.location.assign('/');
         }
       },
     }),

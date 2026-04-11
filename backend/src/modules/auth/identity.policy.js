@@ -3,6 +3,14 @@ function sanitizeEmailLocalPart(email) {
   return localPart.replace(/[^a-zA-Z0-9._-]/g, '').trim();
 }
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isVnuEmailAddress(email) {
+  return /@vnu\.edu\.vn$/i.test(normalizeEmail(email));
+}
+
 function isValidDisplayName(value) {
   if (typeof value !== 'string') {
     return false;
@@ -42,6 +50,8 @@ function resolvePublicIdentity({ displayName, fullName, email, privacySetting })
 
 module.exports = {
   sanitizeEmailLocalPart,
+  normalizeEmail,
+  isVnuEmailAddress,
   isValidDisplayName,
   resolveEffectiveDisplayName,
   resolvePublicIdentity,

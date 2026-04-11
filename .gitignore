@@ -3,7 +3,7 @@ dist/
 build/
 coverage/
 *.log
-backend/logs/seed-ctdt.log
+backend/logs/
 .env
 .env.*
 !*.env.example

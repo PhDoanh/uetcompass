@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function CourseMultiSelect({ major, options = [], value = [], onChange }) {
+export default function CourseMultiSelect({ major, requiredCourseLink, options = [], value = [], onChange }) {
 	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	useEffect(() => {
@@ -13,8 +13,15 @@ export default function CourseMultiSelect({ major, options = [], value = [], onC
 
 	if (options.length === 0) {
 		return (
-			<div style={{ marginBottom: 12, color: '#666' }}>
-				No courses available for {major}. You can still submit onboarding.
+			<div style={{ marginBottom: 12 }}>
+				{requiredCourseLink ? (
+					<a href={requiredCourseLink} target="_blank" rel="noreferrer" className="onboarding-link">
+						Required Courses
+					</a>
+				) : null}
+				<div style={{ color: '#666', marginTop: requiredCourseLink ? 8 : 0 }}>
+					No elective courses available for {major}. You can still submit onboarding.
+				</div>
 			</div>
 		);
 	}
@@ -38,14 +45,21 @@ export default function CourseMultiSelect({ major, options = [], value = [], onC
 
 	return (
 		<div style={{ marginBottom: 12 }}>
-			<div style={{ fontWeight: 600, marginBottom: 4 }}>Completed courses (optional)</div>
+			{requiredCourseLink ? (
+				<div style={{ marginBottom: 8 }}>
+					<a href={requiredCourseLink} target="_blank" rel="noreferrer" className="onboarding-link">
+						Required Courses
+					</a>
+				</div>
+			) : null}
+			<div style={{ fontWeight: 600, marginBottom: 4 }}>Completed courses</div>
 			<button
 				type="button"
 				className="secondary-btn"
 				onClick={() => setShowAllCourses((prev) => !prev)}
 				style={{ marginTop: 10, padding: '8px 12px', fontSize: '0.86rem' }}
 			>
-				{showAllCourses ? 'Ẩn danh sách môn học' : 'Hiện danh sách môn học'}
+				{showAllCourses ? 'Hide elective courses' : 'Show elective courses'}
 			</button>
 
 			{showAllCourses ? (

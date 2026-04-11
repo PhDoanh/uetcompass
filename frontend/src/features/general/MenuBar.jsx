@@ -18,6 +18,7 @@ export default function MenuBar({ onClose }) {
   return (
     <div className="menubar">
       <button className="menubar__item" onClick={() => navigateTo('/settings')}>Settings</button>
+      <button className="menubar__item" onClick={() => navigateTo('/learning-profile')}>Learning Profile</button>
       <button className="menubar__item" onClick={() => navigateTo('/skill-tree')}>Skill Tree</button>
       <div className="menubar__divider" />
       <button className="menubar__item menubar__item--danger" onClick={handleLogout}>Logout</button>

@@ -14,21 +14,23 @@ const RoadmapProgressSchema = new mongoose.Schema(
 			ref: 'Roadmap',
 			required: true,
 		},
-		pending: {
-			type: [String],
-			default: [],
-		},
-		inProgress: {
-			type: [String],
-			default: [],
-		},
-		completed: {
-			type: [String],
-			default: [],
-		},
-		skip: {
-			type: [String],
-			default: [],
+		state: {
+			pending: {
+				type: [String],
+				default: [],
+			},
+			inProgress: {
+				type: [String],
+				default: [],
+			},
+			completed: {
+				type: [String],
+				default: [],
+			},
+			skip: {
+				type: [String],
+				default: [],
+			},
 		},
 		updatedAt: {
 			type: Date,

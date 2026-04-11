@@ -8,7 +8,9 @@
     "dev": "nodemon src/app.js",
     "test": "jest",
     "seed:mock": "node src/seed-mock.js",
-    "seed:ctdt": "node -e \"require('./src/modules/curriculum/seed.job').runManualCli()\""
+    "seed:ctdt": "node -e \"require('./src/modules/curriculum/seed.job').runManualCli()\"",
+    "skills:export-review": "node -e \"require('./src/modules/curriculum/skills.review.cli').runExportCli()\"",
+    "skills:apply-review": "node -e \"require('./src/modules/curriculum/skills.review.cli').runApplyCli()\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

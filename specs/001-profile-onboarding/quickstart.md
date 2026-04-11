@@ -89,7 +89,8 @@ npm run dev
 
 Onboarding depends on both `programs` and `course_units` seeded by `002-seed-ctdt-dag`:
 - Major dropdown uses `programs.nameEN`
-- "Các môn học bắt buộc" link uses `programs.source.url`
+- Target role dropdown uses `programs.careerTracks` for the selected `programId`
+- "Required Courses" link uses `course_units.source.url` from any row matching selected `programId`
 - Completed-courses selector uses `course_units` filtered by selected `programId` and `type = "elective"`
 
 Run seeding once locally before testing this feature:
@@ -109,6 +110,7 @@ db.programs.insertOne({
   programId: "CNTT-STANDARD",
   nameVI: "Cong nghe thong tin",
   nameEN: "Computer Science",
+  careerTracks: ["Backend Engineer", "Data Engineer"],
   degree: "bachelor",
   durationYears: 4,
   totalCredits: 130,
@@ -159,7 +161,7 @@ Expected output:
 
 ```
 PASS  tests/unit/onboarding/validation.test.js
-  dropdown option validation
+  role option + graduation date validation
     ✓ null input → valid (optional field)
     ✓ empty input → valid (treated as not provided)
     ✓ role in predefined option list → valid
@@ -199,7 +201,7 @@ TOKEN="eyJ..."
 curl -X PUT http://localhost:3001/api/onboarding/draft \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"major":"Computer Science","careerGoal":{"role":"Software Engineer","graduationTimeline":"3 semesters"}}'
+  -d '{"major":"Computer Science","careerGoal":{"role":"Software Engineer","graduationTimeline":"2027-06-30"}}'
 # → 200 with updated draft document
 ```
 
@@ -217,7 +219,8 @@ curl http://localhost:3001/api/onboarding/draft \
 curl http://localhost:3001/api/onboarding/course-catalog \
   -H "Authorization: Bearer $TOKEN"
 # → major options sourced from programs.nameEN
-# → curriculum link sourced from programs.source.url
+# → role options sourced from programs.careerTracks for selected programId
+# → curriculum link sourced from course_units.source.url (any row with matching programId)
 # → completed courses include only course_units where type = "elective" for selected programId
 ```
 

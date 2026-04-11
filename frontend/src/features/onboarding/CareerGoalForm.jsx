@@ -1,9 +1,45 @@
-import FreeTextField from './FreeTextField';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-const COMPANY_TYPES = ['Startup', 'Outsource', 'Product company', 'Japanese company', 'Big Tech'];
+function parseIsoDate(value) {
+	if (!value || typeof value !== 'string') {
+		return null;
+	}
+	const [year, month, day] = value.split('-').map((part) => Number(part));
+	if (!year || !month || !day) {
+		return null;
+	}
+	const date = new Date(year, month - 1, day);
+	if (
+		date.getFullYear() !== year ||
+		date.getMonth() !== month - 1 ||
+		date.getDate() !== day
+	) {
+		return null;
+	}
+	return date;
+}
 
-export default function CareerGoalForm({ value, onChange }) {
+function toIsoDateString(date) {
+	if (!(date instanceof Date)) {
+		return '';
+	}
+	const year = String(date.getFullYear());
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+export default function CareerGoalForm({ value, roleOptions = [], onChange }) {
 	const careerGoal = value?.careerGoal || {};
+	const hasRoleOptions = Array.isArray(roleOptions) && roleOptions.length > 0;
+	const currentRole = careerGoal.role || '';
+	const selectedRole = hasRoleOptions && roleOptions.includes(currentRole) ? currentRole : '';
+	const rolePlaceholder = value?.major
+		? hasRoleOptions
+			? 'Select target role'
+			: 'No role tracks available for selected major'
+		: 'Select major first';
 
 	const patch = (next) => {
 		onChange({
@@ -18,27 +54,19 @@ export default function CareerGoalForm({ value, onChange }) {
 
 	return (
 		<div>
-			<FreeTextField
-				id="role"
-				label="Target role"
-				maxLength={500}
-				value={careerGoal.role || ''}
-				onChange={(next) => patch({ careerGoal: { role: next } })}
-				placeholder="e.g. Backend Engineer"
-			/>
-
 			<div className="onboarding-field">
-				<label htmlFor="companyType" className="onboarding-label">
-					Company type <span className="onboarding-label-optional">(optional)</span>
+				<label htmlFor="role" className="onboarding-label">
+					Target role <span className="onboarding-label-optional"></span>
 				</label>
 				<select
-					id="companyType"
-					value={careerGoal.companyType || ''}
-					onChange={(event) => patch({ careerGoal: { companyType: event.target.value } })}
+					id="role"
+					value={selectedRole}
+					onChange={(event) => patch({ careerGoal: { role: event.target.value } })}
+					disabled={!hasRoleOptions}
 					className="onboarding-input onboarding-select"
 				>
-					<option value="">Select company type</option>
-					{COMPANY_TYPES.map((item) => (
+					<option value="">{rolePlaceholder}</option>
+					{roleOptions.map((item) => (
 						<option key={item} value={item}>
 							{item}
 						</option>
@@ -46,23 +74,25 @@ export default function CareerGoalForm({ value, onChange }) {
 				</select>
 			</div>
 
-			<FreeTextField
-				id="timeline"
-				label="Graduation timeline"
-				maxLength={100}
-				value={careerGoal.graduationTimeline || ''}
-				onChange={(next) => patch({ careerGoal: { graduationTimeline: next } })}
-				placeholder="e.g. 3 semesters or 2027-06"
-			/>
-
-			<FreeTextField
-				id="aspirations"
-				label="Personal aspirations"
-				maxLength={1000}
-				value={value?.personalAspirations || ''}
-				onChange={(next) => patch({ personalAspirations: next })}
-				placeholder="Tell us what you care about"
-			/>
+			<div className="onboarding-field">
+				<label htmlFor="timeline" className="onboarding-label">
+					Graduation date <span className="onboarding-label-optional">(optional)</span>
+				</label>
+				<DatePicker
+					id="timeline"
+					selected={parseIsoDate(careerGoal.graduationTimeline)}
+					onChange={(nextDate) => patch({ careerGoal: { graduationTimeline: toIsoDateString(nextDate) } })}
+					dateFormat="dd/MM/yyyy"
+					placeholderText="DD/MM/YYYY"
+					isClearable
+					showPopperArrow={false}
+					calendarStartDay={1}
+					popperPlacement="bottom-start"
+					popperClassName="onboarding-datepicker-popper"
+					calendarClassName="onboarding-datepicker-calendar"
+					className="onboarding-input"
+				/>
+			</div>
 		</div>
 	);
 }

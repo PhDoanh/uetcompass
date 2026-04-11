@@ -103,6 +103,11 @@
   margin-bottom: 8px;
 }
 
+.onboarding-save-status {
+  display: block;
+  min-height: 20px;
+}
+
 .onboarding-panel-error {
   color: #fca5a5;
   margin-bottom: 8px;
@@ -233,4 +238,57 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.onboarding-datepicker-popper {
+  z-index: 3600;
+}
+
+.onboarding-datepicker-calendar {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  color: #e2e8f0;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.55);
+  font-family: inherit;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  color: #f8fafc;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__current-month,
+.onboarding-datepicker-calendar .react-datepicker-time__header,
+.onboarding-datepicker-calendar .react-datepicker-year-header,
+.onboarding-datepicker-calendar .react-datepicker__day-name {
+  color: #cbd5e1;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__day {
+  color: #cbd5e1;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__day:hover {
+  background: rgba(56, 189, 248, 0.18);
+  color: #f8fafc;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__day--selected,
+.onboarding-datepicker-calendar .react-datepicker__day--keyboard-selected {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__navigation-icon::before {
+  border-color: #7dd3fc;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__day--outside-month {
+  color: #64748b;
+}
+
+.onboarding-datepicker-calendar .react-datepicker__triangle {
+  display: none;
 }

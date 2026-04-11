@@ -135,4 +135,5 @@ module.exports = {
       return sendError(res, err);
     }
   },
+  notificationsSse: notImplemented('notificationsSse'),
 };

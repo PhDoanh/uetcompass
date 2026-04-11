@@ -7,8 +7,16 @@ const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyUser } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
+const path = require('path');
 
 const activeGenerations = new Set();
+
+// Load roadmap templates keyed by roadmapName (case-insensitive)
+const templateData = require(path.join(__dirname, '../../..', 'data', 'backend.json'));
+const ROADMAP_TEMPLATES = new Map();
+if (templateData.roadmapName && templateData.nodes) {
+	ROADMAP_TEMPLATES.set(templateData.roadmapName.toLowerCase(), templateData.nodes);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,10 +24,28 @@ const activeGenerations = new Set();
 
 /** Converts a skill name string to a URL-safe kebab-case nodeId slug. */
 function toKebabCase(str) {
-	return str
+	const slug = str
 		.toLowerCase()
 		.replace(/\s+/g, '-')
-		.replace(/[^a-z0-9-]/g, '');
+		.replace(/[^a-z0-9-]/g, '')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '');
+	return slug || 'node';
+}
+
+/**
+ * Wraps toKebabCase with collision detection.
+ * Appends -2, -3, ... on duplicate slugs within the same generation run.
+ */
+function uniqueNodeId(str, seenIds) {
+	let base = toKebabCase(str);
+	let id = base;
+	let counter = 2;
+	while (seenIds.has(id)) {
+		id = `${base}-${counter++}`;
+	}
+	seenIds.add(id);
+	return id;
 }
 
 /**
@@ -86,7 +112,8 @@ function buildCandidateSkills(availableCourseUnits) {
 
 /**
  * Builds an ordered RoadmapNode[] from AI-approved skills.
- * Nodes are placed in topological order of their related courses' prerequisites.
+ * Each skill is placed at the latest topological position of any of its
+ * related courses, ensuring all prerequisites are satisfied before the node.
  * Each skill becomes one node (type: topic); duplicate skill names are deduplicated.
  *
  * @param {Array<{ skillName: string, reason: string }>} approvedSkills
@@ -95,39 +122,38 @@ function buildCandidateSkills(availableCourseUnits) {
  * @returns {Array} RoadmapNode[]
  */
 function buildNodesTopologically(approvedSkills, candidateSkillsMap, allCourseUnits) {
-	// Map each courseCode to the first approved skill index that covers it
-	const courseToApprovedIdx = new Map();
-	for (let i = 0; i < approvedSkills.length; i++) {
-		const candidate = candidateSkillsMap.get(approvedSkills[i].skillName);
-		if (!candidate) continue;
-		for (const rc of candidate.relatedCourses) {
-			if (!courseToApprovedIdx.has(rc.courseCode)) {
-				courseToApprovedIdx.set(rc.courseCode, i);
-			}
-		}
-	}
-
 	const sortedUnits = sortCourseUnitsTopologically(allCourseUnits);
-	const addedSkills = new Set();
-	const nodes = [];
 
-	for (const cu of sortedUnits) {
-		const idx = courseToApprovedIdx.get(cu.code);
-		if (idx === undefined) continue;
-		const { skillName, reason } = approvedSkills[idx];
-		if (addedSkills.has(skillName)) continue;
-		const candidate = candidateSkillsMap.get(skillName);
-		nodes.push({
-			nodeId: toKebabCase(skillName),
-			nodeType: 'topic',
-			skillName,
-			parentNodeId: null,
-			relatedCourses: candidate.relatedCourses,
-			reason,
-			resources: [],
-		});
-		addedSkills.add(skillName);
+	// Build courseCode -> topological position index
+	const coursePos = new Map();
+	for (let i = 0; i < sortedUnits.length; i++) {
+		coursePos.set(sortedUnits[i].code, i);
 	}
+
+	// Collect approved skills with their rank = max topological position of related courses
+	const approvedSet = new Set(approvedSkills.map((s) => s.skillName));
+	const skillEntries = [];
+
+	for (const { skillName, reason } of approvedSkills) {
+		const candidate = candidateSkillsMap.get(skillName);
+		if (!candidate) continue;
+		const rank = Math.max(...candidate.relatedCourses.map((rc) => coursePos.get(rc.courseCode) ?? 0));
+		skillEntries.push({ skillName, reason, candidate, rank });
+	}
+
+	// Sort by rank (latest prerequisite position) to ensure valid topological placement
+	skillEntries.sort((a, b) => a.rank - b.rank);
+
+	const seenIds = new Set();
+	const nodes = skillEntries.map(({ skillName, reason, candidate }) => ({
+		nodeId: uniqueNodeId(skillName, seenIds),
+		nodeType: 'topic',
+		skillName,
+		parentNodeId: null,
+		relatedCourses: candidate.relatedCourses,
+		reason,
+		resources: [],
+	}));
 
 	return nodes;
 }
@@ -159,22 +185,98 @@ async function runGenerationLifecycle(userId, triggerReason) {
 
 		let nodes;
 
-		if (personalisationLevel === 'full') {
-			const availableCourseUnits = courseUnits.filter(
-				(cu) => !completedCourseCodes.has(cu.code)
-			);
-			const candidateSkills = buildCandidateSkills(availableCourseUnits);
-			const candidateSkillsMap = new Map(candidateSkills.map((c) => [c.skillName, c]));
+		const availableCourseUnits = courseUnits.filter(
+			(cu) => !completedCourseCodes.has(cu.code)
+		);
+		const candidateSkills = buildCandidateSkills(availableCourseUnits);
+		const candidateSkillsMap = new Map(candidateSkills.map((c) => [c.skillName, c]));
 
+		// Check if a pre-built template matches the roadmapName
+		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
+		if (templateNodes) {
+			const seenIds = new Set();
+
+			// Enrich template nodes with relatedCourses from course skills
+			const enriched = templateNodes.map((n) => {
+				const candidate = candidateSkillsMap.get(n.skillName);
+				return {
+					...n,
+					nodeId: uniqueNodeId(n.skillName, seenIds),
+					relatedCourses: candidate?.relatedCourses ?? [],
+				};
+			});
+
+			// Build a lookup: topic nodeId -> enriched topic node (for attaching subtopics)
+			const topicNodeIds = new Map();
+			for (const n of enriched) {
+				if (n.nodeType === 'topic') topicNodeIds.set(n.nodeId, n);
+			}
+
+			if (personalisationLevel === 'full') {
+				// Identify course skills NOT already in the template
+				const templateSkillNames = new Set(templateNodes.map((n) => n.skillName));
+				const offTemplateSkills = candidateSkills.filter((c) => !templateSkillNames.has(c.skillName));
+
+				// AI evaluates relevance of off-template skills to the career goal
+				const approvedExtras = await evaluateOffTemplateSkills(offTemplateSkills, profile);
+
+				// Off-template nodes are always subtopic, attached to the nearest template topic
+				// that shares a relatedCourse. Exclude if no parent topic found.
+				const extraNodes = [];
+				for (const { skillName, reason } of approvedExtras) {
+					const candidate = candidateSkillsMap.get(skillName);
+					if (!candidate) continue;
+
+					// Find a template topic node sharing at least one relatedCourse
+					const courseCodes = new Set(candidate.relatedCourses.map((rc) => rc.courseCode));
+					let parentNode = null;
+					for (const tpl of enriched) {
+						if (tpl.nodeType !== 'topic') continue;
+						if (tpl.relatedCourses.some((rc) => courseCodes.has(rc.courseCode))) {
+							parentNode = tpl;
+							break;
+						}
+					}
+					if (!parentNode) continue; // Spec: exclude if no parent topic
+
+					extraNodes.push({
+						nodeId: uniqueNodeId(skillName, seenIds),
+						nodeType: 'subtopic',
+						skillName,
+						parentNodeId: parentNode.nodeId,
+						relatedCourses: candidate.relatedCourses,
+						reason,
+						resources: [],
+					});
+				}
+
+				// Insert each subtopic right after its parent topic in the enriched list
+				const result = [];
+				const extrasByParent = new Map();
+				for (const extra of extraNodes) {
+					if (!extrasByParent.has(extra.parentNodeId)) extrasByParent.set(extra.parentNodeId, []);
+					extrasByParent.get(extra.parentNodeId).push(extra);
+				}
+				for (const n of enriched) {
+					result.push(n);
+					const children = extrasByParent.get(n.nodeId);
+					if (children) result.push(...children);
+				}
+				nodes = result;
+			} else {
+				nodes = enriched;
+			}
+		} else if (personalisationLevel === 'full') {
 			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
 			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
 		} else {
 			// Low personalisation: map all required courses to topic nodes in DAG order
 			const sortedUnits = sortCourseUnitsTopologically(courseUnits);
+			const seenIds = new Set();
 			nodes = sortedUnits
 				.filter((cu) => cu.type === 'required' && !completedCourseCodes.has(cu.code))
 				.map((cu) => ({
-					nodeId: toKebabCase(cu.name),
+					nodeId: uniqueNodeId(cu.name, seenIds),
 					nodeType: 'topic',
 					skillName: cu.name,
 					parentNodeId: null,
@@ -207,12 +309,16 @@ async function runGenerationLifecycle(userId, triggerReason) {
 			preview: { nodes },
 		});
 	} catch (err) {
-		await roadmapService.upsertFailedWithProfile(
-			userId,
-			studentProfileId,
-			err.message,
-			personalisationLevel
-		);
+		if (studentProfileId) {
+			await roadmapService.upsertFailedWithProfile(
+				userId,
+				studentProfileId,
+				err.message,
+				personalisationLevel
+			);
+		} else {
+			await roadmapService.upsertFailed(userId, err.message);
+		}
 		notifyUser(userId, 'roadmap_generation_failed', {
 			type: 'roadmap_generation_failed',
 			retryable: true,

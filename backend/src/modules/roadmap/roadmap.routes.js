@@ -14,26 +14,26 @@ const roadmapRouter = express.Router();
 roadmapRouter.get('/sample', controller.getSampleRoadmap);
 roadmapRouter.get('/public/:shareId', controller.getPublicSharedRoadmap);
 
-// SSE connection endpoint for roadmap notifications
+roadmapRouter.use(requireAuth);
+
+// SSE connection endpoint for roadmap notifications (auth required for userId)
 roadmapRouter.get('/sse', (req, res) => {
 	const sseToken = req.query?.sseToken;
 	if (!sseToken) {
-		res.writeHead(401, {
+		res.writeHead(400, {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',
 			Connection: 'keep-alive',
 			'X-Accel-Buffering': 'no',
 		});
 		res.write('event: error\n');
-		res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\n\n');
+		res.write('data: {"code":"INVALID_PAYLOAD","message":"Missing sseToken query parameter"}\n\n');
 		res.end();
 		return;
 	}
 	addConnection(String(sseToken), res);
 	addUserConnection(req.user.userId, res);
 });
-
-roadmapRouter.use(requireAuth);
 
 roadmapRouter.post('/preview', controller.previewRoadmapHandler);
 roadmapRouter.get('/primary', controller.getPrimaryRoadmap);

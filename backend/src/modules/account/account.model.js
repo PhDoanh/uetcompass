@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const { User } = require('../auth/user.model');
 
-const securityAuditSchema = new mongoose.Schema(
+const accountAuditEventSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,13 +11,7 @@ const securityAuditSchema = new mongoose.Schema(
     eventType: {
       type: String,
       required: true,
-      enum: [
-        'PROFILE_UPDATED',
-        'PASSWORD_CHANGED',
-        'PASSWORD_RESET_COMPLETED',
-        'ACCOUNT_DELETION_REQUESTED',
-        'ACCOUNT_SOFT_DELETED',
-      ],
+      enum: ['PROFILE_UPDATED', 'PASSWORD_CHANGED'],
       index: true,
     },
     metadata: {
@@ -29,9 +24,11 @@ const securityAuditSchema = new mongoose.Schema(
   }
 );
 
-const SecurityAudit =
-  mongoose.models.SecurityAudit || mongoose.model('SecurityAudit', securityAuditSchema, 'security_audits');
+const AccountAuditEvent =
+  mongoose.models.AccountAuditEvent ||
+  mongoose.model('AccountAuditEvent', accountAuditEventSchema, 'account_audit_events');
 
 module.exports = {
-  SecurityAudit,
+  StudentAccount: User,
+  AccountAuditEvent,
 };

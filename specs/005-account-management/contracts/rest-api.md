@@ -1,866 +1,163 @@
-# REST API Contract: Auth & Account Management Module
+# REST API Contract: Account Management
 
 **Feature**: `005-account-management`
-**Date**: 2026-03-11
-**Base paths**: `/api/auth`, `/api/account`, `/api/notifications`
-**Authentication**: Unless noted, all endpoints under `/api/account` and `/api/notifications` require a valid access token JWT in `Authorization: Bearer <token>`. The middleware attaches `req.user.userId` (ObjectId string) to every authenticated request.
+**Date**: 2026-04-09
+**Base path**: `/api/account`
 
----
+## Access Preconditions
+
+All endpoints in this contract require:
+- Valid authenticated session/token.
+- UET-verified account state from Feature 011-authentication.
+
+If preconditions fail, API returns `401 UNAUTHORIZED` or `403 FORBIDDEN` per auth middleware policy.
 
 ## Common Conventions
 
-**Request headers** (authenticated endpoints):
-```
-Authorization: Bearer <access-token-JWT>
+Authenticated request headers:
+
+```http
+Authorization: Bearer <access-token>
 Content-Type: application/json
 ```
 
-**Error envelope** (all non-2xx responses):
+Error envelope:
+
 ```json
 {
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human-readable description",
+    "message": "Human-readable message",
     "details": {}
   }
 }
 ```
 
-`details` is optional. Include it only when extra machine-readable context is useful (for example: lockout timers, field-level validation metadata).
-
-**Global error codes**:
-
-| HTTP | `code` | Meaning |
-|---|---|---|
-| 400 | `INVALID_INPUT` | Request body, query, or params failed validation |
-| 401 | `UNAUTHORIZED` | Missing, expired, or invalid access token |
-| 403 | `FORBIDDEN` | Authenticated but not permitted for this action |
-| 404 | `NOT_FOUND` | Resource does not exist |
-| 409 | `CONFLICT` | Duplicate resource or invalid state transition |
-| 429 | `RATE_LIMITED` | Too many requests in window |
-| 500 | `INTERNAL_ERROR` | Unexpected server error |
-
-Code taxonomy policy for this module:
-- Reuse canonical shared codes for shared semantics (`INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL_ERROR`).
-- Use endpoint/domain-specific codes only for truly domain-specific states (`INVALID_CREDENTIALS`, `EMAIL_ALREADY_EXISTS`, `OTP_EXPIRED`, ...).
-- Do not use multiple codes for the same semantic condition.
-
-### Identity render conventions (global)
-
-`displayName` is the primary public identity field. APIs expose `effectiveDisplayName` (server-computed) to guarantee consistent rendering across clients using fallback order:
-
-1. valid `displayName`
-2. `fullName`
-3. sanitized local-part of `email`
-4. `"Student"`
-
-`privacySetting` is owned by Feature 005 and is stored on `users` with enum `identified | anonymous` (default `identified`).
-
----
-
-## POST /api/auth/register
-
-Register a new student account. Sends an OTP email and creates a `pending-verification` account.
-
-**Auth**: None
-
-### Request body
-
-```json
-{
-  "displayName": "NguyenA",
-  "fullName": "Nguyễn Văn A",
-  "email": "student@vnu.edu.vn",
-  "password": "SecurePassword123!"
-}
-```
-
-| Field | Type | Required | Constraints |
-|---|---|---|---|
-| `displayName` | string | no | 1–120 chars after trim if provided; public display identity |
-| `fullName` | string | yes | 2–200 chars; non-empty after trim |
-| `email` | string | yes | Must end in `@vnu.edu.vn`; lowercased at storage |
-| `password` | string | yes | Minimum 8 chars |
-
-If `displayName` is omitted at registration, backend initializes it from `fullName`.
-
-### Response — 201 Created
-
-```json
-{ "message": "OTP sent to student@vnu.edu.vn. Please verify your email within 2 minutes." }
-```
-
-### Response — 409 Conflict
-
-Email already associated with an active, pending, or locked account.
-
-```json
-{
-  "error": {
-    "code": "EMAIL_ALREADY_EXISTS",
-    "message": "An account with this email already exists. Please log in instead."
-  }
-}
-```
-
-### Response — 400 Bad Request
-
-```json
-{
-  "error": {
-    "code": "INVALID_INPUT",
-    "message": "email: Must end in @vnu.edu.vn",
-    "details": {
-      "field": "email"
-    }
-  }
-}
-```
-
----
-
-## POST /api/auth/verify-email
-
-Verify OTP sent at registration. Activates the account on success.
-
-**Auth**: None
-
-### Request body
-
-```json
-{
-  "email": "student@vnu.edu.vn",
-  "otp": "4821"
-}
-```
-
-### Response — 200 OK
-
-Account activated.
-
-```json
-{ "message": "Email verified successfully. You may now log in." }
-```
-
-### Response — 400 Bad Request (expired or wrong OTP)
-
-```json
-{
-  "error": {
-    "code": "OTP_INVALID",
-    "message": "The code is incorrect or has expired."
-  }
-}
-```
-
-### Response — 423 Locked (account locked due to OTP timeout)
-
-```json
-{
-  "error": {
-    "code": "ACCOUNT_LOCKED_UNVERIFIED",
-    "message": "Verification window expired. Please request a new OTP to unlock your account."
-  }
-}
-```
-
----
-
-## POST /api/auth/resend-otp
-
-Resend a new OTP for registration verification. Unlocks a locked-unverified account.
-
-**Auth**: None
-
-### Request body
-
-```json
-{ "email": "student@vnu.edu.vn" }
-```
-
-### Response — 200 OK
-
-```json
-{ "message": "A new OTP has been sent to student@vnu.edu.vn." }
-```
-
-### Response — 400 Bad Request
-
-Account is already verified (active); resend not needed.
-
-```json
-{
-  "error": {
-    "code": "ALREADY_VERIFIED",
-    "message": "This account is already verified."
-  }
-}
-```
-
----
-
-## POST /api/auth/login
-
-Login with email and password. Returns an access token and sets the refresh token cookie.
-
-**Auth**: None
-
-### Request body
-
-```json
-{
-  "email": "student@vnu.edu.vn",
-  "password": "SecurePassword123!"
-}
-```
-
-### Response — 200 OK
-
-Sets `rt` httpOnly cookie (Refresh Token, `SameSite=None; Secure; path=/api/auth`).
-
-```json
-{
-  "accessToken": "<JWT>",
-  "onboardingState": "DRAFT_IN_PROGRESS"
-}
-```
-
-`onboardingState` values:
-- `"NEVER_STARTED"` — no `StudentProfile` document for this user
-- `"DRAFT_IN_PROGRESS"` — `StudentProfile.isDraft === true`
-- `"COMPLETED"` — `StudentProfile.isDraft === false`
-
-### Response — 401 Unauthorized (invalid credentials)
-
-```json
-{
-  "error": {
-    "code": "INVALID_CREDENTIALS",
-    "message": "Invalid email or password."
-  }
-}
-```
-
-### Response — 423 Locked (account locked by failed attempts)
-
-```json
-{
-  "error": {
-    "code": "ACCOUNT_LOCKED",
-    "message": "Account locked due to too many failed attempts.",
-    "details": {
-      "remainingSeconds": 847
-    }
-  }
-}
-```
-
-### Response — 403 Forbidden (email not verified)
-
-```json
-{
-  "error": {
-    "code": "EMAIL_NOT_VERIFIED",
-    "message": "Please verify your email before logging in."
-  }
-}
-```
-
----
-
-## POST /api/auth/google
-
-Authenticate or register via Google. Verifies the Google ID token, checks domain, and either logs in or creates a new account.
-
-**Auth**: None
-
-### Request body
-
-```json
-{ "credential": "<Google-ID-token-JWT>" }
-```
-
-### Response — 200 OK (existing account)
-
-Sets `rt` cookie. Same shape as `POST /api/auth/login` 200.
-
-```json
-{
-  "accessToken": "<JWT>",
-  "onboardingState": "NEVER_STARTED"
-}
-```
-
-### Response — 201 Created (new account created)
-
-Sets `rt` cookie.
-
-```json
-{
-  "accessToken": "<JWT>",
-  "onboardingState": "NEVER_STARTED"
-}
-```
-
-### Response — 403 Forbidden (invalid domain)
-
-```json
-{
-  "error": {
-    "code": "DOMAIN_NOT_ALLOWED",
-    "message": "Only @vnu.edu.vn Google accounts are permitted."
-  }
-}
-```
-
-### Response — 400 Bad Request (invalid ID token)
-
-```json
-{
-  "error": {
-    "code": "INVALID_GOOGLE_TOKEN",
-    "message": "Google Sign-In failed. Please try again."
-  }
-}
-```
-
----
-
-## POST /api/auth/refresh
-
-Rotate refresh token and issue a new access token. Called silently on app mount and every 14 minutes.
-
-**Auth**: httpOnly `rt` cookie (no Authorization header required)
-
-### Request
-
-No body.
-
-### Response — 200 OK
-
-Sets new `rt` cookie (old one is revoked).
-
-```json
-{ "accessToken": "<new-JWT>" }
-```
-
-### Response — 401 Unauthorized
-
-Covers: missing cookie, expired token, already-revoked token, reuse-detected.
-
-```json
-{
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Session expired. Please log in again."
-  }
-}
-```
-
----
-
-## POST /api/auth/logout
-
-Terminate the current session by revoking the refresh token.
-
-**Auth**: httpOnly `rt` cookie (Authorization header optional — best-effort)
-
-### Request
-
-No body.
-
-### Response — 204 No Content
-
-Clears `rt` cookie. Session ended.
-
----
-
-## POST /api/auth/forgot-password
-
-Request a password reset OTP. Always returns a generic message regardless of whether the email exists.
-
-**Auth**: None
-
-### Request body
-
-```json
-{ "email": "student@vnu.edu.vn" }
-```
-
-### Response — 200 OK (always — prevents account enumeration)
-
-```json
-{
-  "message": "If an account exists for this email, a reset code has been sent."
-}
-```
-
----
-
-## POST /api/auth/verify-reset-otp
-
-Verify the reset OTP. On success, returns a short-lived reset session token for use in the next step.
-
-**Auth**: None
-
-### Request body
-
-```json
-{
-  "email": "student@vnu.edu.vn",
-  "otp": "3741"
-}
-```
-
-### Response — 200 OK
-
-```json
-{
-  "resetToken": "<opaque-short-lived-token>"
-}
-```
-
-`resetToken` is a short-lived (5 min), single-use token used in `POST /api/auth/reset-password`.
-
-### Response — 400 Bad Request (wrong OTP, not yet 10 attempts)
-
-```json
-{
-  "error": {
-    "code": "OTP_INVALID",
-    "message": "Incorrect code. You have N attempts remaining."
-  }
-}
-```
-
-### Response — 410 Gone (10 wrong attempts — OTP invalidated)
-
-```json
-{
-  "error": {
-    "code": "OTP_EXHAUSTED",
-    "message": "Too many incorrect attempts. Please request a new code."
-  }
-}
-```
-
-### Response — 400 Bad Request (OTP expired)
-
-```json
-{
-  "error": {
-    "code": "OTP_EXPIRED",
-    "message": "The code has expired. Please request a new one."
-  }
-}
-```
-
----
-
-## POST /api/auth/reset-password
-
-Set a new password using the reset token obtained after OTP verification.
-
-**Auth**: None
-
-### Request body
-
-```json
-{
-  "resetToken": "<opaque-short-lived-token>",
-  "newPassword": "NewSecurePassword456!"
-}
-```
-
-### Response — 200 OK
-
-```json
-{ "message": "Password updated successfully. Please log in with your new password." }
-```
-
-### Response — 400 Bad Request (invalid/expired reset token)
-
-```json
-{
-  "error": {
-    "code": "RESET_TOKEN_INVALID",
-    "message": "Reset session expired or already used. Please start over."
-  }
-}
-```
-
----
+Common error codes:
+- `INVALID_INPUT` (400)
+- `UNAUTHORIZED` (401)
+- `FORBIDDEN` (403)
+- `NOT_FOUND` (404)
+- `CONFLICT` (409)
+- `INTERNAL_ERROR` (500)
 
 ## GET /api/account/profile
 
-Fetch the authenticated student's account and (if onboarding is complete) profile fields.
+Returns Account Settings payload for current user.
 
-**Auth**: Bearer token required
-
-### Response — 200 OK (onboarding not yet completed)
+### 200 OK
 
 ```json
 {
-  "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
-  "displayName": "NguyenA",
-  "fullName": "Nguyễn Văn A",
-  "effectiveDisplayName": "NguyenA",
-  "privacySetting": "identified",
-  "email": "student@vnu.edu.vn",
-  "avatarUrl": null,
-  "linkedGoogleAccounts": [],
-  "onboardingState": "DRAFT_IN_PROGRESS",
-  "profile": null
-}
-```
-
-### Response — 200 OK (onboarding completed)
-
-```json
-{
-  "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
-  "displayName": "NguyenA",
-  "fullName": "Nguyễn Văn A",
-  "effectiveDisplayName": "NguyenA",
-  "privacySetting": "identified",
-  "email": "student@vnu.edu.vn",
-  "avatarUrl": "https://cdn.example.com/avatar.jpg",
-  "linkedGoogleAccounts": [
-    { "googleId": "108532...", "email": "student@vnu.edu.vn" }
-  ],
-  "onboardingState": "COMPLETED",
-  "profile": {
-    "major": "Computer Science",
-    "completedCourseIds": ["64a1..."],
-    "careerGoal": {
-      "role": "Backend Engineer",
-      "companyType": "Product company",
-      "graduationTimeline": "3 semesters"
-    },
-    "personalAspirations": "Work remotely after graduation.",
-    "repersonalizationPending": false
+  "identity": {
+    "email": "student@vnu.edu.vn",
+    "displayName": "anhdev",
+    "fullName": "Nguyen Van A",
+    "privacySetting": "identified",
+    "avatarUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...",
+    "effectiveDisplayName": "anhdev"
   }
 }
 ```
 
----
+### 401/403
+
+Returned when missing auth context or user is not UET-verified by Feature 011-authentication.
 
 ## PATCH /api/account/profile
 
-Update account info and/or onboarding profile fields. Only provided fields are updated (partial update).
+Updates account profile fields owned by current user.
 
-**Auth**: Bearer token required
-
-### Request body (any subset of fields)
+### Request body
 
 ```json
 {
-  "displayName": "Nguyen Van B",
-  "fullName": "Nguyễn Văn B",
+  "displayName": "anhdev",
+  "fullName": "Nguyen Van A",
   "privacySetting": "anonymous",
-  "avatarUrl": "https://cdn.example.com/new-avatar.jpg",
+  "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD..."
+}
+```
+
+Rules:
+- Identity fields are always editable by owner.
+- `avatarUrl` accepts hosted URL or image Data URL generated from frontend `Import Image`; delete-image action sends empty/null avatar state.
+
+### 200 OK
+
+```json
+{
+  "message": "Profile updated",
   "profile": {
-    "major": "Software Engineering",
-    "completedCourseIds": ["64a1...", "64a2..."],
-    "careerGoal": {
-      "role": "Frontend Developer",
-      "companyType": "Startup",
-      "graduationTimeline": "2 semesters"
-    },
-    "personalAspirations": "Build open-source tools."
+    "email": "student@vnu.edu.vn",
+    "displayName": "anhdev",
+    "fullName": "Nguyen Van A",
+    "privacySetting": "anonymous",
+    "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...",
+    "effectiveDisplayName": "anhdev"
   }
 }
 ```
 
-| Field | Notes |
-|---|---|
-| `displayName` | Optional; public identity field; maxlength 120 |
-| `fullName` | Optional; maxlength 200 |
-| `privacySetting` | Optional; enum: `identified` \| `anonymous` |
-| `avatarUrl` | Optional; valid URL or `null` |
-| `profile.*` | Only available (and applied) when `onboardingState === 'COMPLETED'`; ignored otherwise |
+## POST /api/account/password/change
 
-**Re-personalization detection**: If any `profile.*` field differs from the stored value, the server sets `repersonalizationPending = true` on `StudentProfile` and sends a `REPERSONALIZE` in-app notification.
+Changes current user's password.
 
-### Response — 200 OK
+### Request body
 
-Returns the full profile as per `GET /api/account/profile` response.
+```json
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewPassword456!"
+}
+```
 
-### Response — 400 Bad Request
+Rules:
+- `newPassword` must be at least 8 characters and include at least one letter, one number, and one special character.
+
+### 200 OK
+
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+### 400 INVALID_INPUT
+
+Invalid new password format/policy.
 
 ```json
 {
   "error": {
     "code": "INVALID_INPUT",
-    "message": "profile.careerGoal.role: Must contain at least one letter",
+    "message": "New password must be at least 8 characters and include letters, numbers, and special characters",
     "details": {
-      "field": "profile.careerGoal.role"
+      "field": "newPassword"
     }
   }
 }
 ```
 
----
+### 403 FORBIDDEN
 
-## POST /api/account/change-password
-
-Change the current password. Requires confirmation of the current password.
-
-**Auth**: Bearer token required
-
-### Request body
-
-```json
-{
-  "currentPassword": "CurrentPass123!",
-  "newPassword": "NewPass456!"
-}
-```
-
-### Response — 200 OK
-
-```json
-{ "message": "Password updated successfully." }
-```
-
-### Response — 400 Bad Request (wrong current password)
+Current password does not match.
 
 ```json
 {
   "error": {
-    "code": "WRONG_CURRENT_PASSWORD",
-    "message": "Current password is incorrect."
+    "code": "FORBIDDEN",
+    "message": "Current password is incorrect"
   }
 }
 ```
 
----
-
-## POST /api/account/link-google
-
-Link a new Google account as an additional sign-in method.
-
-**Auth**: Bearer token required
-
-### Request body
-
-```json
-{ "credential": "<Google-ID-token-JWT>" }
-```
-
-### Response — 200 OK
-
-```json
-{
-  "message": "Google account linked successfully.",
-  "linkedGoogleAccounts": [
-    { "googleId": "108532...", "email": "student@vnu.edu.vn" }
-  ]
-}
-```
-
-### Response — 400 Bad Request (domain not allowed or invalid token)
-
-```json
-{
-  "error": {
-    "code": "DOMAIN_NOT_ALLOWED",
-    "message": "Only @vnu.edu.vn Google accounts can be linked."
-  }
-}
-```
-
-### Response — 409 Conflict (Google account already linked to another UETCompass account)
-
-```json
-{
-  "error": {
-    "code": "GOOGLE_ACCOUNT_ALREADY_LINKED",
-    "message": "This Google account is already linked to a different UETCompass account."
-  }
-}
-```
-
----
-
-## DELETE /api/account/link-google/:googleId
-
-Unlink a previously linked Google account.
-
-**Auth**: Bearer token required
-
-### Response — 200 OK
-
-```json
-{
-  "message": "Google account unlinked.",
-  "linkedGoogleAccounts": []
-}
-```
-
-### Response — 404 Not Found
-
-```json
-{
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "No linked Google account found with this ID."
-  }
-}
-```
-
----
-
-## POST /api/account/request-deletion
-
-Initiate account deletion. Sends a confirmation email — no data is deleted at this step.
-
-**Auth**: Bearer token required
-
-### Request
-
-No body.
-
-### Response — 200 OK
-
-```json
-{
-  "message": "A confirmation email has been sent. Click the link in the email to permanently delete your account."
-}
-```
-
----
-
-## GET /api/account/confirm-deletion
-
-Confirm and execute account hard-delete. Called when the student clicks the link in the confirmation email.
-
-**Auth**: None (token is in query param)
-
-### Query params
-
-| Param | Type | Notes |
-|---|---|---|
-| `token` | string | Raw deletion token from the email link |
-
-**Example**: `GET /api/account/confirm-deletion?token=abc123...`
-
-### Response — 200 OK
-
-Account deleted. All data permanently removed. Student is logged out.
-
-```json
-{ "message": "Your account has been permanently deleted." }
-```
-
-### Response — 400 Bad Request (token expired, already used, or not found)
-
-```json
-{
-  "error": {
-    "code": "DELETION_TOKEN_INVALID",
-    "message": "The confirmation link is invalid or has expired."
-  }
-}
-```
-
----
-
-## GET /api/notifications
-
-Fetch the authenticated student's notifications.
-
-**Auth**: Bearer token required
-
-### Query params
-
-| Param | Type | Default | Notes |
-|---|---|---|---|
-| `read` | `"true"` \| `"false"` | (unset = all) | Filter by read status |
-
-### Response — 200 OK
-
-```json
-{
-  "notifications": [
-    {
-      "_id": "64a1b2c3d4e5f6a7b8c9d0e3",
-      "type": "REPERSONALIZE",
-      "message": "Your profile has changed. Re-personalize your roadmap to reflect your updated goals.",
-      "link": "/roadmap",
-      "read": false,
-      "createdAt": "2026-03-11T09:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
-## PATCH /api/notifications/:id/read
-
-Mark a notification as read.
-
-**Auth**: Bearer token required
-
-### Response — 200 OK
-
-```json
-{ "message": "Notification marked as read." }
-```
-
-### Response — 404 Not Found
-
-```json
-{
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Notification not found."
-  }
-}
-```
-
----
-
-## GET /api/auth/sse/notifications
-
-SSE stream for real-time notification push. Reuses the same `Map<userId, res>` pattern established in Feature 001's `onboarding.sse.js`.
-
-**Auth**: Uses short-lived, purpose-bound query token: `?sseToken=<token>`. For consistency with other modules, this endpoint does not accept raw access JWT in query string.
-
-### Request
-
-```js
-const es = new EventSource(`/api/auth/sse/notifications?sseToken=${sseToken}`);
-```
-
-`sseToken` is minted from an authenticated context, expires quickly, and is valid only for notification SSE.
-
-### Behavior
-
-- On connect: server sends initial handshake comment (`:ok`) and starts 15s heartbeat
-- On `REPERSONALIZE` notification created: server pushes `event: notification` with the notification payload
-- On disconnect: server removes connection from the Map and clears the heartbeat interval
-- On invalid/missing/expired `sseToken`: server sends `event: error` and closes the connection
-
-### Event format
-
-```
-event: notification
-data: {"_id":"...","type":"REPERSONALIZE","message":"...","link":"/roadmap","read":false,"createdAt":"..."}
-
-```
-
-### Auth error event format
-
-```
-event: error
-data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}
-
-```
-
----
-
-## SSE Connection note (Feature 001 compatibility)
-
-The `/api/auth/sse/notifications` endpoint shares the same SSE infrastructure as Feature 001's `/api/onboarding/status`. Both use the `notification.sse.js` shared module (Map-based connection store). A student opening two tabs will have two SSE connections in the Map (keyed by `userId`) — the last one registered wins for push delivery. This is an acknowledged limitation of the simple Map pattern (consistent with Feature 001's design).
+## Security and Privacy Contract Clauses
+
+- Ownership: server uses authenticated subject id only; client-provided user id must be ignored.
+- Identity rendering fallback order is canonical:
+  1. valid `displayName`
+  2. `fullName`
+  3. sanitized email local-part
+  4. `"Student"`
+- With `privacySetting=anonymous`, public surfaces must not expose raw `fullName` unless viewer is owner.

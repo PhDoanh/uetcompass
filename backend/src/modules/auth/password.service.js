@@ -44,7 +44,7 @@ async function requestPasswordReset({ email }) {
   const normalizedEmail = normalizeEmail(email);
   const user = await User.findOne({ email: normalizedEmail });
 
-  if (user && user.status !== 'deleted') {
+  if (user && user.status !== 'soft-deleted') {
     const otp = generateOtp();
     await User.updateOne(
       { _id: user._id },

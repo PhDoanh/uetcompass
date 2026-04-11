@@ -67,7 +67,7 @@ async function registerWithEmail(payload) {
   const { fullName, email, password } = validation.value;
   const existing = await User.findOne({ email });
 
-  if (existing && existing.status !== 'deleted') {
+  if (existing && existing.status !== 'soft-deleted') {
     throw buildError(409, 'EMAIL_ALREADY_EXISTS', 'An account with this email already exists. Please log in instead.');
   }
 
@@ -243,7 +243,7 @@ async function loginWithPassword({ email, password }) {
     throw buildError(403, 'EMAIL_NOT_VERIFIED', 'Please verify your email before logging in.');
   }
 
-  if (user.status === 'deleted') {
+  if (user.status === 'soft-deleted') {
     throw buildError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
 

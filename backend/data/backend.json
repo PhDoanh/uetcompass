@@ -6,171 +6,683 @@
   "personalisationLevel": "full",
   "nodes": [
     {
+      "nodeId": "pick-language",
+      "nodeType": "topic",
+      "skillName": "Pick a Language",
+      "parentNodeId": null,
+      "reason": "Choose your primary backend programming language as your foundation.",
+      "resources": []
+    },
+    {
+      "nodeId": "javascript-nodejs",
+      "nodeType": "subtopic",
+      "skillName": "JavaScript / Node.js",
+      "parentNodeId": "pick-language",
+      "reason": "Event-driven, non-blocking I/O for scalable server applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "python-backend",
+      "nodeType": "subtopic",
+      "skillName": "Python",
+      "parentNodeId": "pick-language",
+      "reason": "Versatile, readable language for rapid backend development.",
+      "resources": []
+    },
+    {
+      "nodeId": "ruby-backend",
+      "nodeType": "subtopic",
+      "skillName": "Ruby",
+      "parentNodeId": "pick-language",
+      "reason": "Convention-over-configuration approach for productive development.",
+      "resources": []
+    },
+    {
+      "nodeId": "go-backend",
+      "nodeType": "subtopic",
+      "skillName": "Go",
+      "parentNodeId": "pick-language",
+      "reason": "Fast compilation and excellent concurrency for systems programming.",
+      "resources": []
+    },
+    {
+      "nodeId": "cpp-backend",
+      "nodeType": "subtopic",
+      "skillName": "C++",
+      "parentNodeId": "pick-language",
+      "reason": "Performance-critical systems and high-throughput applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "csharp-backend",
+      "nodeType": "subtopic",
+      "skillName": "C#",
+      "parentNodeId": "pick-language",
+      "reason": "Modern .NET ecosystem for enterprise backend development.",
+      "resources": []
+    },
+    {
+      "nodeId": "rust-backend",
+      "nodeType": "subtopic",
+      "skillName": "Rust",
+      "parentNodeId": "pick-language",
+      "reason": "Memory safety and blazing-fast performance without garbage collection.",
+      "resources": []
+    },
+    {
       "nodeId": "internet-fundamentals",
       "nodeType": "topic",
-      "skillName": "Internet Infrastructure & Protocols",
+      "skillName": "Internet Fundamentals",
       "parentNodeId": null,
-      "reason": "Understanding the global network stack is the baseline for building web-accessible services.",
+      "reason": "Understanding core web technologies and protocols.",
       "resources": []
     },
     {
-      "nodeId": "http-protocol-mastery",
+      "nodeId": "http-protocol",
       "nodeType": "subtopic",
-      "skillName": "HTTP/HTTPS Protocol Mastery",
+      "skillName": "What is HTTP?",
       "parentNodeId": "internet-fundamentals",
-      "reason": "Expertise in request/response lifecycles, headers, and status codes.",
+      "reason": "Master request/response lifecycle, methods, headers, and status codes.",
       "resources": []
     },
     {
-      "nodeId": "dns-management",
+      "nodeId": "domain-name",
       "nodeType": "subtopic",
-      "skillName": "DNS & Domain Configuration",
+      "skillName": "What is Domain Name?",
       "parentNodeId": "internet-fundamentals",
-      "reason": "Managing record types (A, CNAME, TXT) and name resolution logic.",
+      "reason": "Understanding domain registration, management, and DNS records.",
       "resources": []
     },
     {
-      "nodeId": "server-side-programming",
+      "nodeId": "dns-fundamentals",
+      "nodeType": "subtopic",
+      "skillName": "DNS and how it works?",
+      "parentNodeId": "internet-fundamentals",
+      "reason": "DNS resolution, record types (A, CNAME, MX, TXT), and query mechanisms.",
+      "resources": []
+    },
+    {
+      "nodeId": "browsers-how-work",
+      "nodeType": "subtopic",
+      "skillName": "Browsers and how they work?",
+      "parentNodeId": "internet-fundamentals",
+      "reason": "Understanding client-side rendering, caching, and browser APIs.",
+      "resources": []
+    },
+    {
+      "nodeId": "page-hosting-services",
       "nodeType": "topic",
-      "skillName": "Server-Side Language Proficiency",
+      "skillName": "Page Hosting Services",
       "parentNodeId": null,
-      "reason": "Developing core business logic using compiled or interpreted backend languages.",
+      "reason": "Deploying and managing web applications on hosting platforms.",
       "resources": []
     },
     {
-      "nodeId": "nodejs-development",
+      "nodeId": "shared-hosting",
       "nodeType": "subtopic",
-      "skillName": "JavaScript/Node.js Engineering",
-      "parentNodeId": "server-side-programming",
-      "reason": "Utilizing event-driven, non-blocking I/O for scalable applications.",
+      "skillName": "Shared Hosting",
+      "parentNodeId": "page-hosting-services",
+      "reason": "Cost-effective hosting with shared server resources.",
       "resources": []
     },
     {
-      "nodeId": "golang-engineering",
+      "nodeId": "vps-hosting",
       "nodeType": "subtopic",
-      "skillName": "Go Systems Programming",
-      "parentNodeId": "server-side-programming",
-      "reason": "Mastering goroutines and channels for high-concurrency performance.",
+      "skillName": "VPS Hosting",
+      "parentNodeId": "page-hosting-services",
+      "reason": "Virtual private servers for isolated, more controlled environments.",
       "resources": []
     },
     {
-      "nodeId": "relational-persistence",
+      "nodeId": "dedicated-hosting",
+      "nodeType": "subtopic",
+      "skillName": "Dedicated Hosting",
+      "parentNodeId": "page-hosting-services",
+      "reason": "Full physical server dedicated to your application.",
+      "resources": []
+    },
+    {
+      "nodeId": "server-architecture",
       "nodeType": "topic",
-      "skillName": "Relational Data Modeling (RDBMS)",
+      "skillName": "Server-Side Architecture",
       "parentNodeId": null,
-      "reason": "Architecting structured data with strict ACID compliance and schemas.",
+      "reason": "Design patterns for organizing server-side code.",
       "resources": []
     },
     {
-      "nodeId": "postgresql-optimization",
+      "nodeId": "cdn",
       "nodeType": "subtopic",
-      "skillName": "PostgreSQL Performance Tuning",
-      "parentNodeId": "relational-persistence",
-      "reason": "Optimizing open-source relational stores for production-grade throughput.",
+      "skillName": "CDN",
+      "parentNodeId": "server-architecture",
+      "reason": "Content delivery networks for caching and distributing static assets globally.",
       "resources": []
     },
     {
-      "nodeId": "sql-query-indexing",
+      "nodeId": "server-side",
       "nodeType": "subtopic",
-      "skillName": "Database Indexing & Query Analysis",
-      "parentNodeId": "relational-persistence",
-      "reason": "Reducing read latency via B-tree, Hash, and GIST indexing strategies.",
+      "skillName": "Server-Side",
+      "parentNodeId": "server-architecture",
+      "reason": "Server architecture, routing, middleware, and error handling.",
       "resources": []
     },
     {
-      "nodeId": "api-architecture-design",
+      "nodeId": "client-side",
+      "nodeType": "subtopic",
+      "skillName": "Client-Side",
+      "parentNodeId": "server-architecture",
+      "reason": "Client-side patterns and frameworks for frontend development.",
+      "resources": []
+    },
+    {
+      "nodeId": "version-control-systems",
       "nodeType": "topic",
-      "skillName": "API Architecture & Contract Design",
+      "skillName": "Version Control Systems",
       "parentNodeId": null,
-      "reason": "Standardizing service communication through well-defined interface contracts.",
+      "reason": "Source code management and collaboration tools.",
       "resources": []
     },
     {
-      "nodeId": "restful-interface-design",
+      "nodeId": "git-vcs",
       "nodeType": "subtopic",
-      "skillName": "RESTful Resource Implementation",
-      "parentNodeId": "api-architecture-design",
-      "reason": "Designing stateless, cacheable interfaces following REST constraints.",
+      "skillName": "Git",
+      "parentNodeId": "version-control-systems",
+      "reason": "Distributed version control fundamentals, branching, merging.",
       "resources": []
     },
     {
-      "nodeId": "graphql-schema-management",
+      "nodeId": "gitlab-vcs",
       "nodeType": "subtopic",
-      "skillName": "GraphQL Schema & Resolver Design",
-      "parentNodeId": "api-architecture-design",
-      "reason": "Consolidating multiple data sources into a single client-driven query layer.",
+      "skillName": "GitLab",
+      "parentNodeId": "version-control-systems",
+      "reason": "Git repository management with CI/CD, boards, and wiki.",
       "resources": []
     },
     {
-      "nodeId": "distributed-system-patterns",
+      "nodeId": "caching-layer",
       "nodeType": "topic",
-      "skillName": "Distributed Systems & Scalability",
+      "skillName": "Caching",
       "parentNodeId": null,
-      "reason": "Designing architectures that maintain uptime and performance across clusters.",
+      "reason": "In-memory data stores for performance optimization.",
       "resources": []
     },
     {
-      "nodeId": "microservices-orchestration",
+      "nodeId": "redis-cache",
       "nodeType": "subtopic",
-      "skillName": "Microservices Decomposition",
-      "parentNodeId": "distributed-system-patterns",
-      "reason": "Skill in decoupling domains into independently deployable units.",
+      "skillName": "Redis",
+      "parentNodeId": "caching-layer",
+      "reason": "High-performance in-memory data structure store for caching and sessions.",
       "resources": []
     },
     {
-      "nodeId": "message-broker-integration",
+      "nodeId": "memcached",
       "nodeType": "subtopic",
-      "skillName": "Asynchronous Event Bus Management",
-      "parentNodeId": "distributed-system-patterns",
-      "reason": "Managing RabbitMQ or Kafka for reliable service decoupling.",
+      "skillName": "Memcached",
+      "parentNodeId": "caching-layer",
+      "reason": "Simple, lightweight distributed caching system.",
       "resources": []
     },
     {
-      "nodeId": "infrastructure-containerization",
+      "nodeId": "mongodb-cache",
+      "nodeType": "subtopic",
+      "skillName": "MongoDB",
+      "parentNodeId": "caching-layer",
+      "reason": "NoSQL document database for flexible caching strategies.",
+      "resources": []
+    },
+    {
+      "nodeId": "api-design",
       "nodeType": "topic",
-      "skillName": "Infrastructure & Environment Isolation",
+      "skillName": "Learn about APIs",
       "parentNodeId": null,
-      "reason": "Ensuring environmental parity and portable deployments.",
+      "reason": "Building and consuming APIs for service communication.",
       "resources": []
     },
     {
-      "nodeId": "docker-image-optimization",
+      "nodeId": "rest-apis",
       "nodeType": "subtopic",
-      "skillName": "Docker Image Lifecycle Management",
-      "parentNodeId": "infrastructure-containerization",
-      "reason": "Creating secure, multi-stage build pipelines for application images.",
+      "skillName": "REST",
+      "parentNodeId": "api-design",
+      "reason": "RESTful architecture with HTTP methods, status codes, and resource design.",
       "resources": []
     },
     {
-      "nodeId": "kubernetes-cluster-ops",
+      "nodeId": "json-apis",
       "nodeType": "subtopic",
-      "skillName": "Kubernetes Cluster Orchestration",
-      "parentNodeId": "infrastructure-containerization",
-      "reason": "Automating scaling, self-healing, and service discovery in production.",
+      "skillName": "JSON APIs",
+      "parentNodeId": "api-design",
+      "reason": "JSON data interchange format and JSON:API specification.",
       "resources": []
     },
     {
-      "nodeId": "observability-instrumentation",
+      "nodeId": "graphql-apis",
+      "nodeType": "subtopic",
+      "skillName": "GraphQL",
+      "parentNodeId": "api-design",
+      "reason": "Query language and runtime for flexible data fetching.",
+      "resources": []
+    },
+    {
+      "nodeId": "relational-databases",
       "nodeType": "topic",
-      "skillName": "System Observability & Reliability",
+      "skillName": "Relational Databases",
       "parentNodeId": null,
-      "reason": "Ensuring production health through deep visibility into system metrics.",
+      "reason": "Structured data storage with ACID guarantees and schemas.",
       "resources": []
     },
     {
-      "nodeId": "distributed-tracing",
+      "nodeId": "postgresql-db",
       "nodeType": "subtopic",
-      "skillName": "Distributed Tracing & Telemetry",
-      "parentNodeId": "observability-instrumentation",
-      "reason": "Mapping request flows across service boundaries to identify bottlenecks.",
+      "skillName": "PostgreSQL",
+      "parentNodeId": "relational-databases",
+      "reason": "Advanced open-source RDBMS with powerful query language and indexing.",
       "resources": []
     },
     {
-      "nodeId": "structured-logging",
+      "nodeId": "mysql-db",
       "nodeType": "subtopic",
-      "skillName": "Structured Logging & Metrics",
-      "parentNodeId": "observability-instrumentation",
-      "reason": "Implementing log aggregation for rapid incident response.",
+      "skillName": "MySQL",
+      "parentNodeId": "relational-databases",
+      "reason": "Popular open-source RDBMS for web applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "oracle-db",
+      "nodeType": "subtopic",
+      "skillName": "Oracle",
+      "parentNodeId": "relational-databases",
+      "reason": "Enterprise-grade RDBMS with advanced features for large scale systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "sqlite-db",
+      "nodeType": "subtopic",
+      "skillName": "SQLite",
+      "parentNodeId": "relational-databases",
+      "reason": "Lightweight, file-based SQL database for embedded and mobile apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "authentication",
+      "nodeType": "topic",
+      "skillName": "Authentication",
+      "parentNodeId": null,
+      "reason": "User identity verification and management.",
+      "resources": []
+    },
+    {
+      "nodeId": "jwt-auth",
+      "nodeType": "subtopic",
+      "skillName": "JWT",
+      "parentNodeId": "authentication",
+      "reason": "JSON Web Tokens for stateless authentication and authorization.",
+      "resources": []
+    },
+    {
+      "nodeId": "oauth-auth",
+      "nodeType": "subtopic",
+      "skillName": "OAuth2",
+      "parentNodeId": "authentication",
+      "reason": "Delegated authentication framework for third-party integrations.",
+      "resources": []
+    },
+    {
+      "nodeId": "basic-auth",
+      "nodeType": "subtopic",
+      "skillName": "Basic Authentication",
+      "parentNodeId": "authentication",
+      "reason": "Simple HTTP authentication using credentials.",
+      "resources": []
+    },
+    {
+      "nodeId": "session-auth",
+      "nodeType": "subtopic",
+      "skillName": "Session Based Authentication",
+      "parentNodeId": "authentication",
+      "reason": "Server-side session management and cookies.",
+      "resources": []
+    },
+    {
+      "nodeId": "web-security",
+      "nodeType": "topic",
+      "skillName": "Web Security",
+      "parentNodeId": null,
+      "reason": "Protecting applications and data from security threats.",
+      "resources": []
+    },
+    {
+      "nodeId": "https-protocol",
+      "nodeType": "subtopic",
+      "skillName": "HTTPS",
+      "parentNodeId": "web-security",
+      "reason": "SSL/TLS encryption for secure communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "dnssec",
+      "nodeType": "subtopic",
+      "skillName": "DNSSEC",
+      "parentNodeId": "web-security",
+      "reason": "DNS security extensions to prevent spoofing and cache poisoning.",
+      "resources": []
+    },
+    {
+      "nodeId": "csp-headers",
+      "nodeType": "subtopic",
+      "skillName": "CSP",
+      "parentNodeId": "web-security",
+      "reason": "Content Security Policy headers to prevent injection attacks.",
+      "resources": []
+    },
+    {
+      "nodeId": "server-security",
+      "nodeType": "subtopic",
+      "skillName": "Server Security",
+      "parentNodeId": "web-security",
+      "reason": "Firewall configuration, intrusion detection, and vulnerability patching.",
+      "resources": []
+    },
+    {
+      "nodeId": "testing",
+      "nodeType": "topic",
+      "skillName": "Testing",
+      "parentNodeId": null,
+      "reason": "Ensuring code quality and reliability through various testing approaches.",
+      "resources": []
+    },
+    {
+      "nodeId": "unit-testing",
+      "nodeType": "subtopic",
+      "skillName": "Unit Testing",
+      "parentNodeId": "testing",
+      "reason": "Testing individual functions and components in isolation.",
+      "resources": []
+    },
+    {
+      "nodeId": "functional-testing",
+      "nodeType": "subtopic",
+      "skillName": "Functional Testing",
+      "parentNodeId": "testing",
+      "reason": "Testing complete workflows and features end-to-end.",
+      "resources": []
+    },
+    {
+      "nodeId": "integration-testing",
+      "nodeType": "subtopic",
+      "skillName": "Integration Testing",
+      "parentNodeId": "testing",
+      "reason": "Testing interactions between multiple components and services.",
+      "resources": []
+    },
+    {
+      "nodeId": "cicd-pipeline",
+      "nodeType": "topic",
+      "skillName": "CI/CD",
+      "parentNodeId": null,
+      "reason": "Continuous integration and deployment for automated releases.",
+      "resources": []
+    },
+    {
+      "nodeId": "github-actions",
+      "nodeType": "subtopic",
+      "skillName": "GitHub Actions",
+      "parentNodeId": "cicd-pipeline",
+      "reason": "Workflow automation directly in GitHub repositories.",
+      "resources": []
+    },
+    {
+      "nodeId": "jenkins-ci",
+      "nodeType": "subtopic",
+      "skillName": "Jenkins",
+      "parentNodeId": "cicd-pipeline",
+      "reason": "Open-source automation server for continuous integration.",
+      "resources": []
+    },
+    {
+      "nodeId": "gitlab-ci",
+      "nodeType": "subtopic",
+      "skillName": "GitLab CI",
+      "parentNodeId": "cicd-pipeline",
+      "reason": "Integrated CI/CD pipelines with GitLab.",
+      "resources": []
+    },
+    {
+      "nodeId": "software-architecture",
+      "nodeType": "topic",
+      "skillName": "Software Design & Architecture",
+      "parentNodeId": null,
+      "reason": "High-level system design patterns and architectural decisions.",
+      "resources": []
+    },
+    {
+      "nodeId": "architectural-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Architectural Patterns",
+      "parentNodeId": "software-architecture",
+      "reason": "MVC, MVP, MVVM, and other proven architecture patterns.",
+      "resources": []
+    },
+    {
+      "nodeId": "monolithic-apps",
+      "nodeType": "subtopic",
+      "skillName": "Monolithic Apps",
+      "parentNodeId": "software-architecture",
+      "reason": "Single unified application architecture and deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "microservices-arch",
+      "nodeType": "subtopic",
+      "skillName": "Microservices",
+      "parentNodeId": "software-architecture",
+      "reason": "Distributed service-oriented architecture for scalability.",
+      "resources": []
+    },
+    {
+      "nodeId": "containerization",
+      "nodeType": "topic",
+      "skillName": "Docker",
+      "parentNodeId": null,
+      "reason": "Container technology for consistent development and deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "docker-basics",
+      "nodeType": "subtopic",
+      "skillName": "Docker",
+      "parentNodeId": "containerization",
+      "reason": "Container images, Dockerfile, Docker Compose, and registries.",
+      "resources": []
+    },
+    {
+      "nodeId": "lxc-containers",
+      "nodeType": "subtopic",
+      "skillName": "LXC",
+      "parentNodeId": "containerization",
+      "reason": "Linux containers as an alternative containerization approach.",
+      "resources": []
+    },
+    {
+      "nodeId": "orchestration-scaling",
+      "nodeType": "topic",
+      "skillName": "Orchestration & Scaling",
+      "parentNodeId": null,
+      "reason": "Managing and scaling containerized applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "kubernetes-basics",
+      "nodeType": "subtopic",
+      "skillName": "Kubernetes",
+      "parentNodeId": "orchestration-scaling",
+      "reason": "Container orchestration for automated deployment, scaling, and management.",
+      "resources": []
+    },
+    {
+      "nodeId": "load-balancing",
+      "nodeType": "subtopic",
+      "skillName": "Load Balancing",
+      "parentNodeId": "orchestration-scaling",
+      "reason": "Distributing traffic across multiple servers for high availability.",
+      "resources": []
+    },
+    {
+      "nodeId": "auto-scaling",
+      "nodeType": "subtopic",
+      "skillName": "Auto Scaling",
+      "parentNodeId": "orchestration-scaling",
+      "reason": "Dynamically adjusting resources based on demand.",
+      "resources": []
+    },
+    {
+      "nodeId": "monitoring-observability",
+      "nodeType": "topic",
+      "skillName": "Monitoring & Observability",
+      "parentNodeId": null,
+      "reason": "Visibility into system health and performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "server-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Server Monitoring",
+      "parentNodeId": "monitoring-observability",
+      "reason": "CPU, memory, disk, and network monitoring.",
+      "resources": []
+    },
+    {
+      "nodeId": "application-logging",
+      "nodeType": "subtopic",
+      "skillName": "Application Logging",
+      "parentNodeId": "monitoring-observability",
+      "reason": "Structured logging, log aggregation, and analysis.",
+      "resources": []
+    },
+    {
+      "nodeId": "distributed-tracing-advanced",
+      "nodeType": "subtopic",
+      "skillName": "Distributed Tracing",
+      "parentNodeId": "monitoring-observability",
+      "reason": "Tracing requests across distributed services.",
+      "resources": []
+    },
+    {
+      "nodeId": "performance-optimization",
+      "nodeType": "topic",
+      "skillName": "Performance & Scaling",
+      "parentNodeId": null,
+      "reason": "Techniques for optimizing speed and handling growth.",
+      "resources": []
+    },
+    {
+      "nodeId": "database-indexing",
+      "nodeType": "subtopic",
+      "skillName": "Database Indexing",
+      "parentNodeId": "performance-optimization",
+      "reason": "B-tree, hash, and bitmap indexes to speed up queries.",
+      "resources": []
+    },
+    {
+      "nodeId": "query-optimization",
+      "nodeType": "subtopic",
+      "skillName": "Query Optimization",
+      "parentNodeId": "performance-optimization",
+      "reason": "Writing efficient SQL and analyzing execution plans.",
+      "resources": []
+    },
+    {
+      "nodeId": "horizontal-scaling",
+      "nodeType": "subtopic",
+      "skillName": "Horizontal Scaling",
+      "parentNodeId": "performance-optimization",
+      "reason": "Scaling by adding more servers rather than increasing capacity.",
+      "resources": []
+    },
+    {
+      "nodeId": "nosql-databases",
+      "nodeType": "topic",
+      "skillName": "NoSQL Databases",
+      "parentNodeId": null,
+      "reason": "Non-relational databases for flexible data models.",
+      "resources": []
+    },
+    {
+      "nodeId": "mongodb-nosql",
+      "nodeType": "subtopic",
+      "skillName": "MongoDB",
+      "parentNodeId": "nosql-databases",
+      "reason": "Document-oriented NoSQL database with flexible schema.",
+      "resources": []
+    },
+    {
+      "nodeId": "elasticsearch",
+      "nodeType": "subtopic",
+      "skillName": "Elasticsearch",
+      "parentNodeId": "nosql-databases",
+      "reason": "Search and analytics engine for indexing and querying.",
+      "resources": []
+    },
+    {
+      "nodeId": "redis-nosql",
+      "nodeType": "subtopic",
+      "skillName": "Redis",
+      "parentNodeId": "nosql-databases",
+      "reason": "In-memory data structure store for caching and real-time systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "message-queues",
+      "nodeType": "topic",
+      "skillName": "Message Queues & Event Streaming",
+      "parentNodeId": null,
+      "reason": "Asynchronous communication between services.",
+      "resources": []
+    },
+    {
+      "nodeId": "rabbitmq-queue",
+      "nodeType": "subtopic",
+      "skillName": "RabbitMQ",
+      "parentNodeId": "message-queues",
+      "reason": "Message broker for reliable asynchronous messaging.",
+      "resources": []
+    },
+    {
+      "nodeId": "kafka-queue",
+      "nodeType": "subtopic",
+      "skillName": "Kafka",
+      "parentNodeId": "message-queues",
+      "reason": "Distributed event streaming platform for high-throughput systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "advanced-topics",
+      "nodeType": "topic",
+      "skillName": "Advanced Topics",
+      "parentNodeId": null,
+      "reason": "Deep expertise in specialized backend domains.",
+      "resources": []
+    },
+    {
+      "nodeId": "service-mesh",
+      "nodeType": "subtopic",
+      "skillName": "Service Mesh",
+      "parentNodeId": "advanced-topics",
+      "reason": "Istio and Linkerd for managing microservices communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "api-gateway",
+      "nodeType": "subtopic",
+      "skillName": "API Gateway",
+      "parentNodeId": "advanced-topics",
+      "reason": "Centralized entry point for API routing and management.",
+      "resources": []
+    },
+    {
+      "nodeId": "serverless-computing",
+      "nodeType": "subtopic",
+      "skillName": "Serverless Computing",
+      "parentNodeId": "advanced-topics",
+      "reason": "AWS Lambda, Google Cloud Functions for event-driven computing.",
       "resources": []
     }
   ]

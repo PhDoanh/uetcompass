@@ -19,6 +19,17 @@ const refreshTokenSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    sessionId: {
+      type: String,
+      trim: true,
+      index: true,
+      default: null,
+    },
+    deviceFingerprint: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     expiresAt: {
       type: Date,
       required: true,

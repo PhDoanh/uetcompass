@@ -28,17 +28,14 @@ const passwordResetSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const deletionTokenSchema = new mongoose.Schema(
-  {
-    hash: { type: String, trim: true },
-    expiresAt: { type: Date },
-    used: { type: Boolean, default: false },
-  },
-  { _id: false }
-);
-
 const userSchema = new mongoose.Schema(
   {
+    role: {
+      type: String,
+      enum: ['guest', 'uet_student'],
+      default: 'uet_student',
+      required: true,
+    },
     email: {
       type: String,
       required: true,
@@ -103,10 +100,6 @@ const userSchema = new mongoose.Schema(
     },
     passwordReset: {
       type: passwordResetSchema,
-      default: null,
-    },
-    deletionToken: {
-      type: deletionTokenSchema,
       default: null,
     },
     lastLoginAt: {

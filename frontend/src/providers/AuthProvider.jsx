@@ -77,6 +77,10 @@ export function sanitizeOnboardingDraft(draft) {
 
 // --- ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI SYNTAX ---
 export function decidePostLoginRoute(onboardingState) {
+  if (onboardingState === 'NEVER_STARTED' || onboardingState === 'DRAFT_IN_PROGRESS') {
+    return '/onboarding';
+  }
+
   return '/';
 }
 

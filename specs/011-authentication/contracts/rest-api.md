@@ -13,7 +13,6 @@
 
 - `GET /api/roadmaps/sample` -> public
 - `GET /api/roadmaps/public/{shareId}` -> public
-- `POST /api/feedback` -> public
 
 ## Private Guard Contract
 

@@ -1,12 +1,7 @@
 const { verifyAccessToken } = require('../modules/auth/token.service');
 
-function isValidObjectId(value) {
-	return /^[a-f\d]{24}$/i.test(String(value || '').trim());
-}
-
 function requireAuth(req, res, next) {
 	const authHeader = req.header('authorization') || req.header('Authorization');
-	const fallbackUserId = String(req.header('x-user-id') || '').trim();
 	const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 	let userId = '';
 
@@ -22,8 +17,6 @@ function requireAuth(req, res, next) {
 				},
 			});
 		}
-	} else if (fallbackUserId && isValidObjectId(fallbackUserId)) {
-		userId = fallbackUserId;
 	}
 
 	if (!userId) {

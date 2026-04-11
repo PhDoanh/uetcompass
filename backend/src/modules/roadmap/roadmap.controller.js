@@ -188,7 +188,75 @@ async function previewRoadmapHandler(req, res) {
 	}
 }
 
+// Public endpoints - guest access
+async function getSampleRoadmap(req, res) {
+	try {
+		return res.json({
+			roadmapId: 'sample-roadmap',
+			personalisationLevel: 'low',
+			status: 'completed',
+			nodes: [
+				{
+					courseCode: 'INT1001',
+					courseName: 'Introduction to Computing',
+					credits: 3,
+					suggestedSemester: 1,
+					reason: 'Foundational course for first-year UET students.',
+					skills: ['problem-solving'],
+					resources: [],
+				},
+				{
+					courseCode: 'INT2204',
+					courseName: 'Data Structures and Algorithms',
+					credits: 4,
+					suggestedSemester: 3,
+					reason: 'Core requirement for software engineering pathways.',
+					skills: ['algorithms'],
+					resources: [],
+				},
+			],
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getPublicSharedRoadmap(req, res) {
+	try {
+		const shareId = String(req.params.shareId || '').trim();
+		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) {
+			return res.status(400).json({
+				error: {
+					code: 'INVALID_PAYLOAD',
+					message: 'shareId is invalid.',
+				},
+			});
+		}
+
+		const roadmap = await Roadmap.findById(shareId).lean();
+		if (!roadmap || roadmap.status !== 'completed') {
+			return res.status(404).json({
+				error: {
+					code: 'ROADMAP_NOT_FOUND',
+					message: 'Public roadmap not found.',
+				},
+			});
+		}
+
+		return res.json({
+			roadmapId: String(roadmap._id),
+			personalisationLevel: roadmap.personalisationLevel,
+			status: roadmap.status,
+			nodes: roadmap.nodes || [],
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
+	getSampleRoadmap,
+	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
 	getRoadmapById,

@@ -18,7 +18,7 @@
 
 ### User Story 1 - Guest Public Access Boundaries (Priority: P1)
 
-A guest user can access only three public capabilities: view sample roadmap, view publicly shared roadmap, and submit system feedback. Any private route/API is blocked.
+A guest user can access only two public capabilities: view sample roadmap and view publicly shared roadmap. Any private route/API is blocked.
 
 **Why this priority**: This defines product exposure boundary and protects private data/operations immediately.
 
@@ -28,9 +28,8 @@ A guest user can access only three public capabilities: view sample roadmap, vie
 
 1. **Given** a guest user opens the app, **When** they access sample roadmap pages, **Then** content is accessible without login.
 2. **Given** a guest user has a public roadmap link, **When** they open it, **Then** roadmap content is visible without login.
-3. **Given** a guest user opens the feedback form, **When** they submit valid feedback, **Then** submission succeeds without requiring login.
-4. **Given** a guest user navigates to any private UI route, **When** route guard evaluates access, **Then** user is redirected to login.
-5. **Given** a guest user calls any private API endpoint, **When** authorization is checked, **Then** response is `401 Unauthorized`.
+3. **Given** a guest user navigates to any private UI route, **When** route guard evaluates access, **Then** user is redirected to login.
+4. **Given** a guest user calls any private API endpoint, **When** authorization is checked, **Then** response is `401 Unauthorized`.
 
 ---
 
@@ -99,7 +98,7 @@ System guarantees access behavior and audit logging outcomes, including invalida
 
 - **FR-001**: Role model MUST include only `guest` and `uet_student`.
 - **FR-001A**: `guest` MUST be anonymous and MUST NOT have an authenticated session/token.
-- **FR-002**: Guest MUST be able to access only three public capabilities: sample roadmap view, public shared roadmap view, and system feedback submission.
+- **FR-002**: Guest MUST be able to access only two public capabilities: sample roadmap view and public shared roadmap view.
 - **FR-003**: All capabilities outside FR-002 MUST be private and accessible only to `uet_student`.
 - **FR-004**: Guest access to private UI routes MUST redirect to login.
 - **FR-005**: Guest calls to private APIs MUST return `401 Unauthorized`.
@@ -125,6 +124,7 @@ System guarantees access behavior and audit logging outcomes, including invalida
 - **NFR-004 (Auditability)**: Mandatory audit events MUST be queryable by event type and timestamp for operational review.
 - **NFR-005 (Compatibility)**: Access-control behavior MUST hold regardless of session implementation details.
 - **NFR-006 (Security)**: Guest access MUST be enforced without creating authenticated guest sessions/tokens.
+- **NFR-007 (Reliability)**: Public feedback validation behavior MUST be deterministic (`400 INVALID_INPUT`) for malformed payloads.
 
 ### Public/Private Access Matrix
 
@@ -132,7 +132,6 @@ System guarantees access behavior and audit logging outcomes, including invalida
 |---|---|---|
 | View sample roadmap | Allow | Allow |
 | View publicly shared roadmap | Allow | Allow |
-| Submit system feedback | Allow | Allow |
 | Generate roadmap | Deny | Allow |
 | Save roadmap progress | Deny | Allow |
 | Account settings | Deny | Allow |
@@ -161,6 +160,16 @@ Mandatory events:
 - `password_reset_success`
 - `google_login_denied_domain`
 
+Event trigger map (must be covered by implementation and tests):
+- `signup`: successful `POST /api/auth/signup` request accepted for OTP issuance.
+- `login_success`: successful `POST /api/auth/login` or successful Google login branch.
+- `login_fail`: failed credential login in `POST /api/auth/login`.
+- `otp_send`: OTP issued from signup verification or forgot-password initiation.
+- `otp_resend`: successful resend action through OTP resend endpoint.
+- `otp_verify_fail`: OTP verification attempt fails while challenge is still valid.
+- `password_reset_success`: successful `POST /api/auth/password/reset`.
+- `google_login_denied_domain`: Google login denied due to non-`@vnu.edu.vn` identity.
+
 Logging checklist:
 - Event includes actor identity context (or guest context when applicable).
 - Event includes timestamp.
@@ -179,7 +188,7 @@ Logging checklist:
 
 ### Measurable Outcomes
 
-- **SC-001**: Guest users can complete exactly the 3 defined public capabilities without authentication.
+- **SC-001**: Guest users can complete exactly the 2 defined public capabilities without authentication.
 - **SC-002**: 100% of guest attempts to access private UI routes are redirected to login.
 - **SC-003**: 100% of unauthenticated/guest requests to private APIs return `401`.
 - **SC-003A**: 100% of guest interactions are handled without issuing authenticated session/token credentials.

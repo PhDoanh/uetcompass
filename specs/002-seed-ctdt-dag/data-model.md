@@ -273,25 +273,23 @@ SUCCESS             PARTIAL_FAILURE          FAILED
 
 The logger (`seed.logger.js`) writes structured entries to both console and `backend/logs/seed-ctdt.log`.
 
+Canonical taxonomy source: `contracts/job-interface.md` (Log Event Taxonomy section).
+
 ```json
 {
   "runId": "uuid",
   "programId": "CNTT-JP",
   "timestamp": "2026-03-08T00:00:01.234Z",
   "level": "info|warn|error",
-       "event": "CHANGE_SKIP|URL_SUCCESS|URL_SKIP|ENRICHMENT_START|ENRICHMENT_SUCCESS|ENRICHMENT_SKIP|SKILL_TAG_DROPPED|CYCLE_DETECTED|CYCLE_CLEAN|SEEDRUN_FINALIZE|JOB_COMPLETE",
+       "event": "JOB_START|URL_START|URL_SUCCESS|URL_SKIP|UNRESOLVED_PREREQUISITE|CHANGE_SKIP|ENRICHMENT_START|ENRICHMENT_SUCCESS|ENRICHMENT_SKIP|SKILL_TAG_DROPPED|CYCLE_CLEAN|CYCLE_DETECTED|JOB_COMPLETE",
   "url": "https://...",         // present for URL-level events
-  "stage": "change-detection|tavily|gemini-call1|validate|normalize|upsert|gemini-call2|cycle-detection|seedrun-finalize",
+       "stage": "tavily|gemini|validate|upsert", // present on URL_SKIP
   "reason": "string",           // present on *_SKIP and CYCLE_DETECTED
   "cycles": [                     // present on CYCLE_DETECTED
     { "from": "INT2210", "to": "INT2215" }
   ],
-  "urlSnapshot": {
-    "url": "https://...",
-    "contentHash": "sha256...",
-    "httpEtag": "etag-or-null",
-    "lastModified": "header-or-null"
-  },
   "exitStatus": "SUCCESS|PARTIAL_FAILURE|FAILED"  // present on JOB_COMPLETE
 }
 ```
+
+`urlSnapshot` data remains part of `SeedRun` persistence and is not required in every log event payload.

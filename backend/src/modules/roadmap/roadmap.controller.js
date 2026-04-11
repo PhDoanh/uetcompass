@@ -245,7 +245,7 @@ async function getPublicSharedRoadmap(req, res) {
 		}
 
 		const roadmap = await Roadmap.findById(shareId).lean();
-		if (!roadmap || roadmap.status !== 'completed') {
+		if (!roadmap || !roadmap.acceptedAt) {
 			return res.status(404).json({
 				error: {
 					code: 'ROADMAP_NOT_FOUND',
@@ -257,7 +257,7 @@ async function getPublicSharedRoadmap(req, res) {
 		return res.json({
 			roadmapId: String(roadmap._id),
 			personalisationLevel: roadmap.personalisationLevel,
-			status: roadmap.status,
+			acceptedAt: roadmap.acceptedAt,
 			nodes: roadmap.nodes || [],
 		});
 	} catch (err) {

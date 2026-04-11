@@ -264,6 +264,49 @@ async function getPublicSharedRoadmap(req, res) {
 	}
 }
 
+async function getProgressHandler(req, res) {
+	try {
+		const { roadmapId } = req.params;
+		const userId = req.user.userId;
+
+		const progress = await progressService.getProgress(userId, roadmapId);
+		if (!progress) {
+			return res.status(404).json({
+				error: {
+					code: 'ROADMAP_NOT_FOUND',
+					message: 'Roadmap or progress not found.',
+				},
+			});
+		}
+
+		return res.json(progress);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function updateNodeStateHandler(req, res) {
+	try {
+		const { roadmapId } = req.params;
+		const userId = req.user.userId;
+		const { nodeId, fromState, toState } = req.body;
+
+		if (!nodeId || !fromState || !toState) {
+			return res.status(400).json({
+				error: {
+					code: 'INVALID_PAYLOAD',
+					message: 'nodeId, fromState, and toState are required.',
+				},
+			});
+		}
+
+		const updated = await progressService.updateNodeState(userId, roadmapId, nodeId, fromState, toState);
+		return res.json(updated);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getSampleRoadmap,
 	getPublicSharedRoadmap,

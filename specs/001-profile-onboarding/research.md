@@ -106,21 +106,20 @@ function useOnboardingDraft() {
 
 ---
 
-## R-004: Dropdown Option Validation Logic
+## R-004: Role Option + Graduation Date Validation Logic
 
-**Decision**: Career-goal fields in MVP are validated as strict membership checks against predefined option lists:
-1. `careerGoal.role` must be either null/empty (optional) or present in `ROLE_OPTIONS`
-2. `careerGoal.graduationTimeline` must be either null/empty (optional) or present in `TIMELINE_OPTIONS`
+**Decision**: Career-goal fields in MVP are validated deterministically using field-specific rules:
+1. `careerGoal.role` must be either null/empty (optional) or present in selected major's `programs.careerTracks`
+2. `careerGoal.graduationTimeline` must be either null/empty (optional) or a valid date in `YYYY-MM-DD` format
 
 Validation is executed on both client-side (fast feedback) and server-side (authoritative guard). No open-ended text parsing is involved.
 
-**Rationale**: Dropdown-only validation is deterministic, low-latency, and avoids ambiguity in user intent interpretation. It also simplifies downstream roadmap logic and analytics by keeping value cardinality bounded.
+**Rationale**: This keeps validation deterministic and low-latency while making graduation timeline input more intuitive in UI via date-picker.
 
 **Pattern**:
 ```js
 // backend/src/modules/onboarding/onboarding.validation.js
-const ROLE_OPTIONS = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer'];
-const TIMELINE_OPTIONS = ['1 semester', '2 semesters', '3 semesters', '4+ semesters'];
+const roleOptions = selectedProgram?.careerTracks || [];
 
 function validateDropdownValue(value, options) {
   if (value == null) return { valid: true };
@@ -131,7 +130,14 @@ function validateDropdownValue(value, options) {
     : { valid: false, reason: 'Value must be selected from predefined options' };
 }
 
-module.exports = { validateDropdownValue, ROLE_OPTIONS, TIMELINE_OPTIONS };
+function validateDateValue(value) {
+  if (value == null || String(value).trim() === '') return { valid: true };
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value).trim())
+    ? { valid: true }
+    : { valid: false, reason: 'Value must be a valid date in YYYY-MM-DD format' };
+}
+
+module.exports = { validateDropdownValue, validateDateValue };
 ```
 
 **Alternatives considered**:
@@ -141,17 +147,18 @@ module.exports = { validateDropdownValue, ROLE_OPTIONS, TIMELINE_OPTIONS };
 
 ---
 
-## R-005: Option List Source and Versioning for MVP
+## R-005: Input Source and Validation Rules for MVP
 
 **Decision**:
-- Role and graduation timeline options are sourced from predefined static configuration for MVP.
+- Role options are sourced from `programs.careerTracks` for the selected program.
+- Graduation timeline uses date-picker input and is validated as `YYYY-MM-DD`.
 - Major dropdown options are sourced from `programs.nameEN`.
-- Curriculum link labeled "Các môn học bắt buộc" is sourced from `programs.source.url` of the selected program.
+- Curriculum link labeled "Required Courses" is sourced from `course_units.source.url` of any record whose `programId` matches the selected program.
 - Completed-course options are sourced from `course_units` filtered by selected `programId` and `type = "elective"`.
-- Draft and submit paths validate against the same current option lists.
-- If a previously saved draft contains a value removed from the latest list, the value is treated as stale and must be re-selected before submit.
+- Draft and submit paths validate role against selected major's `careerTracks` and graduation timeline against date format rules.
+- If a previously saved draft contains a role removed from selected major's latest `careerTracks`, the value is treated as stale and must be re-selected before submit.
 
-**Rationale**: Mixed sourcing keeps dynamic academic data aligned with seeded curriculum truth (feature 002) while keeping career-goal options bounded for MVP. Explicit stale-option handling prevents silent acceptance of deprecated values.
+**Rationale**: Mixed sourcing keeps dynamic academic data aligned with seeded curriculum truth (feature 002) while keeping role values bounded and graduation timeline input intuitive.
 
 ---
 
@@ -271,7 +278,7 @@ async function dispatchNotifications(userId, userEmail, displayName, status) {
 2. Treat downstream `careerGoalRole` as derived read-model data sourced from `careerGoal.role` only (no duplicate writable field).
 3. Exclude `privacySetting` from `StudentProfile`; ownership remains in `User` domain (feature 005).
 4. Canonicalize completed-course identity by (`major`, `courseCode`), with optional `courseUnitId` stored only as join optimization metadata.
-5. Resolve selected major by `programs.nameEN` to obtain `programId`, then derive curriculum link from `programs.source.url` and elective list from `course_units` where (`programId`, `type = "elective"`).
+5. Resolve selected major by `programs.nameEN` to obtain `programId`, then derive curriculum link from `course_units.source.url` (any row with matching `programId`) and elective list from `course_units` where (`programId`, `type = "elective"`).
 6. Pre-implementation policy: no runtime migration/backfill in request path for this alignment update.
 
 **Rationale**: This keeps a single source of truth for career goal role, avoids cross-feature ownership leakage for privacy settings, and makes completed-course semantics stable even if `courseUnitId` values evolve. The no-runtime-migration policy reduces risk in hot paths and keeps rollout operationally simple.
@@ -287,7 +294,11 @@ async function dispatchNotifications(userId, userEmail, displayName, status) {
 
 // runtime sourcing for selected major
 const selectedProgram = await Program.findOne({ nameEN: selectedMajorName });
-const curriculumUrl = selectedProgram?.source?.url ?? null;
+const curriculumRow = await CourseUnit.findOne({
+  programId: selectedProgram?.programId,
+  'source.url': { $exists: true, $ne: null },
+});
+const curriculumUrl = curriculumRow?.source?.url ?? null;
 const electiveCourses = await CourseUnit.find({
   programId: selectedProgram?.programId,
   type: 'elective',

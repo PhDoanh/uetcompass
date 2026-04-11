@@ -1,6 +1,7 @@
 'use strict';
 
 const roadmapService = require('./roadmap.service');
+const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');

@@ -283,10 +283,12 @@ No body.
   "_id": "64a1b2c3d4e5f6a7b8c9d0e4",
   "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
   "roadmapId": "64a1b2c3d4e5f6a7b8c9d0e1",
-  "pending":    ["version-control-systems", "repo-hosting"],
-  "inProgress": ["object-oriented-programming"],
-  "completed":  [],
-  "skip":       [],
+  "state": {
+    "pending":    ["version-control-systems", "repo-hosting"],
+    "inProgress": ["object-oriented-programming"],
+    "completed":  [],
+    "skip":       []
+  },
   "updatedAt":  "2026-04-11T08:00:00.000Z"
 }
 ```

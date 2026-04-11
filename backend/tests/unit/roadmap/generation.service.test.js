@@ -6,8 +6,8 @@
  * failure lifecycle, SIGTERM handler, NFR-002 isolation, empty nodes edge case.
  *
  * Pipeline under test:
- *   StudentProfile.findOne â†’ CourseUnit.find â†’ evaluateOffTemplateSkills (Gemini)
- *   â†’ buildNodesTopologically â†’ validateTopologicalOrder â†’ storePendingPreview â†’ notifyUser
+ *   StudentProfile.findOne -> CourseUnit.find -> evaluateOffTemplateSkills (Gemini)
+ *   -> buildNodesTopologically -> validateTopologicalOrder -> storePendingPreview -> notifyUser
  *
  * Pattern: All jest.mock() at top level. No resetModules.
  * Mocks are configured per-test via mockReturnValue/mockImplementation.
@@ -108,7 +108,7 @@ beforeEach(() => {
 // Gemini output / preview store
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” Gemini output and preview', () => {
+describe('generation.service -- Gemini output and preview', () => {
 	test('builds skill nodes from AI-approved skills and stores preview', async () => {
 		await trigger('u-parse-1');
 		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe('generation.service â€” Gemini output and preview', () => {
 // Topological validation
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” topological validation', () => {
+describe('generation.service -- topological validation', () => {
 	test('invokes validateTopologicalOrder with relatedCourses nodes and completedCourseCodes', async () => {
 		await trigger('u-topo-1');
 		expect(validationService.validateTopologicalOrder).toHaveBeenCalledWith(
@@ -188,7 +188,7 @@ describe('generation.service â€” topological validation', () => {
 // Concurrency guard
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” concurrency guard', () => {
+describe('generation.service -- concurrency guard', () => {
 	test('throws CONFLICT when generation already in progress for same user', async () => {
 		let resolveGemini;
 		mockGenerateContent.mockReturnValue(new Promise((r) => { resolveGemini = r; }));
@@ -216,7 +216,7 @@ describe('generation.service â€” concurrency guard', () => {
 // Failure lifecycle
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” failure lifecycle', () => {
+describe('generation.service -- failure lifecycle', () => {
 	test('calls upsertFailedWithProfile with personalisationLevel on Gemini error', async () => {
 		mockGenerateContent.mockRejectedValue(new Error('Gemini timeout'));
 		await trigger('u-fail-1');
@@ -247,10 +247,10 @@ describe('generation.service â€” failure lifecycle', () => {
 });
 
 // ---------------------------------------------------------------------------
-// NFR-002 isolation â€” StudentProfile must NOT be mutated
+// NFR-002 isolation -- StudentProfile must NOT be mutated
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” NFR-002 isolation', () => {
+describe('generation.service -- NFR-002 isolation', () => {
 	test('StudentProfile is NOT saved after generation failure', async () => {
 		const profileWithSave = { ...mockProfile, save: jest.fn() };
 		StudentProfile.findOne.mockResolvedValue(profileWithSave);
@@ -273,7 +273,7 @@ describe('generation.service â€” NFR-002 isolation', () => {
 // Empty nodes edge case
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” empty nodes edge case', () => {
+describe('generation.service -- empty nodes edge case', () => {
 	test('stores preview with empty nodes when AI approves no skills', async () => {
 		mockGenerateContent.mockResolvedValue({
 			response: { text: () => JSON.stringify([]) },
@@ -291,7 +291,7 @@ describe('generation.service â€” empty nodes edge case', () => {
 // SIGTERM handler
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” SIGTERM handler', () => {
+describe('generation.service -- SIGTERM handler', () => {
 	test('calls upsertFailedWithProfile for each pending preview then clears store', async () => {
 		previewStore.getAllPendingUserIds.mockReturnValue(['userA', 'userB']);
 		previewStore.getPendingPreview.mockImplementation((uid) => ({
@@ -329,7 +329,7 @@ describe('generation.service â€” SIGTERM handler', () => {
 // Gap-2: completedCourseCodes forwarded to validator
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” Gap-2 completedCourses in validator', () => {
+describe('generation.service -- Gap-2 completedCourses in validator', () => {
 	test('passes completedCourseCodes Set to validateTopologicalOrder', async () => {
 		StudentProfile.findOne.mockResolvedValue({
 			...mockProfile,
@@ -356,7 +356,7 @@ describe('generation.service â€” Gap-2 completedCourses in validator', () =
 // Gap-3: personalisationLevel in failure path
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” Gap-3 personalisationLevel in failure path', () => {
+describe('generation.service -- Gap-3 personalisationLevel in failure path', () => {
 	test('passes full personalisationLevel to upsertFailedWithProfile on Gemini error', async () => {
 		mockGenerateContent.mockRejectedValue(new Error('Gemini error'));
 		await trigger('u-gap3-full');
@@ -384,7 +384,7 @@ describe('generation.service â€” Gap-3 personalisationLevel in failure path
 // Gap-5: retryGeneration returns 409 CONFLICT when no retryable roadmap exists
 // ---------------------------------------------------------------------------
 
-describe('generation.service â€” Gap-5 retryGeneration no retryable roadmap', () => {
+describe('generation.service -- Gap-5 retryGeneration no retryable roadmap', () => {
 	const controller = require('../../../src/modules/roadmap/roadmap.controller');
 
 	function mockRes() {

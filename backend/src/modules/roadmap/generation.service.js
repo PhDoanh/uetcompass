@@ -59,14 +59,14 @@ function sortCourseUnitsTopologically(courseUnits) {
 /**
  * Collects candidate skills from available (non-completed) course units.
  * Uses cu.skills[] if the field is populated; falls back to the course name.
- * Deduplicates skill names â€” if the same skill name appears in multiple courses,
+ * Deduplicates skill names -- if the same skill name appears in multiple courses,
  * its relatedCourses list aggregates all contributing courses.
  *
  * @param {Array} availableCourseUnits
  * @returns {Array<{ skillName: string, relatedCourses: Array }>}
  */
 function buildCandidateSkills(availableCourseUnits) {
-	const skillCoursesMap = new Map(); // skillName â†’ relatedCourse[]
+	const skillCoursesMap = new Map(); // skillName -> relatedCourse[]
 
 	for (const cu of availableCourseUnits) {
 		const skills = cu.skills?.length > 0 ? cu.skills : [cu.name];
@@ -254,10 +254,10 @@ async function __handleSigterm() {
 			await roadmapService.upsertFailedWithProfile(
 				userId,
 				profileId.toString(),
-				'Worker restart â€” generation preview lost'
+				'Worker restart -- generation preview lost'
 			);
 		} else {
-			await roadmapService.upsertFailed(userId, 'Worker restart â€” generation preview lost');
+			await roadmapService.upsertFailed(userId, 'Worker restart -- generation preview lost');
 		}
 		previewStore.clearPendingPreview(userId);
 	}

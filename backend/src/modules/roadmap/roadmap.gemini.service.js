@@ -4,7 +4,7 @@ const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 /**
  * Gemini is scoped narrowly: it only evaluates off-template skills for career relevance.
- * It returns { skillName, reason }[] â€” NOT full roadmap nodes.
+ * It returns { skillName, reason }[] -- NOT full roadmap nodes.
  * Template matching, ordering, and node construction are deterministic system logic.
  */
 const offTemplateEvalSchema = {
@@ -42,7 +42,7 @@ function buildGeminiModel() {
  */
 async function evaluateOffTemplateSkills(candidateSkills, profile) {
 	if (!profile.careerGoal?.role && !profile.careerGoal?.companyType) {
-		return []; // No career goal â€” skip AI call
+		return []; // No career goal -- skip AI call
 	}
 
 	const prompt = `You are evaluating skills for career relevance for a UET-VNU student.

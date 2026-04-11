@@ -5,7 +5,7 @@
 
 ## Summary
 
-A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and dropdown-only career goals (role, graduation timeline). Major options are sourced from `programs.nameEN`; after a major is selected, the app resolves selected `programId`, loads curriculum link from `programs.source.url`, and filters completed-courses from `course_units` by (`programId`, `type = "elective"`). `careerGoal` remains a nested object; downstream `careerGoalRole` is always derived from `careerGoal.role`. Completed-course identity follows canonical rule `(`major`, `courseCode`)`, with optional `courseUnitId` persisted only for join optimization. `privacySetting` is not part of `StudentProfile` (owned by `User` in feature 005). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). Input handling is deterministic list-based validation only.
+A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and career goals (role dropdown + graduation date picker). Major options are sourced from `programs.nameEN`; role options are sourced from `programs.careerTracks` of the selected major (`programId`); after a major is selected, the app resolves selected `programId`, loads curriculum link from `course_units.source.url` of any record with the same `programId`, and filters completed-courses from `course_units` by (`programId`, `type = "elective"`). `careerGoal` remains a nested object; downstream `careerGoalRole` is always derived from `careerGoal.role`. Completed-course identity follows canonical rule `(`major`, `courseCode`)`, with optional `courseUnitId` persisted only for join optimization. `privacySetting` is not part of `StudentProfile` (owned by `User` in feature 005). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). Input handling is deterministic validation only.
 
 ## Technical Context
 
@@ -29,10 +29,10 @@ A one-time, skippable onboarding panel that appears on first login and collects 
 *Pre-design gate — re-checked after Phase 1 design: all items still pass.*
 
 - [x] **Modular Monolithic**: Onboarding logic is fully contained in `backend/src/modules/onboarding/`. The only cross-module call is `roadmapService.triggerGeneration(userId)` invoked through the service layer — no direct cross-module import.
-- [x] **UET-First**: Major list and curriculum links are sourced from UET-seeded `programs`; course choices are sourced from UET-seeded `course_units` (`programId`, `type = "elective"`); role/timeline options remain bounded and UET-contextual. No abstraction for other universities was introduced.
-- [x] **Privacy**: No UET portal credentials collected or stored. Only MVP academic profile data (major, completed courses, dropdown-selected career goals) is collected.
+- [x] **UET-First**: Major list and role options are sourced from UET-seeded `programs` (`nameEN`, `careerTracks`); curriculum links and course choices are sourced from UET-seeded `course_units` (`programId`, `source.url`, `type = "elective"`); graduation timeline uses a date-picker. No abstraction for other universities was introduced.
+- [x] **Privacy**: No UET portal credentials collected or stored. Only MVP academic profile data (major, completed courses, role selection, graduation date) is collected.
 - [x] **AI-Assisted**: Gemini API is **not called** in this feature. Validation is deterministic list-membership checking. No LLM calls during onboarding.
-- [x] **Test What Matters**: Unit tests cover the two complex pieces with side effects — (1) dropdown option validation and stale-option handling, (2) `StudentProfile` state machine transitions including duplicate-submit rejection.
+- [x] **Test What Matters**: Unit tests cover the two complex pieces with side effects — (1) role option + graduation date validation and stale-role handling, (2) `StudentProfile` state machine transitions including duplicate-submit rejection.
 - [x] **Boundary Ownership**: `privacySetting` remains in `User` domain (feature 005), not duplicated in onboarding `StudentProfile`.
 
 ## Project Structure
@@ -62,7 +62,7 @@ backend/
 │   │       ├── onboarding.service.js      # Business logic: upsertDraft, submitProfile, state guard
 │   │       ├── onboarding.controller.js   # Express handlers (thin — delegates to service)
 │   │       ├── onboarding.routes.js       # Express Router + auth middleware applied
-│   │       ├── onboarding.validation.js   # dropdown option validation — deterministic, no LLM
+│   │       ├── onboarding.validation.js   # role option + graduation date validation — deterministic, no LLM
 │   │       ├── onboarding.errors.js       # Error mapping + standardized API error envelope
 │   │       ├── onboarding.sse.js          # SSE connection store (Map) + notifyUser()
 │   │       └── onboarding.email.js        # sendRoadmapReadyEmail() via Nodemailer
@@ -72,7 +72,7 @@ backend/
 └── tests/
     └── unit/
         └── onboarding/
-            ├── validation.test.js          # dropdown value validation + stale option scenarios
+            ├── validation.test.js          # role option + graduation date validation scenarios
             ├── stateMachine.test.js        # draft→submitted: state transition tests
             └── draftPersistence.test.js    # atomic upsert + restore behavior tests
 
@@ -83,7 +83,7 @@ frontend/
 │   │       ├── OnboardingPanel.jsx        # Outer panel: visibility state + dismiss logic
 │   │       ├── MajorSelect.jsx            # Controlled major dropdown (from programs.nameEN)
 │   │       ├── CourseMultiSelect.jsx      # Filtered elective courses (course_units by programId)
-│   │       ├── CareerGoalForm.jsx         # Role / timeline dropdown selection only
+│   │       ├── CareerGoalForm.jsx         # Role dropdown + graduation date-picker input
 │   │       ├── useOnboardingDraft.js      # Hook: 800ms debounced PUT /draft + fetch on mount
 │   │       └── useRoadmapStatus.js        # Hook: EventSource open/close + roadmap:status handler
 │   ├── guards/

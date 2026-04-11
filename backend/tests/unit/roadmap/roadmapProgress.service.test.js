@@ -18,10 +18,12 @@ const baseProgressDoc = {
 	_id: 'progress001',
 	userId,
 	roadmapId,
-	pending: [...nodeIds],
-	inProgress: [],
-	completed: [],
-	skip: [],
+	state: {
+		pending: [...nodeIds],
+		inProgress: [],
+		completed: [],
+		skip: [],
+	},
 	updatedAt: new Date(),
 };
 
@@ -43,16 +45,18 @@ describe('roadmapProgress.service — createProgress', () => {
 			expect.objectContaining({
 				userId,
 				roadmapId,
-				pending: nodeIds,
-				inProgress: [],
-				completed: [],
-				skip: [],
+				state: {
+					pending: nodeIds,
+					inProgress: [],
+					completed: [],
+					skip: [],
+				},
 			})
 		);
-		expect(result.pending).toEqual(nodeIds);
-		expect(result.inProgress).toEqual([]);
-		expect(result.completed).toEqual([]);
-		expect(result.skip).toEqual([]);
+		expect(result.state.pending).toEqual(nodeIds);
+		expect(result.state.inProgress).toEqual([]);
+		expect(result.state.completed).toEqual([]);
+		expect(result.state.skip).toEqual([]);
 	});
 
 	test('returns existing doc on duplicate key (11000)', async () => {
@@ -64,7 +68,7 @@ describe('roadmapProgress.service — createProgress', () => {
 		const result = await progressService.createProgress(userId, roadmapId, nodeIds);
 
 		expect(RoadmapProgress.findOne).toHaveBeenCalledWith({ userId, roadmapId });
-		expect(result.pending).toEqual(nodeIds);
+		expect(result.state.pending).toEqual(nodeIds);
 	});
 });
 
@@ -100,9 +104,9 @@ describe('roadmapProgress.service — getProgress', () => {
 
 describe('roadmapProgress.service — updateNodeState valid transitions', () => {
 	function makeUpdatedDoc(from, to, nodeId) {
-		const doc = { ...baseProgressDoc };
-		doc[from] = doc[from].filter((n) => n !== nodeId);
-		doc[to] = [...(doc[to] || []), nodeId];
+		const doc = { ...baseProgressDoc, state: { ...baseProgressDoc.state } };
+		doc.state[from] = doc.state[from].filter((n) => n !== nodeId);
+		doc.state[to] = [...(doc.state[to] || []), nodeId];
 		return doc;
 	}
 
@@ -114,15 +118,15 @@ describe('roadmapProgress.service — updateNodeState valid transitions', () => 
 		const result = await progressService.updateNodeState(userId, roadmapId, nodeId, 'pending', 'inProgress');
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, roadmapId, pending: nodeId },
+			{ userId, roadmapId, 'state.pending': nodeId },
 			expect.objectContaining({
-				$pull: { pending: nodeId },
-				$push: { inProgress: nodeId },
+				$pull: { 'state.pending': nodeId },
+				$push: { 'state.inProgress': nodeId },
 			}),
 			expect.objectContaining({ new: true })
 		);
-		expect(result.inProgress).toContain(nodeId);
-		expect(result.pending).not.toContain(nodeId);
+		expect(result.state.inProgress).toContain(nodeId);
+		expect(result.state.pending).not.toContain(nodeId);
 	});
 
 	test('pending → skip: atomically moves node', async () => {
@@ -133,32 +137,32 @@ describe('roadmapProgress.service — updateNodeState valid transitions', () => 
 		const result = await progressService.updateNodeState(userId, roadmapId, nodeId, 'pending', 'skip');
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, roadmapId, pending: nodeId },
+			{ userId, roadmapId, 'state.pending': nodeId },
 			expect.objectContaining({
-				$pull: { pending: nodeId },
-				$push: { skip: nodeId },
+				$pull: { 'state.pending': nodeId },
+				$push: { 'state.skip': nodeId },
 			}),
 			expect.objectContaining({ new: true })
 		);
-		expect(result.skip).toContain(nodeId);
+		expect(result.state.skip).toContain(nodeId);
 	});
 
 	test('inProgress → completed: atomically moves node', async () => {
-		const docWithInProgress = { ...baseProgressDoc, pending: [], inProgress: ['INT2204'] };
-		const updated = { ...docWithInProgress, inProgress: [], completed: ['INT2204'] };
+		const docWithInProgress = { ...baseProgressDoc, state: { ...baseProgressDoc.state, pending: [], inProgress: ['INT2204'] } };
+		const updated = { ...docWithInProgress, state: { ...docWithInProgress.state, inProgress: [], completed: ['INT2204'] } };
 		RoadmapProgress.findOneAndUpdate = jest.fn().mockResolvedValue(updated);
 
 		const result = await progressService.updateNodeState(userId, roadmapId, 'INT2204', 'inProgress', 'completed');
 
 		expect(RoadmapProgress.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, roadmapId, inProgress: 'INT2204' },
+			{ userId, roadmapId, 'state.inProgress': 'INT2204' },
 			expect.objectContaining({
-				$pull: { inProgress: 'INT2204' },
-				$push: { completed: 'INT2204' },
+				$pull: { 'state.inProgress': 'INT2204' },
+				$push: { 'state.completed': 'INT2204' },
 			}),
 			expect.objectContaining({ new: true })
 		);
-		expect(result.completed).toContain('INT2204');
+		expect(result.state.completed).toContain('INT2204');
 	});
 });
 
@@ -193,6 +197,6 @@ describe('roadmapProgress.service — updateNodeState INVALID_TRANSITION', () =>
 
 		await expect(
 			progressService.updateNodeState(userId, roadmapId, 'INT2204', 'pending', 'inProgress')
-		).rejects.toMatchObject({ code: 'INVALID_TRANSITION', status: 400 });
+		).rejects.toMatchObject({ code: 'INVALID_TRANSITION', status: 422 });
 	});
 });

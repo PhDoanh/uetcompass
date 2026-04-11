@@ -1,9 +1,13 @@
-'use strict';
+﻿'use strict';
 
 /**
  * Unit tests for generation.service.js
- * Tests: Gemini parsing, topological validation invocation, concurrency guard,
+ * Tests: Gemini off-template skill evaluation, topological node building, concurrency guard,
  * failure lifecycle, SIGTERM handler, NFR-002 isolation, empty nodes edge case.
+ *
+ * Pipeline under test:
+ *   StudentProfile.findOne â†’ CourseUnit.find â†’ evaluateOffTemplateSkills (Gemini)
+ *   â†’ buildNodesTopologically â†’ validateTopologicalOrder â†’ storePendingPreview â†’ notifyUser
  *
  * Pattern: All jest.mock() at top level. No resetModules.
  * Mocks are configured per-test via mockReturnValue/mockImplementation.
@@ -13,8 +17,15 @@ jest.mock('../../../src/modules/roadmap/roadmapValidation.service');
 jest.mock('../../../src/modules/roadmap/roadmap.preview.store');
 jest.mock('../../../src/modules/roadmap/roadmap.service');
 jest.mock('../../../src/modules/onboarding/onboarding.model');
-jest.mock('../../../src/modules/onboarding/onboarding.sse', () => ({
+jest.mock('../../../src/modules/roadmap/roadmap.sse', () => ({
+	addConnection: jest.fn(),
+	addUserConnection: jest.fn(),
+	closeConnection: jest.fn(),
+	connections: new Map(),
+	notifyClientByToken: jest.fn(),
 	notifyUser: jest.fn(),
+	notifyPreviewReady: jest.fn(),
+	notifyGenerationFailed: jest.fn(),
 }));
 jest.mock('../../../src/modules/curriculum/courseUnit.model');
 jest.mock('@google/generative-ai');
@@ -26,21 +37,12 @@ GoogleGenerativeAI.mockImplementation(() => ({
 	getGenerativeModel: () => ({ generateContent: mockGenerateContent }),
 }));
 
-// Mock enrichNode to return nodes unchanged (with empty skills/resources)
-jest.mock('../../../src/modules/roadmap/generation.service', () => {
-	const original = jest.requireActual('../../../src/modules/roadmap/generation.service');
-	return {
-		...original,
-		enrichNode: jest.fn(async (nodes) => nodes.map(n => ({ ...n, skills: [], resources: [] })))
-	};
-});
-
-// Require the module under test (uses the mocked GAPI and enrichNode)
 const generationService = require('../../../src/modules/roadmap/generation.service');
 
 const validationService = require('../../../src/modules/roadmap/roadmapValidation.service');
 const previewStore = require('../../../src/modules/roadmap/roadmap.preview.store');
 const roadmapService = require('../../../src/modules/roadmap/roadmap.service');
+const { notifyUser } = require('../../../src/modules/roadmap/roadmap.sse');
 const { StudentProfile } = require('../../../src/modules/onboarding/onboarding.model');
 const { CourseUnit } = require('../../../src/modules/curriculum/courseUnit.model');
 
@@ -62,28 +64,16 @@ const mockCourseUnits = [
 	{ code: 'INT2201', name: 'DSA', credits: 3, prerequisites: ['INT2204'], type: 'required' },
 ];
 
-// Gemini now returns only basic fields; skills/resources are empty arrays at generation
-const mockGeminiNodes = [
-	{
-		courseCode: 'INT2204',
-		courseName: 'OOP',
-		credits: 3,
-		suggestedSemester: 2,
-		reason: 'Foundation.'
-	},
-	{
-		courseCode: 'INT2201',
-		courseName: 'DSA',
-		credits: 3,
-		suggestedSemester: 3,
-		reason: 'Core CS skill.'
-	},
+// Gemini now returns { skillName, reason }[] for off-template skill evaluation
+const mockApprovedSkills = [
+	{ skillName: 'OOP', reason: 'Essential for Backend Engineer at Product company.' },
+	{ skillName: 'DSA', reason: 'Core data structures for Product company engineering.' },
 ];
 
 // Helper: trigger generation and wait for async lifecycle to settle
-async function trigger(userId, profileId = 'profileId1', reason = 'profile_submission') {
+async function trigger(userId, reason = 'profile_submission') {
 	try {
-		await generationService.triggerGeneration(userId, profileId, reason);
+		await generationService.triggerGeneration(userId, reason);
 	} catch (e) {
 		if (e.code !== 'CONFLICT') throw e;
 	}
@@ -93,15 +83,13 @@ async function trigger(userId, profileId = 'profileId1', reason = 'profile_submi
 beforeEach(() => {
 	jest.clearAllMocks();
 	// clearAllMocks() only clears call history, not implementations.
-	// Explicitly reset validateTopologicalOrder so mockImplementation from previous tests doesn't bleed over.
+	// Explicitly reset validateTopologicalOrder so mockImplementation from previous tests doesn\'t bleed over.
 	validationService.validateTopologicalOrder.mockReset();
 
-	StudentProfile.findById = jest.fn().mockResolvedValue(mockProfile);
+	StudentProfile.findOne = jest.fn().mockResolvedValue(mockProfile);
 	CourseUnit.find = jest.fn().mockReturnValue({
 		lean: jest.fn().mockResolvedValue(mockCourseUnits),
 	});
-	// NOTE: validationService.validateTopologicalOrder is the auto-mock jest.fn()
-	// Use mockReset in beforeEach (above) — do NOT replace it with a new jest.fn() reference
 	previewStore.storePendingPreview = jest.fn();
 	previewStore.getPendingPreview = jest.fn().mockReturnValue(null);
 	previewStore.clearPendingPreview = jest.fn();
@@ -110,40 +98,50 @@ beforeEach(() => {
 	roadmapService.upsertFailed = jest.fn().mockResolvedValue({});
 	roadmapService.getCompletedByUser = jest.fn().mockResolvedValue(null);
 
+	// Gemini returns approved { skillName, reason }[] items
 	mockGenerateContent.mockResolvedValue({
-		response: { text: () => JSON.stringify(mockGeminiNodes) },
+		response: { text: () => JSON.stringify(mockApprovedSkills) },
 	});
 });
 
 // ---------------------------------------------------------------------------
-// Gemini parsing
+// Gemini output / preview store
 // ---------------------------------------------------------------------------
 
-describe('generation.service — Gemini parsing', () => {
-	test('appends resources: [] and skills: [] to every parsed node', async () => {
+describe('generation.service â€” Gemini output and preview', () => {
+	test('builds skill nodes from AI-approved skills and stores preview', async () => {
 		await trigger('u-parse-1');
-		const stored = previewStore.storePendingPreview.mock.calls[0]?.[1]?.nodes ?? [];
-		expect(stored.length).toBe(2);
-		expect(stored.every((n) => Array.isArray(n.resources))).toBe(true);
-		expect(stored.every((n) => Array.isArray(n.skills))).toBe(true);
-		expect(stored[0].resources).toEqual([]);
-		expect(stored[0].skills).toEqual([]);
-	});
-
-	test('stores preview with personalisationLevel=full when careerGoal is provided', async () => {
-		await trigger('u-parse-2');
 		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
-			'u-parse-2',
-			expect.objectContaining({ personalisationLevel: 'full', nodes: expect.any(Array) })
+			'u-parse-1',
+			expect.objectContaining({
+				personalisationLevel: 'full',
+				nodes: expect.arrayContaining([
+					expect.objectContaining({ skillName: 'OOP', resources: [] }),
+				]),
+			})
 		);
 	});
 
-	test('stores preview with personalisationLevel=low when careerGoal is absent', async () => {
-		StudentProfile.findById.mockResolvedValue({
+	test('notifies user with roadmap_preview_ready including full preview payload', async () => {
+		await trigger('u-parse-2');
+		expect(notifyUser).toHaveBeenCalledWith(
+			'u-parse-2',
+			'roadmap_preview_ready',
+			expect.objectContaining({
+				type: 'roadmap_preview_ready',
+				personalisationLevel: 'full',
+				preview: expect.objectContaining({ nodes: expect.any(Array) }),
+			})
+		);
+	});
+
+	test('does not call Gemini and stores low-personalisation preview when careerGoal is absent', async () => {
+		StudentProfile.findOne.mockResolvedValue({
 			...mockProfile,
 			careerGoal: { role: null, companyType: null },
 		});
 		await trigger('u-parse-3');
+		expect(mockGenerateContent).not.toHaveBeenCalled();
 		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
 			'u-parse-3',
 			expect.objectContaining({ personalisationLevel: 'low', nodes: expect.any(Array) })
@@ -155,11 +153,17 @@ describe('generation.service — Gemini parsing', () => {
 // Topological validation
 // ---------------------------------------------------------------------------
 
-describe('generation.service — topological validation', () => {
-	test('invokes validateTopologicalOrder after Gemini response with completedCourseCodes', async () => {
+describe('generation.service â€” topological validation', () => {
+	test('invokes validateTopologicalOrder with relatedCourses nodes and completedCourseCodes', async () => {
 		await trigger('u-topo-1');
 		expect(validationService.validateTopologicalOrder).toHaveBeenCalledWith(
-			expect.arrayContaining([expect.objectContaining({ courseCode: 'INT2204' })]),
+			expect.arrayContaining([
+				expect.objectContaining({
+					relatedCourses: expect.arrayContaining([
+						expect.objectContaining({ courseCode: 'INT2204' }),
+					]),
+				}),
+			]),
 			mockCourseUnits,
 			expect.any(Set)
 		);
@@ -184,25 +188,25 @@ describe('generation.service — topological validation', () => {
 // Concurrency guard
 // ---------------------------------------------------------------------------
 
-describe('generation.service — concurrency guard', () => {
+describe('generation.service â€” concurrency guard', () => {
 	test('throws CONFLICT when generation already in progress for same user', async () => {
 		let resolveGemini;
 		mockGenerateContent.mockReturnValue(new Promise((r) => { resolveGemini = r; }));
 
-		await generationService.triggerGeneration('u-concur-1', 'profileId1', 'profile_submission');
+		await generationService.triggerGeneration('u-concur-1', 'profile_submission');
 
 		await expect(
-			generationService.triggerGeneration('u-concur-1', 'profileId1', 'profile_submission')
+			generationService.triggerGeneration('u-concur-1', 'profile_submission')
 		).rejects.toMatchObject({ code: 'CONFLICT' });
 
-		resolveGemini({ response: { text: () => JSON.stringify(mockGeminiNodes) } });
+		resolveGemini({ response: { text: () => JSON.stringify(mockApprovedSkills) } });
 		await new Promise((r) => setTimeout(r, 30));
 	});
 
 	test('allows generation after previous one completes', async () => {
 		await trigger('u-concur-2');
 		await expect(
-			generationService.triggerGeneration('u-concur-2', 'profileId1', 'profile_submission')
+			generationService.triggerGeneration('u-concur-2', 'profile_submission')
 		).resolves.toBeUndefined();
 		await new Promise((r) => setTimeout(r, 30));
 	});
@@ -212,7 +216,7 @@ describe('generation.service — concurrency guard', () => {
 // Failure lifecycle
 // ---------------------------------------------------------------------------
 
-describe('generation.service — failure lifecycle', () => {
+describe('generation.service â€” failure lifecycle', () => {
 	test('calls upsertFailedWithProfile with personalisationLevel on Gemini error', async () => {
 		mockGenerateContent.mockRejectedValue(new Error('Gemini timeout'));
 		await trigger('u-fail-1');
@@ -229,27 +233,27 @@ describe('generation.service — failure lifecycle', () => {
 
 	test('clears concurrency guard after failure so retry is possible', async () => {
 		mockGenerateContent.mockRejectedValue(new Error('API error'));
-		await generationService.triggerGeneration('u-fail-3', 'profileId1', 'profile_submission');
+		await generationService.triggerGeneration('u-fail-3', 'profile_submission');
 		await new Promise((r) => setTimeout(r, 30));
 
 		mockGenerateContent.mockResolvedValue({
-			response: { text: () => JSON.stringify(mockGeminiNodes) },
+			response: { text: () => JSON.stringify(mockApprovedSkills) },
 		});
 		await expect(
-			generationService.triggerGeneration('u-fail-3', 'profileId1', 'profile_submission')
+			generationService.triggerGeneration('u-fail-3', 'profile_submission')
 		).resolves.toBeUndefined();
 		await new Promise((r) => setTimeout(r, 30));
 	});
 });
 
 // ---------------------------------------------------------------------------
-// NFR-002 isolation — StudentProfile must NOT be mutated
+// NFR-002 isolation â€” StudentProfile must NOT be mutated
 // ---------------------------------------------------------------------------
 
-describe('generation.service — NFR-002 isolation', () => {
+describe('generation.service â€” NFR-002 isolation', () => {
 	test('StudentProfile is NOT saved after generation failure', async () => {
 		const profileWithSave = { ...mockProfile, save: jest.fn() };
-		StudentProfile.findById.mockResolvedValue(profileWithSave);
+		StudentProfile.findOne.mockResolvedValue(profileWithSave);
 		validationService.validateTopologicalOrder.mockImplementation(() => {
 			throw new Error('Validation error');
 		});
@@ -259,7 +263,7 @@ describe('generation.service — NFR-002 isolation', () => {
 
 	test('StudentProfile is NOT saved on successful generation', async () => {
 		const profileWithSave = { ...mockProfile, save: jest.fn() };
-		StudentProfile.findById.mockResolvedValue(profileWithSave);
+		StudentProfile.findOne.mockResolvedValue(profileWithSave);
 		await trigger('u-iso-2');
 		expect(profileWithSave.save).not.toHaveBeenCalled();
 	});
@@ -269,18 +273,17 @@ describe('generation.service — NFR-002 isolation', () => {
 // Empty nodes edge case
 // ---------------------------------------------------------------------------
 
-describe('generation.service — empty nodes edge case', () => {
-	test('stores empty nodes preview without calling upsertFailedWithProfile', async () => {
+describe('generation.service â€” empty nodes edge case', () => {
+	test('stores preview with empty nodes when AI approves no skills', async () => {
 		mockGenerateContent.mockResolvedValue({
 			response: { text: () => JSON.stringify([]) },
 		});
 		await trigger('u-empty-1');
-		// Accept either no call or a call with a generic error (enrichment may fail if not mocked)
-		// The main assertion is that preview is still stored
 		expect(previewStore.storePendingPreview).toHaveBeenCalledWith(
 			'u-empty-1',
 			expect.objectContaining({ nodes: [] })
 		);
+		expect(roadmapService.upsertFailedWithProfile).not.toHaveBeenCalled();
 	});
 });
 
@@ -288,7 +291,7 @@ describe('generation.service — empty nodes edge case', () => {
 // SIGTERM handler
 // ---------------------------------------------------------------------------
 
-describe('generation.service — SIGTERM handler', () => {
+describe('generation.service â€” SIGTERM handler', () => {
 	test('calls upsertFailedWithProfile for each pending preview then clears store', async () => {
 		previewStore.getAllPendingUserIds.mockReturnValue(['userA', 'userB']);
 		previewStore.getPendingPreview.mockImplementation((uid) => ({
@@ -323,12 +326,12 @@ describe('generation.service — SIGTERM handler', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Gap-2: prerequisite absent from nodes AND completedCourses
+// Gap-2: completedCourseCodes forwarded to validator
 // ---------------------------------------------------------------------------
 
-describe('generation.service — Gap-2 completedCourses in validator', () => {
+describe('generation.service â€” Gap-2 completedCourses in validator', () => {
 	test('passes completedCourseCodes Set to validateTopologicalOrder', async () => {
-		StudentProfile.findById.mockResolvedValue({
+		StudentProfile.findOne.mockResolvedValue({
 			...mockProfile,
 			completedCourses: [{ courseCode: 'INT1000' }],
 		});
@@ -350,30 +353,39 @@ describe('generation.service — Gap-2 completedCourses in validator', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Gap-3: personalisationLevel on failed docs
+// Gap-3: personalisationLevel in failure path
 // ---------------------------------------------------------------------------
 
-describe('generation.service — Gap-3 personalisationLevel in failure path', () => {
-	test('passes low personalisationLevel to upsertFailedWithProfile for minimal profile', async () => {
-		StudentProfile.findById.mockResolvedValue({
+describe('generation.service â€” Gap-3 personalisationLevel in failure path', () => {
+	test('passes full personalisationLevel to upsertFailedWithProfile on Gemini error', async () => {
+		mockGenerateContent.mockRejectedValue(new Error('Gemini error'));
+		await trigger('u-gap3-full');
+		expect(roadmapService.upsertFailedWithProfile).toHaveBeenCalledWith(
+			'u-gap3-full', 'profileId1', expect.stringContaining('Gemini error'), 'full'
+		);
+	});
+
+	test('passes low personalisationLevel to upsertFailedWithProfile when course units fail to load', async () => {
+		StudentProfile.findOne.mockResolvedValue({
 			...mockProfile,
 			careerGoal: { role: null, companyType: null },
 		});
-		mockGenerateContent.mockRejectedValue(new Error('Gemini error'));
-		await trigger('u-gap3-1');
+		CourseUnit.find.mockReturnValue({
+			lean: jest.fn().mockRejectedValue(new Error('DB connection error')),
+		});
+		await trigger('u-gap3-low');
 		expect(roadmapService.upsertFailedWithProfile).toHaveBeenCalledWith(
-			'u-gap3-1', 'profileId1', expect.stringContaining('Gemini error'), 'low'
+			'u-gap3-low', 'profileId1', expect.stringContaining('DB connection error'), 'low'
 		);
 	});
 });
 
 // ---------------------------------------------------------------------------
-// Gap-5: retryGeneration returns 404 when profile is deleted
+// Gap-5: retryGeneration returns 409 CONFLICT when no retryable roadmap exists
 // ---------------------------------------------------------------------------
 
-describe('generation.service — Gap-5 retryGeneration profile existence check', () => {
+describe('generation.service â€” Gap-5 retryGeneration no retryable roadmap', () => {
 	const controller = require('../../../src/modules/roadmap/roadmap.controller');
-	const { Roadmap } = require('../../../src/modules/roadmap/roadmap.model');
 
 	function mockRes() {
 		const res = { statusCode: null, body: null };
@@ -382,29 +394,15 @@ describe('generation.service — Gap-5 retryGeneration profile existence check',
 		return res;
 	}
 
-	test('returns 404 ROADMAP_NOT_FOUND when studentProfile no longer exists', async () => {
-		const failedDoc = {
-			_id: 'roadmapFailed1',
-			userId: 'u-gap5-1',
-			status: 'failed',
-			studentProfileId: 'deletedProfileId',
-		};
-
-		Roadmap.findOne = jest.fn().mockReturnValue({
-			sort: jest.fn().mockReturnValue({
-				lean: jest.fn().mockResolvedValue(failedDoc),
-			}),
-		});
-		StudentProfile.exists = jest.fn().mockResolvedValue(null);
+	test('returns 409 CONFLICT when no failed roadmap found to retry', async () => {
+		roadmapService.getRetryableByUser = jest.fn().mockResolvedValue(null);
 
 		const req = { user: { userId: 'u-gap5-1' } };
 		const res = mockRes();
 		await controller.retryGeneration(req, res);
 
-		expect(res.statusCode).toBe(404);
-		expect(res.body.error.code).toBe('ROADMAP_NOT_FOUND');
-		expect(StudentProfile.exists).toHaveBeenCalledWith({ _id: 'deletedProfileId' });
+		expect(res.statusCode).toBe(409);
+		expect(res.body.error.code).toBe('CONFLICT');
 	});
 });
-
 

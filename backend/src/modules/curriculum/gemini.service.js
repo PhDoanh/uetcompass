@@ -269,13 +269,13 @@ For skills: consider what a student can DO after completing this course.
 ## OUTPUT EXAMPLE (return only valid JSON, no other text)
 {
 	"program": {
-		"careerTracks": ["software-engineer-general", "ai-data-engineer"]
+		"careerTracks": ["Software Engineer General", "AI Data Engineer"]
 	},
 	"courseUnits": [
 		{
 			"code": "INT2210",
 			"difficultyLevel": 3,
-			"careerTracks": ["software-engineer-general"],
+			"careerTracks": ["Backend Engineer"],
 			"skills": ["data-structures", "algorithm-analysis", "oop"]
 		},
 		...
@@ -283,7 +283,7 @@ For skills: consider what a student can DO after completing this course.
 	"programOutcomes": [
 		{
 			"poId": "PO-01",
-			"careerTracks": ["software-engineer-japan", "software-engineer-general"]
+			"careerTracks": ["Software Engineer Japan", "Software Engineer General"]
 		},
 		...
 	]

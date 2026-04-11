@@ -14,10 +14,12 @@ async function createProgress(userId, roadmapId, nodeIds) {
 		return await RoadmapProgress.create({
 			userId,
 			roadmapId,
-			pending: nodeIds,
-			inProgress: [],
-			completed: [],
-			skip: [],
+			state: {
+				pending: nodeIds,
+				inProgress: [],
+				completed: [],
+				skip: [],
+			},
 			updatedAt: new Date(),
 		});
 	} catch (err) {
@@ -29,10 +31,12 @@ async function createProgress(userId, roadmapId, nodeIds) {
 		return RoadmapProgress.create({
 			userId,
 			roadmapId,
-			pending: nodeIds,
-			inProgress: [],
-			completed: [],
-			skip: [],
+			state: {
+				pending: nodeIds,
+				inProgress: [],
+				completed: [],
+				skip: [],
+			},
 			updatedAt: new Date(),
 		});
 	}
@@ -58,19 +62,19 @@ async function updateNodeState(userId, roadmapId, nodeId, fromState, toState) {
 		throw err;
 	}
 
-	const filter = { userId, roadmapId, [fromState]: nodeId };
+	const filter = { userId, roadmapId, [`state.${fromState}`]: nodeId };
 	const update = {
-		$pull: { [fromState]: nodeId },
-		$push: { [toState]: nodeId },
+		$pull: { [`state.${fromState}`]: nodeId },
+		$push: { [`state.${toState}`]: nodeId },
 		$set: { updatedAt: new Date() },
 	};
 
 	const updated = await RoadmapProgress.findOneAndUpdate(filter, update, { new: true });
 
 	if (!updated) {
-		const err = new Error(`Node '${nodeId}' not found in '${fromState}' state for this roadmap progress.`);
+		const err = new Error(`Node '${nodeId}' is not in state '${fromState}'.`);
 		err.code = 'INVALID_TRANSITION';
-		err.status = 400;
+		err.status = 422;
 		throw err;
 	}
 

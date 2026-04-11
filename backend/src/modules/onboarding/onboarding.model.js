@@ -12,7 +12,6 @@ const CompletedCourseSchema = new mongoose.Schema(
 const CareerGoalSchema = new mongoose.Schema(
 	{
 		role: { type: String, default: null, maxlength: 500, trim: true },
-		companyType: { type: String, default: null, maxlength: 500, trim: true },
 		graduationTimeline: { type: String, default: null, maxlength: 100, trim: true },
 	},
 	{ _id: false }
@@ -31,7 +30,6 @@ const StudentProfileSchema = new mongoose.Schema(
 		major: { type: String, default: null, trim: true },
 		completedCourses: { type: [CompletedCourseSchema], default: [] },
 		careerGoal: { type: CareerGoalSchema, default: () => ({}) },
-		personalAspirations: { type: String, default: null, maxlength: 1000, trim: true },
 		submittedAt: { type: Date, default: null },
 	},
 	{

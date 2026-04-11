@@ -9,6 +9,18 @@ jest.mock('../../../src/modules/auth/auth.email', () => ({
   sendResetOtpEmail: jest.fn(),
 }));
 
+jest.mock('../../../src/modules/auth/token.service', () => ({
+  enforceOtpResendPolicy: jest.fn().mockResolvedValue({
+    cooldownUntil: new Date(Date.now() + 60_000),
+    hourlyLimit: 10,
+  }),
+  hashRefreshToken: jest.fn(() => 'test-refresh-hash'),
+}));
+
+jest.mock('../../../src/modules/auth/audit.service', () => ({
+  emitAuthEvent: jest.fn().mockResolvedValue({ _id: 'audit-1' }),
+}));
+
 const { User } = require('../../../src/modules/auth/user.model');
 const { sendResetOtpEmail } = require('../../../src/modules/auth/auth.email');
 const passwordService = require('../../../src/modules/auth/password.service');

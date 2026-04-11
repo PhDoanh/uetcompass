@@ -1,11 +1,13 @@
 const crypto = require('crypto');
 const { User } = require('./user.model');
 const { sendRegistrationOtpEmail } = require('./auth.email');
-const { issueAccessToken, hashRefreshToken } = require('./token.service');
+const { issueAccessToken, hashRefreshToken, enforceOtpResendPolicy } = require('./token.service');
 const passwordService = require('./password.service');
 const googleService = require('./google.service');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RefreshToken } = require('./refreshToken.model');
+const { isVnuEmailAddress, normalizeEmail } = require('./identity.policy');
+const { emitAuthEvent } = require('./audit.service');
 
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_MINUTES = 15;
@@ -14,17 +16,12 @@ function buildError(status, code, message, details) {
   const err = new Error(message);
   err.status = status;
   err.code = code;
-  err.details = details;
   return err;
-}
-
-function isVnuEmail(email) {
-  return /@vnu\.edu\.vn$/i.test(String(email || '').trim());
 }
 
 function validateRegisterInput(input = {}) {
   const fullName = String(input.fullName || '').trim();
-  const email = String(input.email || '').trim().toLowerCase();
+  const email = normalizeEmail(input.email);
   const password = String(input.password || '').trim();
 
   if (!fullName || !email || !password) {
@@ -37,7 +34,7 @@ function validateRegisterInput(input = {}) {
     };
   }
 
-  if (!isVnuEmail(email)) {
+  if (!isVnuEmailAddress(email)) {
     return {
       valid: false,
       error: {
@@ -58,6 +55,14 @@ function buildOtpExpiry() {
   return new Date(Date.now() + 2 * 60 * 1000);
 }
 
+async function safeEmit(eventType, payload) {
+  try {
+    await emitAuthEvent(eventType, payload);
+  } catch (_) {
+    // Audit failures must not break auth flows.
+  }
+}
+
 async function registerWithEmail(payload) {
   const validation = validateRegisterInput(payload);
   if (!validation.valid) {
@@ -67,7 +72,7 @@ async function registerWithEmail(payload) {
   const { fullName, email, password } = validation.value;
   const existing = await User.findOne({ email });
 
-  if (existing && existing.status !== 'deleted') {
+  if (existing && existing.status !== 'soft-deleted') {
     throw buildError(409, 'EMAIL_ALREADY_EXISTS', 'An account with this email already exists. Please log in instead.');
   }
 
@@ -87,6 +92,16 @@ async function registerWithEmail(payload) {
   });
 
   await sendRegistrationOtpEmail(email, otp);
+  await safeEmit('signup', {
+    actorType: 'uet_student',
+    outcome: 'success',
+    metadata: { email },
+  });
+  await safeEmit('otp_send', {
+    actorType: 'uet_student',
+    outcome: 'success',
+    metadata: { flowType: 'verify_email', email },
+  });
 
   return {
     code: 'OTP_SENT',
@@ -95,20 +110,37 @@ async function registerWithEmail(payload) {
 }
 
 async function verifyEmailOtp({ email, otp }) {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   const normalizedOtp = String(otp || '').trim();
 
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
+    await safeEmit('otp_verify_fail', {
+      actorType: 'system',
+      outcome: 'fail',
+      metadata: { flowType: 'verify_email', email: normalizedEmail, reason: 'user_not_found' },
+    });
     throw buildError(400, 'OTP_INVALID', 'The code is incorrect or has expired.');
   }
 
   if (!user.emailVerification || !user.emailVerification.otp || !user.emailVerification.expiresAt) {
+    await safeEmit('otp_verify_fail', {
+      userId: user._id,
+      actorType: 'uet_student',
+      outcome: 'fail',
+      metadata: { flowType: 'verify_email', reason: 'missing_challenge' },
+    });
     throw buildError(400, 'OTP_INVALID', 'The code is incorrect or has expired.');
   }
 
   if (new Date(user.emailVerification.expiresAt).getTime() < Date.now()) {
     await User.updateOne({ _id: user._id }, { $set: { status: 'locked' } });
+    await safeEmit('otp_verify_fail', {
+      userId: user._id,
+      actorType: 'uet_student',
+      outcome: 'fail',
+      metadata: { flowType: 'verify_email', reason: 'expired' },
+    });
     throw buildError(
       423,
       'ACCOUNT_LOCKED_UNVERIFIED',
@@ -117,6 +149,12 @@ async function verifyEmailOtp({ email, otp }) {
   }
 
   if (String(user.emailVerification.otp) !== normalizedOtp) {
+    await safeEmit('otp_verify_fail', {
+      userId: user._id,
+      actorType: 'uet_student',
+      outcome: 'fail',
+      metadata: { flowType: 'verify_email', reason: 'otp_mismatch' },
+    });
     throw buildError(400, 'OTP_INVALID', 'The code is incorrect or has expired.');
   }
 
@@ -136,8 +174,9 @@ async function verifyEmailOtp({ email, otp }) {
   };
 }
 
-async function resendVerificationOtp({ email }) {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+async function resendVerificationOtp({ email, requestIp }) {
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedIp = String(requestIp || '').trim() || null;
   const user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
@@ -150,6 +189,12 @@ async function resendVerificationOtp({ email }) {
   if (user.status === 'active') {
     throw buildError(400, 'ALREADY_VERIFIED', 'This account is already verified.');
   }
+
+  await enforceOtpResendPolicy({
+    flowType: 'verify_email',
+    accountKey: normalizedEmail,
+    requestIp: normalizedIp,
+  });
 
   const otp = generateOtp();
   await User.updateOne(
@@ -166,6 +211,20 @@ async function resendVerificationOtp({ email }) {
   );
 
   await sendRegistrationOtpEmail(normalizedEmail, otp);
+  await safeEmit('otp_resend', {
+    userId: user._id,
+    actorType: 'uet_student',
+    requestIp: normalizedIp,
+    outcome: 'success',
+    metadata: { flowType: 'verify_email', email: normalizedEmail },
+  });
+  await safeEmit('otp_send', {
+    userId: user._id,
+    actorType: 'uet_student',
+    requestIp: normalizedIp,
+    outcome: 'success',
+    metadata: { flowType: 'verify_email', email: normalizedEmail, resend: true },
+  });
 
   return {
     code: 'OTP_RESENT',
@@ -230,12 +289,29 @@ async function resolveOnboardingState(userId) {
   };
 }
 
-async function loginWithPassword({ email, password }) {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+async function loginWithPassword({ email, password, requestIp }) {
+  const normalizedEmail = normalizeEmail(email);
   const normalizedPassword = String(password || '');
+  const normalizedIp = String(requestIp || '').trim() || null;
+
+  if (!isVnuEmailAddress(normalizedEmail)) {
+    await safeEmit('login_fail', {
+      actorType: 'system',
+      requestIp: normalizedIp,
+      outcome: 'fail',
+      metadata: { email: normalizedEmail, reason: 'domain_not_allowed' },
+    });
+    throw buildError(401, 'INVALID_CREDENTIALS', 'Only @vnu.edu.vn accounts are allowed.');
+  }
 
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
+    await safeEmit('login_fail', {
+      actorType: 'system',
+      requestIp: normalizedIp,
+      outcome: 'fail',
+      metadata: { email: normalizedEmail, reason: 'user_not_found' },
+    });
     throw buildError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
 
@@ -243,7 +319,7 @@ async function loginWithPassword({ email, password }) {
     throw buildError(403, 'EMAIL_NOT_VERIFIED', 'Please verify your email before logging in.');
   }
 
-  if (user.status === 'deleted') {
+  if (user.status === 'soft-deleted') {
     throw buildError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
 
@@ -256,6 +332,13 @@ async function loginWithPassword({ email, password }) {
 
   const isValidPassword = await passwordService.verifyPassword(normalizedPassword, user.passwordHash);
   if (!isValidPassword) {
+    await safeEmit('login_fail', {
+      userId: user._id,
+      actorType: 'uet_student',
+      requestIp: normalizedIp,
+      outcome: 'fail',
+      metadata: { email: normalizedEmail, reason: 'password_mismatch' },
+    });
     const nextAttempts = Number(user.failedLoginAttempts || 0) + 1;
     if (nextAttempts >= LOGIN_MAX_FAILURES) {
       const lockedUntil = new Date(now + LOGIN_LOCK_MINUTES * 60 * 1000);
@@ -297,6 +380,13 @@ async function loginWithPassword({ email, password }) {
   );
 
   const accessToken = issueAccessToken({ userId: user._id, email: user.email });
+  await safeEmit('login_success', {
+    userId: user._id,
+    actorType: 'uet_student',
+    requestIp: normalizedIp,
+    outcome: 'success',
+    metadata: { method: 'password', email: user.email },
+  });
   const onboarding = await resolveOnboardingState(user._id);
   return {
     code: 'LOGIN_SUCCESS',
@@ -306,8 +396,9 @@ async function loginWithPassword({ email, password }) {
   };
 }
 
-async function loginWithGoogle({ credential }) {
-  const payload = await googleService.verifyGoogleIdToken(credential);
+async function loginWithGoogle({ credential, requestIp }) {
+  const normalizedIp = String(requestIp || '').trim() || null;
+  const payload = await googleService.verifyGoogleIdToken(credential, { requestIp: normalizedIp });
   const googleAccount = {
     googleId: payload.sub,
     email: payload.email,
@@ -356,6 +447,13 @@ async function loginWithGoogle({ credential }) {
   }
 
   const accessToken = issueAccessToken({ userId: user._id, email: user.email });
+  await safeEmit('login_success', {
+    userId: user._id,
+    actorType: 'uet_student',
+    requestIp: normalizedIp,
+    outcome: 'success',
+    metadata: { method: 'google', email: user.email, isNewUser },
+  });
   const onboarding = await resolveOnboardingState(user._id);
   return {
     code: 'LOGIN_SUCCESS',
@@ -388,7 +486,7 @@ async function logoutSession(rawRefreshToken) {
 }
 
 module.exports = {
-  isVnuEmail,
+  isVnuEmail: isVnuEmailAddress,
   validateRegisterInput,
   registerWithEmail,
   verifyEmailOtp,

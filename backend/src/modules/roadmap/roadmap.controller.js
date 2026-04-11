@@ -198,54 +198,75 @@ async function previewRoadmapHandler(req, res) {
 	}
 }
 
-async function getProgressHandler(req, res) {
+// Public endpoints - guest access
+async function getSampleRoadmap(req, res) {
 	try {
-		const progress = await progressService.getProgress(req.user.userId, req.params.roadmapId);
-		if (!progress) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'Roadmap or progress not found.',
+		return res.json({
+			roadmapId: 'sample-roadmap',
+			personalisationLevel: 'low',
+			status: 'completed',
+			nodes: [
+				{
+					courseCode: 'INT1001',
+					courseName: 'Introduction to Computing',
+					credits: 3,
+					suggestedSemester: 1,
+					reason: 'Foundational course for first-year UET students.',
+					skills: ['problem-solving'],
+					resources: [],
 				},
-			});
-		}
-		return res.json(progress);
+				{
+					courseCode: 'INT2204',
+					courseName: 'Data Structures and Algorithms',
+					credits: 4,
+					suggestedSemester: 3,
+					reason: 'Core requirement for software engineering pathways.',
+					skills: ['algorithms'],
+					resources: [],
+				},
+			],
+		});
 	} catch (err) {
 		return mapError(err, res);
 	}
 }
 
-async function updateNodeStateHandler(req, res) {
+async function getPublicSharedRoadmap(req, res) {
 	try {
-		const { nodeId, fromState, toState } = req.body ?? {};
-
-		if (
-			typeof nodeId !== 'string' || nodeId.trim() === '' ||
-			typeof fromState !== 'string' || fromState.trim() === '' ||
-			typeof toState !== 'string' || toState.trim() === ''
-		) {
+		const shareId = String(req.params.shareId || '').trim();
+		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) {
 			return res.status(400).json({
 				error: {
 					code: 'INVALID_PAYLOAD',
-					message: 'Request body must include non-empty strings: nodeId, fromState, toState.',
+					message: 'shareId is invalid.',
 				},
 			});
 		}
 
-		const updated = await progressService.updateNodeState(
-			req.user.userId,
-			req.params.roadmapId,
-			nodeId,
-			fromState,
-			toState
-		);
-		return res.json(updated);
+		const roadmap = await Roadmap.findById(shareId).lean();
+		if (!roadmap || roadmap.status !== 'completed') {
+			return res.status(404).json({
+				error: {
+					code: 'ROADMAP_NOT_FOUND',
+					message: 'Public roadmap not found.',
+				},
+			});
+		}
+
+		return res.json({
+			roadmapId: String(roadmap._id),
+			personalisationLevel: roadmap.personalisationLevel,
+			status: roadmap.status,
+			nodes: roadmap.nodes || [],
+		});
 	} catch (err) {
 		return mapError(err, res);
 	}
 }
 
 module.exports = {
+	getSampleRoadmap,
+	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
 	getRoadmapById,

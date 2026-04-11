@@ -10,7 +10,16 @@ const securityAuditSchema = new mongoose.Schema(
     eventType: {
       type: String,
       required: true,
-      enum: ['PASSWORD_CHANGED', 'PASSWORD_RESET_COMPLETED'],
+      enum: [
+        'signup',
+        'login_success',
+        'login_fail',
+        'otp_send',
+        'otp_resend',
+        'otp_verify_fail',
+        'password_reset_success',
+        'google_login_denied_domain',
+      ],
       index: true,
     },
     metadata: {

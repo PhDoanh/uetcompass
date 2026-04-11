@@ -48,17 +48,7 @@ async function sendResetOtpEmail(email, otp) {
   });
 }
 
-async function sendDeletionConfirmationEmail(email, url) {
-  await sendMailSafe({
-    to: email,
-    subject: 'UETCompass - Confirm account deletion',
-    text: `Confirm account deletion via this link: ${url}`,
-    html: `<p>Confirm account deletion via this link:</p><p><a href="${url}">${url}</a></p>`,
-  });
-}
-
 module.exports = {
   sendRegistrationOtpEmail,
   sendResetOtpEmail,
-  sendDeletionConfirmationEmail,
 };

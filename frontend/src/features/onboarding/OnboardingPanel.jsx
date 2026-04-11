@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import MajorSelect from './MajorSelect';
 import CourseMultiSelect from './CourseMultiSelect';
 import CareerGoalForm from './CareerGoalForm';
@@ -12,15 +12,15 @@ const EMPTY_FORM = {
 	completedCourses: [],
 	careerGoal: {
 		role: '',
-		companyType: '',
 		graduationTimeline: '',
 	},
-	personalAspirations: '',
 };
 
 export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted, onClose }) {
+	const onUnauthorizedRef = useRef(onUnauthorized);
 	const [isOpen, setIsOpen] = useState(true);
 	const [form, setForm] = useState(EMPTY_FORM);
+	const [draftHydrated, setDraftHydrated] = useState(false);
 	const [submitState, setSubmitState] = useState('idle');
 	const [submitError, setSubmitError] = useState(null);
 	const [showLowPersonalization, setShowLowPersonalization] = useState(false);
@@ -28,6 +28,8 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	const [catalogError, setCatalogError] = useState(null);
 	const [catalogMajors, setCatalogMajors] = useState([]);
 	const [catalogByMajor, setCatalogByMajor] = useState({});
+	const [roleOptionsByMajor, setRoleOptionsByMajor] = useState({});
+	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
 
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
@@ -39,6 +41,26 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 		sseToken,
 		onUnauthorized,
 	});
+
+	useEffect(() => {
+		onUnauthorizedRef.current = onUnauthorized;
+	}, [onUnauthorized]);
+
+	useEffect(() => {
+		if (draftHydrated) {
+			return;
+		}
+
+		if (draft) {
+			setForm({ ...EMPTY_FORM, ...draft });
+			setDraftHydrated(true);
+			return;
+		}
+
+		if (!loading) {
+			setDraftHydrated(true);
+		}
+	}, [draft, loading, draftHydrated]);
 
 	useEffect(() => {
 		let disposed = false;
@@ -55,17 +77,21 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 
 				setCatalogMajors(Array.isArray(payload?.majors) ? payload.majors : []);
 				setCatalogByMajor(payload?.courseCatalog && typeof payload.courseCatalog === 'object' ? payload.courseCatalog : {});
+				setRoleOptionsByMajor(payload?.roleOptionsByMajor && typeof payload.roleOptionsByMajor === 'object' ? payload.roleOptionsByMajor : {});
+				setRequiredCourseLinks(payload?.requiredCourseLinks && typeof payload.requiredCourseLinks === 'object' ? payload.requiredCourseLinks : {});
 			} catch (error) {
 				if (disposed) {
 					return;
 				}
 
-				if (authToken && error?.status === 401 && onUnauthorized) {
-					onUnauthorized();
+				if (authToken && error?.status === 401 && typeof onUnauthorizedRef.current === 'function') {
+					onUnauthorizedRef.current();
 				}
 				setCatalogError(error.message || 'Failed to load course catalog');
 				setCatalogMajors([]);
 				setCatalogByMajor({});
+				setRoleOptionsByMajor({});
+				setRequiredCourseLinks({});
 			} finally {
 				if (!disposed) {
 					setCatalogLoading(false);
@@ -78,14 +104,31 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 		return () => {
 			disposed = true;
 		};
-	}, [authToken, onUnauthorized]);
+	}, [authToken]);
 
-	const mergedForm = draft ? { ...EMPTY_FORM, ...draft } : form;
+	const mergedForm = form;
 	const courseOptions = useMemo(() => catalogByMajor[mergedForm.major] || [], [catalogByMajor, mergedForm.major]);
+	const roleOptions = useMemo(() => roleOptionsByMajor[mergedForm.major] || [], [roleOptionsByMajor, mergedForm.major]);
+	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.major] || null, [requiredCourseLinks, mergedForm.major]);
 
 	const patchForm = (nextForm) => {
 		setForm(nextForm);
 		scheduleSave(nextForm);
+	};
+
+	const handleMajorChange = (major) => {
+		const nextRoleOptions = roleOptionsByMajor[major] || [];
+		const currentRole = mergedForm?.careerGoal?.role || '';
+		const keepRole = currentRole && nextRoleOptions.includes(currentRole);
+
+		patchForm({
+			...mergedForm,
+			major,
+			careerGoal: {
+				...(mergedForm.careerGoal || {}),
+				role: keepRole ? currentRole : '',
+			},
+		});
 	};
 
 	const canSubmit = !!mergedForm.major;
@@ -127,7 +170,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	return (
 		<section className="onboarding-panel-shell">
 			<h2 className="onboarding-panel-title">Student onboarding</h2>
-			<p className="onboarding-panel-description">Only major is required. Optional fields improve recommendation quality.</p>
+			<p className="onboarding-panel-description">Welcome! Please complete the following fields to continue.</p>
 
 			{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
 			{catalogLoading ? <div>Loading majors and courses...</div> : null}
@@ -137,18 +180,19 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 				value={mergedForm.major}
 				selectedCourses={mergedForm.completedCourses}
 				onResetCourses={() => patchForm({ ...mergedForm, completedCourses: [] })}
-				onChange={(major) => patchForm({ ...mergedForm, major })}
+				onChange={handleMajorChange}
 				majors={catalogMajors}
 			/>
 
 			<CourseMultiSelect
 				major={mergedForm.major}
+				requiredCourseLink={requiredCourseLink}
 				options={courseOptions}
 				value={mergedForm.completedCourses || []}
 				onChange={(completedCourses) => patchForm({ ...mergedForm, completedCourses })}
 			/>
 
-			<CareerGoalForm value={mergedForm} onChange={patchForm} />
+			<CareerGoalForm value={mergedForm} roleOptions={roleOptions} onChange={patchForm} />
 
 			{submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
 			{showLowPersonalization ? (
@@ -175,7 +219,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 				</button>
 			</div>
 
-			{saving ? <small className="onboarding-panel-note">Saving draft...</small> : null}
+			<small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small>
 		</section>
 	);
 }

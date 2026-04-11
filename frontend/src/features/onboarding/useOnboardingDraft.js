@@ -3,19 +3,21 @@ import { getDraft, putDraft } from '../../services/onboarding.api';
 
 export function useOnboardingDraft({ authToken, onUnauthorized } = {}) {
 	const timerRef = useRef(null);
+	const onUnauthorizedRef = useRef(onUnauthorized);
 	const [draft, setDraft] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
-	const handleError = useCallback(
-		(error) => {
-			if (error?.status === 401 && onUnauthorized) {
-				onUnauthorized();
-			}
-			throw error;
-		},
-		[onUnauthorized]
-	);
+	useEffect(() => {
+		onUnauthorizedRef.current = onUnauthorized;
+	}, [onUnauthorized]);
+
+	const handleError = useCallback((error) => {
+		if (error?.status === 401 && typeof onUnauthorizedRef.current === 'function') {
+			onUnauthorizedRef.current();
+		}
+		throw error;
+	}, []);
 
 	const loadDraft = useCallback(async () => {
 		if (!authToken) {

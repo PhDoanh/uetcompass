@@ -4,6 +4,64 @@ import accountApi from '../../services/account.api';
 import useAccountSettingsStore from '../../stores/accountSettings.store';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 
+const AVATAR_MAX_DIMENSION = 512;
+const AVATAR_MAX_BYTES = 350 * 1024;
+
+function estimateDataUrlBytes(dataUrl) {
+	const base64 = String(dataUrl || '').split(',')[1] || '';
+	return Math.floor((base64.length * 3) / 4);
+}
+
+function loadImageFromFile(file) {
+	return new Promise((resolve, reject) => {
+		const objectUrl = URL.createObjectURL(file);
+		const image = new Image();
+		image.onload = () => {
+			URL.revokeObjectURL(objectUrl);
+			resolve(image);
+		};
+		image.onerror = () => {
+			URL.revokeObjectURL(objectUrl);
+			reject(new Error('Failed to decode image'));
+		};
+		image.src = objectUrl;
+	});
+}
+
+async function compressAvatarFile(file) {
+	const image = await loadImageFromFile(file);
+	const scale = Math.min(1, AVATAR_MAX_DIMENSION / Math.max(image.width, image.height));
+	const width = Math.max(1, Math.round(image.width * scale));
+	const height = Math.max(1, Math.round(image.height * scale));
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext('2d');
+	if (!context) {
+		throw new Error('Canvas is not supported in this browser');
+	}
+
+	context.drawImage(image, 0, 0, width, height);
+
+	if (file.type === 'image/png') {
+		return canvas.toDataURL('image/png');
+	}
+
+	const qualitySteps = [0.86, 0.75, 0.65, 0.55];
+	let best = canvas.toDataURL('image/jpeg', qualitySteps[0]);
+
+	for (const quality of qualitySteps) {
+		const candidate = canvas.toDataURL('image/jpeg', quality);
+		best = candidate;
+		if (estimateDataUrlBytes(candidate) <= AVATAR_MAX_BYTES) {
+			break;
+		}
+	}
+
+	return best;
+}
+
 export default function AccountSettingsPage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
 	const {
@@ -99,6 +157,21 @@ export default function AccountSettingsPage() {
 				avatarUrl: profile.avatarUrl || '',
 				effectiveDisplayName: profile.effectiveDisplayName || prev.effectiveDisplayName,
 			}));
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(
+					new CustomEvent('account-profile-updated', {
+						detail: {
+							profile: {
+								email: profile.email || identity.email,
+								displayName: profile.displayName || identity.displayName,
+								fullName: profile.fullName || identity.fullName,
+								effectiveDisplayName: profile.effectiveDisplayName || identity.effectiveDisplayName,
+								avatarUrl: profile.avatarUrl || '',
+							},
+						},
+					})
+				);
+			}
 			setProfileStatus({ error: '', success: result?.message || 'Profile updated' });
 		} catch (err) {
 			setProfileStatus({ error: err?.message || 'Failed to update profile', success: '' });
@@ -119,14 +192,14 @@ export default function AccountSettingsPage() {
 		}
 
 		try {
-			const dataUrl = await new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(String(reader.result || ''));
-				reader.onerror = () => reject(new Error('Failed to read image file'));
-				reader.readAsDataURL(file);
-			});
+			const dataUrl = await compressAvatarFile(file);
+			const compressedBytes = estimateDataUrlBytes(dataUrl);
 
-			setImageError('');
+			setImageError(
+				compressedBytes > AVATAR_MAX_BYTES
+					? 'Ảnh đã được nén nhưng vẫn còn lớn. Bạn nên dùng ảnh nhỏ hơn để tải nhanh hơn.'
+					: ''
+			);
 			setIdentity((prev) => ({ ...prev, avatarUrl: dataUrl }));
 		} catch (_) {
 			setImageError('Failed to import image');

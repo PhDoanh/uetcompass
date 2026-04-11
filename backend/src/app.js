@@ -70,6 +70,7 @@ app.use('/api/roadmaps', roadmapRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/resources', academicRouter);
 app.use('/api/market', trendsRouter);
+app.use('/api/account', accountRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

@@ -1,14 +1,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
+import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import '../../style/general-component.css';
 
-const HOMEPAGE_ONBOARDING_SEEN_PREFIX = 'homepageOnboardingSeen';
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 
-function resolveAccountKey(accessToken) {
-  if (!accessToken) {
+function resolveDisplayName(accessToken) {
+  if (!accessToken || typeof window === 'undefined') {
     return null;
   }
 
@@ -17,42 +17,34 @@ function resolveAccountKey(accessToken) {
     const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
     const decoded = window.atob(normalized);
     const payload = JSON.parse(decoded);
-    const userId = String(payload?.userId || '').trim();
+
+    const displayName = String(payload?.displayName || payload?.fullName || payload?.name || '').trim();
+    if (displayName) {
+      return displayName;
+    }
+
     const email = String(payload?.email || '').trim().toLowerCase();
-    return userId || email || null;
+    if (email.includes('@')) {
+      return email.split('@')[0];
+    }
   } catch (_) {
     return null;
   }
+
+  return null;
 }
 
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect } = useAuth();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [profileDisplayName, setProfileDisplayName] = useState('');
+  const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
 
   const shouldPromptOnboarding = useMemo(
     () => onboardingState !== 'COMPLETED' && Boolean(accessToken),
     [accessToken, onboardingState]
   );
-
-  const onboardingSeenKey = useMemo(() => {
-    const accountKey = resolveAccountKey(accessToken);
-    if (!accountKey) {
-      return null;
-    }
-    return `${HOMEPAGE_ONBOARDING_SEEN_PREFIX}:${accountKey}`;
-  }, [accessToken]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const hasSeenPrompt = onboardingSeenKey
-      ? window.localStorage.getItem(onboardingSeenKey) === '1'
-      : false;
-    setShowOnboardingPanel(shouldPromptOnboarding && !hasSeenPrompt);
-  }, [onboardingSeenKey, shouldPromptOnboarding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -68,40 +60,98 @@ export default function Homepage() {
     window.sessionStorage.removeItem(ONBOARDING_REDIRECT_NOTICE_KEY);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDisplayName() {
+      if (!accessToken) {
+        if (isMounted) {
+          setProfileDisplayName('');
+        }
+        return;
+      }
+
+      try {
+        const result = await accountApi.getProfile(accessToken);
+        const identity = result?.identity || {};
+        const nextName = String(
+          identity?.effectiveDisplayName || identity?.displayName || identity?.fullName || ''
+        ).trim();
+
+        if (isMounted) {
+          setProfileDisplayName(nextName);
+        }
+      } catch (err) {
+        if (err?.status === 401) {
+          await logoutAndRedirect();
+          return;
+        }
+
+        if (isMounted) {
+          setProfileDisplayName('');
+        }
+      }
+    }
+
+    loadDisplayName();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, logoutAndRedirect]);
+
   const handleCloseOnboarding = () => {
     setShowOnboardingPanel(false);
-    if (typeof window !== 'undefined' && onboardingSeenKey) {
-      window.localStorage.setItem(onboardingSeenKey, '1');
-    }
+  };
+
+  const handleOpenOnboarding = () => {
+    setShowOnboardingPanel(true);
   };
 
   return (
     <div className="homepage">
-      <div style={{ padding: '24px' }}>
-        <h1>Welcome to UET Compass</h1>
-        <p>Your personalized learning and skill development platform.</p>
+      <main className="homepage-content">
+        <section className="homepage-section homepage-section--hero">
+          <p className="homepage-status">{accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Bạn đang là khách'}</p>
+          <h1 className="homepage-title">UET-ers Roadmaps</h1>
+          <p className="homepage-description">
+            UETCompass là nơi tổng hợp lộ trình học tập và định hướng nghề nghiệp cho sinh viên,
+            giúp bạn bắt đầu nhanh và đi đúng hướng.
+          </p>
 
-        {!accessToken && (
-          <div style={{ marginTop: '32px' }}>
-            <h2>Public Capabilities</h2>
-            <p>Explore without logging in:</p>
-            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
-              <a
-                href="/sample-roadmap"
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  textDecoration: 'none',
-                  borderRadius: '4px',
-                }}
-              >
-                View Sample Roadmap
-              </a>
-            </div>
+          <div className="homepage-role-row" aria-label="Roadmap roles">
+            <span className="homepage-dotline" aria-hidden="true">...</span>
+            <button type="button" className="homepage-role-pill">Fullstack Engineer</button>
+            <button type="button" className="homepage-role-pill">DevOps</button>
+            <button type="button" className="homepage-role-pill">Game Developer</button>
+            <button type="button" className="homepage-role-pill">Project Manager</button>
+            <button type="button" className="homepage-role-pill">Software Architect</button>
+            <span className="homepage-dotline" aria-hidden="true">...</span>
           </div>
-        )}
-      </div>
+
+          <div className="homepage-hero-actions">
+            <a href="/sample-roadmap" className="homepage-wire-btn">Build your own roadmap</a>
+            {shouldPromptOnboarding ? (
+              <>
+                <p className="homepage-onboarding-hint">Thực hiện onboarding để tạo roadmap cá nhân hóa.</p>
+                <button type="button" onClick={handleOpenOnboarding} className="homepage-wire-btn homepage-wire-btn--solid">
+                  Go to onboarding
+                </button>
+              </>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="homepage-section homepage-section--blank" aria-hidden="true" />
+
+        <section className="homepage-section homepage-section--follow">
+          <h2>Follow us</h2>
+        </section>
+
+        <section className="homepage-section homepage-section--footer">
+          <h2>Footer</h2>
+        </section>
+      </main>
 
       {popupMessage ? (
         <div className="homepage-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="homepage-popup-title">

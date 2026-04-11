@@ -26,18 +26,18 @@ A student logs into UETCompass and navigates to the Skill Tree page. They see an
 
 ### User Story 2 - Track Progress by Updating Node States (Priority: P2)
 
-A student uses the Skill Tree to track their academic progress. When they begin a course, they click the node to move it from `pending` to `in_progress`. When they complete it, they click again to mark it `done`. This unlocks dependent nodes. Locked nodes (unmet prerequisites) cannot be interacted with.
+A student uses the Skill Tree to track their academic progress. They click a node to open its detail panel, then use a dedicated status action control to move a course from `pending` to `in_progress` and then to `done`. This unlocks dependent nodes. Locked nodes can still be opened for viewing details, but their status action control is disabled.
 
 **Why this priority**: Core interaction model that turns the tree into a living progress tracker rather than a static diagram.
 
-**Independent Test**: A student can click an unlocked `pending` node, transition it to `in_progress`, click again to move it to `done`, observe that a previously locked dependent node becomes unlocked, and confirm that the state is preserved on page refresh.
+**Independent Test**: A student can click an unlocked `pending` node to open detail, use the status action control to transition it to `in_progress`, use the control again to move it to `done`, observe that a previously locked dependent node becomes unlocked, and confirm that the state is preserved on page refresh.
 
 **Acceptance Scenarios**:
 
-1. **Given** a course node in `pending` state with all prerequisites in `done` state, **When** the student clicks it, **Then** the node transitions to `in_progress`
-2. **Given** a course node in `in_progress` state, **When** the student clicks it, **Then** the node transitions to `done`
+1. **Given** a course node in `pending` state with all prerequisites in `done` state, **When** the student uses the dedicated status action control in the detail panel, **Then** the node transitions to `in_progress`
+2. **Given** a course node in `in_progress` state, **When** the student uses the dedicated status action control in the detail panel, **Then** the node transitions to `done`
 3. **Given** a course node that has just been marked `done` and all other prerequisites of a dependent node are also `done`, **When** the tree updates, **Then** the dependent node becomes unlocked and interactable
-4. **Given** a course node with at least one prerequisite not in `done` state (locked), **When** the student attempts to click it, **Then** no state transition occurs and the locked state is preserved
+4. **Given** a course node with at least one prerequisite not in `done` state (locked), **When** the student opens the detail panel, **Then** no state transition action is available and the locked state is preserved
 5. **Given** the student has manually transitioned several nodes, **When** they refresh the page or return in a later session, **Then** all previously set node states are preserved exactly as left
 
 ---
@@ -108,13 +108,13 @@ After updating career goal, current year, or completed courses in the Settings p
 - **FR-001**: The system MUST display the authenticated student's personalized skill tree as an interactive, top-down directed acyclic graph where each node represents a UET curriculum course relevant to the student's declared career goal
 - **FR-002**: The system MUST render nodes top-down in prerequisite order, with directed edges representing prerequisite relationships between course nodes
 - **FR-003**: Each node MUST visually distinguish between its three possible states: `pending`, `in_progress`, and `done`, using distinct visual styling
-- **FR-004**: Each node MUST visually indicate whether it is locked (not all prerequisites `done`) or unlocked (all prerequisites `done`); locked nodes MUST be non-interactable
+- **FR-004**: Each node MUST visually indicate whether it is locked (not all prerequisites `done`) or unlocked (all prerequisites `done`); locked nodes MUST be non-interactable for status transition actions
 - **FR-005**: On initial load, nodes corresponding to courses the student completed during onboarding MUST be pre-initialized to `done`; all remaining nodes MUST default to `pending`
-- **FR-006**: Students MUST be able to transition node states sequentially by clicking: `pending` → `in_progress` → `done`; no other transitions are permitted
+- **FR-006**: Students MUST be able to transition node states sequentially through a dedicated status action control in the course detail panel: `pending` → `in_progress` → `done`; no other transitions are permitted
 - **FR-007**: A node MUST become interactable only when ALL of its direct prerequisite nodes are in `done` state; partial prerequisite completion MUST NOT unlock a node
 - **FR-008**: All node state changes MUST be persisted server-side and survive page reloads and new sessions
 - **FR-008a**: The system MUST persist `pending` as an explicit status record in `skill_node_statuses` for every node in the student's canonical primary roadmap (no implicit `pending` from missing documents)
-- **FR-009**: When a student clicks any course node, the system MUST open a detail side panel with three tabs: Resources, Why This Course, and Market Skills
+- **FR-009**: When a student clicks any course node (locked or unlocked), the system MUST open a detail side panel with three tabs: Resources, Why This Course, and Market Skills
 - **FR-010**: The Resources tab MUST display course materials (textbooks, lecture slides, lab assignments, and major assignments) sourced from the application database
 - **FR-011**: The "Why This Course" tab MUST display an AI-generated explanation of why the course is relevant and necessary for the student's declared career goal, generated using course metadata and the student's goal profile
 - **FR-012**: The Market Skills tab MUST display a list of industry-relevant skills associated with the course, sourced from Vietnamese IT job platform data (e.g., TopDev, ITviec)

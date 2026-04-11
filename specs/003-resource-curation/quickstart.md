@@ -2,7 +2,7 @@
 
 **Feature**: `003-resource-curation`  
 **Date**: 2026-03-11  
-**Prerequisites**: Feature 001 (Profile Onboarding) must be running — shared `auth.middleware.js` and `users` collection. The UETCompass skill catalog (`skills` collection) must contain at least one active skill for the crawlers to process.
+**Prerequisites**: Feature 009 (Roadmap with RoadmapNodeSchema) and Feature 001 (Profile Onboarding with StudentProfile) must be running — provides active roadmap nodes + student onboarding data for personalization. The UETCompass skill catalog (`skills` collection) is optional and used only for convenience skillId matching in SkillTrendSnapshot. Tavily API key required.
 
 ---
 
@@ -13,16 +13,14 @@
 | Node.js | 20 LTS | `node --version` |
 | npm | ≥ 10 | `npm --version` |
 | MongoDB Atlas URI | M0 free | env var `MONGODB_URI` |
-| Google Gemini API key | Free tier | env var `GEMINI_API_KEY` |
-| YouTube Data API v3 key | Free tier | env var `YOUTUBE_API_KEY` |
-| Feature 001 (auth) | running | `users` collection populated |
-| Skills collection | populated | at least 1 active skill in DB |
+| Feature 009 (Roadmap) | running | `roadmap_nodes` collection populated with ≥1 active node |
+| Skill catalog (optional) | — | `skills` collection (not required; used for convenience lookup) |
 
 ---
 
 ## 2. Environment Variables
 
-This feature introduces two new environment variables. Add them to `backend/.env`:
+This feature introduces one new environment variable. Add it to `backend/.env`:
 
 ```env
 # Already required by other features
@@ -30,17 +28,14 @@ MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/uetcompass
 JWT_ACCESS_SECRET=<same secret used by auth.middleware.js>
 PORT=4000
 
-# Already required by Feature 002
-GEMINI_API_KEY=<your Gemini API key>
-
-# NEW — required by Feature 003 only
-YOUTUBE_API_KEY=<your YouTube Data API v3 key from Google Cloud Console>
+# NEW — required by Feature 003
+TAVILY_API_KEY=<your Tavily Search API key>
 ```
 
-**How to obtain `YOUTUBE_API_KEY`**:
-1. Go to [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a project → Enable "YouTube Data API v3".
-3. Create credentials → API Key. No billing required for the free 10,000 units/day quota.
+**How to obtain `TAVILY_API_KEY`**:
+1. Go to [Tavily.com](https://tavily.com/) and sign up (free tier includes 100 searches/month).
+2. Generate API key from your Tavily dashboard.
+3. No billing required for academic/research use free tier.
 
 **No new frontend env vars** — the three new REST endpoints use the existing `VITE_API_URL` already configured in `frontend/.env.local`.
 

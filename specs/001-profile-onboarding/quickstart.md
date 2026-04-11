@@ -66,11 +66,11 @@ npm run dev
 ## 3. Frontend setup
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-Create `frontend/.env.local` (never commit this file):
+Create `frontend/.env` (never commit this file):
 
 ```env
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -85,25 +85,64 @@ npm run dev
 
 ---
 
-## 4. Seed course catalog (prerequisite data)
+## 4. Seed program + course catalog (prerequisite data)
 
-The onboarding course multi-select requires `course_units` documents in MongoDB. These are populated by the `002-seed-ctdt-dag` background job. Run it once locally before testing this feature:
+Onboarding depends on both `programs` and `course_units` seeded by `002-seed-ctdt-dag`:
+- Major dropdown uses `programs.nameEN`
+- Target role dropdown uses `programs.careerTracks` for the selected `programId`
+- "Required Courses" link uses `course_units.source.url` from any row matching selected `programId`
+- Completed-courses selector uses `course_units` filtered by selected `programId` and `type = "elective"`
+
+Run seeding once locally before testing this feature:
 
 ```bash
 cd backend
 npm run seed:ctdt
-# Calls Tavily + Gemini to extract and upsert CourseUnits from configured UET curriculum URLs
+# Calls Tavily + Gemini to extract and upsert Program + CourseUnit data from configured UET curriculum URLs
 # Requires TAVILY_API_KEY and GEMINI_API_KEY in backend/.env (see feature 002-seed-ctdt-dag quickstart)
 ```
 
-If you don't have API keys set up yet, insert a minimal fixture manually instead:
+If you do not have API keys set up yet, insert a minimal fixture manually instead:
 
 ```js
 // MongoDB Compass or mongosh
+db.programs.insertOne({
+  programId: "CNTT-STANDARD",
+  nameVI: "Cong nghe thong tin",
+  nameEN: "Computer Science",
+  careerTracks: ["Backend Engineer", "Data Engineer"],
+  degree: "bachelor",
+  durationYears: 4,
+  totalCredits: 130,
+  objectives: "Program objective sample",
+  creditBlocks: [],
+  source: {
+    url: "https://uet.vnu.edu.vn/chuong-trinh-dao-tao-cntt",
+    scrapeType: "curriculum-table",
+    scrapedAt: new Date(),
+    version: "manual-fixture"
+  }
+});
+
 db.course_units.insertMany([
-  { code: "INT2204", name: "Lập trình hướng đối tượng", credits: 4, major: "CNTT", prerequisites: [], seededAt: new Date() },
-  { code: "INT2210", name: "Cấu trúc dữ liệu và Giải thuật", credits: 4, major: "CNTT", prerequisites: ["INT2204"], seededAt: new Date() },
-  // Add more as needed for local testing
+  {
+    code: "INT2204",
+    name: "Lap trinh huong doi tuong",
+    credits: 4,
+    programId: "CNTT-STANDARD",
+    prerequisites: [],
+    type: "elective",
+    seededAt: new Date()
+  },
+  {
+    code: "INT2210",
+    name: "Cau truc du lieu va Giai thuat",
+    credits: 4,
+    programId: "CNTT-STANDARD",
+    prerequisites: ["INT2204"],
+    type: "required",
+    seededAt: new Date()
+  }
 ]);
 ```
 
@@ -122,15 +161,14 @@ Expected output:
 
 ```
 PASS  tests/unit/onboarding/validation.test.js
-  validateFreeText
+  role option + graduation date validation
     ✓ null input → valid (optional field)
-    ✓ empty string after trim → valid (treated as not provided)
-    ✓ whitespace-only string → valid (treated as not provided)
-    ✓ "ok" (2 chars) → invalid: too short
-    ✓ "!!!" (3 chars, no letters) → invalid: no letter
-    ✓ "abc" → valid
-    ✓ "Kỹ sư backend" (Vietnamese) → valid
-    ✓ "   abc   " (leading/trailing spaces) → valid (trimmed to 3 chars)
+    ✓ empty input → valid (treated as not provided)
+    ✓ role in predefined option list → valid
+    ✓ timeline in predefined option list → valid
+    ✓ role outside option list → invalid
+    ✓ timeline outside option list → invalid
+    ✓ stale draft option removed from list → invalid and requires reselection
 
 PASS  tests/unit/onboarding/stateMachine.test.js
   StudentProfile state machine
@@ -163,7 +201,7 @@ TOKEN="eyJ..."
 curl -X PUT http://localhost:3001/api/onboarding/draft \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"major":"Computer Science","careerGoal":{"role":"Backend Engineer"}}'
+  -d '{"major":"Computer Science","careerGoal":{"role":"Software Engineer","graduationTimeline":"2027-06-30"}}'
 # → 200 with updated draft document
 ```
 
@@ -175,10 +213,22 @@ curl http://localhost:3001/api/onboarding/draft \
 # → 200 with the saved draft, confirming draft persistence
 ```
 
+### Step C.1 — Verify major-linked curriculum URL and elective filtering
+
+```bash
+curl http://localhost:3001/api/onboarding/course-catalog \
+  -H "Authorization: Bearer $TOKEN"
+# → major options sourced from programs.nameEN
+# → role options sourced from programs.careerTracks for selected programId
+# → curriculum link sourced from course_units.source.url (any row with matching programId)
+# → completed courses include only course_units where type = "elective" for selected programId
+```
+
 ### Step D — Open SSE stream in one terminal
 
 ```bash
-curl -N "http://localhost:3001/api/onboarding/status?token=$TOKEN"
+SSE_TOKEN="user-123"  # short-lived token minted by authenticated backend flow
+curl -N "http://localhost:3001/api/onboarding/status?sseToken=$SSE_TOKEN"
 # Keeps connection open, prints heartbeat comments every 15s
 ```
 
@@ -188,7 +238,7 @@ curl -N "http://localhost:3001/api/onboarding/status?token=$TOKEN"
 curl -X POST http://localhost:3001/api/onboarding/submit \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"major":"Computer Science","completedCourseIds":[]}'
+  -d '{"major":"Computer Science","completedCourses":[]}'
 # → 202 { "message": "...", "isGeneric": true }
 ```
 

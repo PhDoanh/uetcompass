@@ -36,11 +36,51 @@ Content-Type: application/json   (except GET /status — SSE)
 
 | HTTP | `code` | Meaning |
 |---|---|---|
-| 400 | `INVALID_INPUT` | Request body failed validation (free-text rules, required fields) |
+| 400 | `INVALID_INPUT` | Request body failed validation (invalid major, invalid role option, invalid date format, malformed payload) |
 | 401 | `UNAUTHORIZED` | Missing or invalid JWT |
 | 403 | `ONBOARDING_ALREADY_COMPLETED` | Draft access/update is blocked because onboarding is already submitted |
 | 409 | `ONBOARDING_ALREADY_COMPLETED` | Submit attempted on an already-submitted profile |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
+
+---
+
+## GET /api/onboarding/course-catalog
+
+Fetch onboarding catalog metadata used by the major selector, required-courses link, and elective-course selector.
+
+### Request
+
+No body.
+
+### Response — 200 OK
+
+```json
+{
+  "majors": ["Computer Science", "Information Systems"],
+  "roleOptionsByMajor": {
+    "Computer Science": ["Backend Engineer", "Data Engineer"]
+  },
+  "courseCatalog": {
+    "Computer Science": [
+      {
+        "courseCode": "INT2204",
+        "name": "Object-Oriented Programming",
+        "courseUnitId": "64a1b2c3d4e5f6a7b8c9d0e1"
+      }
+    ]
+  },
+  "requiredCourseLinks": {
+    "Computer Science": "https://uet.vnu.edu.vn/chuong-trinh-dao-tao-cntt"
+  }
+}
+```
+
+### Data-source rules
+
+- `majors` is built from `programs.nameEN`.
+- `roleOptionsByMajor[major]` is built from `programs.careerTracks` of the selected program.
+- `requiredCourseLinks[major]` is built from `course_units.source.url` using any row whose `programId` matches the selected program.
+- `courseCatalog[major]` includes only `course_units` rows where `programId` matches selected program and `type = "elective"`.
 
 ---
 
@@ -71,10 +111,8 @@ No body.
   ],
   "careerGoal": {
     "role": "Backend Engineer",
-    "companyType": null,
-    "graduationTimeline": "3 semesters"
+    "graduationTimeline": "2027-06-30"
   },
-  "personalAspirations": null,
   "updatedAt": "2026-03-07T08:30:00.000Z"
 }
 ```
@@ -121,23 +159,19 @@ All fields optional. The server merges the provided fields into the existing dra
   ],
   "careerGoal": {
     "role": "Backend Engineer",
-    "companyType": null,
-    "graduationTimeline": "3 semesters"
-  },
-  "personalAspirations": "I want to work remotely after graduation."
+    "graduationTimeline": "2027-06-30"
+  }
 }
 ```
 
 | Field | Type | Constraints |
 |---|---|---|
-| `major` | string \| null | Any string; no server-side allowlist check on draft (checked on submit) |
+| `major` | string \| null | Must match `programs.nameEN` when provided |
 | `completedCourses` | Array<{ major, courseCode, courseUnitId? }> | Canonical identity is (`major`, `courseCode`); `courseUnitId` optional for join optimization |
-| `careerGoal.role` | string \| null | `validateFreeText()` if non-null; maxlength 500 |
-| `careerGoal.companyType` | string \| null | `validateFreeText()` if non-null; maxlength 500 |
-| `careerGoal.graduationTimeline` | string \| null | maxlength 100 |
-| `personalAspirations` | string \| null | `validateFreeText()` if non-null; maxlength 1000 |
+| `careerGoal.role` | string \| null | Must be selected from `programs.careerTracks` of the selected major |
+| `careerGoal.graduationTimeline` | string \| null | Must be a valid date in `YYYY-MM-DD` format |
 
-If duplicate items with same (`major`, `courseCode`) are sent, server canonicalizes to one record.
+If duplicate items with same (`major`, `courseCode`) are sent, server canonicalizes to one record. Courses outside the selected program's elective set are dropped.
 
 ### Response — 200 OK
 
@@ -183,10 +217,8 @@ Same shape as `PUT /draft`. The full profile state at the time of submission. `m
   ],
   "careerGoal": {
     "role": "Backend Engineer",
-    "companyType": "Product company",
-    "graduationTimeline": "3 semesters"
-  },
-  "personalAspirations": "I want to specialise in distributed systems."
+    "graduationTimeline": "2027-06-30"
+  }
 }
 ```
 

@@ -19,12 +19,10 @@
 | `_id` | ObjectId | auto | — | — | MongoDB primary key |
 | `userId` | ObjectId | yes | — | **Unique index**; ref: `users` | Foreign key to authenticated user |
 | `isDraft` | Boolean | yes | `true` | — | `false` = submitted; **irreversible once false** |
-| `major` | String | on submit | `null` | Non-empty when `isDraft: false` | Selected from predefined UET major list |
+| `major` | String | on submit | `null` | Non-empty when `isDraft: false` | Selected from `programs.nameEN` |
 | `completedCourses` | Array<{ major, courseCode, courseUnitId? }> | no | `[]` | Canonical identity = (`major`, `courseCode`); `courseUnitId` optional ObjectId ref `course_units` | Completion flag only — no grade stored |
-| `careerGoal.role` | String\|null | no | `null` | maxlength: 500; `validateFreeText` if non-null | Predefined option or free-text |
-| `careerGoal.companyType` | String\|null | no | `null` | maxlength: 500; `validateFreeText` if non-null | Predefined option or free-text |
-| `careerGoal.graduationTimeline` | String\|null | no | `null` | maxlength: 100 | Free-form, e.g. "3 semesters" or "2027-06" |
-| `personalAspirations` | String\|null | no | `null` | maxlength: 1000; `validateFreeText` if non-null | Free-text goals / constraints |
+| `careerGoal.role` | String\|null | no | `null` | Must exist in selected major's `programs.careerTracks` | Dropdown-selected value only |
+| `careerGoal.graduationTimeline` | String\|null | no | `null` | Must be a valid `YYYY-MM-DD` date | Date-picker selected value |
 | `submittedAt` | Date\|null | no | `null` | Set once on submit; never overwritten | `null` while draft |
 | `createdAt` | Date | auto | `Date.now()` | Set on first upsert (`$setOnInsert`) | |
 | `updatedAt` | Date | auto | `Date.now()` | Updated on every `PUT /onboarding/draft` and on submit | |
@@ -32,6 +30,8 @@
 > `careerGoalRole` is a downstream/read-model alias and MUST always be read from `careerGoal.role`.
 >
 > `privacySetting` is intentionally excluded from `StudentProfile`; ownership belongs to `User` (feature 005).
+>
+> Non-MVP onboarding attributes are intentionally excluded from `StudentProfile` in this phase.
 
 ### Indexes
 
@@ -42,9 +42,9 @@
 
 ### Validation rules applied at service layer
 
-All free-text fields (`careerGoal.role`, `careerGoal.companyType`, `personalAspirations`) are passed through `validateFreeText()` (see [research.md R-004](research.md)) before upsert. `null` and empty string after trimming both pass — the field is treated as "not provided".
+Career-goal fields are validated before upsert/submit: `careerGoal.role` must be a member of `programs.careerTracks` for the currently selected major (`programId`), and `careerGoal.graduationTimeline` must be a valid `YYYY-MM-DD` date string (see [research.md R-004](research.md)). `null` and empty values both pass for optional fields and are treated as "not provided".
 
-For `completedCourses`, service layer canonicalizes identity by (`major`, `courseCode`) and de-duplicates repeated entries in the same payload. `courseUnitId` is optional and does not change identity semantics.
+For `completedCourses`, service layer canonicalizes identity by (`major`, `courseCode`) and de-duplicates repeated entries in the same payload. Only courses that map to `course_units` rows with resolved selected `programId` and `type = "elective"` are accepted. `courseUnitId` is optional and does not change identity semantics.
 
 ## Pre-Implementation Policy
 
@@ -84,6 +84,26 @@ This specification update is contract-alignment only. No runtime data migration/
 
 ---
 
+## Referenced Entity: Program (read-only from this feature)
+
+**MongoDB collection**: `programs`
+**Owned by**: Curriculum / catalog seeding feature (out of scope for this plan)
+
+| Field | Type | Notes |
+|---|---|---|
+| `programId` | String | Unique identifier for a program; used to join to `course_units.programId` |
+| `nameEN` | String | Source of major dropdown display values in onboarding |
+| `careerTracks` | Array<String> | Source of Target role dropdown options for students selecting this program |
+
+See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
+
+**Access pattern from onboarding module**:
+- Fetch all `programs` to populate major dropdown from `nameEN`.
+- Resolve selected `nameEN` to its `programId`.
+- Read selected program's `careerTracks` to populate and validate Target role options.
+
+---
+
 ## Referenced Entity: CourseUnit (read-only from this feature)
 
 **MongoDB collection**: `course_units`
@@ -94,11 +114,16 @@ This specification update is contract-alignment only. No runtime data migration/
 | `_id` | ObjectId | Optionally referenced by `StudentProfile.completedCourses[].courseUnitId` |
 | `code` | String | e.g., `"INT2204"` |
 | `name` | String | Display name for the multi-select UI |
-| `major` | String | Used as filter: `CourseUnit.find({ major })` |
+| `programId` | String | Filter anchor resolved from selected program |
+| `type` | String | Only rows with `type = "elective"` are displayed in completed-courses selector |
+| `source.url` | String | Source of the link labeled "Required Courses" (picked from any row matching selected `programId`) |
 
 See details in [data-model.md for curriculum seeding feature](../002-seed-ctdt-dag/data-model.md)
 
-**Access pattern from onboarding module**: `find({ major })` on `GET /onboarding/draft` response enrichment and on major change. No writes. `courseUnitId` (when present) is used as join optimization only; canonical matching remains (`major`, `courseCode`).
+**Access pattern from onboarding module**:
+- `find({ programId, type: "elective" })` on draft hydration and on major change for completed-courses options.
+- `find({ programId })` and select one row with non-empty `source.url` to populate the "Required Courses" link.
+- No writes. `courseUnitId` (when present) is used as join optimization only; canonical matching remains (`major`, `courseCode`).
 
 ---
 

@@ -60,13 +60,11 @@
 | `courseName` | String | yes | — | Non-empty | Display name from the DAG |
 | `credits` | Number | yes | — | Positive integer | Credit count from `CourseUnit` |
 | `suggestedSemester` | Number \| null | no | `null` | Positive integer or null | AI-suggested study semester; null if not provided |
-| `gainedSkills` | String[] | yes | `[]` | Non-null array | Skills taught directly by this course (FR-013) |
-| `supportingSkills` | String[] | yes | `[]` | Non-null array; no overlap with `gainedSkills` on the same node | Self-study skills needed in practice (FR-014) |
+| `skills` | String[] | yes | `[]` | Non-null array, empty at generation | Enriched by Feature 003 |
 | `reason` | String | yes | — | Non-empty | Why this course is included (FR-015) |
-| `careerRelevanceNote` | String | yes | — | Non-empty | Connects course to the student's target role (FR-016) |
 | `resources` | Any[] | yes | `[]` | Always `[]` at generation time | Reserved for Feature 003 to populate later (FR-017, NFR-004) |
 
-**Note on `gainedSkills` vs `supportingSkills`**: These are independently scoped per node — the same skill may appear in `supportingSkills` on multiple nodes if it is genuinely relevant to each. Cross-node deduplication is a presentation concern owned by Feature 004 (as per clarification Q3).
+**Note on `skills`**: The `skills` array is empty at generation time and is later enriched by Feature 003. Cross-node deduplication is a presentation concern owned by Feature 004.
 
 ---
 
@@ -168,7 +166,6 @@ Feature 009 enforces this invariant using a partial unique index and transaction
 | `careerGoal.companyType` | String \| null | Determines `personalisationLevel` |
 | `graduationTimeline` | String \| null | Optional AI context |
 | `personalAspirations` | String \| null | Optional AI context |
-| `repersonalizationPending` | Boolean | Read to trigger re-generation; cleared by this feature after accept/reject |
 
 ### CourseUnit
 

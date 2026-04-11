@@ -3,37 +3,39 @@
 /**
  * Unit tests for roadmapAcceptance.service.js
  * Tests: completed-course filter, prerequisite validation, all-completed guard,
- * happy-path commit, roadmap acceptance.
+ * happy-path commit, roadmap acceptance, progress seeding (FR-042).
  */
 
 jest.mock('../../../src/modules/roadmap/roadmapValidation.service');
 jest.mock('../../../src/modules/roadmap/roadmap.service');
+jest.mock('../../../src/modules/roadmap/roadmapProgress.service');
 jest.mock('../../../src/modules/onboarding/onboarding.model');
 jest.mock('../../../src/modules/curriculum/courseUnit.model');
 
 const { validateTopologicalOrder } = require('../../../src/modules/roadmap/roadmapValidation.service');
 const roadmapService = require('../../../src/modules/roadmap/roadmap.service');
+const roadmapProgressService = require('../../../src/modules/roadmap/roadmapProgress.service');
 const { StudentProfile } = require('../../../src/modules/onboarding/onboarding.model');
 const { CourseUnit } = require('../../../src/modules/curriculum/courseUnit.model');
 const roadmapAcceptanceService = require('../../../src/modules/roadmap/roadmapAcceptance.service');
 
 const mockNodes = [
   {
-    courseCode: 'INT2204',
-    courseName: 'OOP',
-    credits: 3,
-    suggestedSemester: 2,
-    skills: [],
-    reason: 'Foundation.',
+    nodeId: 'oop',
+    nodeType: 'topic',
+    skillName: 'OOP',
+    parentNodeId: null,
+    relatedCourses: [{ courseCode: 'INT2204', courseName: 'OOP', credits: 3 }],
+    reason: 'Foundation for Backend Engineering.',
     resources: [],
   },
   {
-    courseCode: 'INT2201',
-    courseName: 'DSA',
-    credits: 3,
-    suggestedSemester: 3,
-    skills: [],
-    reason: 'Core skill.',
+    nodeId: 'dsa',
+    nodeType: 'topic',
+    skillName: 'DSA',
+    parentNodeId: null,
+    relatedCourses: [{ courseCode: 'INT2201', courseName: 'DSA', credits: 3 }],
+    reason: 'Core CS skill.',
     resources: [],
   },
 ];
@@ -54,7 +56,6 @@ const mockProfile = {
 const mockCommittedRoadmap = {
   _id: 'roadmapId1',
   userId: 'userId1',
-  status: 'completed',
   isPrimary: true,
   nodes: mockNodes,
 };
@@ -66,6 +67,7 @@ beforeEach(() => {
 	StudentProfile.findOneAndUpdate = jest.fn().mockResolvedValue(null);
 	CourseUnit.find = jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockCourseUnits) });
 	roadmapService.commitAccepted = jest.fn().mockResolvedValue(mockCommittedRoadmap);
+	roadmapProgressService.createProgress = jest.fn().mockResolvedValue({});
 });
 
 describe('roadmapAcceptance.service — completed-course filter', () => {
@@ -73,11 +75,11 @@ describe('roadmapAcceptance.service — completed-course filter', () => {
 		const nodesWithCompleted = [
 		  ...mockNodes,
 		  {
-		    courseCode: 'INT2202',
-		    courseName: 'Completed',
-		    credits: 3,
-		    suggestedSemester: 1,
-		    skills: [],
+		    nodeId: 'completed-course',
+		    nodeType: 'topic',
+		    skillName: 'Completed',
+		    parentNodeId: null,
+		    relatedCourses: [{ courseCode: 'INT2202', courseName: 'Completed', credits: 3 }],
 		    reason: 'Done.',
 		    resources: [],
 		  },
@@ -93,9 +95,9 @@ describe('roadmapAcceptance.service — completed-course filter', () => {
 		// validateTopologicalOrder should receive nodes WITHOUT INT2202, plus completedCodes Set
 		const callArgs = validateTopologicalOrder.mock.calls[0];
 		const filteredNodes = callArgs[0];
-		expect(filteredNodes.map((n) => n.courseCode)).not.toContain('INT2202');
-		expect(filteredNodes.map((n) => n.courseCode)).toContain('INT2204');
-		expect(filteredNodes.map((n) => n.courseCode)).toContain('INT2201');
+		expect(filteredNodes.map((n) => n.nodeId)).not.toContain('completed-course');
+		expect(filteredNodes.map((n) => n.nodeId)).toContain('oop');
+		expect(filteredNodes.map((n) => n.nodeId)).toContain('dsa');
 		// Gap-2: completedCodes Set is passed as 3rd arg
 		expect(callArgs[2]).toBeInstanceOf(Set);
 		expect(callArgs[2].has('INT2202')).toBe(true);
@@ -106,11 +108,11 @@ describe('roadmapAcceptance.service — ALL_COMPLETED guard', () => {
 	test('throws ALL_COMPLETED when all submitted nodes are completed', async () => {
 		const allCompletedNodes = [
 		  {
-		    courseCode: 'INT2202',
-		    courseName: 'Completed',
-		    credits: 3,
-		    suggestedSemester: 1,
-		    skills: [],
+		    nodeId: 'completed-course',
+		    nodeType: 'topic',
+		    skillName: 'Completed',
+		    parentNodeId: null,
+		    relatedCourses: [{ courseCode: 'INT2202', courseName: 'Completed', credits: 3 }],
 		    reason: 'Done.',
 		    resources: [],
 		  },
@@ -162,11 +164,26 @@ describe('roadmapAcceptance.service — happy path', () => {
 				personalisationLevel: 'full',
 				isPrimary: true,
 				nodes: expect.arrayContaining([
-					expect.objectContaining({ courseCode: 'INT2204' }),
+					expect.objectContaining({ nodeId: 'oop', skillName: 'OOP' }),
 				]),
 			})
 		);
 		expect(result).toEqual(mockCommittedRoadmap);
+	});
+
+	test('calls createProgress with accepted nodeIds after commit (FR-042)', async () => {
+		await roadmapAcceptanceService.acceptRoadmap('userId1', {
+			studentProfileId: 'profileId1',
+			personalisationLevel: 'full',
+			isPrimary: true,
+			nodes: mockNodes,
+		});
+
+		expect(roadmapProgressService.createProgress).toHaveBeenCalledWith(
+			'userId1',
+			mockCommittedRoadmap._id,
+			expect.arrayContaining(['oop', 'dsa'])
+		);
 	});
 
 	test('returns the committed roadmap document', async () => {
@@ -177,8 +194,9 @@ describe('roadmapAcceptance.service — happy path', () => {
 			nodes: mockNodes,
 		});
 
-		expect(result.status).toBe('completed');
+		// acceptedAt is the sole acceptance indicator; no status field
 		expect(result.isPrimary).toBe(true);
+		expect(result._id).toBe('roadmapId1');
 	});
 });
 

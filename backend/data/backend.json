@@ -1,0 +1,177 @@
+{
+  "userId": "65f1a2b3c4d5e6f7a8b9c0d1",
+  "studentProfileId": "65f1a2b3c4d5e6f7a8b9c0d2",
+  "isPrimary": true,
+  "roadmapName": "Backend Engineer",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "internet-fundamentals",
+      "nodeType": "topic",
+      "skillName": "Internet Infrastructure & Protocols",
+      "parentNodeId": null,
+      "reason": "Understanding the global network stack is the baseline for building web-accessible services.",
+      "resources": []
+    },
+    {
+      "nodeId": "http-protocol-mastery",
+      "nodeType": "subtopic",
+      "skillName": "HTTP/HTTPS Protocol Mastery",
+      "parentNodeId": "internet-fundamentals",
+      "reason": "Expertise in request/response lifecycles, headers, and status codes.",
+      "resources": []
+    },
+    {
+      "nodeId": "dns-management",
+      "nodeType": "subtopic",
+      "skillName": "DNS & Domain Configuration",
+      "parentNodeId": "internet-fundamentals",
+      "reason": "Managing record types (A, CNAME, TXT) and name resolution logic.",
+      "resources": []
+    },
+    {
+      "nodeId": "server-side-programming",
+      "nodeType": "topic",
+      "skillName": "Server-Side Language Proficiency",
+      "parentNodeId": null,
+      "reason": "Developing core business logic using compiled or interpreted backend languages.",
+      "resources": []
+    },
+    {
+      "nodeId": "nodejs-development",
+      "nodeType": "subtopic",
+      "skillName": "JavaScript/Node.js Engineering",
+      "parentNodeId": "server-side-programming",
+      "reason": "Utilizing event-driven, non-blocking I/O for scalable applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "golang-engineering",
+      "nodeType": "subtopic",
+      "skillName": "Go Systems Programming",
+      "parentNodeId": "server-side-programming",
+      "reason": "Mastering goroutines and channels for high-concurrency performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "relational-persistence",
+      "nodeType": "topic",
+      "skillName": "Relational Data Modeling (RDBMS)",
+      "parentNodeId": null,
+      "reason": "Architecting structured data with strict ACID compliance and schemas.",
+      "resources": []
+    },
+    {
+      "nodeId": "postgresql-optimization",
+      "nodeType": "subtopic",
+      "skillName": "PostgreSQL Performance Tuning",
+      "parentNodeId": "relational-persistence",
+      "reason": "Optimizing open-source relational stores for production-grade throughput.",
+      "resources": []
+    },
+    {
+      "nodeId": "sql-query-indexing",
+      "nodeType": "subtopic",
+      "skillName": "Database Indexing & Query Analysis",
+      "parentNodeId": "relational-persistence",
+      "reason": "Reducing read latency via B-tree, Hash, and GIST indexing strategies.",
+      "resources": []
+    },
+    {
+      "nodeId": "api-architecture-design",
+      "nodeType": "topic",
+      "skillName": "API Architecture & Contract Design",
+      "parentNodeId": null,
+      "reason": "Standardizing service communication through well-defined interface contracts.",
+      "resources": []
+    },
+    {
+      "nodeId": "restful-interface-design",
+      "nodeType": "subtopic",
+      "skillName": "RESTful Resource Implementation",
+      "parentNodeId": "api-architecture-design",
+      "reason": "Designing stateless, cacheable interfaces following REST constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "graphql-schema-management",
+      "nodeType": "subtopic",
+      "skillName": "GraphQL Schema & Resolver Design",
+      "parentNodeId": "api-architecture-design",
+      "reason": "Consolidating multiple data sources into a single client-driven query layer.",
+      "resources": []
+    },
+    {
+      "nodeId": "distributed-system-patterns",
+      "nodeType": "topic",
+      "skillName": "Distributed Systems & Scalability",
+      "parentNodeId": null,
+      "reason": "Designing architectures that maintain uptime and performance across clusters.",
+      "resources": []
+    },
+    {
+      "nodeId": "microservices-orchestration",
+      "nodeType": "subtopic",
+      "skillName": "Microservices Decomposition",
+      "parentNodeId": "distributed-system-patterns",
+      "reason": "Skill in decoupling domains into independently deployable units.",
+      "resources": []
+    },
+    {
+      "nodeId": "message-broker-integration",
+      "nodeType": "subtopic",
+      "skillName": "Asynchronous Event Bus Management",
+      "parentNodeId": "distributed-system-patterns",
+      "reason": "Managing RabbitMQ or Kafka for reliable service decoupling.",
+      "resources": []
+    },
+    {
+      "nodeId": "infrastructure-containerization",
+      "nodeType": "topic",
+      "skillName": "Infrastructure & Environment Isolation",
+      "parentNodeId": null,
+      "reason": "Ensuring environmental parity and portable deployments.",
+      "resources": []
+    },
+    {
+      "nodeId": "docker-image-optimization",
+      "nodeType": "subtopic",
+      "skillName": "Docker Image Lifecycle Management",
+      "parentNodeId": "infrastructure-containerization",
+      "reason": "Creating secure, multi-stage build pipelines for application images.",
+      "resources": []
+    },
+    {
+      "nodeId": "kubernetes-cluster-ops",
+      "nodeType": "subtopic",
+      "skillName": "Kubernetes Cluster Orchestration",
+      "parentNodeId": "infrastructure-containerization",
+      "reason": "Automating scaling, self-healing, and service discovery in production.",
+      "resources": []
+    },
+    {
+      "nodeId": "observability-instrumentation",
+      "nodeType": "topic",
+      "skillName": "System Observability & Reliability",
+      "parentNodeId": null,
+      "reason": "Ensuring production health through deep visibility into system metrics.",
+      "resources": []
+    },
+    {
+      "nodeId": "distributed-tracing",
+      "nodeType": "subtopic",
+      "skillName": "Distributed Tracing & Telemetry",
+      "parentNodeId": "observability-instrumentation",
+      "reason": "Mapping request flows across service boundaries to identify bottlenecks.",
+      "resources": []
+    },
+    {
+      "nodeId": "structured-logging",
+      "nodeType": "subtopic",
+      "skillName": "Structured Logging & Metrics",
+      "parentNodeId": "observability-instrumentation",
+      "reason": "Implementing log aggregation for rapid incident response.",
+      "resources": []
+    }
+  ]
+}

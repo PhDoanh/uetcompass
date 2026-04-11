@@ -2,15 +2,24 @@
 
 const mongoose = require('mongoose');
 
+const RelatedCourseSchema = new mongoose.Schema(
+  {
+    courseCode: { type: String, required: true, trim: true },
+    courseName: { type: String, required: true, trim: true },
+    credits:    { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
+
 const RoadmapNodeSchema = new mongoose.Schema(
   {
-    courseCode:        { type: String, required: true, trim: true },
-    courseName:        { type: String, required: true, trim: true },
-    credits:           { type: Number, required: true, min: 1 },
-    suggestedSemester: { type: Number, min: 1, default: null },
-    reason:            { type: String, required: true },
-		skills:            { type: [String], default: [] }, // Enriched by Feature 003
-    resources:         { type: [mongoose.Schema.Types.Mixed], default: [] }, // Enriched by Feature 003
+    nodeId:        { type: String, required: true },
+    nodeType:      { type: String, required: true, enum: ['topic', 'subtopic'] },
+    skillName:     { type: String, required: true },
+    parentNodeId:  { type: String, default: null },
+    relatedCourses: { type: [RelatedCourseSchema], default: [] },
+    reason:        { type: String, required: true },
+    resources:     { type: [mongoose.Schema.Types.Mixed], default: [] },
   },
   { _id: false }
 );
@@ -32,19 +41,15 @@ const RoadmapSchema = new mongoose.Schema(
 			ref: 'StudentProfile',
 			required: true,
 		},
+		roadmapName: {
+			type: String,
+			required: true,
+			trim: true,
+		},
 		personalisationLevel: {
 			type: String,
 			required: true,
 			enum: ['full', 'low'],
-		},
-		status: {
-			type: String,
-			required: true,
-			enum: ['completed', 'failed'],
-		},
-		errorMessage: {
-			type: String,
-			default: null,
 		},
 		nodes: {
 			type: [RoadmapNodeSchema],
@@ -72,10 +77,10 @@ RoadmapSchema.index(
 	}
 );
 
-// List index: user + status filter, sorted by recency
+// List index: user roadmaps sorted by acceptance and recency
 RoadmapSchema.index(
-	{ userId: 1, status: 1, updatedAt: -1 },
-	{ name: 'roadmap_list_by_user_status_updatedAt' }
+	{ userId: 1, acceptedAt: 1, updatedAt: -1 },
+	{ name: 'roadmap_list_by_user_acceptedAt_updatedAt' }
 );
 
 // Detail index: auth-scoped lookup by id

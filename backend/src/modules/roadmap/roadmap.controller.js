@@ -1,12 +1,12 @@
 'use strict';
 
 const roadmapService = require('./roadmap.service');
+const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
+const progressService = require('./roadmapProgress.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
 const { notifyClientByToken } = require('./roadmap.sse');
 const previewStore = require('./roadmap.preview.store');
-const { StudentProfile } = require('../onboarding/onboarding.model');
-const { Roadmap } = require('./roadmap.model');
 
 // Domain error → HTTP status mapping
 const ERROR_HTTP_MAP = {
@@ -15,6 +15,7 @@ const ERROR_HTTP_MAP = {
 	ALL_COMPLETED: 422,
 	PREREQUISITE_VIOLATION: 422,
 	INVALID_PAYLOAD: 400,
+	INVALID_TRANSITION: 422,
 };
 
 function mapError(err, res) {
@@ -89,23 +90,25 @@ async function getRoadmapById(req, res) {
 
 async function acceptRoadmapHandler(req, res) {
 	try {
-		const { studentProfileId, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
+		const { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
 
 		if (
 			!Array.isArray(nodes) ||
 			typeof studentProfileId !== 'string' || studentProfileId.trim() === '' ||
+			typeof roadmapName !== 'string' || roadmapName.trim() === '' ||
 			(personalisationLevel !== 'full' && personalisationLevel !== 'low')
 		) {
 			return res.status(400).json({
 				error: {
 					code: 'INVALID_PAYLOAD',
-					message: 'Request body must include a valid nodes array, studentProfileId string, and personalisationLevel (full|low).',
+					message: 'Request body must include a valid nodes array, studentProfileId string, roadmapName string, and personalisationLevel (full|low).',
 				},
 			});
 		}
 
 		const result = await acceptRoadmap(req.user.userId, {
 			studentProfileId,
+			roadmapName,
 			personalisationLevel,
 			isPrimary: !!isPrimary,
 			nodes,
@@ -141,20 +144,13 @@ async function switchPrimaryHandler(req, res) {
 async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
-		const sseToken = req.query?.sseToken || req.body?.sseToken
-			|| req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
 
-		// Look up studentProfileId from existing roadmap; frontend does not send it on retry
-		let { studentProfileId } = req.body ?? {};
-		if (!studentProfileId) {
-			const existing = await roadmapService.getPrimaryByUser(userId);
-			studentProfileId = existing?.studentProfileId?.toString();
-		}
-		if (!studentProfileId) {
-			return res.status(422).json({
+		const retryable = await roadmapService.getRetryableByUser(userId);
+		if (!retryable) {
+			return res.status(409).json({
 				error: {
-					code: 'INVALID_PAYLOAD',
-					message: 'No student profile found for this user. Complete onboarding first.',
+					code: 'CONFLICT',
+					message: 'No incomplete roadmap found. Retry is only available after a generation failure.',
 				},
 			});
 		}
@@ -168,18 +164,10 @@ async function retryGeneration(req, res) {
 			});
 		}
 
-		await triggerGeneration(userId, studentProfileId.toString(), 'on-demand', sseToken);
-
-		// Notify client roadmap generation started (optional)
-		if (sseToken) {
-			notifyClientByToken(sseToken, 'roadmap:notification', {
-				type: 'info',
-				message: 'Roadmap generation started. You will be notified when it completes.',
-			});
-		}
+		await triggerGeneration(userId, 'retry');
 
 		return res.status(202).json({
-			message: 'Roadmap generation started. You will be notified when it completes.',
+			message: 'Roadmap generation retry started. You will be notified when it completes.',
 		});
 	} catch (err) {
 		return mapError(err, res);
@@ -190,7 +178,7 @@ async function rejectRoadmap(req, res) {
 	try {
 		const userId = req.user.userId;
 		previewStore.clearPendingPreview(userId);
-		return res.json({ message: 'Roadmap preview rejected.' });
+		return res.json({ message: 'Roadmap preview rejected. Your previous roadmap remains active.' });
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -211,7 +199,118 @@ async function previewRoadmapHandler(req, res) {
 	}
 }
 
+// Public endpoints - guest access
+async function getSampleRoadmap(req, res) {
+	try {
+		return res.json({
+			roadmapId: 'sample-roadmap',
+			personalisationLevel: 'low',
+			status: 'completed',
+			nodes: [
+				{
+					courseCode: 'INT1001',
+					courseName: 'Introduction to Computing',
+					credits: 3,
+					suggestedSemester: 1,
+					reason: 'Foundational course for first-year UET students.',
+					skills: ['problem-solving'],
+					resources: [],
+				},
+				{
+					courseCode: 'INT2204',
+					courseName: 'Data Structures and Algorithms',
+					credits: 4,
+					suggestedSemester: 3,
+					reason: 'Core requirement for software engineering pathways.',
+					skills: ['algorithms'],
+					resources: [],
+				},
+			],
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getPublicSharedRoadmap(req, res) {
+	try {
+		const shareId = String(req.params.shareId || '').trim();
+		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) {
+			return res.status(400).json({
+				error: {
+					code: 'INVALID_PAYLOAD',
+					message: 'shareId is invalid.',
+				},
+			});
+		}
+
+		const roadmap = await Roadmap.findById(shareId).lean();
+		if (!roadmap || !roadmap.acceptedAt) {
+			return res.status(404).json({
+				error: {
+					code: 'ROADMAP_NOT_FOUND',
+					message: 'Public roadmap not found.',
+				},
+			});
+		}
+
+		return res.json({
+			roadmapId: String(roadmap._id),
+			personalisationLevel: roadmap.personalisationLevel,
+			acceptedAt: roadmap.acceptedAt,
+			nodes: roadmap.nodes || [],
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getProgressHandler(req, res) {
+	try {
+		const { roadmapId } = req.params;
+		const userId = req.user.userId;
+
+		const progress = await progressService.getProgress(userId, roadmapId);
+		if (!progress) {
+			return res.status(404).json({
+				error: {
+					code: 'ROADMAP_NOT_FOUND',
+					message: 'Roadmap or progress not found.',
+				},
+			});
+		}
+
+		return res.json(progress);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function updateNodeStateHandler(req, res) {
+	try {
+		const { roadmapId } = req.params;
+		const userId = req.user.userId;
+		const { nodeId, fromState, toState } = req.body;
+
+		if (!nodeId || !fromState || !toState) {
+			return res.status(400).json({
+				error: {
+					code: 'INVALID_PAYLOAD',
+					message: 'nodeId, fromState, and toState are required.',
+				},
+			});
+		}
+
+		const updated = await progressService.updateNodeState(userId, roadmapId, nodeId, fromState, toState);
+		return res.json(updated);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
+	getSampleRoadmap,
+	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
 	getRoadmapById,
@@ -220,4 +319,6 @@ module.exports = {
 	retryGeneration,
 	rejectRoadmap,
 	previewRoadmapHandler,
+	getProgressHandler,
+	updateNodeStateHandler,
 };

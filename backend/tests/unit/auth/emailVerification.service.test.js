@@ -10,6 +10,19 @@ jest.mock('../../../src/modules/auth/auth.email', () => ({
   sendRegistrationOtpEmail: jest.fn(),
 }));
 
+jest.mock('../../../src/modules/auth/token.service', () => ({
+  issueAccessToken: jest.fn(() => 'test-access-token'),
+  hashRefreshToken: jest.fn(() => 'test-refresh-hash'),
+  enforceOtpResendPolicy: jest.fn().mockResolvedValue({
+    cooldownUntil: new Date(Date.now() + 60_000),
+    hourlyLimit: 10,
+  }),
+}));
+
+jest.mock('../../../src/modules/auth/audit.service', () => ({
+  emitAuthEvent: jest.fn().mockResolvedValue({ _id: 'audit-1' }),
+}));
+
 const { User } = require('../../../src/modules/auth/user.model');
 const { sendRegistrationOtpEmail } = require('../../../src/modules/auth/auth.email');
 const authService = require('../../../src/modules/auth/auth.service');

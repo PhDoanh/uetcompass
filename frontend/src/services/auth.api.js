@@ -122,7 +122,7 @@ function markNotificationRead(token, notificationId) {
 }
 
 function changePassword(token, body) {
-  return requestAuthed('/account/change-password', token, {
+  return requestAuthed('/account/password/change', token, {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -138,18 +138,6 @@ function linkGoogle(token, body) {
 function unlinkGoogle(token, googleId) {
   return requestAuthed(`/account/link-google/${googleId}`, token, {
     method: 'DELETE',
-  });
-}
-
-function requestDeletion(token) {
-  return requestAuthed('/account/request-deletion', token, {
-    method: 'POST',
-  });
-}
-
-function confirmDeletion(token) {
-  return requestAuthed(`/account/confirm-deletion?token=${encodeURIComponent(token)}`, null, {
-    method: 'GET',
   });
 }
 
@@ -175,8 +163,6 @@ const authApi = {
   changePassword,
   linkGoogle,
   unlinkGoogle,
-  requestDeletion,
-  confirmDeletion,
   logout,
 };
 

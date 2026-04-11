@@ -4,13 +4,13 @@ const { triggerGeneration, isGenerating, __handleSigterm } = require('./generati
 const { setRoadmapGenerationHandler } = require('../onboarding/onboarding.service');
 
 // Adapter: onboarding calls handler({ userId, profileId, payload })
-// generation.service expects triggerGeneration(userId, studentProfileId, triggerReason)
-function handleProfileSubmission({ userId, profileId }) {
+// generation.service resolves the profile internally via findOne({ userId })
+function handleProfileSubmission({ userId }) {
 	if (isGenerating(userId)) {
 		console.warn('[roadmap] Generation already active for user — skipping profile_submission trigger', { userId });
 		return;
 	}
-	triggerGeneration(userId, profileId, 'profile_submission').catch((err) => {
+	triggerGeneration(userId, 'profile_submission').catch((err) => {
 		if (err.code !== 'CONFLICT') {
 			console.error('[roadmap] Unexpected error triggering generation on profile submission:', err);
 		}

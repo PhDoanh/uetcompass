@@ -120,7 +120,10 @@ async function updateProfile(userId, payload = {}) {
 
   if (displayName !== undefined) {
     const value = String(displayName || '').trim();
-    nextUserFields.displayName = value.length > 0 ? value : null;
+    if (!value) {
+      throw buildError(400, 'INVALID_INPUT', 'displayName is required when provided.');
+    }
+    nextUserFields.displayName = value;
   }
   if (fullName !== undefined) {
     const value = String(fullName || '').trim();
@@ -195,25 +198,24 @@ async function changePassword(userId, { currentPassword, newPassword }) {
 
   const current = String(currentPassword || '');
   const next = String(newPassword || '');
+  const hasLocalPassword = Boolean(user.passwordHash);
 
-  if (!current || newPassword.length < 8) {
+  if (newPassword.length < 8) {
+    throw buildError(400, 'INVALID_INPUT', 'A valid newPassword is required.');
+  }
+
+  if (hasLocalPassword && !current) {
     throw buildError(400, 'INVALID_INPUT', 'currentPassword and valid newPassword are required.');
   }
 
-  if (!user.passwordHash) {
-    throw buildError(
-      400,
-      'PASSWORD_NOT_SET',
-      'This account does not have a local password yet. Use forgot password to set one.'
-    );
+  if (hasLocalPassword) {
+    const isValidCurrent = await passwordService.verifyPassword(current, user.passwordHash);
+    if (!isValidCurrent) {
+      throw buildError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
+    }
   }
 
-  const isValidCurrent = await passwordService.verifyPassword(current, user.passwordHash);
-  if (!isValidCurrent) {
-    throw buildError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
-  }
-
-  const nextHash = await passwordService.hashPassword(next);
+  const nextHash = await passwordService.hashPassword(newPassword);
   await User.updateOne(
     { _id: userId },
     {

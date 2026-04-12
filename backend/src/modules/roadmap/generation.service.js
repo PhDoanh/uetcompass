@@ -3,8 +3,9 @@
 const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
+const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
-const { notifyUser } = require('./roadmap.sse');
+const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
 
@@ -23,7 +24,7 @@ const activeGenerations = new Set();
 // Core lifecycle
 // ---------------------------------------------------------------------------
 
-async function runGenerationLifecycle(userId, triggerReason) {
+async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 	let personalisationLevel = 'low';
 	let studentProfileId;
 	try {
@@ -88,14 +89,16 @@ async function runGenerationLifecycle(userId, triggerReason) {
 					const candidate = candidateSkillsMap.get(skillName);
 					if (!candidate) continue;
 
-					// Find a template topic node sharing at least one relatedCourse
+					// Find the template topic node sharing the MOST relatedCourses
 					const courseCodes = new Set(candidate.relatedCourses.map((rc) => rc.courseCode));
 					let parentNode = null;
+					let bestOverlap = 0;
 					for (const tpl of enriched) {
 						if (tpl.nodeType !== 'topic') continue;
-						if (tpl.relatedCourses.some((rc) => courseCodes.has(rc.courseCode))) {
+						const overlap = tpl.relatedCourses.filter((rc) => courseCodes.has(rc.courseCode)).length;
+						if (overlap > bestOverlap) {
+							bestOverlap = overlap;
 							parentNode = tpl;
-							break;
 						}
 					}
 					if (!parentNode) continue; // Spec: exclude if no parent topic
@@ -151,24 +154,35 @@ async function runGenerationLifecycle(userId, triggerReason) {
 
 		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
-		previewStore.storePendingPreview(userId, {
-			nodes,
+		// previewStore.storePendingPreview(userId, {
+		// 	nodes,
+		// 	roadmapName,
+		// 	personalisationLevel,
+		// 	triggerReason,
+		// 	studentProfileId,
+		// });
+
+		// notifyUser(userId, 'roadmap_preview_ready', {
+		// 	type: 'roadmap_preview_ready',
+		// 	roadmapName,
+		// 	personalisationLevel,
+		// 	lowPersonalisationNotice:
+		// 		personalisationLevel === 'low'
+		// 			? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
+		// 			: null,
+		// 	preview: { nodes },
+		// });
+		await acceptRoadmap(userId, {
+			studentProfileId,
 			roadmapName,
 			personalisationLevel,
-			triggerReason,
-			studentProfileId,
+			isPrimary: true,
+			nodes,
 		});
 
-		notifyUser(userId, 'roadmap_preview_ready', {
-			type: 'roadmap_preview_ready',
-			roadmapName,
-			personalisationLevel,
-			lowPersonalisationNotice:
-				personalisationLevel === 'low'
-					? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
-					: null,
-			preview: { nodes },
-		});
+		notifyPreviewReady(sseToken);
+
+		
 	} catch (err) {
 		if (studentProfileId) {
 			await roadmapService.upsertFailedWithProfile(
@@ -180,18 +194,13 @@ async function runGenerationLifecycle(userId, triggerReason) {
 		} else {
 			await roadmapService.upsertFailed(userId, err.message);
 		}
-		notifyUser(userId, 'roadmap_generation_failed', {
-			type: 'roadmap_generation_failed',
-			retryable: true,
-			retryEndpoint: 'POST /api/roadmaps/primary/regenerate',
-			message: 'Roadmap generation failed. You can retry from the Skill Tree.',
-		});
+		notifyGenerationFailed(sseToken);
 	} finally {
 		activeGenerations.delete(userId.toString());
 	}
 }
 
-async function triggerGeneration(userId, triggerReason) {
+async function triggerGeneration(userId, triggerReason, sseToken = '') {
 	const userKey = userId.toString();
 	if (activeGenerations.has(userKey)) {
 		const err = new Error('CONFLICT');
@@ -202,7 +211,7 @@ async function triggerGeneration(userId, triggerReason) {
 
 	activeGenerations.add(userKey);
 
-	runGenerationLifecycle(userId, triggerReason).catch((unexpectedErr) => {
+	runGenerationLifecycle(userId, triggerReason, sseToken).catch((unexpectedErr) => {
 		console.error('[generation] Unhandled lifecycle error:', unexpectedErr);
 		activeGenerations.delete(userKey);
 	});

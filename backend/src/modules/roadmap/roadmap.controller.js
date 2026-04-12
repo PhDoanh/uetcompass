@@ -7,50 +7,18 @@ const progressService = require('./roadmapProgress.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
 const { notifyClientByToken } = require('./roadmap.sse');
 const previewStore = require('./roadmap.preview.store');
-
-// Domain error → HTTP status mapping
-const ERROR_HTTP_MAP = {
-	ROADMAP_NOT_FOUND: 404,
-	CONFLICT: 409,
-	ALL_COMPLETED: 422,
-	PREREQUISITE_VIOLATION: 422,
-	INVALID_PAYLOAD: 400,
-	INVALID_TRANSITION: 422,
-};
+const { toHttpError, RoadmapError, ERROR_CODES } = require('./roadmap.errors');
+const { parsePositiveIntQuery } = require('./roadmap.helpers');
 
 function mapError(err, res) {
-	const status = ERROR_HTTP_MAP[err.code] || err.status || 500;
-	const code = err.code || 'INTERNAL_ERROR';
-	return res.status(status).json({ error: { code, message: err.message } });
-}
-
-function parsePositiveIntQuery(rawValue, fieldName) {
-	if (rawValue == null || rawValue === '') {
-		return undefined;
-	}
-
-	const parsed = Number.parseInt(rawValue, 10);
-	if (!Number.isInteger(parsed) || parsed < 1) {
-		const err = new Error(`${fieldName} must be a positive integer.`);
-		err.code = 'INVALID_PAYLOAD';
-		err.status = 400;
-		throw err;
-	}
-
-	return parsed;
+	const { status, body } = toHttpError(err);
+	return res.status(status).json(body);
 }
 
 async function getPrimaryRoadmap(req, res) {
 	try {
 		const roadmap = await roadmapService.getPrimaryByUser(req.user.userId);
-		if (!roadmap) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'No roadmap has been generated for this user yet.',
-				},
-			});
-		}
+		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'No roadmap has been generated for this user yet.');
 		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
@@ -74,14 +42,7 @@ async function listRoadmaps(req, res) {
 async function getRoadmapById(req, res) {
 	try {
 		const roadmap = await roadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
-		if (!roadmap) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'Roadmap not found.',
-				},
-			});
-		}
+		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Roadmap not found.');
 		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
@@ -98,12 +59,7 @@ async function acceptRoadmapHandler(req, res) {
 			typeof roadmapName !== 'string' || roadmapName.trim() === '' ||
 			(personalisationLevel !== 'full' && personalisationLevel !== 'low')
 		) {
-			return res.status(400).json({
-				error: {
-					code: 'INVALID_PAYLOAD',
-					message: 'Request body must include a valid nodes array, studentProfileId string, roadmapName string, and personalisationLevel (full|low).',
-				},
-			});
+			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Request body must include a valid nodes array, studentProfileId string, roadmapName string, and personalisationLevel (full|low).');
 		}
 
 		const result = await acceptRoadmap(req.user.userId, {
@@ -146,25 +102,12 @@ async function retryGeneration(req, res) {
 		const userId = req.user.userId;
 
 		const retryable = await roadmapService.getRetryableByUser(userId);
-		if (!retryable) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'No incomplete roadmap found. Retry is only available after a generation failure.',
-				},
-			});
-		}
+		if (!retryable) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'No incomplete roadmap found. Retry is only available after a generation failure.');
 
-		if (isGenerating(userId)) {
-			return res.status(409).json({
-				error: {
-					code: 'CONFLICT',
-					message: 'A roadmap generation is already running for this user. Please wait for it to complete.',
-				},
-			});
-		}
+		if (isGenerating(userId)) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'A roadmap generation is already running for this user. Please wait for it to complete.');
 
-		await triggerGeneration(userId, 'retry');
+		const sseToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+		await triggerGeneration(userId, 'retry', sseToken);
 
 		return res.status(202).json({
 			message: 'Roadmap generation retry started. You will be notified when it completes.',
@@ -200,59 +143,13 @@ async function previewRoadmapHandler(req, res) {
 }
 
 // Public endpoints - guest access
-async function getSampleRoadmap(req, res) {
-	try {
-		return res.json({
-			roadmapId: 'sample-roadmap',
-			personalisationLevel: 'low',
-			status: 'completed',
-			nodes: [
-				{
-					courseCode: 'INT1001',
-					courseName: 'Introduction to Computing',
-					credits: 3,
-					suggestedSemester: 1,
-					reason: 'Foundational course for first-year UET students.',
-					skills: ['problem-solving'],
-					resources: [],
-				},
-				{
-					courseCode: 'INT2204',
-					courseName: 'Data Structures and Algorithms',
-					credits: 4,
-					suggestedSemester: 3,
-					reason: 'Core requirement for software engineering pathways.',
-					skills: ['algorithms'],
-					resources: [],
-				},
-			],
-		});
-	} catch (err) {
-		return mapError(err, res);
-	}
-}
-
 async function getPublicSharedRoadmap(req, res) {
 	try {
 		const shareId = String(req.params.shareId || '').trim();
-		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) {
-			return res.status(400).json({
-				error: {
-					code: 'INVALID_PAYLOAD',
-					message: 'shareId is invalid.',
-				},
-			});
-		}
+		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'shareId is invalid.');
 
 		const roadmap = await Roadmap.findById(shareId).lean();
-		if (!roadmap || !roadmap.acceptedAt) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'Public roadmap not found.',
-				},
-			});
-		}
+		if (!roadmap || !roadmap.acceptedAt) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
 
 		return res.json({
 			roadmapId: String(roadmap._id),
@@ -271,14 +168,7 @@ async function getProgressHandler(req, res) {
 		const userId = req.user.userId;
 
 		const progress = await progressService.getProgress(userId, roadmapId);
-		if (!progress) {
-			return res.status(404).json({
-				error: {
-					code: 'ROADMAP_NOT_FOUND',
-					message: 'Roadmap or progress not found.',
-				},
-			});
-		}
+		if (!progress) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Roadmap or progress not found.');
 
 		return res.json(progress);
 	} catch (err) {
@@ -292,14 +182,7 @@ async function updateNodeStateHandler(req, res) {
 		const userId = req.user.userId;
 		const { nodeId, fromState, toState } = req.body;
 
-		if (!nodeId || !fromState || !toState) {
-			return res.status(400).json({
-				error: {
-					code: 'INVALID_PAYLOAD',
-					message: 'nodeId, fromState, and toState are required.',
-				},
-			});
-		}
+		if (!nodeId || !fromState || !toState) throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'nodeId, fromState, and toState are required.');
 
 		const updated = await progressService.updateNodeState(userId, roadmapId, nodeId, fromState, toState);
 		return res.json(updated);
@@ -309,7 +192,6 @@ async function updateNodeStateHandler(req, res) {
 }
 
 module.exports = {
-	getSampleRoadmap,
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,

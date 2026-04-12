@@ -37,11 +37,6 @@ export function NotificationProvider({ children, sseToken }) {
         if (payload.type && payload.message) {
           addNotification(payload.message, payload.type);
         }
-      } catch {}
-    });
-    es.addEventListener('roadmap:status', (event) => {
-      try {
-        const payload = JSON.parse(event.data);
         if (payload.status === 'completed') {
           requestRefetch();
         }

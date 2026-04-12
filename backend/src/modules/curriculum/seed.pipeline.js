@@ -135,6 +135,15 @@ async function callGeminiWithRetry({ callGemini, prompt, schema, logger, program
 	throw new Error('Gemini retry logic exhausted unexpectedly');
 }
 
+function buildTypedSourceRef(extractedDocuments, scrapeType) {
+	const matched = (extractedDocuments || []).find((item) => item?.scrapeType === scrapeType && item?.url);
+	return {
+		url: matched?.url || null,
+		scrapeType,
+		scrapedAt: new Date(),
+	};
+}
+
 async function runSeedPipeline(
 	{ triggeredBy = 'cron' } = {},
 	deps = {}
@@ -236,21 +245,44 @@ async function runSeedPipeline(
 					programId,
 				});
 
-				const sourceRef = {
-					url: extractedDocuments.map((item) => item.url).join(' | '),
-					scrapeType: 'program-aggregate',
-					scrapedAt: new Date(),
-				};
+				const programSourceRef = buildTypedSourceRef(extractedDocuments, 'program-overview');
+				const programOutcomeSourceRef = buildTypedSourceRef(extractedDocuments, 'program-outcomes');
+				const courseUnitSourceRef = buildTypedSourceRef(extractedDocuments, 'program-courses');
+
+				if (!programSourceRef.url) {
+					logger.warn({
+						event: 'SOURCE_TYPE_MISSING',
+						programId,
+						targetModel: 'Program',
+						expectedScrapeType: 'program-overview',
+					});
+				}
+				if (!programOutcomeSourceRef.url) {
+					logger.warn({
+						event: 'SOURCE_TYPE_MISSING',
+						programId,
+						targetModel: 'ProgramOutcome',
+						expectedScrapeType: 'program-outcomes',
+					});
+				}
+				if (!courseUnitSourceRef.url) {
+					logger.warn({
+						event: 'SOURCE_TYPE_MISSING',
+						programId,
+						targetModel: 'CourseUnit',
+						expectedScrapeType: 'program-courses',
+					});
+				}
 
 				const programRecord = parsed.program
-					? [{ ...parsed.program, programId, source: sourceRef }]
+					? [{ ...parsed.program, programId, source: programSourceRef }]
 					: [];
 				const programOutcomes = Array.isArray(parsed.programOutcomes)
 					? parsed.programOutcomes.map((item, index) => ({
 						...item,
 						poId: item.poId || `${programId}-PO-${index + 1}`,
 						programId,
-						source: sourceRef,
+						source: programOutcomeSourceRef,
 					}))
 					: [];
 
@@ -258,7 +290,7 @@ async function runSeedPipeline(
 					normalizeCourseUnit(
 						{
 							...item,
-							source: sourceRef,
+							source: courseUnitSourceRef,
 						},
 						programId
 					)

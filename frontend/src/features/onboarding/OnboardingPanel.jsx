@@ -6,6 +6,7 @@ import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
 import './onboarding-panel.css';
 
 const EMPTY_FORM = {
+	programId: '',
 	major: '',
 	completedCourses: [],
 	careerGoal: {
@@ -80,7 +81,7 @@ export default function OnboardingPanel({
 	const [catalogError, setCatalogError] = useState(null);
 	const [catalogMajors, setCatalogMajors] = useState([]);
 	const [catalogByMajor, setCatalogByMajor] = useState({});
-	const [roleOptionsByMajor, setRoleOptionsByMajor] = useState({});
+	const [roleOptionsByProgramId, setRoleOptionsByProgramId] = useState({});
 	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
 	const [courseSearch, setCourseSearch] = useState('');
 	const [showAllCourses, setShowAllCourses] = useState(false);
@@ -144,7 +145,7 @@ export default function OnboardingPanel({
 
 				setCatalogMajors(Array.isArray(payload?.majors) ? payload.majors : []);
 				setCatalogByMajor(payload?.courseCatalog && typeof payload.courseCatalog === 'object' ? payload.courseCatalog : {});
-				setRoleOptionsByMajor(payload?.roleOptionsByMajor && typeof payload.roleOptionsByMajor === 'object' ? payload.roleOptionsByMajor : {});
+				setRoleOptionsByProgramId(payload?.roleOptionsByProgramId && typeof payload.roleOptionsByProgramId === 'object' ? payload.roleOptionsByProgramId : {});
 				setRequiredCourseLinks(payload?.requiredCourseLinks && typeof payload.requiredCourseLinks === 'object' ? payload.requiredCourseLinks : {});
 			} catch (error) {
 				if (disposed) {
@@ -157,7 +158,7 @@ export default function OnboardingPanel({
 				setCatalogError(error.message || 'Failed to load course catalog');
 				setCatalogMajors([]);
 				setCatalogByMajor({});
-				setRoleOptionsByMajor({});
+				setRoleOptionsByProgramId({});
 				setRequiredCourseLinks({});
 			} finally {
 				if (!disposed) {
@@ -211,13 +212,32 @@ export default function OnboardingPanel({
 		}
 	};
 
-	const handleMajorChange = (major) => {
-		const nextRoleOptions = roleOptionsByMajor[major] || [];
+	useEffect(() => {
+		if (!mergedForm.programId && mergedForm.major && catalogMajors.length > 0) {
+			const matched = catalogMajors.find((item) => item?.nameEN === mergedForm.major);
+			if (matched?.programId) {
+				setForm((prev) => ({ ...prev, programId: matched.programId }));
+			}
+		}
+	}, [catalogMajors, mergedForm.programId, mergedForm.major]);
+
+	const courseOptions = useMemo(() => catalogByMajor[mergedForm.programId] || [], [catalogByMajor, mergedForm.programId]);
+	const roleOptions = useMemo(() => roleOptionsByProgramId[mergedForm.programId] || [], [roleOptionsByProgramId, mergedForm.programId]);
+	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.programId] || null, [requiredCourseLinks, mergedForm.programId]);
+	const selectedMajorName = useMemo(() => {
+		const matched = catalogMajors.find((item) => item?.programId === mergedForm.programId);
+		return matched?.nameEN || mergedForm.major || '';
+	}, [catalogMajors, mergedForm.major, mergedForm.programId]);
+
+	const handleMajorChange = (programId) => {
+		const nextRoleOptions = roleOptionsByProgramId[programId] || [];
 		const currentRole = mergedForm?.careerGoal?.role || '';
 		const keepRole = currentRole && nextRoleOptions.includes(currentRole);
+		const major = catalogMajors.find((item) => item?.programId === programId)?.nameEN || '';
 
 		patchForm({
 			...mergedForm,
+			programId,
 			major,
 			completedCourses: major === mergedForm.major ? mergedForm.completedCourses : [],
 			careerGoal: {

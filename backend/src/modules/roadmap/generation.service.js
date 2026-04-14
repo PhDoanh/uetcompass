@@ -37,7 +37,11 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		personalisationLevel =
 			profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
 
+		console.log('personalisationLevel:', personalisationLevel);
+
 		const roadmapName = profile.careerGoal?.role || `${profile.major} Curriculum`;
+
+		console.log('roadmap:', roadmapName);
 
 		const completedCourseCodes = new Set(
 			(profile.completedCourses ?? []).map((c) => c.courseCode)
@@ -51,7 +55,12 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			(cu) => !completedCourseCodes.has(cu.code)
 		);
 		const candidateSkills = buildCandidateSkills(availableCourseUnits);
+
+		console.log('candidateSkills:', candidateSkills == null ? 'null' : candidateSkills.length)
+
 		const candidateSkillsMap = new Map(candidateSkills.map((c) => [c.skillName, c]));
+
+		console.log('candidateSkillsMap size:', candidateSkillsMap.size);
 
 		// Check if a pre-built template matches the roadmapName
 		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
@@ -81,6 +90,8 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 				// AI evaluates relevance of off-template skills to the career goal
 				const approvedExtras = await evaluateOffTemplateSkills(offTemplateSkills, profile);
+
+				console.log('approvedExtras:', approvedExtras == null ? 'null' : approvedExtras.length)
 
 				// Off-template nodes are always subtopic, attached to the nearest template topic
 				// that shares a relatedCourse. Exclude if no parent topic found.
@@ -134,24 +145,9 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
 			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
 		} else {
-			// Low personalisation: map all required courses to topic nodes in DAG order
-			const sortedUnits = sortCourseUnitsTopologically(courseUnits);
-			const seenIds = new Set();
-			nodes = sortedUnits
-				.filter((cu) => cu.type === 'required' && !completedCourseCodes.has(cu.code))
-				.map((cu) => ({
-					nodeId: uniqueNodeId(cu.name, seenIds),
-					nodeType: 'topic',
-					skillName: cu.name,
-					parentNodeId: null,
-					relatedCourses: [
-						{ courseCode: cu.code, courseName: cu.name, credits: cu.credits },
-					],
-					reason: `Core required course for the ${profile.major} programme.`,
-					resources: [],
-				}));
+			// Low personalisation: sort relatedCourses for each skill by topological order
+			nodes = buildNodesTopologically(candidateSkills, candidateSkillsMap, courseUnits);
 		}
-
 		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
 		// previewStore.storePendingPreview(userId, {

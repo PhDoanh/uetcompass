@@ -280,3 +280,50 @@
   color: var(--primary-purple); /* Chuyển sang Purple khi hover */
   text-decoration: underline;
 }
+
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.auth-modal-shell {
+  position: relative;
+  width: min(520px, calc(100vw - 24px));
+}
+
+.auth-modal-shell .auth-shell {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  background-image: none;
+}
+
+.auth-modal-shell .auth-shell::before {
+  display: none;
+}
+
+.auth-modal-shell .auth-card {
+  max-width: none;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(125, 211, 252, 0.6);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  font-size: 1.05rem;
+  cursor: pointer;
+}

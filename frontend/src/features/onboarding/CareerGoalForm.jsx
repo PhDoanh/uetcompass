@@ -30,7 +30,7 @@ function toIsoDateString(date) {
 	return `${year}-${month}-${day}`;
 }
 
-export default function CareerGoalForm({ value, roleOptions = [], onChange }) {
+export default function CareerGoalForm({ value, roleOptions = [], onChange, disabled = false }) {
 	const careerGoal = value?.careerGoal || {};
 	const hasRoleOptions = Array.isArray(roleOptions) && roleOptions.length > 0;
 	const currentRole = careerGoal.role || '';
@@ -62,7 +62,7 @@ export default function CareerGoalForm({ value, roleOptions = [], onChange }) {
 					id="role"
 					value={selectedRole}
 					onChange={(event) => patch({ careerGoal: { role: event.target.value } })}
-					disabled={!hasRoleOptions}
+					disabled={disabled || !hasRoleOptions}
 					className="onboarding-input onboarding-select"
 				>
 					<option value="">{rolePlaceholder}</option>
@@ -91,6 +91,7 @@ export default function CareerGoalForm({ value, roleOptions = [], onChange }) {
 					popperClassName="onboarding-datepicker-popper"
 					calendarClassName="onboarding-datepicker-calendar"
 					className="onboarding-input"
+					disabled={disabled}
 				/>
 			</div>
 		</div>

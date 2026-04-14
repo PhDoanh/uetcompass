@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { User } = require('../auth/user.model');
+const { StudentProfile } = require('../onboarding/onboarding.model');
 const accountAuditService = require('./accountAudit.service');
 const { resolveEffectiveDisplayName } = require('./identity.policy');
 
@@ -37,18 +38,102 @@ function mapIdentity(user) {
   };
 }
 
+function normalizeCareerGoal(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  return {
+    role: source.role || null,
+    graduationTimeline: source.graduationTimeline || null,
+  };
+}
+
+function normalizeProfileDraft(profile) {
+  const source = profile && typeof profile === 'object' ? profile : {};
+  return {
+    major: source.major || null,
+    completedCourseIds: Array.isArray(source.completedCourseIds) ? source.completedCourseIds : [],
+    careerGoal: normalizeCareerGoal(source.careerGoal),
+    personalAspirations: source.personalAspirations || null,
+  };
+}
+
+function normalizeCompletedCourseIds(completedCourseIds = []) {
+  const ids = Array.isArray(completedCourseIds) ? completedCourseIds : [];
+  const uniqueIds = [];
+  const seen = new Set();
+
+  ids.forEach((item) => {
+    const next = String(item || '').trim();
+    if (!next || seen.has(next)) {
+      return;
+    }
+    seen.add(next);
+    uniqueIds.push(next);
+  });
+
+  return uniqueIds;
+}
+
+function mapCompletedCourses(completedCourseIds, major, currentProfile) {
+  const ids = normalizeCompletedCourseIds(completedCourseIds);
+  const current = Array.isArray(currentProfile?.completedCourses) ? currentProfile.completedCourses : [];
+  const byIdentity = new Map();
+
+  current.forEach((item) => {
+    const identity = String(item?.courseUnitId || item?.courseCode || '').trim();
+    if (!identity) {
+      return;
+    }
+    byIdentity.set(identity, item);
+  });
+
+  return ids
+    .map((id) => {
+      const existing = byIdentity.get(id);
+      if (existing) {
+        return {
+          major: existing.major,
+          courseCode: existing.courseCode,
+          ...(existing.courseUnitId ? { courseUnitId: existing.courseUnitId } : {}),
+        };
+      }
+
+      if (!major) {
+        return null;
+      }
+
+      return {
+        major,
+        courseCode: id,
+      };
+    })
+    .filter(Boolean);
+}
+
 async function getProfile(userId) {
   const user = await User.findById(userId);
   if (!user) {
     throw buildError(404, 'NOT_FOUND', 'User profile not found.');
   }
 
+  const studentProfile = await StudentProfile.findOne({ userId });
+  const identity = mapIdentity(user);
+
   return {
-    identity: mapIdentity(user),
+    ...identity,
+    identity,
+    profile: normalizeProfileDraft({
+      major: studentProfile?.major,
+      completedCourseIds: Array.isArray(studentProfile?.completedCourses)
+        ? studentProfile.completedCourses.map((item) => item?.courseUnitId || item?.courseCode).filter(Boolean)
+        : [],
+      careerGoal: studentProfile?.careerGoal,
+      personalAspirations: studentProfile?.personalAspirations,
+    }),
   };
 }
 
 async function updateProfile(userId, payload = {}) {
+  const profilePayload = payload?.profile;
   const nextFields = {};
 
   if (payload.displayName !== undefined) {
@@ -88,15 +173,42 @@ async function updateProfile(userId, payload = {}) {
     ? await User.findByIdAndUpdate(userId, { $set: nextFields }, { new: true })
     : user;
 
+  if (profilePayload && typeof profilePayload === 'object') {
+    const currentStudentProfile = await StudentProfile.findOne({ userId });
+
+    if (!currentStudentProfile || currentStudentProfile.isDraft !== false) {
+      throw buildError(409, 'ONBOARDING_NOT_COMPLETED', 'Complete onboarding before editing profile fields in settings.');
+    }
+
+    const nextDraft = normalizeProfileDraft(profilePayload);
+    const nextMajor = nextDraft.major || currentStudentProfile.major || null;
+    const completedCourses = mapCompletedCourses(nextDraft.completedCourseIds, nextMajor, currentStudentProfile);
+
+    await StudentProfile.updateOne(
+      { userId },
+      {
+        $set: {
+          major: nextMajor,
+          completedCourses,
+          careerGoal: nextDraft.careerGoal,
+          personalAspirations: nextDraft.personalAspirations,
+          updatedAt: new Date(),
+        },
+      }
+    );
+  }
+
   if (Object.keys(nextFields).length) {
     await accountAuditService.emitProfileUpdated(userId, {
       changedFields: Object.keys(nextFields),
     });
   }
 
+  const identity = mapIdentity(updatedUser);
   return {
     message: 'Profile updated',
-    profile: mapIdentity(updatedUser),
+    profile: identity,
+    identity,
   };
 }
 

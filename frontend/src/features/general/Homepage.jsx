@@ -6,6 +6,7 @@ import OnboardingPanel from '../onboarding/OnboardingPanel';
 import '../../style/general-component.css';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
+const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -35,7 +36,7 @@ function resolveDisplayName(accessToken) {
 }
 
 export default function Homepage() {
-  const { accessToken, onboardingState, logoutAndRedirect } = useAuth();
+  const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [profileDisplayName, setProfileDisplayName] = useState('');
@@ -59,6 +60,20 @@ export default function Homepage() {
     setPopupMessage(nextMessage);
     window.sessionStorage.removeItem(ONBOARDING_REDIRECT_NOTICE_KEY);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !accessToken || onboardingState === 'COMPLETED') {
+      return;
+    }
+
+    const shouldAutoOpen = window.sessionStorage.getItem(ONBOARDING_AUTO_OPEN_ONCE_KEY) === '1';
+    if (!shouldAutoOpen) {
+      return;
+    }
+
+    setShowOnboardingPanel(true);
+    window.sessionStorage.removeItem(ONBOARDING_AUTO_OPEN_ONCE_KEY);
+  }, [accessToken, onboardingState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,8 +115,12 @@ export default function Homepage() {
     };
   }, [accessToken, logoutAndRedirect]);
 
-  const handleCloseOnboarding = () => {
+  const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
+
+    if (result) {
+      updateAuthInfo?.({ onboardingState: 'COMPLETED', onboardingDraft: null });
+    }
   };
 
   const handleOpenOnboarding = () => {

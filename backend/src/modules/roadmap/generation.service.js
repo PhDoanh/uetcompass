@@ -47,7 +47,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			(profile.completedCourses ?? []).map((c) => c.courseCode)
 		);
 
-		const courseUnits = await CourseUnit.find({ major: profile.major }).lean();
+		const courseUnits = await CourseUnit.find({ programId: profile.programId }).lean();
 
 		let nodes;
 

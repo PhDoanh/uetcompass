@@ -1,101 +1,109 @@
 # Implementation Plan: Skill Tree
 
-**Branch**: `004-skill-tree` | **Date**: 2026-04-07 | **Spec**: [spec.md](spec.md)  
+**Branch**: `004-skill-tree` | **Date**: 2026-04-11 | **Spec**: [spec.md](spec.md)  
 **Input**: Feature specification from [specs/004-skill-tree/spec.md](spec.md)
 
 ## Summary
 
-Implement a roadmap.sh-style interactive Skill Tree experience with:
-- Three node types: `skill`, `related_knowledge`, `roadmap_reference`
-- Three statuses: `pending`, `in_progress`, `done`
-- Visual rules for node states and edge semantics
-- Primary vertical skill axis with optional left/right branching in dense sections
-- Node detail panel for learning content
-- Cross-roadmap navigation through `roadmap_reference` nodes
+Implement and align Skill Tree to consume Feature 009 contracts without schema drift:
+- Canonical node types: `topic`, `subtopic`
+- Canonical node fields: `nodeId`, `nodeType`, `skillName`, `parentNodeId`, `relatedCourses`, `reason`, `resources`
+- Canonical progress model: `pending`, `inProgress`, `completed`, `skip`
+- Contract-first error and lifecycle handling (`acceptedAt`, `ROADMAP_NOT_FOUND`, `INVALID_TRANSITION`, `CONFLICT`)
 
-This plan is limited to frontend behavior and interaction handling. Roadmap generation and data sourcing remain external to this feature.
+This plan covers frontend behavior and any thin adapter layers required to preserve field fidelity.
 
 ## Technical Context
 
 **Frontend stack**: React + Vite (existing project stack)  
+**Backend integration point**: Skill Tree adapter/service that reads from 009 APIs/services  
 **State handling**: Existing frontend store pattern (project-consistent)  
 **Routing**: Existing app router with Skill Tree route  
 **Data authority**: Feature 009 contracts
 
 ## Constitution Check
 
-- [x] Scope is aligned with feature ownership boundaries.
+- [x] Scope is aligned with ownership boundaries.
 - [x] No duplicate roadmap generation logic is introduced.
 - [x] User-facing behavior is testable from acceptance scenarios.
-- [x] The plan preserves product constraints in [spec.md](spec.md).
+- [x] Plan enforces schema/contract fidelity with [spec.md](spec.md).
 
 ## Workstreams
 
-### Workstream 1: Tree Rendering and Visual Semantics
+### Workstream 1: Canonical Contract Binding
 
 Deliverables:
-- Node rendering for all three node types
-- Status-based node style mapping
-- Edge style mapping by relationship type
-- Vertical primary axis layout with controlled horizontal branching
+- Audit and remove any legacy mapping that assumes `skill`/`related_knowledge`/`roadmap_reference`
+- Ensure adapters pass through canonical 009 fields unchanged
+- Normalize roadmap lifecycle handling around `acceptedAt`
 
 Acceptance alignment:
-- FR-001 to FR-009
-- SC-001 and SC-002
+- FR-001, FR-002, FR-003, FR-015, FR-016
+- SC-001, SC-002
 
-### Workstream 2: Node Interaction and Detail Experience
+### Workstream 2: Tree Graph Construction
 
 Deliverables:
-- Click behavior split by node type
-- Detail panel for `skill` and `related_knowledge`
-- Section rendering: content title, short explanation, free resources, paid resources, related courses
-- Stable empty-state handling
+- Build main-flow edges from ordered `topic` nodes
+- Build branch edges from `topic` to `subtopic` using `parentNodeId`
+- Preserve vertical-first layout with controlled horizontal branching
 
 Acceptance alignment:
-- FR-010 to FR-012
-- SC-003 and SC-004
+- FR-004, FR-005, FR-006, FR-007
+- SC-001
 
-### Workstream 3: Progress Tracking and State Consistency
+### Workstream 3: Node Detail Experience
 
 Deliverables:
-- Status update interactions for track-only workflow
-- UI updates for `pending`/`in_progress`/`done`
-- Reload consistency using persisted API state
-- Explicit removal of any prerequisite lock/unlock assumptions
+- Detail panel renders canonical fields: `skillName`, `reason`, `resources`, `relatedCourses`
+- Related courses shown with `courseCode`, `courseName`, `credits`
+- Stable empty-state rendering for missing optional content
 
 Acceptance alignment:
-- FR-013 to FR-016
+- FR-008, FR-009
+- SC-002
+
+### Workstream 4: Progress Orchestration with 009
+
+Deliverables:
+- Read progress from `GET /api/roadmaps/:roadmapId/progress`
+- Write transitions via `PATCH /api/roadmaps/:roadmapId/progress/node`
+- UI state derived from `pending`, `inProgress`, `completed`, `skip`
+- Error handling for `INVALID_TRANSITION` and `CONFLICT`
+
+Acceptance alignment:
+- FR-010, FR-011, FR-012, FR-013
+- SC-003, SC-004
+
+### Workstream 5: Lifecycle and Empty States
+
+Deliverables:
+- Low-personalisation notice (`personalisationLevel = low`)
+- Missing primary roadmap state (`ROADMAP_NOT_FOUND`)
+- Retryable/failed indication when `acceptedAt` is null
+
+Acceptance alignment:
+- FR-014, FR-015, FR-016, FR-017
 - SC-005
-
-### Workstream 4: Cross-Roadmap Bridge Behavior
-
-Deliverables:
-- Navigation behavior for `roadmap_reference`
-- Error handling for invalid target roadmap
-- Preserved continuity when navigation fails
-
-Acceptance alignment:
-- FR-012 and FR-017
-- SC-006
 
 ## Documentation and Verification
 
-- Keep [quickstart.md](quickstart.md) aligned with current scenarios.
-- Keep [data-model.md](data-model.md) aligned with node and edge semantics.
-- Keep [research.md](research.md) aligned with design decisions.
+- Keep [quickstart.md](quickstart.md) aligned with canonical transitions and API codes.
+- Keep [data-model.md](data-model.md) aligned with 009 field names and progress states.
+- Keep [research.md](research.md) aligned with contract decisions.
 - Validate checklist in [checklists/requirements.md](checklists/requirements.md).
 
 ## Risks and Mitigations
 
-- Risk: Dense roadmap sections reduce readability.
-  - Mitigation: Prefer vertical spine; allow limited horizontal branching where needed.
-- Risk: Missing optional node content creates broken layout.
-  - Mitigation: Define strict empty-state rendering rules.
-- Risk: Old prerequisite-lock logic reappears in implementation.
-  - Mitigation: Add explicit test cases confirming no lock/unlock behavior.
+- Risk: Legacy adapter still emits old node fields.
+  - Mitigation: Add integration tests that assert exact 009 field presence and naming.
+- Risk: Orphan `subtopic` nodes degrade layout.
+  - Mitigation: Render safe fallback group and log client warning.
+- Risk: Progress transition conflicts from concurrent updates.
+  - Mitigation: Show conflict feedback and re-fetch progress snapshot after failed mutation.
 
 ## Done Criteria
 
-- All requirements in [spec.md](spec.md) are reflected in behavior and tests.
-- Visual semantics and layout behavior are consistent with the specification.
-- No implementation contradicts declared ownership boundaries.
+- All requirements in [spec.md](spec.md) are reflected in implementation and tests.
+- No schema translation layer renames or drops canonical 009 fields.
+- Progress behavior is fully driven by 009 transitions and error semantics.

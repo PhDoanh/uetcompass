@@ -180,6 +180,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 		
 	} catch (err) {
+		console.error('[generation] roadmap generation failed:', err);
 		if (studentProfileId) {
 			await roadmapService.upsertFailedWithProfile(
 				userId,

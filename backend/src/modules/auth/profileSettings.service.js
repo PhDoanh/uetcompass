@@ -91,6 +91,11 @@ async function getProfile(userId) {
   }
 
   const profile = await StudentProfile.findOne({ userId });
+  const onboardingState = !profile
+    ? 'NEVER_STARTED'
+    : profile.isDraft === true
+      ? 'DRAFT_IN_PROGRESS'
+      : 'COMPLETED';
 
   return {
     email: user.email,
@@ -103,6 +108,7 @@ async function getProfile(userId) {
       email: user.email,
       privacySetting: user.privacySetting,
     }),
+    onboardingState,
     profile: normalizeDraftProfile({
       major: profile?.major,
       completedCourseIds: Array.isArray(profile?.completedCourses)

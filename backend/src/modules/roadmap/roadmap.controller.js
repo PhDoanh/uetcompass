@@ -103,16 +103,13 @@ async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
 
-		const retryable = await roadmapService.getRetryableByUser(userId);
-		if (!retryable) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'No incomplete roadmap found. Retry is only available after a generation failure.');
-
 		if (isGenerating(userId)) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'A roadmap generation is already running for this user. Please wait for it to complete.');
 
 		const sseToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
 		await triggerGeneration(userId, 'retry', sseToken);
 
 		return res.status(202).json({
-			message: 'Roadmap generation retry started. You will be notified when it completes.',
+			message: 'Roadmap generation started. You will be notified when it completes.',
 		});
 	} catch (err) {
 		return mapError(err, res);
@@ -145,6 +142,19 @@ async function previewRoadmapHandler(req, res) {
 }
 
 // Public endpoints - guest access
+async function getSampleRoadmap(req, res) {
+	try {
+		return res.json({
+			roadmapId: 'sample-roadmap',
+			roadmapName: 'Sample Roadmap',
+			personalisationLevel: 'low',
+			nodes: [],
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 async function getPublicSharedRoadmap(req, res) {
 	try {
 		const roadmapName = String(req.query.name || '').trim();
@@ -208,6 +218,7 @@ async function updateNodeStateHandler(req, res) {
 }
 
 module.exports = {
+	getSampleRoadmap,
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,

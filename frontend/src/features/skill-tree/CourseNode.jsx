@@ -1,5 +1,4 @@
 import React from 'react';
-import { Lock, CheckCircle, Circle } from 'lucide-react';
 
 /**
  * T024: Build custom course node UI with status badges and lock indicator
@@ -7,55 +6,33 @@ import { Lock, CheckCircle, Circle } from 'lucide-react';
 
 export default function CourseNode({ node, onSelect = () => {} }) {
   const getStatusVariant = () => {
-    switch (node.status) {
-      case 'done':
-        return 'is-done';
-      case 'in_progress':
-        return 'is-in-progress';
+    switch (node.progressState) {
+      case 'completed':
+        return 'node-color-done';
+      case 'inProgress':
+        return 'node-color-progress';
+      case 'skip':
+        return 'node-color-skip';
       default:
-        return 'is-pending';
+        return 'node-color-neutral';
     }
   };
 
-  const getStatusIcon = () => {
-    switch (node.status) {
-      case 'done':
-        return <CheckCircle size={18} />;
-      case 'in_progress':
-        return <Circle size={18} />;
-      default:
-        return <Circle size={18} />;
-    }
-  };
+  const isSubtopic = node.nodeType === 'subtopic';
 
   return (
     <button
       onClick={onSelect}
-      disabled={!node.isUnlocked}
-      className={`course-node ${getStatusVariant()} ${!node.isUnlocked ? 'is-locked' : ''}`}
+      className={`course-node roadmap-node ${isSubtopic ? 'roadmap-node-sub' : 'roadmap-node-main'} ${getStatusVariant()}`}
     >
       <div className="course-node__main">
         <div className="course-node__text">
-          <h3 className="course-node__code">{node.courseCode}</h3>
-          <p className="course-node__name-vi">{node.nameVi}</p>
-          {node.nameEn && <p className="course-node__name-en">{node.nameEn}</p>}
-        </div>
-        <div className="course-node__icon">
-          {!node.isUnlocked ? (
-            <Lock size={18} />
-          ) : (
-            getStatusIcon()
-          )}
+          <h3 className="course-node__code">{node.skillName}</h3>
         </div>
       </div>
-      {node.credits && (
+      {!isSubtopic && (node.relatedCourses || []).length > 0 && (
         <div className="course-node__credits">
-          {node.credits} credits
-        </div>
-      )}
-      {node.prerequisites && node.prerequisites.length > 0 && (
-        <div className="course-node__prerequisites">
-          Prerequisites: {node.prerequisites.join(', ')}
+          {(node.relatedCourses || []).length} related course{(node.relatedCourses || []).length > 1 ? 's' : ''}
         </div>
       )}
     </button>

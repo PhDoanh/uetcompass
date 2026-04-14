@@ -6,12 +6,12 @@ import { getCourseCatalog } from '../../services/onboarding.api';
 import SiteFooter from '../general/SiteFooter';
 import './onboarding-panel.css';
 
-function mapCompletedCourses(major, completedCourseIds = [], catalogByMajor = {}) {
-	if (!major) {
+function mapCompletedCourses(programId, major, completedCourseIds = [], catalogByProgramId = {}) {
+	if (!programId || !major) {
 		return [];
 	}
 
-	const options = Array.isArray(catalogByMajor?.[major]) ? catalogByMajor[major] : [];
+	const options = Array.isArray(catalogByProgramId?.[programId]) ? catalogByProgramId[programId] : [];
 	const byCourseCode = new Map(options.map((item) => [String(item.courseCode || '').trim(), item]));
 	const byCourseUnitId = new Map(options.map((item) => [String(item.courseUnitId || '').trim(), item]));
 
@@ -40,15 +40,20 @@ function mapCompletedCourses(major, completedCourseIds = [], catalogByMajor = {}
 	return [...unique.values()];
 }
 
-function mapProfileToOnboardingForm(profile, catalogByMajor = {}) {
+function mapProfileToOnboardingForm(profile, catalogByProgramId = {}, majors = []) {
 	const source = profile?.profile || {};
 	const major = String(source?.major || '').trim();
+	const programIdFromProfile = String(source?.programId || '').trim();
+	const inferredProgramId =
+		programIdFromProfile ||
+		String(majors.find((item) => String(item?.nameEN || '').trim() === major)?.programId || '').trim();
 	const completedCourseIds = Array.isArray(source?.completedCourseIds) ? source.completedCourseIds : [];
 	const careerGoal = source?.careerGoal || {};
 
 	return {
+		programId: inferredProgramId,
 		major,
-		completedCourses: mapCompletedCourses(major, completedCourseIds, catalogByMajor),
+		completedCourses: mapCompletedCourses(inferredProgramId, major, completedCourseIds, catalogByProgramId),
 		careerGoal: {
 			role: String(careerGoal?.role || '').trim(),
 			companyType: String(careerGoal?.companyType || '').trim(),
@@ -98,15 +103,15 @@ export default function LearningProfilePage() {
 	const [catalogLoading, setCatalogLoading] = useState(true);
 	const [catalogError, setCatalogError] = useState('');
 	const [catalogMajors, setCatalogMajors] = useState([]);
-	const [catalogByMajor, setCatalogByMajor] = useState({});
-	const [roleOptionsByMajor, setRoleOptionsByMajor] = useState({});
+	const [catalogByProgramId, setCatalogByProgramId] = useState({});
+	const [roleOptionsByProgramId, setRoleOptionsByProgramId] = useState({});
 	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
 
 	const currentSerialized = useMemo(() => serializeProfileForm(form), [form]);
 	const hasChanges = currentSerialized !== initialSerialized;
-	const courseOptions = useMemo(() => catalogByMajor[form.major] || [], [catalogByMajor, form.major]);
-	const roleOptions = useMemo(() => roleOptionsByMajor[form.major] || [], [roleOptionsByMajor, form.major]);
-	const requiredCourseLink = useMemo(() => requiredCourseLinks[form.major] || null, [requiredCourseLinks, form.major]);
+	const courseOptions = useMemo(() => catalogByProgramId[form.programId] || [], [catalogByProgramId, form.programId]);
+	const roleOptions = useMemo(() => roleOptionsByProgramId[form.programId] || [], [roleOptionsByProgramId, form.programId]);
+	const requiredCourseLink = useMemo(() => requiredCourseLinks[form.programId] || null, [requiredCourseLinks, form.programId]);
 	const selectedCourseKeys = useMemo(
 		() => new Set((form.completedCourses || []).map((item) => `${item.major}::${item.courseCode}`)),
 		[form.completedCourses]
@@ -138,13 +143,15 @@ export default function LearningProfilePage() {
 		setStatusError('');
 	};
 
-	const handleMajorChange = (major) => {
-		const nextRoleOptions = roleOptionsByMajor[major] || [];
+	const handleMajorChange = (programId) => {
+		const nextRoleOptions = roleOptionsByProgramId[programId] || [];
 		const currentRole = form?.careerGoal?.role || '';
 		const keepRole = currentRole && nextRoleOptions.includes(currentRole);
+		const major = String(catalogMajors.find((item) => item?.programId === programId)?.nameEN || '').trim();
 
 		patchForm({
 			...form,
+			programId,
 			major,
 			completedCourses: major === form.major ? form.completedCourses : [],
 			careerGoal: {
@@ -249,17 +256,18 @@ export default function LearningProfilePage() {
 						avatarUrl: String(identityPayload.avatarUrl || '').trim(),
 					});
 
-					const nextCatalogByMajor =
+					const majorsList = Array.isArray(catalogPayload?.majors) ? catalogPayload.majors : [];
+					const nextCatalogByProgramId =
 						catalogPayload?.courseCatalog && typeof catalogPayload.courseCatalog === 'object'
 							? catalogPayload.courseCatalog
 							: {};
-					const mapped = mapProfileToOnboardingForm(profilePayload, nextCatalogByMajor);
+					const mapped = mapProfileToOnboardingForm(profilePayload, nextCatalogByProgramId, majorsList);
 
 					setForm(mapped);
 					setInitialSerialized(serializeProfileForm(mapped));
-					setCatalogMajors(Array.isArray(catalogPayload?.majors) ? catalogPayload.majors : []);
-					setCatalogByMajor(nextCatalogByMajor);
-					setRoleOptionsByMajor(catalogPayload?.roleOptionsByMajor && typeof catalogPayload.roleOptionsByMajor === 'object' ? catalogPayload.roleOptionsByMajor : {});
+					setCatalogMajors(majorsList);
+					setCatalogByProgramId(nextCatalogByProgramId);
+					setRoleOptionsByProgramId(catalogPayload?.roleOptionsByProgramId && typeof catalogPayload.roleOptionsByProgramId === 'object' ? catalogPayload.roleOptionsByProgramId : {});
 					setRequiredCourseLinks(catalogPayload?.requiredCourseLinks && typeof catalogPayload.requiredCourseLinks === 'object' ? catalogPayload.requiredCourseLinks : {});
 				}
 			} catch (err) {
@@ -331,13 +339,13 @@ export default function LearningProfilePage() {
 									<label htmlFor="major" className="learning-label">Ngành học</label>
 									<select
 										id="major"
-										value={form.major || ''}
+										value={form.programId || ''}
 										onChange={(event) => handleMajorChange(event.target.value)}
 										className="learning-input learning-select"
 									>
 										<option value="">Chọn ngành học</option>
 										{catalogMajors.map((major) => (
-											<option key={major} value={major}>{major}</option>
+											<option key={major.programId} value={major.programId}>{major.nameEN}</option>
 										))}
 									</select>
 								</div>
@@ -356,11 +364,11 @@ export default function LearningProfilePage() {
 												},
 											})
 										}
-										disabled={!form.major || roleOptions.length === 0}
+										disabled={!form.programId || roleOptions.length === 0}
 										className="learning-input learning-select"
 									>
 										<option value="">
-											{form.major
+											{form.programId
 												? roleOptions.length
 													? 'Chọn vai trò mục tiêu'
 													: 'Không có role cho ngành đã chọn'
@@ -380,7 +388,7 @@ export default function LearningProfilePage() {
 								<h2>Các môn đã học</h2>
 							</div>
 
-							{!form.major ? (
+							{!form.programId ? (
 								<div className="learning-section__empty">Hãy chọn ngành học để hiển thị danh sách môn học.</div>
 							) : courseOptions.length === 0 ? (
 								<div className="learning-section__empty">

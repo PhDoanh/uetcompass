@@ -41,7 +41,7 @@ function buildGeminiModel() {
  * @returns {Promise<Array<{ skillName: string, reason: string }>>}
  */
 async function evaluateOffTemplateSkills(candidateSkills, profile) {
-	if (!profile.careerGoal?.role && !profile.careerGoal?.companyType) {
+	if (!profile.careerGoal?.role) {
 		return []; // No career goal -- skip AI call
 	}
 

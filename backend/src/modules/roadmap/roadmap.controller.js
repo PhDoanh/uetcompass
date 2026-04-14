@@ -49,6 +49,15 @@ async function getRoadmapById(req, res) {
 	}
 }
 
+async function getSampleRoadmap(req, res) {
+	return res.json({
+		roadmapId: 'sample-roadmap',
+		personalisationLevel: 'low',
+		nodes: [],
+		sample: true,
+	});
+}
+
 async function acceptRoadmapHandler(req, res) {
 	try {
 		const { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
@@ -192,6 +201,7 @@ async function updateNodeStateHandler(req, res) {
 }
 
 module.exports = {
+	getSampleRoadmap,
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,

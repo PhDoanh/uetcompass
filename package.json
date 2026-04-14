@@ -2,5 +2,16 @@
 	"name": "uetcompass",
 	"version": "0.1.1",
 	"description": "Career guidance compass for UET-VNU university students",
-	"private": true
+	"private": true,
+	"scripts": {
+		"test": "node scripts/run-tests.mjs all",
+		"test:backend": "node scripts/run-tests.mjs backend",
+		"test:frontend": "node scripts/run-tests.mjs frontend"
+	},
+	"devDependencies": {
+		"jest": "^29.7.0"
+	},
+	"dependencies": {
+		"mongodb": "^7.1.1"
+	}
 }

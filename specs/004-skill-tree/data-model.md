@@ -1,278 +1,173 @@
-# Data Model: Skill Tree – Personalized Academic Roadmap Tracker
+# Data Model: Skill Tree
 
-**Phase 1 output** | Branch: `004-skill-tree` | Date: 2026-03-11  
-**Research dependency**: [research.md](research.md) (Decisions 1–9)
+**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-07  
+**Spec dependency**: [spec.md](spec.md)
 
 ---
 
-## Data Sources and Persistence
+## Modeling Scope
 
-### 1. `skill_node_statuses` *(canonical progress store — owned by this feature)*
+Feature 004 models frontend-facing tree structure, interaction state, and view semantics.  
+Feature 004 does not own roadmap generation or backend data sourcing.
 
-Stores one document per (student, roadmap node) pair. `pending` is explicit; missing documents are treated as data drift and reconciled by sync logic.
+---
 
-```js
-// Mongoose schema: backend/src/modules/skill-tree/skillNodeStatus.model.js
-{
-  _id:       ObjectId,          // auto
-  studentId: ObjectId,          // required — ref: users (from Feature 001)
-  nodeId:    String,            // required — matches primaryRoadmap.nodes[].nodeId (or courseCode when unified)
-  status:    String,            // required — enum: ["pending", "in_progress", "done"]
-  updatedAt: Date               // required — set manually on every write
+## Domain Objects
+
+### 1. SkillTreeRoadmap
+
+Represents one renderable roadmap payload consumed by the Skill Tree UI.
+
+```ts
+interface SkillTreeRoadmap {
+  roadmapId: string;
+  roadmapName: string;
+  nodes: SkillTreeNode[];
+  edges: SkillTreeEdge[];
 }
 ```
 
-**Indexes**:
-```js
-{ studentId: 1, nodeId: 1 }    // compound unique — primary lookup
-{ studentId: 1 }               // bulk fetch for all nodes of one student
-```
+### 2. SkillTreeNode
 
-**Business rules** (enforced by service layer, not schema):
-- A status update is rejected (`403 Forbidden`) if computed `isUnlocked(node) === false` for the requesting student.
-- State transitions allowed: `pending → in_progress → done`. No skips, no reversals.
-- `"pending"` is explicit — every node in the primary roadmap must have a persisted status row.
-- On primary roadmap refresh, status rows are reconciled: upsert `pending` for newly introduced nodes and remove rows for deleted nodes.
+Represents one node rendered in the roadmap tree.
 
----
+```ts
+type SkillTreeNodeType = "skill" | "related_knowledge" | "roadmap_reference";
+type SkillTreeNodeStatus = "pending" | "in_progress" | "done";
 
-### 2. Primary roadmap contract *(external — owned by Feature 009, read by this feature)*
-
-Feature 004 does not persist roadmap topology locally. It consumes canonical roadmap data from Feature 009 via `GET /api/primary-roadmap` (or equivalent service-layer adapter).
-
-```js
-// Read-only payload contract consumed by Feature 004
-{
-  roadmapId:      String,
-  roadmapName:    String,
-  careerGoal:     String,
-  nodes: [
-    {
-      nodeId:         String,
-      courseCode:     String,
-      courseName:     String,
-      nameVi:         String,
-      nameEn:         String,
-      credits:        Number,
-      prerequisites:  [String]
-    }
-  ],
-  generatedAt:    Date,
-  repersonalizing:Boolean
+interface SkillTreeNode {
+  id: string;
+  type: SkillTreeNodeType;
+  status: SkillTreeNodeStatus;
+  title: string;
+  shortExplanation?: string;
+  freeResources?: LearningResource[];
+  paidResources?: LearningResource[];
+  relatedCourses?: RelatedCourse[];
+  referencedRoadmapId?: string; // required when type = roadmap_reference
 }
 ```
 
-**Access pattern (this feature)**:
-- `getPrimaryRoadmap(studentId)` on `GET /api/skill-tree` and all node-scoped read/write endpoints.
-- `triggerRepersonalize(studentId)` delegation on `POST /api/skill-tree/repersonalize`.
+### 3. SkillTreeEdge
 
----
+Represents one visual connection between nodes.
 
-### 3. `course_ai_contexts` *(new — owned by this feature)*
+```ts
+type SkillTreeEdgeType = "skill_spine" | "knowledge_branch" | "reference_link";
 
-Cache for Gemini-generated "Why This Course" explanations. Never re-generated once written unless manually purged. Keyed by `{ courseCode, careerGoal }` — shared across all students with the same career goal.
-
-```js
-// Mongoose schema: backend/src/modules/skill-tree/aiContext.model.js
-{
-  _id:         ObjectId,
-  courseCode:  String,    // required — e.g., "IT3910E"
-  careerGoal:  String,    // required — e.g., "frontend-developer"
-  content:     String,    // required — AI-generated text (validated: length >= 50 chars)
-  generatedAt: Date       // required — set on first write; used for potential future TTL
+interface SkillTreeEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  type: SkillTreeEdgeType;
 }
 ```
 
-**Indexes**:
-```js
-{ courseCode: 1, careerGoal: 1 }    // compound unique — cache lookup key
-```
+Visual semantics:
+- `skill_spine`: bold solid line (`skill -> skill`)
+- `knowledge_branch`: lighter dashed line (`skill -> related_knowledge`)
+- `reference_link`: style controlled by design system for `roadmap_reference` navigation
 
-**Validation before write** (Constitution Principle IV):
-- `content.trim().length >= 50` — reject and do not cache Gemini responses that are too short (likely a refusal or network-truncated response).
-- Content must not match known refusal patterns: `/^I (cannot|am unable)/i`.
+### 4. LearningResource
 
----
-
-### 4. `course_resources` *(new — admin-seeded, read by this feature)*
-
-One document per course material item. Queried by courseCode for the Resources tab.
-
-```js
-// Read-only from student perspective
-{
-  _id:         ObjectId,
-  courseCode:  String,            // required — e.g., "IT3910E"
-  type:        String,            // required — enum: ["textbook", "slide", "lab", "assignment"]
-  title:       String,            // required
-  url:         String,            // optional — link to material
-  description: String             // optional — brief description
+```ts
+interface LearningResource {
+  id: string;
+  title: string;
+  url: string;
+  source?: string;
 }
 ```
 
-**Indexes**:
-```js
-{ courseCode: 1 }                 // bulk-fetch all resources for a course
-{ courseCode: 1, type: 1 }       // optional — filter by type
-```
+### 5. RelatedCourse
 
----
+Represents UET curriculum-based recommendations shown at the bottom of the detail panel.
 
-### 5. `market_skills` *(external — written by crawling service, read by this feature)*
-
-One document per course. Contains ranked skills observed in Vietnamese IT job postings.
-
-```js
-// Read-only from Feature 004
-{
-  _id:        ObjectId,
-  courseCode: String,             // unique
-  skills: [
-    {
-      name:     String,           // e.g., "React.js"
-      jobCount: Number            // number of job postings mentioning this skill
-    }
-  ],
-  crawledAt:  Date
+```ts
+interface RelatedCourse {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
 }
 ```
 
-**Access pattern**: `findOne({ courseCode })` on `GET /api/skill-tree/nodes/:courseCode/market-skills`
-
 ---
 
-### 6. `skill_learning_resources` *(external — written by crawling/curation service, read by this feature)*
+## View-State Model
 
-One document per skill. Contains curated or crawled learning resources (free and paid).
+### Node Detail State
 
-```js
-// Read-only from Feature 004
-{
-  _id:       ObjectId,
-  skillName: String,              // unique — e.g., "React.js" (matches market_skills.skills[].name)
-  resources: [
-    {
-      title:    String,           // e.g., "React – The Complete Guide"
-      url:      String,
-      type:     String,           // enum: ["free", "paid"]
-      platform: String            // e.g., "Udemy", "YouTube", "Coursera"
-    }
-  ],
-  updatedAt: Date
+```ts
+interface NodeDetailState {
+  selectedNodeId: string | null;
+  isOpen: boolean;
 }
 ```
 
-**Access pattern**: `findOne({ skillName })` on `GET /api/skill-tree/skills/:skillName/learning-resources`
+Behavior:
+- `skill` and `related_knowledge` open detail panel.
+- `roadmap_reference` triggers navigation instead of detail panel.
 
----
+### Progress Update State
 
-## Referenced Collections (read-only, owned by other features)
-
-### `student_profiles` *(maintained by Feature 001)*
-
-Read for the re-personalize flag computation: `findOne({ userId })` → compare with `primaryRoadmap.generatedAt` from Feature 009.
-
-Relevant fields only:
-```js
-{
-  userId:     ObjectId,
-  updatedAt:  Date,      // compared to primaryRoadmap.generatedAt
-  isDraft:    Boolean    // guard: don't allow skill tree access if true (onboarding not submitted)
+```ts
+interface ProgressState {
+  updatingNodeId: string | null;
+  lastUpdatedAt?: string;
 }
 ```
 
-### `course_units` *(seeded by Feature 002)*
+Behavior:
+- Status transitions are tracking-only.
+- No prerequisite lock/unlock state exists in this model.
 
-Not directly queried by this feature. Course metadata (`nameVi`, `nameEn`, `credits`, `prerequisites`) is embedded into Feature 009 primary roadmap nodes to avoid a join at render time in Feature 004.
+### Layout State
 
----
-
-## State Machine: Course Node
-
-```text
-[locked — prerequisites not all done]
-         │
-         │  all prerequisites transition to "done"
-         ▼
-[pending]
-         │
-         │  student clicks node
-         ▼
-   [in_progress]
-         │
-         │  student clicks node
-         ▼
-       [done]   ←  unlocks dependent nodes whose other prerequisites are also done
-```
-
-**Transition guards** (enforced in `skillTree.service.js`):
-| Attempted transition | Guard | Failure |
-|---|---|---|
-| Any → any (on locked node) | `isUnlocked(node) === false` | `403 Forbidden` |
-| `done → in_progress` | Not `pending → in_progress → done` order | `400 Bad Request` |
-| `in_progress → pending` | Reversal not permitted | `400 Bad Request` |
-
-**`isUnlocked` computation** (server-side, O(V + E)):
-- Fetch primary roadmap nodes from Feature 009 and fetch all `skill_node_statuses` for that roadmap/student.
-- Reconcile missing rows first (upsert explicit `pending` status rows for any node without a record).
-- For each node in the roadmap: `isUnlocked = prerequisites.every(prereqCode => status[prereqCode] === 'done')`.
-- Nodes with empty `prerequisites` array are **always unlocked**.
-
----
-
-## Re-personalization Flag
-
-Computed on every `GET /api/skill-tree` response:
-
-```js
-const needsRepersonalization =
-  studentProfile.isDraft === false &&
-  primaryRoadmap !== null &&
-  studentProfile.updatedAt > primaryRoadmap.generatedAt;
-```
-
-Included in the response body alongside the node array.
-
----
-
-## Downstream Contract: `getNodesByStatus()`
-
-Service-layer contract exposed by Feature 004 for downstream consumers:
-
-```js
-{
-  roadmapId: String,
-  roadmapName: String,
-  done: [
-    {
-      nodeId: String,
-      courseCode: String,
-      courseName: String,
-      status: "done",
-      updatedAt: Date
-    }
-  ],
-  inProgress: [
-    {
-      nodeId: String,
-      courseCode: String,
-      courseName: String,
-      status: "in_progress",
-      updatedAt: Date
-    }
-  ],
-  pending: [
-    {
-      nodeId: String,
-      courseCode: String,
-      courseName: String,
-      status: "pending",
-      updatedAt: Date
-    }
-  ]
+```ts
+interface LayoutState {
+  direction: "vertical_primary_axis";
+  allowHorizontalBranching: boolean;
 }
 ```
 
-Rules:
-- Always return all three arrays (`done`, `inProgress`, `pending`) even when empty.
-- Node payload shape is uniform across groups: `{ nodeId, courseCode, courseName, status, updatedAt }`.
+Layout rules:
+- Main skill spine is primarily vertical.
+- Left/right branching is allowed to preserve readability in dense local sections.
+
+---
+
+## State-to-Style Mapping
+
+### Skill Node (`skill`)
+
+- `pending`: yellow
+- `in_progress`: light purple
+- `done`: gray + strikethrough text
+
+### Related Knowledge Node (`related_knowledge`)
+
+- `pending`: light orange
+- `in_progress`: light purple
+- `done`: darker tone + strikethrough text
+
+### Roadmap Reference Node (`roadmap_reference`)
+
+- Base style: blue
+- Primary action: navigate to referenced roadmap
+
+---
+
+## Ownership and Boundaries
+
+- Feature 004 consumes roadmap content and persisted statuses through existing contracts.
+- Feature 004 owns presentation mapping, node interaction handling, and local UI state.
+- Feature 009 owns roadmap generation, data processing, and curriculum recommendation sourcing.
+
+---
+
+## Validation Rules (UI Contract Level)
+
+- Every node must have `id`, `type`, `status`, and `title`.
+- `roadmap_reference` node must include `referencedRoadmapId`.
+- Detail panel sections (`Free Resources`, `Paid Resources`, `Related Courses`) may be empty, but section rendering must remain stable.
+- Missing optional data must produce explicit empty-state UI, not missing layout blocks.

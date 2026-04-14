@@ -5,7 +5,7 @@
 
 ## Summary
 
-A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and career goals (role, company type, graduation timeline, personal aspirations). `careerGoal` remains a nested object; downstream `careerGoalRole` is always derived from `careerGoal.role`. Completed-course identity follows canonical rule `(`major`, `courseCode`)`, with optional `courseUnitId` persisted only for join optimization. `privacySetting` is not part of `StudentProfile` (owned by `User` in feature 005). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). No LLM is called during onboarding.
+A one-time, skippable onboarding panel that appears on first login and collects a student's academic profile (major, completed courses) and career goals (role dropdown + graduation date picker). Major options are sourced from `programs.nameEN`; role options are sourced from `programs.careerTracks` of the selected major (`programId`); after a major is selected, the app resolves selected `programId`, loads curriculum link from `course_units.source.url` of any record with the same `programId`, and filters completed-courses from `course_units` by (`programId`, `type = "elective"`). `careerGoal` remains a nested object; downstream `careerGoalRole` is always derived from `careerGoal.role`. Completed-course identity follows canonical rule `(`major`, `courseCode`)`, with optional `courseUnitId` persisted only for join optimization. `privacySetting` is not part of `StudentProfile` (owned by `User` in feature 005). All form inputs are auto-saved server-side as a `StudentProfile` draft via a debounced `PUT /onboarding/draft` (800ms). On explicit student submission, the profile transitions irreversibly to `isDraft: false`, and an async roadmap generation job is fired (Promise-based, no queue). The student receives notification via SSE (in-app, while connected) and Nodemailer email (always). Input handling is deterministic validation only.
 
 ## Technical Context
 
@@ -14,7 +14,7 @@ A one-time, skippable onboarding panel that appears on first login and collects 
 - Backend: Express.js, Mongoose 8, `jsonwebtoken`, `nodemailer`, `express-validator`
 - Frontend: React 18, React Router v6, native `EventSource` (SSE client — no extra library)
 
-**Storage**: MongoDB Atlas free tier — `student_profiles` collection; `course_units` collection (read-only, pre-seeded by separate feature)
+**Storage**: MongoDB Atlas free tier — `student_profiles` collection; `programs` + `course_units` collections (read-only, pre-seeded by feature 002)
 **Testing**: Jest 29 — unit tests only; MongoDB mocked via in-process stubs (`jest.fn()` / `jest.mock()`); no external services required to run tests
 **Target Platform**: Backend → Render (Node.js web service, free tier); Frontend → Vercel (React SPA)
 **Project Type**: Web application — React SPA + Node.js/Express REST API (modular monolith)
@@ -29,10 +29,10 @@ A one-time, skippable onboarding panel that appears on first login and collects 
 *Pre-design gate — re-checked after Phase 1 design: all items still pass.*
 
 - [x] **Modular Monolithic**: Onboarding logic is fully contained in `backend/src/modules/onboarding/`. The only cross-module call is `roadmapService.triggerGeneration(userId)` invoked through the service layer — no direct cross-module import.
-- [x] **UET-First**: Major list, company type options, and all business rules are hardcoded for UET-VNU context. No abstraction for other universities was introduced.
-- [x] **Privacy**: No UET portal credentials collected or stored. Only academic profile data (major, completed courses, career goals). `personalAspirations` is voluntary free text — no sensitive credential data.
-- [x] **AI-Assisted**: Gemini API is **not called** in this feature. Free-text validation uses pure regex/string logic (`validateFreeText`) per NFR-005. No LLM calls during onboarding.
-- [x] **Test What Matters**: Unit tests cover the two complex pieces with side effects — (1) `validateFreeText` edge cases, (2) `StudentProfile` state machine transitions including duplicate-submit rejection.
+- [x] **UET-First**: Major list and role options are sourced from UET-seeded `programs` (`nameEN`, `careerTracks`); curriculum links and course choices are sourced from UET-seeded `course_units` (`programId`, `source.url`, `type = "elective"`); graduation timeline uses a date-picker. No abstraction for other universities was introduced.
+- [x] **Privacy**: No UET portal credentials collected or stored. Only MVP academic profile data (major, completed courses, role selection, graduation date) is collected.
+- [x] **AI-Assisted**: Gemini API is **not called** in this feature. Validation is deterministic list-membership checking. No LLM calls during onboarding.
+- [x] **Test What Matters**: Unit tests cover the two complex pieces with side effects — (1) role option + graduation date validation and stale-role handling, (2) `StudentProfile` state machine transitions including duplicate-submit rejection.
 - [x] **Boundary Ownership**: `privacySetting` remains in `User` domain (feature 005), not duplicated in onboarding `StudentProfile`.
 
 ## Project Structure
@@ -48,7 +48,7 @@ specs/001-profile-onboarding/
 ├── quickstart.md        ← Phase 1: local dev setup + manual test guide
 ├── contracts/
 │   └── rest-api.md      ← Phase 1: all 4 API endpoint contracts
-└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
+└── tasks.md             ← Phase 2 output (/speckit.tasks)
 ```
 
 ### Source Code (repository root)
@@ -62,7 +62,8 @@ backend/
 │   │       ├── onboarding.service.js      # Business logic: upsertDraft, submitProfile, state guard
 │   │       ├── onboarding.controller.js   # Express handlers (thin — delegates to service)
 │   │       ├── onboarding.routes.js       # Express Router + auth middleware applied
-│   │       ├── onboarding.validation.js   # validateFreeText() — pure, no LLM
+│   │       ├── onboarding.validation.js   # role option + graduation date validation — deterministic, no LLM
+│   │       ├── onboarding.errors.js       # Error mapping + standardized API error envelope
 │   │       ├── onboarding.sse.js          # SSE connection store (Map) + notifyUser()
 │   │       └── onboarding.email.js        # sendRoadmapReadyEmail() via Nodemailer
 │   ├── middleware/
@@ -71,24 +72,25 @@ backend/
 └── tests/
     └── unit/
         └── onboarding/
-            ├── validation.test.js          # validateFreeText: 8 edge-case scenarios
-            └── stateMachine.test.js        # draft→submitted: 5 state transition tests
+            ├── validation.test.js          # role option + graduation date validation scenarios
+            ├── stateMachine.test.js        # draft→submitted: state transition tests
+            └── draftPersistence.test.js    # atomic upsert + restore behavior tests
 
 frontend/
 ├── src/
 │   ├── features/
 │   │   └── onboarding/
 │   │       ├── OnboardingPanel.jsx        # Outer panel: visibility state + dismiss logic
-│   │       ├── MajorSelect.jsx            # Controlled major dropdown
-│   │       ├── CourseMultiSelect.jsx      # Filtered course list (lazy-loaded by major)
-│   │       ├── CareerGoalForm.jsx         # Role / company type / timeline / aspirations
-│   │       ├── FreeTextField.jsx          # Reusable validated free-text input (client-side rule mirror)
+│   │       ├── MajorSelect.jsx            # Controlled major dropdown (from programs.nameEN)
+│   │       ├── CourseMultiSelect.jsx      # Filtered elective courses (course_units by programId)
+│   │       ├── CareerGoalForm.jsx         # Role dropdown + graduation date-picker input
 │   │       ├── useOnboardingDraft.js      # Hook: 800ms debounced PUT /draft + fetch on mount
 │   │       └── useRoadmapStatus.js        # Hook: EventSource open/close + roadmap:status handler
 │   ├── guards/
 │   │   └── OnboardingGuard.jsx            # React Router guard: redirect to / if profile submitted
 │   └── services/
-│       └── onboarding.api.js              # Fetch wrappers: getDraft, putDraft, postSubmit
+│       ├── onboarding.api.js              # Fetch wrappers: getDraft, putDraft, postSubmit
+│       └── roadmap.api.js                 # Retry trigger wrapper (POST /api/roadmap/retry only)
 ```
 
 **Structure Decision**: Option 2 — Web application. Modular monolith backend with onboarding logic isolated in `modules/onboarding/`. Feature-folder structure on frontend mirrors the backend module boundary. Communication from `onboarding` to `roadmap` passes through the service layer only — no direct cross-module import.

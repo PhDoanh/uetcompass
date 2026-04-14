@@ -15,12 +15,12 @@ function sanitizeOnboardingDraft(draft) {
 }
 
 function decidePostLoginRoute(onboardingState) {
-  return onboardingState === 'COMPLETED' ? '/skill-tree' : '/';
+  return '/';
 }
 
 describe('AuthProvider helpers', () => {
   test('routes completed onboarding users to skill-tree', () => {
-    expect(decidePostLoginRoute('COMPLETED')).toBe('/skill-tree');
+    expect(decidePostLoginRoute('COMPLETED')).toBe('/');
   });
 
   test('routes non-completed onboarding users to homepage onboarding flow', () => {

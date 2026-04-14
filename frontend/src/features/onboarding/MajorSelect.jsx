@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
-const DEFAULT_MAJORS = ['Computer Science', 'Information Systems', 'Computer Engineering'];
+const DEFAULT_MAJORS = [
+	{ programId: 'CS', nameEN: 'Computer Science' },
+	{ programId: 'IS', nameEN: 'Information Systems' },
+	{ programId: 'CE', nameEN: 'Computer Engineering' },
+];
 
 export default function MajorSelect({
 	value,
@@ -65,8 +69,8 @@ export default function MajorSelect({
 			>
 				<option value="">Select major</option>
 				{majors.map((major) => (
-					<option key={major} value={major}>
-						{major}
+					<option key={major.programId} value={major.programId}>
+						{major.nameEN}
 					</option>
 				))}
 			</select>

@@ -11,7 +11,7 @@ const { addConnection, addUserConnection } = require('./roadmap.sse');
 const roadmapRouter = express.Router();
 
 // Public endpoints - no auth required
-roadmapRouter.get('/public/:shareId', controller.getPublicSharedRoadmap);
+roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
 
 roadmapRouter.use(requireAuth);
 

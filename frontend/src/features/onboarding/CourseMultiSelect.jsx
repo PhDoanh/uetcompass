@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function CourseMultiSelect({ major, requiredCourseLink, options = [], value = [], onChange }) {
+export default function CourseMultiSelect({ major, requiredCourseLink, options = [], value = [], onChange, disabled = false }) {
 	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	useEffect(() => {
@@ -9,6 +9,32 @@ export default function CourseMultiSelect({ major, requiredCourseLink, options =
 
 	if (!major) {
 		return null;
+	}
+
+	if (disabled) {
+		return (
+			<div style={{ marginBottom: 12 }}>
+				{requiredCourseLink ? (
+					<div style={{ marginBottom: 8 }}>
+						<a href={requiredCourseLink} target="_blank" rel="noreferrer" className="onboarding-link">
+							Required Courses
+						</a>
+					</div>
+				) : null}
+				<div style={{ fontWeight: 600, marginBottom: 4 }}>Completed courses</div>
+				{value.length > 0 ? (
+					<div className="course-select-container" style={{ padding: 12 }}>
+						{value.map((item) => (
+							<div key={`${item.major}::${item.courseCode}`} style={{ marginBottom: 6 }}>
+								{item.courseCode}
+							</div>
+						))}
+					</div>
+				) : (
+					<div style={{ color: '#666' }}>No completed courses recorded.</div>
+				)}
+			</div>
+		);
 	}
 
 	if (options.length === 0) {

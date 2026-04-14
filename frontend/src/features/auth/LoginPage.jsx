@@ -4,6 +4,8 @@ import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
 import { AuthField, AuthShell } from './AuthModule';
 
+const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
+
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
   const minutes = Math.floor(safe / 60);
@@ -52,6 +54,9 @@ export default function LoginPage() {
     try {
       const result = await authApi.login({ email, password });
       applyLoginResult(result);
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
       window.location.assign(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'ACCOUNT_LOCKED') {
@@ -69,6 +74,9 @@ export default function LoginPage() {
     try {
       const result = await authApi.googleLogin({ credential: credentialResponse?.credential });
       applyLoginResult(result);
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
       window.location.assign(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {

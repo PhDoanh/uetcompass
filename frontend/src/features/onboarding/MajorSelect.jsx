@@ -9,11 +9,16 @@ export default function MajorSelect({
 	selectedCourses = [],
 	onResetCourses,
 	majors = DEFAULT_MAJORS,
+	disabled = false,
 }) {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [pendingMajor, setPendingMajor] = useState('');
 
 	const handleMajorChange = (nextMajor) => {
+		if (disabled) {
+			return;
+		}
+
 		if (value && value !== nextMajor && selectedCourses.length > 0) {
 			setPendingMajor(nextMajor);
 			setShowConfirm(true);
@@ -34,7 +39,7 @@ export default function MajorSelect({
 		setShowConfirm(false);
 	};
 
-	const confirmModal = showConfirm && typeof document !== 'undefined'
+	const confirmModal = !disabled && showConfirm && typeof document !== 'undefined'
 		? createPortal(
 			<div className="onboarding-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-confirm-title">
 				<div className="onboarding-confirm-popup">
@@ -62,6 +67,7 @@ export default function MajorSelect({
 				value={value || ''}
 				onChange={(event) => handleMajorChange(event.target.value)}
 				className="onboarding-input onboarding-select"
+				disabled={disabled}
 			>
 				<option value="">Select major</option>
 				{majors.map((major) => (

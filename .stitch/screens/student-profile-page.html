@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UETCompass - Hồ sơ sinh viên</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-highest": "#d8e3f6",
+                        "secondary-fixed-dim": "#6bd3fc",
+                        "on-secondary-fixed": "#001f29",
+                        "on-primary-fixed": "#001b3c",
+                        "secondary-container": "#6ed6ff",
+                        "surface": "#f8f9ff",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#303f58",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c2c6d3",
+                        "on-surface": "#111c2a",
+                        "error-container": "#ffdad6",
+                        "primary": "#003e79",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container": "#e5eeff",
+                        "outline": "#727782",
+                        "on-primary-container": "#aeccff",
+                        "surface-container-high": "#dee9fc",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#384761",
+                        "primary-fixed": "#d5e3ff",
+                        "tertiary-fixed-dim": "#b8c7e6",
+                        "on-background": "#111c2a",
+                        "on-secondary-fixed-variant": "#004d63",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-tertiary-fixed": "#0b1c34",
+                        "tertiary-container": "#475671",
+                        "secondary-fixed": "#bce9ff",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "surface-dim": "#cfdbee",
+                        "secondary": "#006783",
+                        "tertiary-fixed": "#d6e3ff",
+                        "surface-tint": "#185eac",
+                        "primary-container": "#0055a2",
+                        "on-surface-variant": "#424751",
+                        "on-primary-fixed-variant": "#004788",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#263140",
+                        "on-secondary-container": "#005c75",
+                        "inverse-primary": "#a7c8ff",
+                        "surface-variant": "#d8e3f6",
+                        "on-tertiary-container": "#bccbeb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Be Vietnam Pro"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Be Vietnam Pro', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .footer-gradient {
+            background: linear-gradient(135deg, #0055A2 0%, #003e79 40%, #FF8C00 100%);
+        }
+        #user-dropdown {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #user-dropdown.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<nav class="h-14 fixed top-0 w-full z-[100] bg-white dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 flex justify-between items-center px-6 transition-all duration-300" id="top-app-bar">
+<div class="flex items-center gap-8">
+<span class="nav-logo text-xl font-bold text-[#003E79] dark:text-[#0055A2] font-headline tracking-tight transition-colors duration-300">UETCompass</span>
+<div class="search-container hidden md:flex items-center gap-2 bg-slate-100 rounded-lg px-4 h-10 border border-slate-200 transition-all duration-300">
+<span class="material-symbols-outlined text-slate-500 text-lg transition-colors duration-300">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 font-body placeholder:text-slate-400 transition-colors duration-300 p-0" placeholder="Tìm kiếm roadmap..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="nav-icon-btn p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 flex items-center justify-center h-10 w-10">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
+</button>
+<div class="relative" id="user-menu-container">
+<button class="user-profile-btn flex items-center gap-3 pl-1 pr-3 py-1 bg-slate-100 hover:bg-slate-200 transition-all rounded-full border border-slate-200 focus:outline-none" id="user-menu-button">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm3OZLEw_e4IktWDFZy2iAf8Cw1jTHvNOWvTQHGiNA3g6ZsV_radMO5HphkK6j_SVRQviUpbVRZpvTMyJliwOY2u7BrUoe_wJYBxLT5DB0AfyaUIasLCU2U2o3QiEGu6AfX947BwgkHovy7yugGuVY8qr-XDaJ-FbiEh2WzepR-0yCbMW0zJ0ptnst2hC86wDY6_4XC0VXSuMSSJXTQrob_LI76RHptUioHV6uOAQe5FNsrtUQEJLC8hbeprscLaunOelKDECmoAs"/>
+<span class="text-sm font-semibold font-headline truncate max-w-[100px]">Nguyễn Văn A</span>
+</button>
+<!-- Interactive Menu Bar (Dropdown) -->
+<div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-[110]" id="user-dropdown">
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+                        Trang cá nhân
+                    </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                        Cài đặt
+                    </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+                        Cây kỹ năng
+                    </a>
+<div class="h-px bg-slate-100 my-1 mx-2"></div>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-error hover:bg-red-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+                        Đăng xuất
+                    </a>
+</div>
+</div>
+</div>
+</nav>
+<main class="max-w-[640px] mx-auto px-6 py-12 pb-32 pt-24">
+<!-- Profile Header -->
+<section class="flex flex-col items-center text-center mb-16">
+<div class="relative mb-6">
+<div class="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-primary to-secondary-container">
+<img alt="Nguyễn Văn A" class="w-full h-full rounded-full object-cover border-4 border-surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8WV9mB6kBGwqGD1p46sVbvCtVmoxcU_2Dm0ajdybQOU40GEsGMaK8m_0h1sMpJRQAtKrltuZQkMWIpV0zIycrhayTB4QrCujAkcKh4XVslp4KFnp6_mqZpBrnOkk7TJGyvDTlW1Vpm-DNtyH2_sTqzxbZSaKm7cx0AHOJFRIlA4zNmGgTpuRKi6jPD3fTstx5YF-wfILj6-UE1Y6ILPIOJOOqTzGzbJIKl31Qh0tzkFFRa6sBxGqQEip_k0ETNxf_90pjZWdbTy4m"/>
+</div>
+</div>
+<h1 class="text-3xl font-extrabold tracking-tight text-on-surface">Nguyễn Văn A</h1>
+<p class="text-primary-container font-medium mt-1">BSc. Computer Science</p>
+</section>
+<!-- Content Grid -->
+<div class="space-y-10">
+<!-- Personal Details Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">person</span>
+<h2 class="text-xl font-bold tracking-tight">Thông tin cá nhân</h2>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-6 space-y-6">
+<div>
+<label class="block text-xs font-bold text-outline-variant uppercase tracking-widest mb-2">Ngành học</label>
+<p class="text-on-surface font-medium text-lg">Khoa học Máy tính</p>
+</div>
+<div>
+<label class="block text-xs font-bold text-outline-variant uppercase tracking-widest mb-2">Mục tiêu nghề nghiệp</label>
+<p class="text-on-surface-variant leading-relaxed font-semibold">AI/ML</p>
+</div>
+</div>
+</section>
+<!-- Academic History Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<h2 class="text-xl font-bold tracking-tight">Các môn đã học</h2>
+</div>
+<div class="space-y-3">
+<!-- Course Item with Checkbox -->
+<label class="group bg-surface-container-low hover:bg-surface-container-high transition-colors p-4 rounded-xl flex justify-between items-center cursor-pointer">
+<div>
+<h3 class="font-semibold text-on-surface">Cấu trúc dữ liệu và Giải thuật</h3>
+<p class="text-xs text-on-surface-variant">INT2203 • 3 Tín chỉ</p>
+</div>
+<input checked="" class="w-6 h-6 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer" type="checkbox"/>
+</label>
+<!-- Course Item with Checkbox -->
+<label class="group bg-surface-container-low hover:bg-surface-container-high transition-colors p-4 rounded-xl flex justify-between items-center cursor-pointer">
+<div>
+<h3 class="font-semibold text-on-surface">Lập trình hướng đối tượng</h3>
+<p class="text-xs text-on-surface-variant">INT2204 • 3 Tín chỉ</p>
+</div>
+<input checked="" class="w-6 h-6 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer" type="checkbox"/>
+</label>
+<!-- Course Item with Checkbox -->
+<label class="group bg-surface-container-low hover:bg-surface-container-high transition-colors p-4 rounded-xl flex justify-between items-center cursor-pointer">
+<div>
+<h3 class="font-semibold text-on-surface">Toán rời rạc</h3>
+<p class="text-xs text-on-surface-variant">MAT1101 • 4 Tín chỉ</p>
+</div>
+<input checked="" class="w-6 h-6 rounded border-outline-variant text-primary focus:ring-primary/20 transition-all cursor-pointer" type="checkbox"/>
+</label>
+</div>
+<button class="w-full py-3 text-sm font-semibold text-primary-container bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors">
+                    Xem toàn bộ môn học
+                </button>
+</section>
+<!-- Graduation Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">school</span>
+<h2 class="text-xl font-bold tracking-tight">Dự kiến tốt nghiệp</h2>
+</div>
+<div class="bg-primary-container rounded-xl p-8 text-on-primary relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-primary-fixed-dim text-sm font-medium mb-1">Thời gian dự kiến</p>
+<p class="text-4xl font-extrabold tracking-tighter">Tháng 6, 2026</p>
+<div class="mt-6 flex items-center gap-3">
+<div class="h-2 flex-1 bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-white w-3/5 rounded-full"></div>
+</div>
+<span class="text-xs font-bold">60%</span>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10 pointer-events-none">auto_awesome</span>
+</div>
+</section>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 border-t border-slate-100 mt-12">
+<button class="w-full sm:w-auto px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl">save</span>
+        Lưu thông tin
+    </button>
+<button class="w-full sm:w-auto px-8 py-3 bg-surface-container-high text-primary font-bold rounded-xl hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl">auto_fix</span>
+        Tạo lại Roadmap
+    </button>
+</div></div>
+</main>
+<!-- Footer -->
+<footer class="footer-gradient w-full py-20 text-white">
+<div class="max-w-7xl mx-auto px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<div class="col-span-1 md:col-span-2 space-y-6">
+<span class="font-headline font-bold text-2xl tracking-tight">UETCompass</span>
+<p class="text-white/60 text-sm max-w-sm leading-relaxed">La bàn dẫn lối cho hành trình học tập và phát triển sự nghiệp của sinh viên UET-VNU.</p>
+<div class="flex gap-4">
+<button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-lg">alternate_email</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-lg">public</span>
+</button>
+</div>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 text-white/40">Tài nguyên</h4>
+<ul class="space-y-4">
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">TÀI LIỆU</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">CỘNG ĐỒNG</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">GITHUB</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 text-white/40">Pháp lý</h4>
+<ul class="space-y-4">
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">CHÍNH SÁCH</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">ĐIỀU KHOẢN</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-[10px] uppercase tracking-[0.2em] text-white/40">© 2024 UET-VNU University of Engineering and Technology</p>
+<div class="flex gap-8">
+<a class="text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors" href="#">PRIVACY</a>
+<a class="text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors" href="#">TERMS</a>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        const userBtn = document.getElementById('user-menu-button');
+        const userDropdown = document.getElementById('user-dropdown');
+
+        userBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
+                userDropdown.classList.remove('show');
+            }
+        });
+    </script>
+</body></html>

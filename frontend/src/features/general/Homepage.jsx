@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
+import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import '../../style/general-component.css';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
@@ -40,6 +41,7 @@ export default function Homepage() {
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [profileDisplayName, setProfileDisplayName] = useState('');
+  const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
 
   const shouldPromptOnboarding = useMemo(
@@ -78,6 +80,20 @@ export default function Homepage() {
   useEffect(() => {
     let isMounted = true;
 
+    async function loadPublicRoadmaps() {
+      try {
+        const result = await manualRoadmapApi.listPublicManualRoadmaps({ limit: 6 });
+        if (isMounted) {
+          setPublicRoadmaps(result.items || []);
+        }
+      } catch (err) {
+        // Silently fail for public roadmaps
+        if (isMounted) {
+          setPublicRoadmaps([]);
+        }
+      }
+    }
+
     async function loadDisplayName() {
       if (!accessToken) {
         if (isMounted) {
@@ -108,6 +124,7 @@ export default function Homepage() {
       }
     }
 
+    loadPublicRoadmaps();
     loadDisplayName();
 
     return () => {
@@ -158,6 +175,60 @@ export default function Homepage() {
                 </button>
               </>
             ) : null}
+          </div>
+        </section>
+
+        <section className="homepage-section homepage-section--manual-roadmaps">
+          <h2>Manual Roadmap Suggestions</h2>
+          <p>Create your own structured learning roadmap using YAML. Here are some popular templates to get started:</p>
+          <div className="homepage-manual-roadmaps-grid">
+            <div className="homepage-manual-roadmap-card">
+              <h3>Software Engineering Fundamentals</h3>
+              <p>A comprehensive roadmap covering core computer science concepts, programming languages, and software development practices.</p>
+              <button type="button" className="homepage-wire-btn homepage-wire-btn--small" onClick={() => window.location.href = '/manual-roadmap'}>
+                Start Creating
+              </button>
+            </div>
+            <div className="homepage-manual-roadmap-card">
+              <h3>Data Science Path</h3>
+              <p>From statistics and mathematics to machine learning, data visualization, and big data technologies.</p>
+              <button type="button" className="homepage-wire-btn homepage-wire-btn--small" onClick={() => window.location.href = '/manual-roadmap'}>
+                Start Creating
+              </button>
+            </div>
+            <div className="homepage-manual-roadmap-card">
+              <h3>Web Development Journey</h3>
+              <p>Frontend and backend technologies, frameworks, databases, and deployment strategies for modern web applications.</p>
+              <button type="button" className="homepage-wire-btn homepage-wire-btn--small" onClick={() => window.location.href = '/manual-roadmap'}>
+                Start Creating
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="homepage-section homepage-section--community">
+          <h2>Community Roadmaps</h2>
+          <p>Explore roadmaps shared by the community. Get inspired and learn from others' learning journeys.</p>
+          <div className="homepage-community-roadmaps">
+            {publicRoadmaps.length > 0 ? (
+              <div className="homepage-community-grid">
+                {publicRoadmaps.map((roadmap) => (
+                  <div key={roadmap._id} className="homepage-community-card">
+                    <h3>{roadmap.title}</h3>
+                    <p>{roadmap.description}</p>
+                    <button
+                      type="button"
+                      className="homepage-wire-btn homepage-wire-btn--small"
+                      onClick={() => window.location.href = `/roadmaps/public?name=${encodeURIComponent(roadmap.title)}`}
+                    >
+                      View Roadmap
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Community roadmaps will appear here once shared.</p>
+            )}
           </div>
         </section>
 

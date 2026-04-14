@@ -1,0 +1,73 @@
+title: Fullstack Web Roadmap (Manual Test)
+description: Sample YAML for testing manual roadmap creation flow.
+nodes:
+  - nodeId: HTML_CSS
+    label: HTML & CSS Fundamentals
+    description: Build static pages and responsive layouts.
+    status: done
+    prerequisites: []
+    skills:
+      - semantic-html
+      - responsive-css
+
+  - nodeId: JS_CORE
+    label: JavaScript Core
+    description: Learn syntax, DOM, and async fundamentals.
+    status: in_progress
+    prerequisites:
+      - HTML_CSS
+    skills:
+      - dom-manipulation
+      - async-await
+
+  - nodeId: REACT_BASICS
+    label: React Basics
+    description: Components, state, props, and hooks.
+    status: pending
+    prerequisites:
+      - JS_CORE
+    skills:
+      - component-thinking
+      - state-management
+
+  - nodeId: NODE_EXPRESS
+    label: Node.js + Express API
+    description: Build REST APIs and middleware.
+    status: pending
+    prerequisites:
+      - JS_CORE
+    skills:
+      - express-routing
+      - api-design
+
+  - nodeId: MONGODB_CRUD
+    label: MongoDB CRUD
+    description: Model data and perform CRUD operations.
+    status: pending
+    prerequisites:
+      - NODE_EXPRESS
+    skills:
+      - schema-design
+      - query-optimization
+
+  - nodeId: AUTH_JWT
+    label: Authentication with JWT
+    description: Protect APIs using token-based auth.
+    status: pending
+    prerequisites:
+      - NODE_EXPRESS
+    skills:
+      - jwt
+      - auth-guards
+
+  - nodeId: FULLSTACK_INTEGRATION
+    label: Fullstack Integration
+    description: Connect frontend to backend and deploy.
+    status: locked
+    prerequisites:
+      - REACT_BASICS
+      - MONGODB_CRUD
+      - AUTH_JWT
+    skills:
+      - integration-testing
+      - deployment

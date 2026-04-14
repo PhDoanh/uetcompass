@@ -5,6 +5,7 @@ import SkillTreePage from './features/skill-tree/SkillTreePage';
 import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
 import LearningProfilePage from './features/onboarding/LearningProfilePage';
+import ManualRoadmapPage from './features/manual-roadmap/ManualRoadmapPage';
 import NavBar from './features/general/NavBar';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
@@ -62,6 +63,16 @@ function AppContent() {
 					<p>To create your personalized roadmap, please log in or register.</p>
 				</div>
 			</main>
+		);
+	}
+
+	if (!content && pathname === '/manual-roadmap') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<ManualRoadmapPage />
+				</main>
+			</AuthGuard>
 		);
 	}
 

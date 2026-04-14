@@ -11,43 +11,65 @@ Create custom learning roadmaps using YAML structured code, visualize as interac
 
 ### 1. Access the Roadmap Generator
 1. Log in to UETCompass
-2. Navigate to "Roadmap Generator" from the main menu
-3. Click "Create New Roadmap"
+2. Navigate to `/manual-roadmap` in your browser
+3. Or click "Start Creating" on any roadmap suggestion card on the homepage
 
 ### 2. Define Your Roadmap Structure
-Use the YAML editor on the left to define your roadmap:
+Use the Monaco YAML editor on the left to define your roadmap:
 
 ```yaml
 title: Software Engineering Roadmap
 description: Complete path for software engineering students
 nodes:
-  - id: MATH101
+  - nodeId: MATH101
     label: Discrete Mathematics
-  - id: CS101
+  - nodeId: CS101
     label: Introduction to Computer Science
     prerequisites: [MATH101]
-  - id: CS201
+  - nodeId: CS201
     label: Data Structures
     prerequisites: [CS101]
-  - id: CS301
+  - nodeId: CS301
     label: Algorithms
     prerequisites: [CS201]
 ```
 
+**Node Properties:**
+- `nodeId`: Unique identifier (required)
+- `label`: Display name (required)
+- `description`: Optional details
+- `prerequisites`: Array of nodeIds this node depends on
+- `status`: One of `locked`, `pending`, `in_progress`, `done` (default: pending)
+- `skills`: Array of skill names
+- `metadata`: Additional custom data
+
 ### 3. Preview the Graph
-- The graph automatically updates on the right as you type
-- See prerequisite relationships as connected nodes
-- Click nodes to view details
-- Resize the split-pane for better visibility
+- The React Flow graph automatically updates on the right as you type
+- See prerequisite relationships as directed edges
+- Nodes are topologically sorted for logical flow
+- Hover over nodes for details
 
 ### 4. Validate and Save
-1. Click "Validate" to check for errors
-2. Fix any syntax or structural issues
-3. Click "Save Roadmap" to store your work
+1. The editor shows validation errors in real-time
+2. Check for YAML syntax, DAG cycles, and schema compliance
+3. Click "Save Draft" to store your work privately
+4. Or "Save Changes" if editing an existing roadmap
 
 ### 5. Share with Community
-1. Click "Share" to make your roadmap public
-2. Get a shareable link
+1. Click "Share to Community" to publish your roadmap
+2. It becomes visible in the "Community Roadmaps" section on the homepage
+3. Community members can view but not edit your shared roadmaps
+
+### 6. Edit Existing Roadmaps
+1. Load a roadmap by adding `?id=<roadmapId>` to the URL
+2. Modify the YAML and save changes
+3. Only draft roadmaps can be edited; published ones create new versions
+
+## Tips
+- Keep YAML under 10KB for performance
+- Use meaningful nodeIds and labels
+- Test complex prerequisite chains
+- Share roadmaps to inspire others
 3. View in the community section
 
 ## YAML Schema Reference

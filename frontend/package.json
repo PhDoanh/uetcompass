@@ -11,9 +11,11 @@
     "lint:fix": "eslint src/ --fix"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@react-oauth/google": "^0.12.2",
     "@xyflow/react": "^12.0.0",
     "axios": "^1.6.8",
+    "js-yaml": "^4.1.0",
     "lucide-react": "^0.363.0",
     "react": "^18.2.0",
     "react-datepicker": "^9.1.0",

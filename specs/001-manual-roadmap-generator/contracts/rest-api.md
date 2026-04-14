@@ -2,7 +2,7 @@
 
 **Feature**: `001-manual-roadmap-generator`
 **Date**: 2026-04-09
-**Base path**: `/api`
+**Base path**: `/api/roadmaps`
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`.
 
 ---
@@ -39,7 +39,7 @@ Content-Type: application/json
 
 ---
 
-## GET /api/manual-roadmaps
+## GET /api/roadmaps/manual-roadmaps
 
 List the authenticated user's roadmaps.
 
@@ -71,7 +71,7 @@ List the authenticated user's roadmaps.
 
 ---
 
-## GET /api/manual-roadmaps/:roadmapId
+## GET /api/roadmaps/manual-roadmaps/:roadmapId
 
 Get a full roadmap document owned by the authenticated user.
 
@@ -114,7 +114,7 @@ Get a full roadmap document owned by the authenticated user.
 
 ---
 
-## POST /api/manual-roadmaps
+## POST /api/roadmaps/manual-roadmaps
 
 Create a new draft roadmap.
 
@@ -161,7 +161,7 @@ Create a new draft roadmap.
 
 ---
 
-## PATCH /api/manual-roadmaps/:roadmapId
+## PATCH /api/roadmaps/manual-roadmaps/:roadmapId
 
 Update an existing draft roadmap.
 
@@ -194,7 +194,7 @@ Update an existing draft roadmap.
 
 ---
 
-## POST /api/manual-roadmaps/:roadmapId/share
+## POST /api/roadmaps/manual-roadmaps/:roadmapId/share
 
 Publish a draft roadmap to community visibility.
 
@@ -228,9 +228,9 @@ Publish a draft roadmap to community visibility.
 
 ---
 
-## GET /api/community/roadmaps
+## GET /api/roadmaps/manual-roadmaps/public
 
-List published roadmaps visible to the authenticated community member.
+List published roadmaps visible to all users (no auth required).
 
 ### Query parameters
 - `page` (optional): integer, default `1`

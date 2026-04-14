@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<html class="light" lang="en"><head></head><body class="bg-background text-on-surface font-body antialiased">```html
 
-<html class="light" lang="vi"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<title>Account Settings | UETCompass</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -79,69 +79,285 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .academic-gradient {
-            background: linear-gradient(135deg, #003e79 0%, #0055a2 100%);
+        .glass-panel {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-        .ambient-shadow {
-            box-shadow: 0 32px 48px -4px rgba(0, 62, 121, 0.08);
+        .footer-gradient {
+            background: linear-gradient(135deg, #0055A2 0%, #003e79 40%, #FF8C00 100%);
+        }
+    
+        #top-app-bar.scrolled {
+            background-color: #0055A2;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        #top-app-bar.scrolled .nav-logo {
+            color: white;
+        }
+        #top-app-bar.scrolled .nav-icon-btn {
+            color: white;
+        }
+        #top-app-bar.scrolled .search-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        #top-app-bar.scrolled .search-container input,
+        #top-app-bar.scrolled .search-container span {
+            color: white;
+        }
+        #top-app-bar.scrolled .search-container input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        #top-app-bar.scrolled .user-profile-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
         }
     </style>
-</head>
-<body class="bg-surface font-body text-on-surface overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAn9_L1fXpL9kZ-H5eR9q-pYV_r6iO1uH9T_o3v8zXhQe9f_r4tY5uM6p-w7z-V-fV-H1t6m9w-fV-H1t6m9w'); background-size: cover; background-position: center;">
-<!-- Backdrop Blur Overlay -->
-<div class="fixed inset-0 bg-black/10 backdrop-blur-md z-0"></div>
-<!-- Overlay Wrapper -->
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-<!-- Forgot Password Modal -->
-<div class="w-full max-w-[440px] bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative border border-outline-variant/10">
-<!-- Back Button -->
-<button class="absolute top-6 left-6 text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2 group z-10">
-<span class="material-symbols-outlined text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
-<span class="font-label text-xs font-semibold">Quay lại</span>
+<!-- TopAppBar -->
+<nav class="h-14 fixed top-0 w-full z-[100] bg-white dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 flex justify-between items-center px-6 transition-all duration-300" id="top-app-bar">
+<div class="flex items-center gap-8">
+<span class="nav-logo text-xl font-bold text-[#003E79] dark:text-[#0055A2] font-headline tracking-tight transition-colors duration-300">UETCompass</span>
+<div class="search-container hidden md:flex items-center gap-2 bg-slate-100 rounded-lg px-4 h-10 border border-slate-200 transition-all duration-300">
+<span class="material-symbols-outlined text-slate-500 text-lg transition-colors duration-300">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 font-body placeholder:text-slate-400 transition-colors duration-300 p-0" placeholder="Tìm kiếm roadmap..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="nav-icon-btn p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 flex items-center justify-center h-10 w-10">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
 </button>
-<!-- Modal Header -->
-<div class="px-8 pt-10 pb-6 text-center">
-<div class="inline-flex items-center justify-center w-12 h-12 bg-surface-container-low rounded-full mb-4">
-<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">lock_reset</span>
-</div>
-<h1 class="font-headline font-bold text-2xl tracking-tight text-on-surface">UETCompass</h1>
-<p class="text-on-surface-variant text-sm mt-2 leading-relaxed">
-                    Quên mật khẩu? <br/>
-                    Nhập email VNU để nhận mã khôi phục.
-                </p>
-</div>
-<!-- Modal Content -->
-<div class="px-8 py-8 space-y-6">
-<!-- Credentials Form -->
-<form class="space-y-6" onsubmit="return false">
-<div class="space-y-1.5">
-<label class="text-xs font-bold text-on-surface uppercase tracking-tight pl-1">Địa chỉ email vnu</label>
-<div class="relative">
-<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg">mail</span>
-<input class="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline/60" placeholder="username@vnu.edu.vn" type="email"/>
-</div>
-</div>
-<button class="w-full py-3.5 academic-gradient text-on-primary font-bold rounded-lg text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2" type="submit">
-                        Gửi mã khôi phục
-                        <span class="material-symbols-outlined text-lg">send</span>
+<div class="relative" id="user-menu-container">
+<button class="user-profile-btn flex items-center gap-3 pl-1 pr-3 py-1 bg-slate-100 hover:bg-slate-200 transition-all rounded-full border border-slate-200" id="user-menu-button">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAxj0chU6tfjzkO78orO-kYtsVGGIE-9QiW9ubkEoyEd4PUrfYKgRf7r2SJib83Yyf2MUSn8cZjjrkP1mO9vjZuKdyxE889HaZATik18Q2KdR_RU0ySWi9M-3FfwVuTphXjJ5jyTX8Qqk4A7rIfE4Z6Cf8BaLKwVg37ZQ5syRgPwcYlhUjBrTZ8l0vpbD3pMap6d51DDhWnuSLLYRR4LTQNTPWv0RutFWY3ybnGstg-Qhi0EQ1Zn2W3ewlxy9aPnQIBlTthjDAthc"/>
+<span class="text-sm font-semibold font-headline truncate max-w-[100px]">Nguyen Van A</span>
 </button>
-</form>
+<div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 hidden z-[110] overflow-hidden" id="user-dropdown">
+<div class="px-4 py-3 border-b border-slate-50 mb-1">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tài khoản</p>
 </div>
-<!-- Modal Footer -->
-<div class="px-8 py-6 bg-surface-container-low/50 flex flex-col items-center gap-3">
-<p class="text-[10px] text-outline text-center leading-relaxed">
-                    Gặp sự cố khi nhận mã? 
-                    <a class="text-primary font-bold hover:underline" href="#">Liên hệ kỹ thuật</a>
-</p>
-<div class="flex gap-4">
-<a class="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors" href="#">Trung tâm hỗ trợ</a>
-<a class="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors" href="#">Chính sách &amp; Điều khoản</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg text-slate-400 group-hover:text-primary transition-colors">person</span>
+            Trang cá nhân
+        </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg text-slate-400 group-hover:text-primary transition-colors">account_tree</span>
+            Cây kỹ năng
+        </a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg text-slate-400 group-hover:text-primary transition-colors">settings</span>
+            Cài đặt
+        </a>
+<div class="h-px bg-slate-100 my-1"></div>
+<a class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg text-red-400 group-hover:text-red-600 transition-colors">logout</span>
+            Đăng xuất
+        </a>
 </div>
 </div>
 </div>
-</div>
-<!-- Background Brand Header (Hidden but functional for layout structure) -->
-<header class="fixed top-0 w-full h-14 flex items-center px-6 z-10">
-<span class="text-xl font-bold text-primary font-headline">UETCompass</span>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-24 px-4 md:px-12 max-w-7xl mx-auto w-full">
+<header class="mb-12">
+<h1 class="text-4xl md:text-5xl font-headline font-extrabold text-primary tracking-tight mb-2">Account Settings</h1>
+<p class="text-on-surface-variant max-w-2xl leading-relaxed">Manage your academic profile, security preferences, and interface customization to tailor your learning experience on UETCompass.</p>
 </header>
-</body></html>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Section 1: Account Details -->
+<section class="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-1 bg-surface-container-lowest p-8 rounded-xl flex flex-col items-center justify-center text-center group border border-outline-variant/10">
+<div class="relative mb-4">
+<img alt="Avatar" class="w-32 h-32 rounded-full object-cover ring-4 ring-primary/5 transition-transform group-hover:scale-105" data-alt="professional portrait of a young student with a clean haircut and neutral expression, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH33iTjGf2dOrgoh1J2mYzvHcQzfPznQYM8DYrX0vGJ44sWyijuAV0nh8IJRGFaK0duZO7P3m7o_CExGITsq6cVbYyOGv6OqnRA9iG8bc5Yr0ThgDpJFU4IRMENIS-Kj96Vr-Jn904_3psMwHqJhDZhKP_MckhW1Shrk7ZSV5EPfKpBoPNslZ-lrxk1sGjtOE9yL5Qt4l_oClC7wBJazFaXS3_z9MdexeLUdJWbDgrwkY9p1ndtnNGkrGXcrZXMk6NLgNXf7wTCDw"/>
+<button class="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<h3 class="text-lg font-bold text-on-surface">Nguyen Van A</h3>
+<p class="text-sm text-primary font-medium">BSc. Computer Science</p>
+</div>
+<div class="md:col-span-2 bg-surface-container-low p-8 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="badge">badge</span>
+<h2 class="text-xl font-bold text-on-surface">Identity Details</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-1">
+<label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Full Name</label>
+<input class="w-full bg-surface-container-lowest border-outline-variant/20 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="text" value="Nguyen Van A"/>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Display Name</label>
+<input class="w-full bg-surface-container-lowest border-outline-variant/20 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="text" value="V.A. Nguyen"/>
+</div>
+<div class="md:col-span-2 space-y-1">
+<label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Email Address</label>
+<input class="w-full bg-surface-container-lowest border-outline-variant/20 rounded-lg px-4 py-3 text-sm focus:ring-primary focus:border-transparent outline-none bg-surface-dim/30 cursor-not-allowed" disabled="" type="email" value="21020000@vnu.edu.vn"/>
+</div>
+</div>
+<div class="mt-8 flex justify-end">
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-all shadow-md shadow-primary/20">Save Changes</button>
+</div>
+</div>
+</section>
+<!-- Section 2: Security -->
+<section class="lg:col-span-7 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
+<h2 class="text-xl font-bold text-on-surface">Security</h2>
+</div>
+<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold uppercase tracking-tighter">Strong Security</span>
+</div>
+<div class="space-y-6">
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface">Current Password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-outline-variant/20 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none pr-10" id="current-password" placeholder="••••••••••••" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface">New Password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-outline-variant/20 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none pr-10" id="new-password" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+</div>
+<!-- Password Strength Indicator -->
+<div class="mt-3 space-y-2">
+<div class="flex gap-1.5 h-1.5 w-full">
+<div class="flex-1 bg-green-500 rounded-full"></div>
+<div class="flex-1 bg-green-500 rounded-full"></div>
+<div class="flex-1 bg-green-500 rounded-full"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold uppercase tracking-widest text-green-600">Độ mạnh: Mạnh</span>
+<span class="text-[10px] text-on-surface-variant">Strong Security</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+<p class="text-xs text-on-surface-variant italic">Last changed 3 months ago</p>
+<button class="bg-surface-container-low text-primary px-5 py-2 rounded-lg font-bold text-sm hover:bg-surface-container-high transition-colors">Update Password</button>
+</div>
+</div>
+</section>
+<!-- Section 3: Privacy Settings -->
+<section class="lg:col-span-5 bg-surface-container p-8 rounded-xl flex flex-col">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-primary" data-icon="shield_person">shield_person</span>
+<h2 class="text-xl font-bold text-on-surface">Privacy Settings</h2>
+</div>
+<div class="space-y-8 flex-1">
+<div class="space-y-4">
+<p class="text-sm text-on-surface-variant leading-relaxed mb-4">Choose how you want to appear in community features and collaborative tools across the platform.</p>
+<label class="text-sm font-semibold text-on-surface">Profile Visibility</label>
+<div class="grid grid-cols-1 gap-3">
+<label class="relative flex items-center p-4 rounded-xl bg-surface-container-lowest border-2 border-primary ring-2 ring-primary/20 cursor-pointer group transition-all">
+<input checked="" class="hidden" name="privacy_mode" type="radio" value="identified"/>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-2xl text-primary" data-icon="person">person</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold">Identified</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Show full name and ID to peers</span>
+</div>
+</div>
+<span class="material-symbols-outlined ml-auto text-primary" data-icon="check_circle">check_circle</span>
+</label>
+<label class="relative flex items-center p-4 rounded-xl bg-surface-container-lowest border-2 border-transparent hover:border-outline-variant/30 cursor-pointer group transition-all">
+<input class="hidden" name="privacy_mode" type="radio" value="anonymous"/>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-2xl text-on-surface-variant group-hover:text-primary transition-colors" data-icon="visibility_off">visibility_off</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Anonymous</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Hide identity in shared spaces</span>
+</div>
+</div>
+<span class="material-symbols-outlined ml-auto text-transparent group-hover:text-outline-variant transition-colors" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</label>
+</div>
+</div>
+<div class="mt-auto">
+<button class="w-full bg-primary/10 text-primary border border-primary/20 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/20 transition-all">Save Privacy Preference</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="footer-gradient w-full py-20 text-white">
+<div class="max-w-7xl mx-auto px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<div class="col-span-1 md:col-span-2 space-y-6">
+<span class="font-headline font-bold text-2xl tracking-tight">UETCompass</span>
+<p class="text-white/60 text-sm max-w-sm leading-relaxed">La bàn dẫn lối cho hành trình học tập và phát triển sự nghiệp của sinh viên UET-VNU.</p>
+<div class="flex gap-4">
+<button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-lg">alternate_email</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-lg">public</span>
+</button>
+</div>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 text-white/40">Tài nguyên</h4>
+<ul class="space-y-4">
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">TÀI LIỆU</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">CỘNG ĐỒNG</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">GITHUB</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm uppercase tracking-widest mb-6 text-white/40">Pháp lý</h4>
+<ul class="space-y-4">
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">CHÍNH SÁCH</a></li>
+<li><a class="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#">ĐIỀU KHOẢN</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-[10px] uppercase tracking-[0.2em] text-white/40">© 2024 UET-VNU University of Engineering and Technology</p>
+<div class="flex gap-8">
+<a class="text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors" href="#">PRIVACY</a>
+<a class="text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors" href="#">TERMS</a>
+</div>
+</div>
+</div>
+</footer>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const button = document.getElementById('user-menu-button');
+        const dropdown = document.getElementById('user-dropdown');
+        
+        if (button && dropdown) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
+```<script>
+        window.addEventListener('scroll', function() {
+            const nav = document.getElementById('top-app-bar');
+            if (nav) {
+                if (window.scrollY > 10) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+            }
+        });
+    </script></body></html>

@@ -119,11 +119,6 @@ function AppContent() {
 						className="auth-modal-overlay"
 						role="dialog"
 						aria-modal="true"
-						onClick={(event) => {
-							if (event.target === event.currentTarget && typeof window !== 'undefined') {
-								window.location.assign('/');
-							}
-						}}
 					>
 						<div className="auth-modal-shell">
 							<button

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Search } from "lucide-react";
+import { Moon, Search } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
@@ -14,7 +14,7 @@ function getAvatarState(profile = {}) {
   return {
     avatarUrl,
     avatarFallback: (displayName.charAt(0) || 'U').toUpperCase(),
-    displayName: displayName || 'User',
+    displayName: displayName || 'Người dùng',
   };
 }
 
@@ -22,9 +22,25 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFallback, setAvatarFallback] = useState('U');
-  const [displayName, setDisplayName] = useState('User');
+  const [displayName, setDisplayName] = useState('Người dùng');
   const avatarRef = useRef(null);
   const { isAuthenticated, accessToken } = useAuth();
+
+  useEffect(() => {
+    function onScroll() {
+      const nav = document.querySelector('.navbar');
+      if (!nav) return;
+      if (window.scrollY > 10) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+    }
+
+    window.addEventListener('scroll', onScroll);
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const goHome = () => {
     window.location.assign('/');
@@ -61,7 +77,7 @@ export default function NavBar() {
     if (!isAuthenticated || !accessToken) {
       setAvatarUrl('');
       setAvatarFallback('U');
-      setDisplayName('User');
+      setDisplayName('Người dùng');
       return () => {
         isMounted = false;
       };
@@ -80,7 +96,7 @@ export default function NavBar() {
         if (isMounted) {
           setAvatarUrl('');
           setAvatarFallback('U');
-          setDisplayName('User');
+          setDisplayName('Người dùng');
         }
       }
     }
@@ -105,24 +121,29 @@ export default function NavBar() {
     <nav className="navbar">
       <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
         <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
-        UET Compass
+        UETCompass
       </button>
       <div className="navbar__search">
         <Search className="navbar__search-icon" size={16} />
-        <input className="navbar__input" type="text" placeholder="Search..." />
+        <input className="navbar__input" type="text" placeholder="Tìm kiếm roadmap..." />
       </div>
+      <div className="navbar__actions">
+        <button type="button" className="navbar__icon-btn" aria-label="Dark mode">
+          <Moon size={18} />
+        </button>
+
       {isAuthenticated ? (
         <div className="navbar__avatar-wrapper" ref={avatarRef}>
           <button
             type="button"
             className="navbar__auth-btn navbar__profile-trigger"
-            title="Profile"
+            title="Tài khoản"
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="navbar__profile-name">{displayName}</span>
             <div className="navbar__avatar">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="User avatar" className="navbar__avatar-img" />
+                <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
               ) : (
                 <span>{avatarFallback}</span>
               )}
@@ -132,10 +153,11 @@ export default function NavBar() {
         </div>
       ) : (
         <div className="navbar__auth-actions">
-          <button type="button" className="navbar__auth-btn" onClick={goLogin}>Login</button>
-          <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goRegister}>Register</button>
+          <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
+          <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
         </div>
       )}
+      </div>
     </nav>
   );
 }

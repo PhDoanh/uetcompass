@@ -69,10 +69,11 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 			// Enrich template nodes with relatedCourses from course skills
 			const enriched = templateNodes.map((n) => {
-				const candidate = candidateSkillsMap.get(n.skillName);
+				// Find candidate by matching kebab-case nodeId to kebab-case skillName
+				const candidate = candidateSkills.find((c) => toKebabCase(c.skillName) === n.nodeId);
 				return {
 					...n,
-					nodeId: uniqueNodeId(n.skillName, seenIds),
+					nodeId: n.nodeId,
 					relatedCourses: candidate?.relatedCourses ?? [],
 				};
 			});

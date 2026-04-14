@@ -11,6 +11,46 @@
   overflow-y: auto;
 }
 
+.onboarding-panel-shell--page {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 130px);
+  max-height: none;
+}
+
+.learning-profile-page {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  box-sizing: border-box;
+  padding: 24px 12px;
+  display: flex;
+  justify-content: center;
+  background-color: var(--bg-dark);
+  background-image:
+    linear-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.learning-profile-content {
+  width: min(920px, 100%);
+  min-height: calc(100vh - 140px);
+  padding: 6px 2px;
+  color: #f1f5f9;
+}
+
+.learning-profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.learning-profile-success {
+  color: #7dd3fc;
+  margin-top: 6px;
+}
+
 .onboarding-field {
   margin-bottom: 14px;
 }

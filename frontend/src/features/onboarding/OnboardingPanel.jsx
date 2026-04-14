@@ -13,17 +13,39 @@ const EMPTY_FORM = {
 	completedCourses: [],
 	careerGoal: {
 		role: '',
+		companyType: '',
 		graduationTimeline: '',
 	},
 };
 
-export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, onCompleted, onClose }) {
+export default function OnboardingPanel({
+	authToken,
+	sseToken,
+	onUnauthorized,
+	onCompleted,
+	onClose,
+	mode = 'edit',
+	initialForm = null,
+	title = 'Student onboarding',
+	description = 'Welcome! Please complete the following fields to continue.',
+	isFullPage = false,
+	enableDraftAutosave = true,
+	onSubmitForm = null,
+	submitLabel = 'Submit',
+	submittingLabel = 'Submitting...',
+	successLabel = 'Saved successfully.',
+	showDismissButton = true,
+	closeOnSubmit = true,
+}) {
+	const isViewMode = mode === 'view';
+	const draftEnabled = !isViewMode && enableDraftAutosave;
 	const onUnauthorizedRef = useRef(onUnauthorized);
 	const [isOpen, setIsOpen] = useState(true);
-	const [form, setForm] = useState(EMPTY_FORM);
+	const [form, setForm] = useState(() => ({ ...EMPTY_FORM, ...(initialForm || {}) }));
 	const [draftHydrated, setDraftHydrated] = useState(false);
 	const [submitState, setSubmitState] = useState('idle');
 	const [submitError, setSubmitError] = useState(null);
+	const [submitSuccess, setSubmitSuccess] = useState('');
 	const [showLowPersonalization, setShowLowPersonalization] = useState(false);
 	const [catalogLoading, setCatalogLoading] = useState(true);
 	const [catalogError, setCatalogError] = useState(null);
@@ -35,6 +57,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
 		onUnauthorized,
+		enabled: draftEnabled,
 	});
 
 	const roadmapStatus = useRoadmapStatus({
@@ -48,6 +71,18 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	}, [onUnauthorized]);
 
 	useEffect(() => {
+		if (!isViewMode && !draftEnabled && initialForm) {
+			setForm({ ...EMPTY_FORM, ...initialForm });
+			setDraftHydrated(true);
+			return;
+		}
+
+		if (isViewMode) {
+			setForm({ ...EMPTY_FORM, ...(initialForm || {}) });
+			setDraftHydrated(true);
+			return;
+		}
+
 		if (draftHydrated) {
 			return;
 		}
@@ -61,7 +96,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 		if (!loading) {
 			setDraftHydrated(true);
 		}
-	}, [draft, loading, draftHydrated]);
+	}, [draft, draftEnabled, initialForm, isViewMode, loading, draftHydrated]);
 
 	useEffect(() => {
 		let disposed = false;
@@ -110,8 +145,15 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	const mergedForm = form;
 
 	const patchForm = (nextForm) => {
+		if (isViewMode) {
+			return;
+		}
+
+		setSubmitSuccess('');
 		setForm(nextForm);
-		scheduleSave(nextForm);
+		if (draftEnabled) {
+			scheduleSave(nextForm);
+		}
 	};
 
 	useEffect(() => {
@@ -164,13 +206,28 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 
 		setSubmitState('submitting');
 		setSubmitError(null);
+		setSubmitSuccess('');
 
 		try {
-			const response = await postSubmit(authToken, mergedForm);
-			setShowLowPersonalization(Boolean(response?.isGeneric));
+			const response = onSubmitForm
+				? await onSubmitForm(mergedForm)
+				: await postSubmit(authToken, mergedForm);
+
+			if (!onSubmitForm) {
+				setShowLowPersonalization(Boolean(response?.isGeneric));
+			}
+
 			setSubmitState('submitted');
-			closePanel();
-			roadmapStatus.open();
+			setSubmitSuccess(successLabel);
+
+			if (closeOnSubmit) {
+				closePanel();
+			}
+
+			if (!onSubmitForm) {
+				roadmapStatus.open();
+			}
+
 			if (typeof onCompleted === 'function') {
 				onCompleted(response);
 			}
@@ -185,9 +242,9 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 	}
 
 	return (
-		<section className="onboarding-panel-shell">
-			<h2 className="onboarding-panel-title">Student onboarding</h2>
-			<p className="onboarding-panel-description">Welcome! Please complete the following fields to continue.</p>
+		<section className={`onboarding-panel-shell${isFullPage ? ' onboarding-panel-shell--page' : ''}`}>
+			<h2 className="onboarding-panel-title">{title}</h2>
+			<p className="onboarding-panel-description">{description}</p>
 
 			{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
 			{catalogLoading ? <div>Loading majors and courses...</div> : null}
@@ -199,6 +256,7 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 				onResetCourses={() => patchForm({ ...mergedForm, completedCourses: [] })}
 				onChange={handleMajorChange}
 				majors={catalogMajors}
+				disabled={isViewMode}
 			/>
 
 			<CourseMultiSelect
@@ -207,18 +265,20 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 				options={courseOptions}
 				value={mergedForm.completedCourses || []}
 				onChange={(completedCourses) => patchForm({ ...mergedForm, completedCourses })}
+				disabled={isViewMode}
 			/>
 
-			<CareerGoalForm value={mergedForm} roleOptions={roleOptions} onChange={patchForm} />
+			<CareerGoalForm value={mergedForm} roleOptions={roleOptions} onChange={patchForm} disabled={isViewMode} />
 
-			{submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
-			{showLowPersonalization ? (
+			{!isViewMode && submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
+			{!isViewMode && submitSuccess ? <div className="onboarding-panel-note" style={{ color: '#7dd3fc' }}>{submitSuccess}</div> : null}
+			{!isViewMode && showLowPersonalization ? (
 				<div className="onboarding-panel-warning">
 					Your roadmap is in generic mode. Improve personalization by adding optional fields like target role.
 					<a href="/settings">Go to Settings</a>
 				</div>
 			) : null}
-			{roadmapStatus.status === 'failed' ? (
+			{!isViewMode && roadmapStatus.status === 'failed' ? (
 				<div className="onboarding-panel-note">
 					Roadmap generation failed.
 					<button type="button" className="secondary-btn onboarding-panel-inline-btn" onClick={roadmapStatus.retry}>
@@ -227,16 +287,20 @@ export default function OnboardingPanel({ authToken, sseToken, onUnauthorized, o
 				</div>
 			) : null}
 
-			<div className="onboarding-panel-actions">
-				<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
-					{submitState === 'submitting' ? 'Submitting...' : 'Submit'}
-				</button>
-				<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
-					Dismiss
-				</button>
-			</div>
+			{!isViewMode ? (
+				<div className="onboarding-panel-actions">
+					<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
+						{submitState === 'submitting' ? submittingLabel : submitLabel}
+					</button>
+					{showDismissButton ? (
+						<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
+							Dismiss
+						</button>
+					) : null}
+				</div>
+			) : null}
 
-			<small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small>
+			{!isViewMode ? <small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small> : null}
 		</section>
 	);
 }

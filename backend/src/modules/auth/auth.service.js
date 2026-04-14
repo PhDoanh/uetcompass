@@ -247,6 +247,7 @@ function normalizeOnboardingDraft(profile) {
   const careerGoal = profile?.careerGoal || {};
 
   return {
+    programId: profile?.programId || null,
     major: profile?.major || null,
     completedCourseIds,
     careerGoal: {

@@ -65,16 +65,16 @@ function closeConnection(sseToken) {
 }
 
 function notifyPreviewReady(sseToken) {
-	notifyClientByToken(sseToken, 'roadmap:status', { status: 'completed' });
 	notifyClientByToken(sseToken, 'roadmap:notification', {
+		status: 'completed',
 		type: 'success',
 		message: 'Your roadmap has been generated!',
 	});
 }
 
 function notifyGenerationFailed(sseToken) {
-	notifyClientByToken(sseToken, 'roadmap:status', { status: 'failed', retryable: true });
 	notifyClientByToken(sseToken, 'roadmap:notification', {
+		status: 'failed',
 		type: 'error',
 		message: 'Roadmap generation failed.',
 		retryable: true,

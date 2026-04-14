@@ -55,7 +55,7 @@ Student Profile:
 - Personal Aspirations: ${profile.personalAspirations ?? 'not provided'}
 
 Candidate skills from available courses:
-${JSON.stringify(candidateSkills)}
+${JSON.stringify(candidateSkills.map((c) => c.skillName))}
 
 Instructions:
 For each skill in the list that is meaningfully relevant to the student's career goal,

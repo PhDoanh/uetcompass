@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import MajorSelect from './MajorSelect';
-import CourseMultiSelect from './CourseMultiSelect';
-import CareerGoalForm from './CareerGoalForm';
+import { Compass, Map, GitBranch, LibraryBig, Users, Search } from 'lucide-react';
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
 import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
@@ -17,6 +15,38 @@ const EMPTY_FORM = {
 	},
 };
 
+function resolveDisplayNameFromToken(token) {
+	if (!token || typeof window === 'undefined') {
+		return '';
+	}
+
+	try {
+		const payloadPart = token.split('.')[1] || '';
+		const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+		const decoded = window.atob(normalized);
+		const payload = JSON.parse(decoded);
+		return String(payload?.displayName || payload?.fullName || payload?.name || '').trim();
+	} catch (_) {
+		return '';
+	}
+}
+
+function toMonthValue(value) {
+	const raw = String(value || '').trim();
+	if (!raw) {
+		return '';
+	}
+	return raw.length >= 7 ? raw.slice(0, 7) : '';
+}
+
+function fromMonthValue(value) {
+	const raw = String(value || '').trim();
+	if (!raw) {
+		return '';
+	}
+	return `${raw}-01`;
+}
+
 export default function OnboardingPanel({
 	authToken,
 	sseToken,
@@ -25,8 +55,8 @@ export default function OnboardingPanel({
 	onClose,
 	mode = 'edit',
 	initialForm = null,
-	title = 'Student onboarding',
-	description = 'Welcome! Please complete the following fields to continue.',
+	title = 'Chào mừng bạn đến với UETCompass',
+	description = 'Vui lòng hoàn tất hồ sơ cá nhân để bắt đầu.',
 	isFullPage = false,
 	enableDraftAutosave = true,
 	onSubmitForm = null,
@@ -52,6 +82,8 @@ export default function OnboardingPanel({
 	const [catalogByMajor, setCatalogByMajor] = useState({});
 	const [roleOptionsByMajor, setRoleOptionsByMajor] = useState({});
 	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
+	const [courseSearch, setCourseSearch] = useState('');
+	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
@@ -145,6 +177,27 @@ export default function OnboardingPanel({
 	const courseOptions = useMemo(() => catalogByMajor[mergedForm.major] || [], [catalogByMajor, mergedForm.major]);
 	const roleOptions = useMemo(() => roleOptionsByMajor[mergedForm.major] || [], [roleOptionsByMajor, mergedForm.major]);
 	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.major] || null, [requiredCourseLinks, mergedForm.major]);
+	const selectedCourseKeys = useMemo(
+		() => new Set((mergedForm.completedCourses || []).map((item) => `${mergedForm.major}::${item.courseCode}`)),
+		[mergedForm.completedCourses, mergedForm.major]
+	);
+	const filteredCourses = useMemo(() => {
+		const keyword = courseSearch.trim().toLowerCase();
+		if (!keyword) {
+			return courseOptions;
+		}
+
+		return courseOptions.filter((course) => {
+			const code = String(course?.courseCode || '').toLowerCase();
+			const name = String(course?.name || '').toLowerCase();
+			return code.includes(keyword) || name.includes(keyword);
+		});
+	}, [courseOptions, courseSearch]);
+	const visibleCourses = useMemo(
+		() => (showAllCourses ? filteredCourses : filteredCourses.slice(0, 7)),
+		[filteredCourses, showAllCourses]
+	);
+	const displayName = useMemo(() => resolveDisplayNameFromToken(authToken) || 'bạn', [authToken]);
 
 	const patchForm = (nextForm) => {
 		if (isViewMode) {
@@ -166,10 +219,35 @@ export default function OnboardingPanel({
 		patchForm({
 			...mergedForm,
 			major,
+			completedCourses: major === mergedForm.major ? mergedForm.completedCourses : [],
 			careerGoal: {
 				...(mergedForm.careerGoal || {}),
 				role: keepRole ? currentRole : '',
 			},
+		});
+	};
+
+	const handleToggleCourse = (course) => {
+		const key = `${mergedForm.major}::${course.courseCode}`;
+		const selected = new Set(selectedCourseKeys);
+
+		if (selected.has(key)) {
+			selected.delete(key);
+		} else {
+			selected.add(key);
+		}
+
+		const next = courseOptions
+			.filter((item) => selected.has(`${mergedForm.major}::${item.courseCode}`))
+			.map((item) => ({
+				major: mergedForm.major,
+				courseCode: item.courseCode,
+				courseUnitId: item.courseUnitId,
+			}));
+
+		patchForm({
+			...mergedForm,
+			completedCourses: next,
 		});
 	};
 
@@ -226,64 +304,211 @@ export default function OnboardingPanel({
 
 	return (
 		<section className={`onboarding-panel-shell${isFullPage ? ' onboarding-panel-shell--page' : ''}`}>
-			<h2 className="onboarding-panel-title">{title}</h2>
-			<p className="onboarding-panel-description">{description}</p>
+			<div className="onboarding-panel-layout">
+				<aside className="onboarding-panel-aside">
+					<div className="onboarding-panel-brand-row">
+						<span className="onboarding-panel-brand-icon"><Compass size={15} /></span>
+						<span className="onboarding-panel-brand-name">UETCompass</span>
+					</div>
 
-			{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
-			{catalogLoading ? <div>Loading majors and courses...</div> : null}
-			{catalogError ? <div style={{ color: '#b00020', marginBottom: 8 }}>{catalogError}</div> : null}
+					<h2 className="onboarding-panel-aside-title">
+						Xây dựng <u>la bàn</u> dẫn lối sự nghiệp cho riêng bạn.
+					</h2>
+					<p className="onboarding-panel-aside-description">
+						Những thông tin này giúp chúng tôi cá nhân hóa kỹ năng và gợi ý học phần phù hợp với mục tiêu của bạn tại UET-VNU.
+					</p>
 
-			<MajorSelect
-				value={mergedForm.major}
-				selectedCourses={mergedForm.completedCourses}
-				onResetCourses={() => patchForm({ ...mergedForm, completedCourses: [] })}
-				onChange={handleMajorChange}
-				majors={catalogMajors}
-				disabled={isViewMode}
-			/>
+					<ul className="onboarding-panel-benefits" aria-label="Benefits">
+						<li>
+							<span><Map size={16} /></span>
+							<div>
+								<strong>Lộ trình theo thời lượng đào tạo</strong>
+								<p>Phân bổ môn học hợp lý theo từng học kỳ.</p>
+							</div>
+						</li>
+						<li>
+							<span><GitBranch size={16} /></span>
+							<div>
+								<strong>Cây kỹ năng trực quan</strong>
+								<p>Theo dõi sự phát triển kỹ năng mà thị trường cần.</p>
+							</div>
+						</li>
+						<li>
+							<span><LibraryBig size={16} /></span>
+							<div>
+								<strong>Tài liệu tham khảo chọn lọc</strong>
+								<p>Nguồn học liệu chất lượng do giảng viên và cựu sinh viên đề xuất.</p>
+							</div>
+						</li>
+						<li>
+							<span><Users size={16} /></span>
+							<div>
+								<strong>Cộng đồng hỗ trợ</strong>
+								<p>Kết nối với cố vấn học tập và bạn đồng hành cùng chuyên ngành.</p>
+							</div>
+						</li>
+					</ul>
+				</aside>
 
-			<CourseMultiSelect
-				major={mergedForm.major}
-				requiredCourseLink={requiredCourseLink}
-				options={courseOptions}
-				value={mergedForm.completedCourses || []}
-				onChange={(completedCourses) => patchForm({ ...mergedForm, completedCourses })}
-				disabled={isViewMode}
-			/>
+				<div className="onboarding-panel-form-wrap">
+					<header className="onboarding-panel-form-head">
+						<h3>{title}</h3>
+						<p>
+							Chào mừng, {displayName}!
+							<span> {description}</span>
+						</p>
+					</header>
 
-			<CareerGoalForm value={mergedForm} roleOptions={roleOptions} onChange={patchForm} disabled={isViewMode} />
+					{loading ? <div className="onboarding-panel-note">Loading draft...</div> : null}
+					{catalogLoading ? <div className="onboarding-panel-note">Loading majors and courses...</div> : null}
+					{catalogError ? <div className="onboarding-panel-error">{catalogError}</div> : null}
 
-			{!isViewMode && submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
-			{!isViewMode && submitSuccess ? <div className="onboarding-panel-note" style={{ color: '#7dd3fc' }}>{submitSuccess}</div> : null}
-			{!isViewMode && showLowPersonalization ? (
-				<div className="onboarding-panel-warning">
-					Your roadmap is in generic mode. Improve personalization by adding optional fields like target role.
-					<a href="/settings">Go to Settings</a>
-				</div>
-			) : null}
-			{!isViewMode && roadmapStatus.status === 'failed' ? (
-				<div className="onboarding-panel-note">
-					Roadmap generation failed.
-					<button type="button" className="secondary-btn onboarding-panel-inline-btn" onClick={roadmapStatus.retry}>
-						Retry
-					</button>
-				</div>
-			) : null}
+					<div className="onboarding-modern-form-grid">
+						<div className="onboarding-modern-field">
+							<label htmlFor="onboarding-major">Ngành học hiện tại</label>
+							<select
+								id="onboarding-major"
+								value={mergedForm.major || ''}
+								onChange={(event) => handleMajorChange(event.target.value)}
+								disabled={isViewMode}
+							>
+								<option value="">Chọn ngành học</option>
+								{catalogMajors.map((major) => (
+									<option key={major} value={major}>{major}</option>
+								))}
+							</select>
+						</div>
 
-			{!isViewMode ? (
-				<div className="onboarding-panel-actions">
-					<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
-						{submitState === 'submitting' ? submittingLabel : submitLabel}
-					</button>
-					{showDismissButton ? (
-						<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
-							Dismiss
-						</button>
+						<div className="onboarding-modern-field">
+							<label htmlFor="onboarding-role">Mục tiêu nghề nghiệp</label>
+							<select
+								id="onboarding-role"
+								value={mergedForm?.careerGoal?.role || ''}
+								onChange={(event) =>
+									patchForm({
+										...mergedForm,
+										careerGoal: {
+											...(mergedForm.careerGoal || {}),
+											role: event.target.value,
+										},
+									})
+								}
+								disabled={isViewMode || !mergedForm.major || roleOptions.length === 0}
+							>
+								<option value="">{mergedForm.major ? 'Chọn vai trò mục tiêu' : 'Chọn ngành học trước'}</option>
+								{roleOptions.map((role) => (
+									<option key={role} value={role}>{role}</option>
+								))}
+							</select>
+						</div>
+
+						<div className="onboarding-modern-field onboarding-modern-field--full">
+							<div className="onboarding-modern-field-head">
+								<label htmlFor="onboarding-course-search">Môn tự chọn đã học</label>
+								{courseOptions.length > 7 ? (
+									<button type="button" onClick={() => setShowAllCourses((prev) => !prev)}>
+										{showAllCourses ? 'Thu gọn' : 'Xem toàn bộ môn học'}
+									</button>
+								) : null}
+							</div>
+
+							<div className="onboarding-modern-course-box">
+								<div className="onboarding-modern-course-search">
+									<Search size={15} />
+									<input
+										id="onboarding-course-search"
+										type="text"
+										placeholder="Tìm kiếm mã môn hoặc tên..."
+										value={courseSearch}
+										onChange={(event) => setCourseSearch(event.target.value)}
+										disabled={isViewMode || !mergedForm.major}
+									/>
+								</div>
+
+								<div className="onboarding-modern-course-list">
+									{!mergedForm.major ? (
+										<div className="onboarding-panel-note">Chọn ngành học để hiển thị danh sách môn học.</div>
+									) : visibleCourses.length === 0 ? (
+										<div className="onboarding-panel-note">Không tìm thấy môn học phù hợp.</div>
+									) : (
+										visibleCourses.map((course) => {
+											const key = `${mergedForm.major}::${course.courseCode}`;
+											const checked = selectedCourseKeys.has(key);
+											return (
+												<label key={key} className="onboarding-modern-course-item">
+													<input
+														type="checkbox"
+														checked={checked}
+														onChange={() => handleToggleCourse(course)}
+														disabled={isViewMode}
+													/>
+													<span>{course.courseCode} - {course.name}</span>
+												</label>
+											);
+										})
+									)}
+								</div>
+							</div>
+							{requiredCourseLink ? (
+								<a className="onboarding-modern-link" href={requiredCourseLink} target="_blank" rel="noreferrer">
+									Môn bắt buộc theo ngành
+								</a>
+							) : null}
+						</div>
+
+						<div className="onboarding-modern-field">
+							<label htmlFor="onboarding-grad-month">Dự kiến tốt nghiệp</label>
+							<input
+								id="onboarding-grad-month"
+								type="month"
+								value={toMonthValue(mergedForm?.careerGoal?.graduationTimeline)}
+								onChange={(event) =>
+									patchForm({
+										...mergedForm,
+										careerGoal: {
+											...(mergedForm.careerGoal || {}),
+											graduationTimeline: fromMonthValue(event.target.value),
+										},
+									})
+								}
+								disabled={isViewMode}
+							/>
+						</div>
+					</div>
+
+					{!isViewMode && submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
+					{!isViewMode && submitSuccess ? <div className="onboarding-panel-note onboarding-panel-note--success">{submitSuccess}</div> : null}
+					{!isViewMode && showLowPersonalization ? (
+						<div className="onboarding-panel-warning">
+							Roadmap is in generic mode. Add target role to improve personalization.
+							<a href="/settings">Go to settings</a>
+						</div>
 					) : null}
-				</div>
-			) : null}
+					{!isViewMode && roadmapStatus.status === 'failed' ? (
+						<div className="onboarding-panel-note">
+							Roadmap generation failed.
+							<button type="button" className="secondary-btn onboarding-panel-inline-btn" onClick={roadmapStatus.retry}>
+								Retry
+							</button>
+						</div>
+					) : null}
 
-			{!isViewMode ? <small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small> : null}
+					{!isViewMode ? (
+						<div className="onboarding-panel-actions">
+							<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
+								{submitState === 'submitting' ? submittingLabel : submitLabel}
+							</button>
+							{showDismissButton ? (
+								<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
+									Hoàn thiện sau
+								</button>
+							) : null}
+						</div>
+					) : null}
+
+					{!isViewMode ? <small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small> : null}
+				</div>
+			</div>
 		</section>
 	);
 }

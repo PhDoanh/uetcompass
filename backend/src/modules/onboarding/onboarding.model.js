@@ -27,6 +27,7 @@ const StudentProfileSchema = new mongoose.Schema(
 			index: true,
 		},
 		isDraft: { type: Boolean, required: true, default: true },
+		programId: { type: String, default: null, trim: true },
 		major: { type: String, default: null, trim: true },
 		completedCourses: { type: [CompletedCourseSchema], default: [] },
 		careerGoal: { type: CareerGoalSchema, default: () => ({}) },

@@ -8,6 +8,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - MongoDB Atlas free tier — `users` collection (auth + lockout state), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag) (005-account-management)
 - MongoDB Atlas free tier — new `roadmap_progress_cache` collection (owned by this feature); reads `roadmap_nodes` collection (owned by Feature 004 — Skill Tree) (007-progress-tracking)
 - MongoDB Atlas free tier — 3 new collections: `learning_resources`, `academic_documents`, `skill_trend_snapshots`; reads `skills` collection (owned by Roadmap module) (003-resource-curation)
+- Node.js 20 LTS (backend), React 18 (frontend) + js-yaml (parsing), Monaco Editor (YAML editing), Cytoscape.js (graph visualization), ajv (validation), @xyflow/react (React Flow) (001-manual-roadmap-generator)
+- MongoDB Atlas (free tier) (001-manual-roadmap-generator)
 
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)
@@ -32,11 +34,9 @@ npm test; npm run lint
 JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard conventions
 
 ## Recent Changes
+- 001-manual-roadmap-generator: Added Node.js 20 LTS (backend), React 18 (frontend) + js-yaml (parsing), Monaco Editor (YAML editing), Cytoscape.js (graph visualization), ajv (validation), @xyflow/react (React Flow)
 - 010-roadmap-community: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
 - 010-roadmap-community: Added TypeScript — Node.js 20 LTS (backend), React 18 (frontend). This feature introduces TypeScript + NestJS as the evolving target stack; existing modules remain in their current JS/Express form.
-- 004-skill-tree: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 003-resource-curation: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 007-progress-tracking: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
 
 
 <!-- MANUAL ADDITIONS START -->

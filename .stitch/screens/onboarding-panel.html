@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UETCompass Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#003e79",
+                        "on-secondary-container": "#005c75",
+                        "surface-container-high": "#dee9fc",
+                        "surface-tint": "#185eac",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "outline": "#727782",
+                        "on-surface": "#111c2a",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-primary-fixed-variant": "#004788",
+                        "on-tertiary-container": "#bccbeb",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#263140",
+                        "outline-variant": "#c2c6d3",
+                        "inverse-primary": "#a7c8ff",
+                        "surface-container": "#e5eeff",
+                        "tertiary-fixed-dim": "#b8c7e6",
+                        "primary-container": "#0055a2",
+                        "secondary-fixed-dim": "#6bd3fc",
+                        "on-primary-container": "#aeccff",
+                        "secondary-container": "#6ed6ff",
+                        "primary-fixed": "#d5e3ff",
+                        "on-secondary-fixed": "#001f29",
+                        "tertiary-fixed": "#d6e3ff",
+                        "surface-container-highest": "#d8e3f6",
+                        "on-primary-fixed": "#001b3c",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#cfdbee",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#bce9ff",
+                        "on-tertiary-fixed": "#0b1c34",
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-error-container": "#93000a",
+                        "secondary": "#006783",
+                        "tertiary-container": "#475671",
+                        "surface-bright": "#f8f9ff",
+                        "surface-variant": "#d8e3f6",
+                        "on-surface-variant": "#424751",
+                        "tertiary": "#303f58",
+                        "on-tertiary-fixed-variant": "#384761",
+                        "on-background": "#111c2a",
+                        "on-secondary-fixed-variant": "#004d63",
+                        "background": "#f8f9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Be Vietnam Pro"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-effect {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(194, 198, 211, 0.2);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #003e79 0%, #0055a2 100%);
+        }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface min-h-screen flex items-center justify-center p-4 md:p-8">
+<!-- Main Onboarding Container -->
+<div class="max-w-6xl w-full bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col md:flex-row shadow-[0_48px_80px_-12px_rgba(0,62,121,0.15)]">
+<!-- Left Side: Illustration & Context -->
+<div class="md:w-5/12 bg-surface-container-low p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-8">
+<span class="w-8 h-8 primary-gradient rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" style='font-variation-settings: "FILL" 1;'>explore</span>
+</span>
+<span class="font-headline font-bold text-xl tracking-tight text-primary" style="">UETCompass</span>
+</div>
+<h1 class="font-headline text-3xl md:text-4xl font-extrabold text-primary mb-6 leading-tight" style="">Xây dựng <u>la bàn</u> dẫn lối sự nghiệp cho riêng bạn.</h1>
+<p class="text-on-surface-variant text-lg leading-relaxed mb-8" style="">
+                    Những thông tin này giúp chúng tôi cá nhân hóa các kỹ năng và gợi ý học phần phù hợp nhất với mục tiêu nghề nghiệp của bạn tại UET-VNU.
+                </p>
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<div class="bg-surface-container-highest p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="">map</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface" style="">Lộ trình theo thời lượng đào tạo</h3>
+<p class="text-sm text-on-surface-variant" style="">Phân bổ môn học hợp lý theo từng học kỳ.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="bg-surface-container-highest p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="">account_tree</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface" style="">Cây kỹ năng trực quan</h3>
+<p class="text-sm text-on-surface-variant" style="">Theo dõi sự phát triển các kỹ năng chuyên môn mà thị trường yêu cầu.</p>
+</div>
+</div>
+<!-- Added Benefit 1 -->
+<div class="flex items-start gap-4">
+<div class="bg-surface-container-highest p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="">library_books</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface" style="">Tài liệu tham khảo chọn lọc</h3>
+<p class="text-sm text-on-surface-variant" style="">Nguồn học liệu chất lượng được giảng viên và cựu sinh viên đề xuất.</p>
+</div>
+</div>
+<!-- Added Benefit 2 -->
+<div class="flex items-start gap-4">
+<div class="bg-surface-container-highest p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="">groups</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface" style="">Cộng đồng hỗ trợ</h3>
+<p class="text-sm text-on-surface-variant" style="">Kết nối với các cố vấn học tập và bạn đồng hành cùng chuyên ngành.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Illustration: Compass with career icons -->
+<div class="absolute -bottom-20 -left-20 w-96 h-96 opacity-10 pointer-events-none">
+<img alt="Compass illustration" class="w-full h-full object-contain transform -rotate-12" data-alt="a large faded 2D illustration of a modern compass with a needle pointing toward a career target icon, surrounded by small floating career-related icons like a laptop, gear, and graph, partially clipped by the circular boundary" src="https://lh3.googleusercontent.com/aida-public/AG87_AunGz2hW1F-YV67v2D8R-L5Xm_vQy3F6N6v9_H9y4I3C2v7T8f3G2z6x7_v7P2X=s1024" style=""/>
+</div>
+</div>
+<!-- Right Side: Form Content -->
+<div class="md:w-7/12 p-8 md:p-12 bg-white">
+<div class="max-w-xl mx-auto">
+<div class="mb-10">
+<h2 class="text-2xl font-headline font-bold text-on-surface mb-2" style="">Chào mừng, Phạm Gia Doanh 🎉</h2>
+<p class="text-on-surface-variant" style="">Vui lòng hoàn tất hồ sơ cá nhân để bắt đầu.</p>
+</div>
+<form class="space-y-8">
+<!-- Major Selection -->
+<div class="space-y-3">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant block" style="">Ngành học hiện tại</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary transition-all">
+<option>CNTT (Chuẩn)</option>
+<option>Kỹ thuật Máy tính</option>
+<option>Mạng máy tính và Truyền thông dữ liệu</option>
+<option>Hệ thống thông tin</option>
+<option>Công nghệ Nông nghiệp</option>
+<option>Kỹ thuật năng lượng</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline" style="">expand_more</span>
+</div>
+</div>
+<!-- Career Goal Dropdown -->
+<div class="space-y-3">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant block" style="">Mục tiêu nghề nghiệp</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary transition-all">
+<option>AI/ML Engineer</option>
+<option>Fullstack Developer</option>
+<option>Embedded Systems Engineer</option>
+<option>Data Scientist</option>
+<option>Cyber Security Specialist</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline" style="">expand_more</span>
+</div>
+</div>
+<!-- Elective Courses Search & Checklist -->
+<div class="space-y-3">
+<div class="flex justify-between items-end">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant" style="">Môn tự chọn ĐÃ HỌC</label>
+<span class="text-[10px] text-primary font-bold cursor-pointer" style=""><u>Xem toàn bộ môn học</u></span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-2">
+<div class="flex items-center gap-2 px-3 py-2 border-b border-outline-variant/20 mb-2">
+<span class="material-symbols-outlined text-outline text-lg" style="">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full py-1" placeholder="Tìm kiếm mã môn hoặc tên..." type="text"/>
+</div>
+<div class="max-h-48 overflow-y-auto space-y-0.5 p-2 custom-scrollbar">
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" style="">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="text-sm text-on-surface" style="">INT3306 - Phát triển ứng dụng Web</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" style="">
+<input checked="" class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="text-sm text-on-surface" style="">INT3401 - Trí tuệ nhân tạo</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" style="">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" placeholder="on" type="checkbox" value=""/>
+<span class="text-sm text-on-surface" style="">INT3507 - An toàn hệ thống thông tin</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" style="">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="text-sm text-on-surface" style="">INT3110 - Đồ họa máy tính</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"><input class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/><span class="text-sm text-on-surface">INT3111 - Cấu trúc dữ liệu và giải thuật</span></label><label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"><input class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/><span class="text-sm text-on-surface">INT2204 - Lập trình hướng đối tượng</span></label><label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"><input class="rounded-sm border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/><span class="text-sm text-on-surface">INT3307 - Lập trình mạng máy tính</span></label></div>
+</div>
+</div>
+<!-- Graduation Date Picker -->
+<div class="space-y-3">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant block" style="">Dự kiến tốt nghiệp</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-none rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary transition-all" type="month" value="2027-06"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline" style="">calendar_today</span>
+</div>
+</div>
+<!-- CTAs -->
+<div class="pt-6 flex flex-col sm:flex-row gap-4">
+<button class="flex-1 primary-gradient text-white py-4 px-8 rounded-xl font-headline font-bold transition-all hover:scale-[1.02] active:opacity-80" style="" type="submit">
+                            Sinh roadmap
+                        </button>
+<button class="flex-1 bg-surface-container-low text-primary py-4 px-8 rounded-xl font-headline font-bold hover:bg-surface-container-high transition-all" style="" type="button">Hoàn thiện sau
+                        </button>
+</div>
+</form>
+<p class="mt-8 text-center text-xs text-on-surface-variant/60" style=""><i>
+                    Bạn có thể thay đổi các tùy chọn này bất cứ lúc nào trong trang hồ sơ cá nhân.
+                </i></p>
+</div>
+</div>
+</div>
+<!-- Footer Copyright removed as requested -->
+<style>
+        /* Custom scrollbar for the checklist */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d8e3f6;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #c2c6d3;
+        }
+    </style>
+</body></html>

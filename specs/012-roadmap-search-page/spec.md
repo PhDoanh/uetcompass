@@ -5,6 +5,15 @@
 **Status**: Draft  
 **Input**: User description: "I want to start a new 012 search page feature similar to this. When I click on the search bar it should jump to this split-screen search page. When searching roadmap names, results appear and clicking a result previews the roadmap."
 
+## Clarifications
+
+### Session 2026-04-14
+
+- Q: Which roadmap visibility scope should search include? -> A: Public/shared roadmaps only.
+- Q: How should search be triggered? -> A: Auto-search while typing with 300ms debounce.
+- Q: What should the preview do after each successful search? -> A: Auto-preview the first result.
+- Q: Minimum query length before running search? -> A: 2 characters.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Open Search Workspace from Search Bar (Priority: P1)
@@ -25,7 +34,7 @@ As a learner, I want clicking the global search bar to open a dedicated split-sc
 
 ### User Story 2 - Search Roadmaps by Name (Priority: P2)
 
-As a learner, I want to search by roadmap name and get matching results so I can quickly find relevant learning paths.
+As a learner, I want to search public/shared roadmaps by name and get matching results so I can quickly find relevant learning paths.
 
 **Why this priority**: Search result retrieval is the core value of the page after entry.
 
@@ -55,7 +64,7 @@ As a learner, I want to click a search result and preview that roadmap in the ri
 
 ### Edge Cases
 
-- What happens when user enters a very short query (e.g., 1 character)? The system should still respond consistently and avoid confusing flicker.
+- What happens when user enters a very short query (e.g., 1 character)? Search does not execute; UI keeps clear guidance to type at least 2 characters.
 - How does the system handle rapid typing and repeated query changes? The latest query result should be the one displayed.
 - How does the page behave when roadmap data exists but graph preview payload is incomplete? Show available textual details and a clear fallback notice.
 - What happens if a user opens the search page directly via URL without prior navigation? The split-screen layout should still load correctly.
@@ -75,6 +84,10 @@ As a learner, I want to click a search result and preview that roadmap in the ri
 - **FR-009**: System MUST show clear loading feedback while search results or preview content are being retrieved.
 - **FR-010**: System MUST show user-friendly error feedback when search or preview retrieval fails.
 - **FR-011**: System MUST preserve usability on desktop and laptop widths where split-screen is expected.
+- **FR-012**: System MUST restrict search results to public/shared roadmaps only.
+- **FR-013**: System MUST execute roadmap-name search automatically while typing with a 300ms debounce.
+- **FR-014**: System MUST auto-preview the first result after each successful search response.
+- **FR-015**: System MUST only execute search when the query length is at least 2 characters.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -97,6 +110,7 @@ As a learner, I want to click a search result and preview that roadmap in the ri
 - The platform already has roadmap records with searchable names and previewable roadmap content.
 - The split-screen search experience targets desktop-first usage, while smaller screens can use adaptive layout behavior.
 - Search is scoped to roadmap names for this feature release.
+- Search only includes public/shared roadmaps in this feature release.
 
 ## Dependencies
 

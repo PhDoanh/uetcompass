@@ -5,6 +5,10 @@ const { Roadmap } = require('./roadmap.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
 
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function resolveStudentProfileId(userId) {
     const profile = await StudentProfile.findOne({ userId }, { _id: 1 }).lean();
     if (!profile?._id) {
@@ -59,9 +63,14 @@ async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
     );
 }
 
-async function listPublic({ page = 1, limit = 20 } = {}) {
+async function listPublic({ q = '', page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = { isPublic: true };
+    const filter = {};
+
+    const normalizedQuery = String(q || '').trim();
+    if (normalizedQuery) {
+        filter.title = { $regex: escapeRegex(normalizedQuery), $options: 'i' };
+    }
 
     const [items, total] = await Promise.all([
         ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0 })
@@ -73,6 +82,13 @@ async function listPublic({ page = 1, limit = 20 } = {}) {
     ]);
 
     return { items, pagination: { page, limit, total } };
+}
+
+async function getPublicPreviewById(roadmapId) {
+    return ManualRoadmap.findOne(
+        { _id: roadmapId },
+        { title: 1, description: 1, nodes: 1, sharedAt: 1 }
+    ).lean();
 }
 
 async function getByIdForUser(roadmapId, userId) {
@@ -158,4 +174,5 @@ module.exports = {
     updateDraft,
     share,
     listPublic,
+    getPublicPreviewById,
 };

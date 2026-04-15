@@ -18,11 +18,24 @@ function getAvatarState(profile = {}) {
   };
 }
 
+export function getRoadmapSearchTarget(pathname) {
+  return pathname === '/roadmaps/search' ? null : '/roadmaps/search';
+}
+
+function dispatchRoadmapSearchQuery(query) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent('roadmap-search-query', { detail: { query } }));
+}
+
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [displayName, setDisplayName] = useState('User');
+  const [searchText, setSearchText] = useState('');
   const avatarRef = useRef(null);
   const { isAuthenticated, accessToken } = useAuth();
 
@@ -36,6 +49,15 @@ export default function NavBar() {
 
   const goRegister = () => {
     window.location.assign('/register');
+  };
+
+  const goRoadmapSearch = () => {
+    if (typeof window !== 'undefined') {
+      const nextPath = getRoadmapSearchTarget(window.location.pathname);
+      if (nextPath) {
+        window.location.assign(nextPath);
+      }
+    }
   };
 
   // Close menu on click outside
@@ -101,15 +123,39 @@ export default function NavBar() {
     };
   }, [accessToken, isAuthenticated]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const initialQuery = String(params.get('q') || '').trim();
+    if (initialQuery) {
+      setSearchText(initialQuery);
+      dispatchRoadmapSearchQuery(initialQuery);
+    }
+  }, []);
+
   return (
     <nav className="navbar">
       <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
         <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
         UET Compass
       </button>
-      <div className="navbar__search">
+      <div className="navbar__search" onClick={goRoadmapSearch}>
         <Search className="navbar__search-icon" size={16} />
-        <input className="navbar__input" type="text" placeholder="Search..." />
+        <input
+          className="navbar__input"
+          type="text"
+          placeholder="Search roadmap by name..."
+          value={searchText}
+          onFocus={goRoadmapSearch}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setSearchText(nextValue);
+            dispatchRoadmapSearchQuery(nextValue);
+          }}
+        />
       </div>
       {isAuthenticated ? (
         <div className="navbar__avatar-wrapper" ref={avatarRef}>

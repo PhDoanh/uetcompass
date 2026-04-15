@@ -56,12 +56,31 @@ async function getRoadmapById(req, res) {
 
 async function listPublicManualRoadmaps(req, res) {
 	try {
-		const { page, limit } = req.query;
+		const { q, page, limit } = req.query;
+		const normalizedQuery = String(q || '').trim();
+
+		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
+			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
+		}
+
 		const result = await manualRoadmapService.listPublic({
+			q: normalizedQuery,
 			page: parsePositiveIntQuery(page, 'page'),
 			limit: parsePositiveIntQuery(limit, 'limit'),
 		});
 		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getPublicManualRoadmapPreviewById(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.getPublicPreviewById(req.params.roadmapId);
+		if (!roadmap) {
+			throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
+		}
+		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -286,6 +305,7 @@ module.exports = {
 	listRoadmaps,
 	getRoadmapById,
 	listPublicManualRoadmaps,
+	getPublicManualRoadmapPreviewById,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

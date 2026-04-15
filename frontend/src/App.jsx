@@ -6,6 +6,7 @@ import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
 import LearningProfilePage from './features/onboarding/LearningProfilePage';
 import ManualRoadmapPage from './features/manual-roadmap/ManualRoadmapPage';
+import RoadmapSearchPage from './features/roadmap-search/RoadmapSearchPage';
 import NavBar from './features/general/NavBar';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
@@ -23,7 +24,7 @@ function AppContent() {
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/roadmaps/search'].includes(pathname) ||
 		pathname.startsWith('/roadmaps/public/');
 
 	if (isAuthenticated && isAuthPopupPath) {
@@ -73,6 +74,14 @@ function AppContent() {
 					<ManualRoadmapPage />
 				</main>
 			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/roadmaps/search') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<RoadmapSearchPage />
+			</main>
 		);
 	}
 

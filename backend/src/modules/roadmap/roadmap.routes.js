@@ -12,6 +12,8 @@ const roadmapRouter = express.Router();
 
 // Public endpoints - no auth required
 roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
+roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
+roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
 
 roadmapRouter.use(requireAuth);
 
@@ -40,7 +42,6 @@ roadmapRouter.post('/primary/regenerate', controller.retryGeneration);
 roadmapRouter.post('/primary/accept', controller.acceptRoadmapHandler);
 roadmapRouter.post('/primary/reject', controller.rejectRoadmap);
 
-roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
 roadmapRouter.post('/manual-roadmaps', controller.createManualRoadmap);
 roadmapRouter.get('/manual-roadmaps/:roadmapId', controller.getManualRoadmapById);
 roadmapRouter.patch('/manual-roadmaps/:roadmapId', controller.updateManualRoadmap);

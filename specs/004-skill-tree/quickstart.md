@@ -1,8 +1,8 @@
 # Quickstart: Skill Tree
 
-**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-07
+**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-11
 
-This guide explains how to run and manually verify the Skill Tree feature behavior defined in [spec.md](spec.md).
+This guide explains how to run and manually verify Skill Tree behavior aligned with Feature 009 contracts in [spec.md](spec.md).
 
 ---
 
@@ -10,8 +10,8 @@ This guide explains how to run and manually verify the Skill Tree feature behavi
 
 - Backend and frontend dependencies installed
 - Development environment running for the project workspace
-- A test account with access to Skill Tree data payloads
-- Feature 009 data contracts available in the environment
+- A test account with JWT access
+- Feature 009 roadmap/progress endpoints available
 
 ---
 
@@ -31,84 +31,104 @@ npm install
 npm run dev
 ```
 
-Open the frontend URL shown by Vite and navigate to the Skill Tree page.
+Open the frontend URL shown by Vite and navigate to Skill Tree.
 
 ---
 
 ## Manual Verification Scenarios
 
-### Scenario A: Tree Overview and Visual Semantics
+### Scenario A: Primary Roadmap Contract Rendering
 
-1. Open Skill Tree.
-2. Verify node types render with correct base styles:
-   - `skill`: yellow (pending)
-   - `related_knowledge`: light orange (pending)
-   - `roadmap_reference`: blue
+1. Call `GET /api/roadmaps/primary` for a test user (or inspect network call from UI).
+2. Confirm payload includes canonical fields: `personalisationLevel`, `acceptedAt`, `nodes[]` with `nodeId`, `nodeType`, `skillName`, `parentNodeId`, `relatedCourses`, `reason`, `resources`.
+3. Open Skill Tree and verify each payload node is rendered exactly once by `nodeId`.
+
+Expected result:
+- No fallback to legacy node schema.
+- Graph renders without missing required node data.
+
+### Scenario B: Topic/Subtopic Graph Semantics
+
+1. Verify `topic` nodes appear on the main flow.
+2. Verify `subtopic` nodes attach to parent by `parentNodeId`.
 3. Verify edge styles:
-   - `skill -> skill`: bold solid line
-   - `skill -> related_knowledge`: lighter dashed line
+   - main topic flow: solid
+   - topic to subtopic branch: dashed
 
 Expected result:
-- Tree renders with clear semantic differentiation.
+- Main learning sequence is clear and branch relationships are readable.
 
-### Scenario B: Axis and Branching Layout
+### Scenario C: Low-Personalisation and Lifecycle States
 
-1. Inspect the core `skill` progression.
-2. Verify the main skill path is primarily vertical.
-3. In dense areas (many related knowledge nodes), verify the layout may branch left/right to connect additional `skill` nodes while staying readable.
-
-Expected result:
-- Vertical main axis is preserved, with selective horizontal branching where needed.
-
-### Scenario C: Node Detail Panel
-
-1. Click a `skill` node.
-2. Verify detail panel sections in order:
-   - Content name
-   - Short explanation
-   - Free Resources
-   - Paid Resources
-   - Related Courses (at bottom)
-3. Repeat with a `related_knowledge` node.
+1. Use a roadmap with `personalisationLevel = low` and verify low-personalisation notice is shown.
+2. Simulate `ROADMAP_NOT_FOUND` from `GET /api/roadmaps/primary` and verify empty-state guidance.
+3. Simulate a roadmap with `acceptedAt = null` and verify retryable/failed state messaging.
 
 Expected result:
-- Both node types open a stable, consistent detail panel.
+- Lifecycle and fallback states are handled via canonical 009 semantics.
 
-### Scenario D: Roadmap Reference Navigation
+### Scenario D: Node Detail Panel
 
-1. Click a `roadmap_reference` node.
-2. Verify navigation to the referenced roadmap.
-3. Simulate or use an invalid target and verify graceful error handling.
-
-Expected result:
-- Valid references navigate correctly; invalid references show error feedback and keep current context stable.
-
-### Scenario E: Node Status Tracking
-
-1. Update a `skill` node status across `pending`, `in_progress`, and `done`.
-2. Verify style mapping for each state.
-3. Update a `related_knowledge` node status across the same states.
-4. Reload page and verify state consistency.
+1. Click a `topic` node.
+2. Verify detail panel sections:
+   - `skillName`
+   - `reason`
+   - `resources`
+   - `relatedCourses` (`courseCode`, `courseName`, `credits`)
+3. Repeat with a `subtopic` node.
+4. Verify empty-state rendering when `resources` or `relatedCourses` is empty.
 
 Expected result:
-- Status updates are reflected correctly and remain consistent after reload.
-- No prerequisite-based lock/unlock behavior is enforced.
+- Detail panel remains stable and faithful to payload data.
 
-### Scenario F: Empty-State Rendering
+### Scenario E: Progress Read and Write Contract
 
-1. Open a node with missing optional sections (no free resources, no paid resources, or no related courses).
-2. Verify empty-state messages render without layout break.
+1. Call `GET /api/roadmaps/:roadmapId/progress` and verify state arrays: `pending`, `inProgress`, `completed`, `skip`.
+2. Trigger valid transitions from UI and verify request payloads:
+   - `pending -> inProgress`
+   - `pending -> skip`
+   - `inProgress -> completed`
+3. Reload page and confirm visual state matches persisted progress document.
 
 Expected result:
-- Panel remains stable and readable with explicit empty-state placeholders.
+- Progress is persisted and restored using 009 APIs only.
+
+### Scenario F: Invalid Transition Handling
+
+1. Trigger a stale or invalid transition to force `INVALID_TRANSITION`.
+2. Verify UI error feedback appears.
+3. Verify node state is not left in a corrupted optimistic state.
+
+Expected result:
+- Error path is visible and recoverable, with re-sync from backend.
 
 ---
 
 ## Acceptance Coverage Map
 
-- Scenario A -> User Story 1
-- Scenario B -> User Story 1 + FR-008/FR-009
-- Scenario C -> User Story 2
-- Scenario D -> User Story 4
-- Scenario E -> User Story 3
-- Scenario F -> Edge Cases
+- Scenario A -> FR-001, FR-002, FR-003
+- Scenario B -> FR-004, FR-005, FR-006, FR-007
+- Scenario C -> FR-014, FR-015, FR-016
+- Scenario D -> FR-008, FR-009
+- Scenario E -> FR-010, FR-011, FR-012, SC-003
+- Scenario F -> FR-013, FR-016, SC-004
+
+---
+
+## Implementation Validation Snapshot
+
+Executed on 2026-04-11 after contract-alignment refactor:
+
+```bash
+# Frontend compile validation
+cd frontend
+npm run build
+
+# Backend skill-tree regression validation
+cd ../backend
+npm test -- tests/unit/skill-tree --runInBand
+```
+
+Observed results:
+- Frontend build completed successfully with production bundle output.
+- Backend skill-tree suite passed (`12/12` test suites, `45/45` tests).

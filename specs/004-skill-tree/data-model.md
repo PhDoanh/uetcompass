@@ -1,59 +1,120 @@
 # Data Model: Skill Tree
 
-**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-07  
+**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-11  
 **Spec dependency**: [spec.md](spec.md)
 
 ---
 
 ## Modeling Scope
 
-Feature 004 models frontend-facing tree structure, interaction state, and view semantics.  
-Feature 004 does not own roadmap generation or backend data sourcing.
+Feature 004 models frontend-facing rendering, interaction state, and API binding against Feature 009 contracts.  
+Feature 004 does not own roadmap generation, node enrichment logic, or lifecycle state transitions.
 
 ---
 
-## Domain Objects
+## Canonical API Data (from Feature 009)
 
-### 1. SkillTreeRoadmap
-
-Represents one renderable roadmap payload consumed by the Skill Tree UI.
+### 1. Roadmap
 
 ```ts
-interface SkillTreeRoadmap {
+interface Roadmap {
+  _id: string;
+  userId: string;
+  studentProfileId: string;
+  roadmapName: string;
+  personalisationLevel: 'full' | 'low';
+  isPrimary: boolean;
+  acceptedAt: string | null;
+  nodes: RoadmapNode[];
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### 2. RoadmapNode
+
+```ts
+type RoadmapNodeType = 'topic' | 'subtopic';
+
+interface RoadmapNode {
+  nodeId: string;
+  nodeType: RoadmapNodeType;
+  skillName: string;
+  parentNodeId: string | null;
+  relatedCourses: RelatedCourse[];
+  reason: string;
+  resources: unknown[];
+}
+```
+
+### 3. RelatedCourse
+
+```ts
+interface RelatedCourse {
+  courseCode: string;
+  courseName: string;
+  credits: number;
+}
+```
+
+### 4. RoadmapProgress
+
+```ts
+type ProgressStateKey = 'pending' | 'inProgress' | 'completed' | 'skip';
+
+interface RoadmapProgress {
+  _id: string;
+  userId: string;
+  roadmapId: string;
+  state: {
+    pending: string[];
+    inProgress: string[];
+    completed: string[];
+    skip: string[];
+  };
+  updatedAt: string;
+}
+```
+
+---
+
+## Frontend View Models
+
+### 1. SkillTreeGraph
+
+Represents a render-ready graph derived from `Roadmap.nodes`.
+
+```ts
+interface SkillTreeGraph {
   roadmapId: string;
   roadmapName: string;
-  nodes: SkillTreeNode[];
+  personalisationLevel: 'full' | 'low';
+  acceptedAt: string | null;
+  nodes: SkillTreeViewNode[];
   edges: SkillTreeEdge[];
 }
 ```
 
-### 2. SkillTreeNode
-
-Represents one node rendered in the roadmap tree.
+### 2. SkillTreeViewNode
 
 ```ts
-type SkillTreeNodeType = "skill" | "related_knowledge" | "roadmap_reference";
-type SkillTreeNodeStatus = "pending" | "in_progress" | "done";
-
-interface SkillTreeNode {
-  id: string;
-  type: SkillTreeNodeType;
-  status: SkillTreeNodeStatus;
-  title: string;
-  shortExplanation?: string;
-  freeResources?: LearningResource[];
-  paidResources?: LearningResource[];
-  relatedCourses?: RelatedCourse[];
-  referencedRoadmapId?: string; // required when type = roadmap_reference
+interface SkillTreeViewNode {
+  id: string; // mirrors nodeId
+  nodeId: string;
+  nodeType: 'topic' | 'subtopic';
+  label: string; // mirrors skillName
+  parentNodeId: string | null;
+  reason: string;
+  resources: unknown[];
+  relatedCourses: RelatedCourse[];
+  progressState: ProgressStateKey;
 }
 ```
 
 ### 3. SkillTreeEdge
 
-Represents one visual connection between nodes.
-
 ```ts
-type SkillTreeEdgeType = "skill_spine" | "knowledge_branch" | "reference_link";
+type SkillTreeEdgeType = 'main_flow' | 'branch';
 
 interface SkillTreeEdge {
   id: string;
@@ -63,33 +124,9 @@ interface SkillTreeEdge {
 }
 ```
 
-Visual semantics:
-- `skill_spine`: bold solid line (`skill -> skill`)
-- `knowledge_branch`: lighter dashed line (`skill -> related_knowledge`)
-- `reference_link`: style controlled by design system for `roadmap_reference` navigation
-
-### 4. LearningResource
-
-```ts
-interface LearningResource {
-  id: string;
-  title: string;
-  url: string;
-  source?: string;
-}
-```
-
-### 5. RelatedCourse
-
-Represents UET curriculum-based recommendations shown at the bottom of the detail panel.
-
-```ts
-interface RelatedCourse {
-  courseId: string;
-  courseCode: string;
-  courseName: string;
-}
-```
+Edge derivation rules:
+- `main_flow`: between consecutive `topic` nodes in roadmap order
+- `branch`: from topic (`parentNodeId`) to each `subtopic`
 
 ---
 
@@ -105,69 +142,65 @@ interface NodeDetailState {
 ```
 
 Behavior:
-- `skill` and `related_knowledge` open detail panel.
-- `roadmap_reference` triggers navigation instead of detail panel.
+- `topic` and `subtopic` open the detail panel.
 
-### Progress Update State
+### Progress Mutation State
 
 ```ts
-interface ProgressState {
+interface ProgressMutationState {
   updatingNodeId: string | null;
   lastUpdatedAt?: string;
+  errorCode?: 'INVALID_TRANSITION' | 'CONFLICT' | 'INTERNAL_ERROR';
 }
 ```
 
 Behavior:
-- Status transitions are tracking-only.
-- No prerequisite lock/unlock state exists in this model.
+- State transitions are delegated to Feature 009.
+- No prerequisite lock/unlock state exists in Feature 004.
 
 ### Layout State
 
 ```ts
 interface LayoutState {
-  direction: "vertical_primary_axis";
+  direction: 'vertical_primary_axis';
   allowHorizontalBranching: boolean;
 }
 ```
 
 Layout rules:
-- Main skill spine is primarily vertical.
-- Left/right branching is allowed to preserve readability in dense local sections.
+- Main `topic` spine is primarily vertical.
+- Left/right branching is allowed for dense local sections.
 
 ---
 
-## State-to-Style Mapping
+## Progress and Style Mapping
 
-### Skill Node (`skill`)
+State-to-style mapping is UI-owned, but state values are contract-owned by Feature 009:
 
-- `pending`: yellow
-- `in_progress`: light purple
-- `done`: gray + strikethrough text
+- `pending`
+- `inProgress`
+- `completed`
+- `skip`
 
-### Related Knowledge Node (`related_knowledge`)
-
-- `pending`: light orange
-- `in_progress`: light purple
-- `done`: darker tone + strikethrough text
-
-### Roadmap Reference Node (`roadmap_reference`)
-
-- Base style: blue
-- Primary action: navigate to referenced roadmap
+Minimum visual requirements:
+- Each state must be visually distinguishable.
+- `completed` and `skip` must be non-active styles.
+- `topic` and `subtopic` must remain distinguishable independent of progress state.
 
 ---
 
 ## Ownership and Boundaries
 
-- Feature 004 consumes roadmap content and persisted statuses through existing contracts.
-- Feature 004 owns presentation mapping, node interaction handling, and local UI state.
-- Feature 009 owns roadmap generation, data processing, and curriculum recommendation sourcing.
+- Feature 004 consumes roadmap and progress content through 009 APIs.
+- Feature 004 owns presentation mapping, detail interaction, and local UI state.
+- Feature 009 owns roadmap lifecycle, progress transition validation, and canonical schemas.
 
 ---
 
 ## Validation Rules (UI Contract Level)
 
-- Every node must have `id`, `type`, `status`, and `title`.
-- `roadmap_reference` node must include `referencedRoadmapId`.
-- Detail panel sections (`Free Resources`, `Paid Resources`, `Related Courses`) may be empty, but section rendering must remain stable.
-- Missing optional data must produce explicit empty-state UI, not missing layout blocks.
+- Every rendered node must have `nodeId`, `nodeType`, and `skillName` from roadmap payload.
+- `subtopic` should have `parentNodeId`; missing parent must not crash rendering.
+- `relatedCourses` must render using `courseCode`, `courseName`, `credits` only.
+- Progress state for each node must resolve from 009 `state` arrays; unknown/missing mapping defaults to `pending`.
+- Detail panel sections may be empty, but section layout must remain stable.

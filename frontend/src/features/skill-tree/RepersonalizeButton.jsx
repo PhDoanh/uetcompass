@@ -16,7 +16,7 @@ export default function RepersonalizeButton({
       className={`skill-tree-repersonalize-btn ${repersonalizing ? 'is-loading' : ''}`}
     >
       <RefreshCw size={16} className={repersonalizing ? 'is-spinning' : ''} />
-      {repersonalizing ? 'Re-personalizing...' : 'Re-personalize'}
+      {repersonalizing ? 'Regenerating roadmap...' : 'Regenerate Roadmap'}
     </button>
   );
 }

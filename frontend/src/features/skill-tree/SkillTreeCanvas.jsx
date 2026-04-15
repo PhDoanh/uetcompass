@@ -1,292 +1,126 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
 import CourseNode from './CourseNode';
 
-const BRANCH_SIDE_WIDTH = 280;
-const BRANCH_GAP = 52;
-const BRANCH_CENTER_WIDTH = 340;
-const BRANCH_TOTAL_WIDTH = BRANCH_SIDE_WIDTH * 2 + BRANCH_GAP * 2 + BRANCH_CENTER_WIDTH;
-const CHIP_HEIGHT = 44;
-const CHIP_STEP = 56;
-
-const CORE_KNOWLEDGE_MOCK = {
-  IT1010: {
-    right: ['Variables & Data Types', 'Control Flow', 'Functions', 'Arrays & Strings'],
-  },
-  IT3910E: {
-    left: ['HTTP & REST', 'DOM Events', 'State Management'],
-    right: ['Node.js Runtime', 'Express API Design', 'Client Rendering'],
-  },
-  IT4409: {
-    left: ['Requirement Analysis', 'System Architecture', 'Design Patterns', 'Testing Strategy', 'CI/CD Basics'],
-  },
-};
-
-function fallbackTopics(node) {
-  const seed = (node.courseCode || 'CORE').replace(/[^A-Z0-9]/g, '');
-  return [
-    `${seed} Fundamentals`,
-    `${seed} Practical Workflows`,
-    `${seed} Problem Solving`,
-    `${seed} Design Thinking`,
-    `${seed} Quality & Testing`,
-  ];
+function chunk(items, size) {
+  const output = [];
+  for (let i = 0; i < items.length; i += size) {
+    output.push(items.slice(i, i + size));
+  }
+  return output;
 }
 
-function resolveKnowledgeBranches(node) {
-  const mock = CORE_KNOWLEDGE_MOCK[node.courseCode];
-  if (mock) {
-    return {
-      left: mock.left || [],
-      right: mock.right || [],
-    };
-  }
+const TOPIC_NODE_WIDTH = 260;
+const TOPIC_LINK_WIDTH = 104;
+const CONNECTOR_SUBTOPIC_STEP = 56;
+const CONNECTOR_BASE_DROP = 28;
+const CONNECTOR_EXTRA_TO_NEXT_ROW = 84;
 
-  const topics = fallbackTopics(node);
-  const mode = (node.courseCode || '').length % 3;
-
-  if (mode === 0) {
-    return { left: topics.slice(0, 3), right: topics.slice(3) };
-  }
-  if (mode === 1) {
-    return { left: topics, right: [] };
-  }
-  return { left: [], right: topics };
+function getRowWidth(topicCount) {
+  if (!topicCount) return 0;
+  return topicCount * TOPIC_NODE_WIDTH + (topicCount - 1) * TOPIC_LINK_WIDTH;
 }
 
-function KnowledgeCluster({ node, onSelectNode, attachCenterRef }) {
-  const { left, right } = resolveKnowledgeBranches(node);
-  const maxLane = Math.max(1, left.length, right.length);
-  const clusterHeight = Math.max(200, maxLane * CHIP_STEP + 40);
-  const centerY = clusterHeight / 2;
-  const centerLeftX = BRANCH_SIDE_WIDTH + BRANCH_GAP;
-  const centerRightX = BRANCH_SIDE_WIDTH + BRANCH_GAP + BRANCH_CENTER_WIDTH;
-
-  const leftY = left.map((_, idx) => 20 + idx * CHIP_STEP + CHIP_HEIGHT / 2);
-  const rightY = right.map((_, idx) => 20 + idx * CHIP_STEP + CHIP_HEIGHT / 2);
-
-  const getStartY = (idx, total) => {
-    const spread = 18;
-    const offset = idx - (total - 1) / 2;
-    return centerY + offset * spread;
-  };
-
-  return (
-    <div className="skill-tree-cluster" style={{ height: `${clusterHeight}px` }}>
-      <svg className="skill-tree-cluster__branches" viewBox={`0 0 ${BRANCH_TOTAL_WIDTH} ${clusterHeight}`} aria-hidden="true">
-        {leftY.map((pointY, idx) => {
-          const targetX = BRANCH_SIDE_WIDTH - 12;
-          const startY = getStartY(idx, leftY.length);
-          const d = `M ${centerLeftX} ${startY} L ${targetX} ${pointY}`;
-          return <path key={`left-${idx}`} d={d} className="skill-tree-cluster__branch-line" />;
-        })}
-
-        {rightY.map((pointY, idx) => {
-          const targetX = BRANCH_TOTAL_WIDTH - BRANCH_SIDE_WIDTH + 12;
-          const startY = getStartY(idx, rightY.length);
-          const d = `M ${centerRightX} ${startY} L ${targetX} ${pointY}`;
-          return <path key={`right-${idx}`} d={d} className="skill-tree-cluster__branch-line" />;
-        })}
-      </svg>
-
-      <div className="skill-tree-cluster__side skill-tree-cluster__side--left">
-        {left.map((label, idx) => (
-          <div key={`left-chip-${idx}`} className="skill-tree-knowledge-chip" style={{ top: `${leftY[idx] - CHIP_HEIGHT / 2}px` }}>
-            {label}
-          </div>
-        ))}
-      </div>
-
-      <div className="skill-tree-cluster__center" ref={attachCenterRef}>
-        <CourseNode node={node} onSelect={() => onSelectNode(node.courseCode)} />
-      </div>
-
-      <div className="skill-tree-cluster__side skill-tree-cluster__side--right">
-        {right.map((label, idx) => (
-          <div key={`right-chip-${idx}`} className="skill-tree-knowledge-chip" style={{ top: `${rightY[idx] - CHIP_HEIGHT / 2}px` }}>
-            {label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * T023: Build React Flow canvas for skill tree visualization
- * For now: simplified grid layout without React Flow (can be enhanced later)
- */
-
-export default function SkillTreeCanvas({ nodes = [], onSelectNode = () => {} }) {
-  const containerRef = useRef(null);
-  const nodeRefs = useRef({});
-  const [anchors, setAnchors] = useState({});
-
-  const { levels, edges } = useMemo(() => {
-    const nodeByCode = new Map((nodes || []).map((node) => [node.courseCode, node]));
-    const depthCache = new Map();
-
-    const getDepth = (courseCode, seen = new Set()) => {
-      if (depthCache.has(courseCode)) {
-        return depthCache.get(courseCode);
-      }
-
-      if (seen.has(courseCode)) {
-        return 0;
-      }
-
-      const node = nodeByCode.get(courseCode);
-      if (!node || !node.prerequisites || node.prerequisites.length === 0) {
-        depthCache.set(courseCode, 0);
-        return 0;
-      }
-
-      const nextSeen = new Set(seen);
-      nextSeen.add(courseCode);
-
-      const depth = Math.max(
-        ...node.prerequisites
-          .filter((prereqCode) => nodeByCode.has(prereqCode))
-          .map((prereqCode) => getDepth(prereqCode, nextSeen) + 1),
-        0
-      );
-
-      depthCache.set(courseCode, depth);
-      return depth;
-    };
-
-    const grouped = new Map();
-    (nodes || []).forEach((node) => {
-      const depth = getDepth(node.courseCode);
-      if (!grouped.has(depth)) {
-        grouped.set(depth, []);
-      }
-      grouped.get(depth).push(node);
-    });
-
-    const sortedLevels = [...grouped.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map((entry) => ({
-        depth: entry[0],
-        nodes: entry[1].sort((a, b) => {
-          const semesterA = Number(a.suggestedSemester || 0);
-          const semesterB = Number(b.suggestedSemester || 0);
-          if (semesterA !== semesterB) {
-            return semesterA - semesterB;
-          }
-          return a.courseCode.localeCompare(b.courseCode);
-        }),
-      }));
-
-    const graphEdges = [];
-    (nodes || []).forEach((node) => {
-      (node.prerequisites || []).forEach((prereqCode) => {
-        if (nodeByCode.has(prereqCode)) {
-          graphEdges.push({ from: prereqCode, to: node.courseCode });
-        }
-      });
-    });
-
-    return {
-      levels: sortedLevels,
-      edges: graphEdges,
-    };
-  }, [nodes]);
-
-  useLayoutEffect(() => {
-    const measureAnchors = () => {
-      if (!containerRef.current) {
-        return;
-      }
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const nextAnchors = {};
-
-      Object.entries(nodeRefs.current).forEach(([courseCode, element]) => {
-        if (!element) {
-          return;
-        }
-
-        const rect = element.getBoundingClientRect();
-        nextAnchors[courseCode] = {
-          topX: rect.left - containerRect.left + rect.width / 2,
-          topY: rect.top - containerRect.top,
-          bottomX: rect.left - containerRect.left + rect.width / 2,
-          bottomY: rect.bottom - containerRect.top,
-        };
-      });
-
-      setAnchors(nextAnchors);
-    };
-
-    measureAnchors();
-
-    const resizeObserver = new ResizeObserver(() => {
-      measureAnchors();
-    });
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    Object.values(nodeRefs.current).forEach((element) => {
-      if (element) {
-        resizeObserver.observe(element);
-      }
-    });
-
-    window.addEventListener('resize', measureAnchors);
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', measureAnchors);
-    };
-  }, [levels]);
-
-  if (!nodes || nodes.length === 0) {
+export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode = () => {} }) {
+  if (!nodes.length) {
     return (
       <div className="skill-tree-empty-state">
-        <p>No nodes available</p>
+        <p>No roadmap nodes available</p>
       </div>
     );
   }
 
+  const branchByParent = new Map();
+  for (const node of nodes) {
+    if (node.nodeType !== 'subtopic' || !node.parentNodeId) continue;
+    if (!branchByParent.has(node.parentNodeId)) {
+      branchByParent.set(node.parentNodeId, []);
+    }
+    branchByParent.get(node.parentNodeId).push(node);
+  }
+
+  const topics = nodes.filter((n) => n.nodeType === 'topic');
+  const topicRows = chunk(topics, 3);
+
   return (
-    <div className="skill-tree-canvas">
-      <div className="skill-tree-tree" ref={containerRef}>
-        <svg className="skill-tree-tree__lines" aria-hidden="true">
-          {edges.map((edge) => {
-            const from = anchors[edge.from];
-            const to = anchors[edge.to];
-            if (!from || !to) {
-              return null;
-            }
+    <div className="skill-tree-canvas skill-canvas">
+      <div className="skill-tree-roadmap-v2" role="list" aria-label="Roadmap topics">
+        {topicRows.map((row, rowIndex) => {
+          const isReverseRow = rowIndex % 2 === 1;
+          const displayRow = isReverseRow ? [...row].reverse() : row;
+          const hasNextRow = rowIndex < topicRows.length - 1;
+          const nextRow = hasNextRow ? topicRows[rowIndex + 1] : [];
+          const nextDisplayRow = (rowIndex + 1) % 2 === 1 ? [...nextRow].reverse() : nextRow;
 
-            const midY = from.bottomY + Math.max(24, (to.topY - from.bottomY) / 2);
-            const d = `M ${from.bottomX} ${from.bottomY} L ${from.bottomX} ${midY} L ${to.topX} ${midY} L ${to.topX} ${to.topY}`;
+          const maxSubtopicsInRow = Math.max(
+            0,
+            ...displayRow.map((topic) => (branchByParent.get(topic.nodeId) || []).length)
+          );
+          const connectorDrop =
+            CONNECTOR_BASE_DROP +
+            maxSubtopicsInRow * CONNECTOR_SUBTOPIC_STEP +
+            CONNECTOR_EXTRA_TO_NEXT_ROW;
 
-            return <path key={`${edge.from}->${edge.to}`} d={d} className="skill-tree-tree__path" />;
-          })}
-        </svg>
+          const currentHalf = getRowWidth(displayRow.length) / 2;
+          const nextHalf = getRowWidth(nextDisplayRow.length) / 2;
 
-        <div className="skill-tree-tree__levels">
-          {levels.map((level) => (
-            <div className="skill-tree-tree__level" key={level.depth}>
-              {level.nodes.map((node) => (
-                <div
-                  key={node.courseCode}
-                  className="skill-tree-tree__node-slot"
-                >
-                  <KnowledgeCluster
-                    node={node}
-                    onSelectNode={onSelectNode}
-                    attachCenterRef={(element) => {
-                      nodeRefs.current[node.courseCode] = element;
-                    }}
-                  />
-                </div>
-              ))}
+          return (
+          <section
+            className={`skill-tree-roadmap-v2__row-block ${hasNextRow ? 'skill-tree-roadmap-v2__row-block--with-connector' : ''}`}
+            key={`topic-row-${rowIndex}`}
+            style={hasNextRow ? {
+              '--connector-drop': `${connectorDrop}px`,
+              '--current-half': `${currentHalf}px`,
+              '--next-half': `${nextHalf}px`,
+            } : undefined}
+          >
+            <div className="skill-tree-roadmap-v2__row" role="list">
+              {displayRow.map((topic, topicIndex) => {
+                const branches = branchByParent.get(topic.nodeId) || [];
+                return (
+                  <React.Fragment key={topic.nodeId}>
+                    <div className="skill-tree-roadmap-v2__cell" role="listitem">
+                      <CourseNode node={topic} onSelect={() => onSelectNode(topic.nodeId)} />
+
+                      {branches.length > 0 && (
+                        <div className="skill-tree-roadmap-v2__chips" aria-label="Subtopics">
+                          {branches.map((subtopic) => (
+                            <div key={subtopic.nodeId} className="skill-tree-roadmap-v2__chip-wrap">
+                              <div className="skill-tree-roadmap-v2__chip-line" aria-hidden="true" />
+                              <CourseNode node={subtopic} onSelect={() => onSelectNode(subtopic.nodeId)} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {topicIndex < displayRow.length - 1 && (
+                      <div
+                        className={`skill-tree-roadmap-v2__topic-link ${isReverseRow ? 'skill-tree-roadmap-v2__topic-link--left' : 'skill-tree-roadmap-v2__topic-link--right'}`}
+                        aria-hidden="true"
+                      >
+                        <div className="skill-tree-roadmap-v2__topic-link-line" />
+                        <div className="skill-tree-roadmap-v2__topic-link-arrow" />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
-          ))}
-        </div>
+
+            {hasNextRow && (
+              <div
+                className={`skill-tree-roadmap-v2__row-connector ${isReverseRow ? 'skill-tree-roadmap-v2__row-connector--left' : 'skill-tree-roadmap-v2__row-connector--right'}`}
+                aria-hidden="true"
+              >
+                <div className="skill-tree-roadmap-v2__row-connector-out" />
+                <div className="skill-tree-roadmap-v2__row-connector-down" />
+                <div className="skill-tree-roadmap-v2__row-connector-in" />
+                <div className="skill-tree-roadmap-v2__row-connector-arrow" />
+              </div>
+            )}
+          </section>
+          );
+        })}
       </div>
     </div>
   );

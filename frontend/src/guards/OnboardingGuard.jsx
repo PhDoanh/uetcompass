@@ -37,16 +37,24 @@ export default function OnboardingGuard({ children }) {
 
 			try {
 				const profile = await authApi.getProfile(accessToken);
-				const hasMajor = Boolean(String(profile?.profile?.major || '').trim());
+				const resolvedState = profile?.onboardingState;
+				const hasMajorFallback = Boolean(String(profile?.profile?.major || '').trim());
+				const isCompleted = resolvedState
+					? resolvedState === 'COMPLETED'
+					: hasMajorFallback;
 
 				if (!isMounted) {
 					return;
 				}
 
-				if (hasMajor) {
+				if (isCompleted) {
 					setResolvedCompleted(true);
 					updateAuthInfo?.({ onboardingState: 'COMPLETED' });
 					return;
+				}
+
+				if (resolvedState && resolvedState !== onboardingState) {
+					updateAuthInfo?.({ onboardingState: resolvedState });
 				}
 
 				window.sessionStorage.setItem(

@@ -1,37 +1,47 @@
 # Specification Quality Checklist: Skill Tree
 
-**Purpose**: Validate specification completeness and quality before execution planning  
+**Purpose**: Validate that Feature 004 documents are fully aligned with Feature 009 contracts  
 **Created**: 2026-04-07  
+**Updated**: 2026-04-11  
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 
-- [x] No implementation-specific detail is required by the spec
-- [x] Focused on user value and user-facing behavior
-- [x] Written for product, design, and engineering stakeholders
-- [x] All mandatory sections are complete
+- [x] Scope is clearly frontend-focused and does not duplicate 009 business logic
+- [x] Contract sections reference canonical roadmap/progress APIs from 009
+- [x] Terminology is consistent across spec, data model, plan, quickstart, and research
+- [x] Mandatory sections are complete and internally consistent
 
 ## Requirement Completeness
 
 - [x] No unresolved clarification markers
-- [x] Requirements are testable and unambiguous
+- [x] Functional requirements are testable and unambiguous
 - [x] Success criteria are measurable
-- [x] Success criteria are technology-agnostic
-- [x] Acceptance scenarios are complete for primary flows
-- [x] Edge cases are identified
-- [x] Scope boundaries are explicit
+- [x] Acceptance scenarios cover happy path and error path
+- [x] Edge cases include missing parent references and progress mismatches
+- [x] Ownership boundaries are explicit (004 presentation; 009 lifecycle and schema)
 - [x] Dependencies and assumptions are documented
+
+## Contract Fidelity Checks
+
+- [x] Node taxonomy uses only `topic` and `subtopic`
+- [x] Node identity uses `nodeId` consistently
+- [x] Node detail fields are canonical: `skillName`, `reason`, `resources`, `relatedCourses`
+- [x] Related course fields are canonical: `courseCode`, `courseName`, `credits`
+- [x] Progress states are canonical: `pending`, `inProgress`, `completed`, `skip`
+- [x] Progress writes are limited to valid 009 transitions
+- [x] Lifecycle handling uses `acceptedAt` semantics
+- [x] Error handling references 009 domain codes (`ROADMAP_NOT_FOUND`, `INVALID_TRANSITION`, `CONFLICT`)
 
 ## Feature Readiness
 
 - [x] Functional requirements map to acceptance scenarios
-- [x] User scenarios cover tree overview, node detail, progress tracking, and cross-roadmap navigation
-- [x] Visual semantics are fully defined (node colors, edge styles, status styles)
-- [x] Layout behavior is fully defined (primary vertical skill axis with optional left/right branching)
-- [x] Ownership boundaries are clear (Feature 004 frontend behavior, Feature 009 data authority)
+- [x] Quickstart scenarios validate both contract reads and writes
+- [x] Plan workstreams are traceable to FR/SC sets in spec
+- [x] Data model reflects canonical 009 schema without legacy aliases
+- [x] Research decisions document reasons for contract-first design
 
 ## Notes
 
-- The specification is internally consistent and ready for implementation planning.
-- Prerequisite lock/unlock behavior is intentionally out of scope.
-- Backend roadmap generation and sourcing remain owned by Feature 009.
+- The documentation set is now contract-aligned with Feature 009.
+- Remaining implementation risk is legacy adapter code in backend/frontend services that may still map old fields.

@@ -8,11 +8,14 @@ export default function OnboardingGuard({ children }) {
 	const { accessToken, onboardingState, updateAuthInfo, logoutAndRedirect } = useAuth();
 	const [resolvedCompleted, setResolvedCompleted] = useState(onboardingState === 'COMPLETED');
 	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-	const isSkillTreePath = useMemo(() => pathname.includes('/skill-tree'), [pathname]);
+	const isOnboardingProtectedPath = useMemo(
+		() => pathname.includes('/skill-tree') || pathname.includes('/learning-profile'),
+		[pathname]
+	);
 	const onboardingCompleted = onboardingState === 'COMPLETED' || resolvedCompleted;
 
 	useEffect(() => {
-		if (!isSkillTreePath) {
+		if (!isOnboardingProtectedPath) {
 			setResolvedCompleted(true);
 			return;
 		}
@@ -27,23 +30,31 @@ export default function OnboardingGuard({ children }) {
 		const resolveFromProfile = async () => {
 			if (!accessToken) {
 				if (typeof window !== 'undefined') {
-					window.location.replace('/login');
+					window.location.replace('/');
 				}
 				return;
 			}
 
 			try {
 				const profile = await authApi.getProfile(accessToken);
-				const hasMajor = Boolean(String(profile?.profile?.major || '').trim());
+				const resolvedState = profile?.onboardingState;
+				const hasMajorFallback = Boolean(String(profile?.profile?.major || '').trim());
+				const isCompleted = resolvedState
+					? resolvedState === 'COMPLETED'
+					: hasMajorFallback;
 
 				if (!isMounted) {
 					return;
 				}
 
-				if (hasMajor) {
+				if (isCompleted) {
 					setResolvedCompleted(true);
 					updateAuthInfo?.({ onboardingState: 'COMPLETED' });
 					return;
+				}
+
+				if (resolvedState && resolvedState !== onboardingState) {
+					updateAuthInfo?.({ onboardingState: resolvedState });
 				}
 
 				window.sessionStorage.setItem(
@@ -74,9 +85,9 @@ export default function OnboardingGuard({ children }) {
 		return () => {
 			isMounted = false;
 		};
-	}, [accessToken, isSkillTreePath, logoutAndRedirect, onboardingState, updateAuthInfo]);
+	}, [accessToken, isOnboardingProtectedPath, logoutAndRedirect, onboardingState, updateAuthInfo]);
 
-	if (isSkillTreePath && !onboardingCompleted) {
+	if (isOnboardingProtectedPath && !onboardingCompleted) {
 		return null;
 	}
 

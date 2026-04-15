@@ -38,10 +38,10 @@ describe('roadmap.triggers wiring', () => {
 		});
 
 		expect(typeof registeredHandler).toBe('function');
-		registeredHandler({ userId: 'u1', profileId: 'p1' });
+		registeredHandler({ userId: 'u1' });
 
 		await new Promise((resolve) => setImmediate(resolve));
-		expect(generationService.triggerGeneration).toHaveBeenCalledWith('u1', 'p1', 'profile_submission');
+		expect(generationService.triggerGeneration).toHaveBeenCalledWith('u1', 'profile_submission');
 	});
 
 	test('handler does not trigger generation when one is already active', () => {
@@ -55,7 +55,7 @@ describe('roadmap.triggers wiring', () => {
 			require('../../../src/modules/roadmap/roadmap.triggers');
 		});
 
-		registeredHandler({ userId: 'u1', profileId: 'p1' });
+		registeredHandler({ userId: 'u1' });
 		expect(generationService.triggerGeneration).not.toHaveBeenCalled();
 	});
 });

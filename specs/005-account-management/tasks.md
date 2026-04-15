@@ -7,7 +7,7 @@
 
 **Purpose**: Prepare account-focused module scaffolding and shared wiring.
 
-- [X] T001 Create backend account module scaffold in `backend/src/modules/account/index.js`
+- [X] T001 Create backend account module scaffold in `backend/src/modules/account/account.routes.js`
 - [X] T002 [P] Create backend account constants/errors scaffold in `backend/src/modules/account/account.constants.js`
 - [X] T003 [P] Create frontend account feature scaffold in `frontend/src/features/account/AccountModule.jsx`
 - [X] T004 Create frontend account API service scaffold in `frontend/src/services/account.api.js`

@@ -1,8 +1,78 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+	Camera,
+	CheckCircle2,
+	Eye,
+	EyeOff,
+	Lock,
+	Shield,
+	User,
+	UserX,
+} from 'lucide-react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import useAccountSettingsStore from '../../stores/accountSettings.store';
+import SiteFooter from '../general/SiteFooter';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
+import './account-settings-page.css';
+
+const AVATAR_MAX_DIMENSION = 512;
+const AVATAR_MAX_BYTES = 350 * 1024;
+
+function estimateDataUrlBytes(dataUrl) {
+	const base64 = String(dataUrl || '').split(',')[1] || '';
+	return Math.floor((base64.length * 3) / 4);
+}
+
+function loadImageFromFile(file) {
+	return new Promise((resolve, reject) => {
+		const objectUrl = URL.createObjectURL(file);
+		const image = new Image();
+		image.onload = () => {
+			URL.revokeObjectURL(objectUrl);
+			resolve(image);
+		};
+		image.onerror = () => {
+			URL.revokeObjectURL(objectUrl);
+			reject(new Error('Failed to decode image'));
+		};
+		image.src = objectUrl;
+	});
+}
+
+async function compressAvatarFile(file) {
+	const image = await loadImageFromFile(file);
+	const scale = Math.min(1, AVATAR_MAX_DIMENSION / Math.max(image.width, image.height));
+	const width = Math.max(1, Math.round(image.width * scale));
+	const height = Math.max(1, Math.round(image.height * scale));
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext('2d');
+	if (!context) {
+		throw new Error('Canvas is not supported in this browser');
+	}
+
+	context.drawImage(image, 0, 0, width, height);
+
+	if (file.type === 'image/png') {
+		return canvas.toDataURL('image/png');
+	}
+
+	const qualitySteps = [0.86, 0.75, 0.65, 0.55];
+	let best = canvas.toDataURL('image/jpeg', qualitySteps[0]);
+
+	for (const quality of qualitySteps) {
+		const candidate = canvas.toDataURL('image/jpeg', quality);
+		best = candidate;
+		if (estimateDataUrlBytes(candidate) <= AVATAR_MAX_BYTES) {
+			break;
+		}
+	}
+
+	return best;
+}
 
 export default function AccountSettingsPage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
@@ -27,10 +97,34 @@ export default function AccountSettingsPage() {
 	const [pageError, setPageError] = useState('');
 	const [profileStatus, setProfileStatus] = useState({ error: '', success: '' });
 	const [passwordStatus, setPasswordStatus] = useState({ error: '', success: '' });
+	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+	const [showNewPassword, setShowNewPassword] = useState(false);
 
 	const canSubmitPassword = useMemo(() => {
 		return Boolean(currentPassword.trim()) && isPasswordPolicyValid(newPassword);
 	}, [currentPassword, newPassword]);
+
+	const passwordStrength = useMemo(() => {
+		const value = String(newPassword || '');
+		if (!value) {
+			return { label: 'Empty', color: 'muted', score: 0 };
+		}
+
+		let score = 0;
+		if (value.length >= 8) score += 1;
+		if (/[A-Z]/.test(value)) score += 1;
+		if (/[a-z]/.test(value)) score += 1;
+		if (/\d/.test(value)) score += 1;
+		if (/[^A-Za-z0-9]/.test(value)) score += 1;
+
+		if (score <= 2) {
+			return { label: 'Weak', color: 'weak', score: 1 };
+		}
+		if (score === 3 || score === 4) {
+			return { label: 'Medium', color: 'medium', score: 2 };
+		}
+		return { label: 'Strong', color: 'strong', score: 3 };
+	}, [newPassword]);
 
 	useEffect(() => {
 		async function loadProfile() {
@@ -57,7 +151,9 @@ export default function AccountSettingsPage() {
 					await logoutAndRedirect();
 					return;
 				}
-				setPageError(err?.message || 'Failed to load account profile');
+				const message = err?.message || 'Failed to load account profile';
+				setPageError(message);
+				setError(message);
 			} finally {
 				setLoading(false);
 			}
@@ -99,9 +195,26 @@ export default function AccountSettingsPage() {
 				avatarUrl: profile.avatarUrl || '',
 				effectiveDisplayName: profile.effectiveDisplayName || prev.effectiveDisplayName,
 			}));
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(
+					new CustomEvent('account-profile-updated', {
+						detail: {
+							profile: {
+								email: profile.email || identity.email,
+								displayName: profile.displayName || identity.displayName,
+								fullName: profile.fullName || identity.fullName,
+								effectiveDisplayName: profile.effectiveDisplayName || identity.effectiveDisplayName,
+								avatarUrl: profile.avatarUrl || '',
+							},
+						},
+					})
+				);
+			}
 			setProfileStatus({ error: '', success: result?.message || 'Profile updated' });
 		} catch (err) {
-			setProfileStatus({ error: err?.message || 'Failed to update profile', success: '' });
+			const message = err?.message || 'Failed to update profile';
+			setProfileStatus({ error: message, success: '' });
+			setError(message);
 		} finally {
 			setLoading(false);
 		}
@@ -119,14 +232,14 @@ export default function AccountSettingsPage() {
 		}
 
 		try {
-			const dataUrl = await new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(String(reader.result || ''));
-				reader.onerror = () => reject(new Error('Failed to read image file'));
-				reader.readAsDataURL(file);
-			});
+			const dataUrl = await compressAvatarFile(file);
+			const compressedBytes = estimateDataUrlBytes(dataUrl);
 
-			setImageError('');
+			setImageError(
+				compressedBytes > AVATAR_MAX_BYTES
+					? 'Ảnh đã được nén nhưng vẫn còn lớn. Bạn nên dùng ảnh nhỏ hơn để tải nhanh hơn.'
+					: ''
+			);
 			setIdentity((prev) => ({ ...prev, avatarUrl: dataUrl }));
 		} catch (_) {
 			setImageError('Failed to import image');
@@ -162,115 +275,243 @@ export default function AccountSettingsPage() {
 			setCurrentPassword('');
 			setNewPassword('');
 		} catch (err) {
-			setPasswordStatus({ error: err?.message || 'Failed to change password', success: '' });
+			const message = err?.message || 'Failed to change password';
+			setPasswordStatus({ error: message, success: '' });
+			setError(message);
 		} finally {
 			setLoading(false);
 		}
 	}
 
+	const displayName = identity.displayName || identity.fullName || identity.effectiveDisplayName || 'Student';
+	const avatarFallback =
+		(displayName && displayName.trim() ? displayName.trim().charAt(0).toUpperCase() : 'S');
+
 	return (
-		<main style={{ maxWidth: 860, margin: '0 auto', padding: 24 }}>
-			<h1>Account Settings</h1>
-			<p>Effective display name: <strong>{identity.effectiveDisplayName}</strong></p>
+		<div className="account-settings-page">
+			<div className="account-settings-shell">
+				<main className="account-settings-main">
+					<header className="account-settings-header">
+						<h1>Account Settings</h1>
+						<p>
+							Manage your academic profile, security preferences, and interface customization.
+						</p>
+						<p className="account-settings-effective-name">
+							Effective display name: <strong>{identity.effectiveDisplayName}</strong>
+						</p>
+					</header>
 
-			{pageError ? <p style={{ color: '#b00020' }}>{pageError}</p> : null}
+					{pageError ? <p className="message error">{pageError}</p> : null}
 
-			<section style={{ marginTop: 24 }}>
-				<h2>Profile</h2>
-				<form onSubmit={onSaveProfile}>
-					<label htmlFor="email">Email</label>
-					<input
-						id="email"
-						value={identity.email}
-						disabled
-						readOnly
-						style={{ display: 'block', width: '100%', marginBottom: 12, backgroundColor: '#f5f5f5' }}
-					/>
+					<section className="profile-grid">
+						<div className="profile-avatar-card">
+							<div className="avatar-wrap">
+								{identity.avatarUrl ? (
+									<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
+								) : (
+									<div className="avatar-fallback">{avatarFallback}</div>
+								)}
+								<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
+									<Camera size={14} />
+								</label>
+							</div>
+							<h3>{displayName}</h3>
+							<p>{identity.email || 'student@vnu.edu.vn'}</p>
+							<div className="avatar-actions">
+								<input
+									id="avatarImport"
+									type="file"
+									accept="image/*"
+									onChange={onImportImage}
+									hidden
+								/>
+								<label htmlFor="avatarImport" className="btn ghost">
+									Import avatar
+								</label>
+								<button
+									type="button"
+									className="btn danger"
+									onClick={onDeleteImage}
+									disabled={loading || !identity.avatarUrl}
+								>
+									Delete image
+								</button>
+							</div>
+							{imageError ? <p className="message error">{imageError}</p> : null}
+						</div>
 
-					<label htmlFor="displayName">Display Name</label>
-					<input
-						id="displayName"
-						value={identity.displayName}
-						onChange={(e) => setIdentity((prev) => ({ ...prev, displayName: e.target.value }))}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					/>
+						<div className="profile-form-card">
+							<div className="card-title-row">
+								<User size={18} />
+								<h2>Identity Details</h2>
+							</div>
+							<form onSubmit={onSaveProfile}>
+								<div className="form-grid">
+									<div className="field">
+										<label htmlFor="fullName">Full Name</label>
+										<input
+											id="fullName"
+											value={identity.fullName}
+											onChange={(e) =>
+												setIdentity((prev) => ({ ...prev, fullName: e.target.value }))
+											}
+										/>
+									</div>
+									<div className="field">
+										<label htmlFor="displayName">Display Name</label>
+										<input
+											id="displayName"
+											value={identity.displayName}
+											onChange={(e) =>
+												setIdentity((prev) => ({ ...prev, displayName: e.target.value }))
+											}
+										/>
+									</div>
+									<div className="field field-wide">
+										<label htmlFor="email">Email Address</label>
+										<input id="email" value={identity.email} disabled readOnly />
+									</div>
+								</div>
+								<div className="card-actions">
+									<button type="submit" className="btn primary" disabled={loading}>
+										Save Changes
+									</button>
+								</div>
+								{profileStatus.error ? <p className="message error">{profileStatus.error}</p> : null}
+								{profileStatus.success ? <p className="message success">{profileStatus.success}</p> : null}
+							</form>
+						</div>
+					</section>
 
-					<label htmlFor="fullName">Full Name</label>
-					<input
-						id="fullName"
-						value={identity.fullName}
-						onChange={(e) => setIdentity((prev) => ({ ...prev, fullName: e.target.value }))}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					/>
+					<section className="secondary-grid">
+						<div className="security-card">
+							<div className="card-head-between">
+								<div className="card-title-row">
+									<Lock size={18} />
+									<h2>Security</h2>
+								</div>
+								<span className="security-chip">Strong Security</span>
+							</div>
 
-					<label htmlFor="privacySetting">Privacy Setting</label>
-					<select
-						id="privacySetting"
-						value={identity.privacySetting}
-						onChange={(e) => setIdentity((prev) => ({ ...prev, privacySetting: e.target.value }))}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					>
-						<option value="identified">identified</option>
-						<option value="anonymous">anonymous</option>
-					</select>
+							<form onSubmit={onChangePassword}>
+								<div className="field">
+									<label htmlFor="currentPassword">Current Password</label>
+									<div className="password-wrap">
+										<input
+											id="currentPassword"
+											type={showCurrentPassword ? 'text' : 'password'}
+											value={currentPassword}
+											onChange={(e) => setCurrentPassword(e.target.value)}
+											placeholder="••••••••••••"
+										/>
+										<button
+											type="button"
+											className="icon-btn"
+											onClick={() => setShowCurrentPassword((v) => !v)}
+										>
+											{showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+										</button>
+									</div>
+								</div>
 
-					<label htmlFor="avatarImport">Import Avatar</label>
-					<input
-						id="avatarImport"
-						type="file"
-						accept="image/*"
-						onChange={onImportImage}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					/>
+								<div className="field">
+									<label htmlFor="newPassword">New Password</label>
+									<div className="password-wrap">
+										<input
+											id="newPassword"
+											type={showNewPassword ? 'text' : 'password'}
+											value={newPassword}
+											onChange={(e) => setNewPassword(e.target.value)}
+										/>
+										<button
+											type="button"
+											className="icon-btn"
+											onClick={() => setShowNewPassword((v) => !v)}
+										>
+											{showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+										</button>
+									</div>
+									<div className="strength-wrap">
+										<div className="strength-bars">
+											<span className={passwordStrength.score >= 1 ? `bar ${passwordStrength.color}` : 'bar'} />
+											<span className={passwordStrength.score >= 2 ? `bar ${passwordStrength.color}` : 'bar'} />
+											<span className={passwordStrength.score >= 3 ? `bar ${passwordStrength.color}` : 'bar'} />
+										</div>
+										<div className="strength-meta">
+											<span>Password: {passwordStrength.label}</span>
+											<span>{canSubmitPassword ? 'Policy valid' : 'At least 8 chars + letters + number + symbol'}</span>
+										</div>
+									</div>
+								</div>
 
-					<div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-						<button type="button" onClick={onDeleteImage} disabled={loading || !identity.avatarUrl}>
-							Delete image
-						</button>
-					</div>
+								<div className="card-head-between card-divider-top">
+									<p>Last changed 3 months ago</p>
+									<button type="submit" className="btn subtle" disabled={loading || !canSubmitPassword}>
+										Update Password
+									</button>
+								</div>
+								{passwordStatus.error ? <p className="message error">{passwordStatus.error}</p> : null}
+								{passwordStatus.success ? <p className="message success">{passwordStatus.success}</p> : null}
+							</form>
+						</div>
 
-					{imageError ? <p style={{ color: '#b00020' }}>{imageError}</p> : null}
-					{identity.avatarUrl ? (
-						<img
-							src={identity.avatarUrl}
-							alt="Avatar preview"
-							style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: '50%', marginBottom: 12 }}
-						/>
-					) : null}
+						<div className="privacy-card">
+							<div className="card-title-row">
+								<Shield size={18} />
+								<h2>Privacy Settings</h2>
+							</div>
+							<p>
+								Choose how you appear in community features and collaborative tools across the platform.
+							</p>
+							<div className="privacy-options">
+								<label className={identity.privacySetting === 'identified' ? 'privacy-option selected' : 'privacy-option'}>
+									<input
+										type="radio"
+										name="privacy_mode"
+										checked={identity.privacySetting === 'identified'}
+										onChange={() => setIdentity((prev) => ({ ...prev, privacySetting: 'identified' }))}
+									/>
+									<div className="privacy-content">
+										<User size={20} />
+										<div>
+											<strong>Identified</strong>
+											<span>Show full name and ID to peers</span>
+										</div>
+									</div>
+									{identity.privacySetting === 'identified' ? <CheckCircle2 size={18} /> : null}
+								</label>
 
-					<button type="submit" disabled={loading}>Save profile</button>
-					{profileStatus.error ? <p style={{ color: '#b00020' }}>{profileStatus.error}</p> : null}
-					{profileStatus.success ? <p style={{ color: '#1b5e20' }}>{profileStatus.success}</p> : null}
-				</form>
-			</section>
+								<label className={identity.privacySetting === 'anonymous' ? 'privacy-option selected' : 'privacy-option'}>
+									<input
+										type="radio"
+										name="privacy_mode"
+										checked={identity.privacySetting === 'anonymous'}
+										onChange={() => setIdentity((prev) => ({ ...prev, privacySetting: 'anonymous' }))}
+									/>
+									<div className="privacy-content">
+										<UserX size={20} />
+										<div>
+											<strong>Anonymous</strong>
+											<span>Hide identity in shared spaces</span>
+										</div>
+									</div>
+									{identity.privacySetting === 'anonymous' ? <CheckCircle2 size={18} /> : null}
+								</label>
+							</div>
+							<button
+								type="button"
+								className="btn subtle full"
+								onClick={onSaveProfile}
+								disabled={loading}
+							>
+								Save Privacy Preference
+							</button>
+						</div>
+					</section>
+				</main>
 
-			<section style={{ marginTop: 24 }}>
-				<h2>Change Password</h2>
-				<form onSubmit={onChangePassword}>
-					<label htmlFor="currentPassword">Current Password</label>
-					<input
-						id="currentPassword"
-						type="password"
-						value={currentPassword}
-						onChange={(e) => setCurrentPassword(e.target.value)}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					/>
-
-					<label htmlFor="newPassword">New Password</label>
-					<input
-						id="newPassword"
-						type="password"
-						value={newPassword}
-						onChange={(e) => setNewPassword(e.target.value)}
-						style={{ display: 'block', width: '100%', marginBottom: 12 }}
-					/>
-
-					<button type="submit" disabled={loading}>Change password</button>
-					{passwordStatus.error ? <p style={{ color: '#b00020' }}>{passwordStatus.error}</p> : null}
-					{passwordStatus.success ? <p style={{ color: '#1b5e20' }}>{passwordStatus.success}</p> : null}
-				</form>
-			</section>
-
-		</main>
+				<SiteFooter />
+			</div>
+		</div>
 	);
 }

@@ -66,7 +66,7 @@ describe('roadmap.service — getPrimaryByUser', () => {
 });
 
 describe('roadmap.service — listByUser', () => {
-	test('applies status filter when provided', async () => {
+	test('ignores status parameter when provided (no status field per spec)', async () => {
 		const mockItems = [completedRoadmap];
 		Roadmap.find = jest.fn().mockReturnValue({
 			sort: () => ({ skip: () => ({ limit: () => ({ lean: () => Promise.resolve(mockItems) }) }) }),
@@ -75,8 +75,9 @@ describe('roadmap.service — listByUser', () => {
 
 		const result = await roadmapService.listByUser(userId, { status: 'completed' });
 
+		// status must NOT be forwarded to the DB query — it is not a schema field
 		expect(Roadmap.find).toHaveBeenCalledWith(
-			{ userId, status: 'completed' },
+			{ userId },
 			{ nodes: 0 }
 		);
 		expect(result.items).toEqual(mockItems);
@@ -155,10 +156,13 @@ describe('roadmap.service — commitAccepted', () => {
 			expect.objectContaining({
 				userId,
 				isPrimary: true,
-				status: 'completed',
-				errorMessage: null,
+				acceptedAt: expect.any(Date),
 			})
 		);
+		// status and errorMessage must NOT be present
+		const createArg = Roadmap.create.mock.calls[0][0];
+		expect(createArg).not.toHaveProperty('status');
+		expect(createArg).not.toHaveProperty('errorMessage');
 		expect(result).toEqual(createdDoc);
 	});
 
@@ -189,13 +193,16 @@ describe('roadmap.service — upsertFailedWithProfile', () => {
 		);
 
 		expect(Roadmap.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, status: 'failed' },
+			{ userId, acceptedAt: null },
 			expect.objectContaining({
-				$set: expect.objectContaining({ errorMessage: 'Gemini error' }),
+				$set: expect.objectContaining({ updatedAt: expect.any(Date) }),
 				$setOnInsert: expect.objectContaining({ userId, studentProfileId: profileId }),
 			}),
 			expect.objectContaining({ upsert: true, new: true })
 		);
+		// message must NOT be stored on the document (2026-04-08 decision)
+		const updateArg = Roadmap.findOneAndUpdate.mock.calls[0][1];
+		expect(updateArg.$set).not.toHaveProperty('errorMessage');
 		expect(result).toEqual(failedDoc);
 	});
 
@@ -212,7 +219,7 @@ describe('roadmap.service — upsertFailedWithProfile', () => {
 		);
 
 		expect(Roadmap.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, status: 'failed' },
+			{ userId, acceptedAt: null },
 			expect.objectContaining({
 				$setOnInsert: expect.objectContaining({ personalisationLevel: 'low' }),
 			}),
@@ -231,7 +238,7 @@ describe('roadmap.service — upsertFailedWithProfile', () => {
 		);
 
 		expect(Roadmap.findOneAndUpdate).toHaveBeenCalledWith(
-			{ userId, status: 'failed' },
+			{ userId, acceptedAt: null },
 			expect.objectContaining({
 				$setOnInsert: expect.objectContaining({ personalisationLevel: 'full' }),
 			}),

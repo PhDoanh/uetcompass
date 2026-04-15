@@ -47,9 +47,24 @@ export async function getTree(authToken) {
   }
 }
 
-export async function patchNodeStatus(authToken, courseCode, status) {
+export async function patchNodeStatus(authToken, roadmapId, nodeId, fromState, toState) {
   try {
-    const response = await client.patch(`/skill-tree/nodes/${courseCode}/status`, { status }, {
+    const response = await client.patch(`/skill-tree/roadmaps/${roadmapId}/progress/node`, {
+      nodeId,
+      fromState,
+      toState,
+    }, {
+      headers: createHeaders(authToken),
+    });
+    return response.data;
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+export async function getRoadmapProgress(authToken, roadmapId) {
+  try {
+    const response = await client.get(`/skill-tree/roadmaps/${roadmapId}/progress`, {
       headers: createHeaders(authToken),
     });
     return response.data;
@@ -127,6 +142,7 @@ export async function repersonalize(authToken) {
 const skillTreeApi = {
   getTree,
   patchNodeStatus,
+  getRoadmapProgress,
   getResources,
   getWhyCourse,
   getMarketSkills,

@@ -82,7 +82,7 @@ A developer can manually trigger the seed job on a development environment to te
 
 ### Functional Requirements
 
-- **FR-001**: The job MUST read Program-based curriculum configuration (Program objects with typed source URLs) from a designated configuration source.
+- **FR-001**: The job MUST load curriculum configuration from curriculum.config.js as defined in FR-017.
 - **FR-002**: The job MUST extract raw content from each configured source URL using a content extraction service.
 - **FR-003**: Extracted content MUST be processed by an AI parsing service (Call 1) to produce structured Program/CourseUnit/ProgramOutcome records conforming to the defined schema.
 - **FR-004**: Each valid CourseUnit record MUST be upserted into the persistent data store; records with a matching course code and `programId` MUST be fully overwritten.
@@ -130,6 +130,7 @@ A developer can manually trigger the seed job on a development environment to te
 - **SC-006**: After Call 2 completes for a Program, every CourseUnit belonging to that Program MUST have non-null `difficultyLevel` (1–5), `careerTracks` (≥1 entry), and `skills` (≥1 entry, source `"ai-inferred"`). A Call 2 failure for a Program MUST be logged and flagged, but MUST NOT block the job from continuing to the next Program.
 - **SC-007**: Every `CourseUnit.skills` entry stored with `scrapeType: "ai-inferred"` MUST only contain skill tags present in `SKILL_VOCABULARY`. No free-form or invented tags are accepted — if Gemini returns a tag outside the vocabulary, it MUST be silently dropped before upsert.
 - **SC-008**: The change-detection mechanism (via `SeedRun.urlSnapshots`) MUST result in zero Tavily Extract calls and zero Gemini calls for any Program whose source URLs have not changed since the last completed `SeedRun`. This is verified by confirming that re-running the job immediately after a successful run produces no API calls and no DB writes for unchanged Programs.
+- **SC-009**: Every `CourseUnit.careerTracks` and `ProgramOutcome.careerTracks` value persisted after Call 2 MUST belong to `CAREER_TRACKS.trackId` from `curriculum.config.js`. Any out-of-vocabulary track ID returned by Gemini MUST be dropped before upsert.
 
 ## Assumptions
 

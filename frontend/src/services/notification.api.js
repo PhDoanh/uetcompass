@@ -8,7 +8,7 @@ const API_BASE_URL =
  * @returns {EventSource}
  */
 export function openRoadmapNotificationStream(sseToken) {
-  return new EventSource(`${API_BASE_URL}/roadmap/sse?sseToken=${encodeURIComponent(sseToken)}`);
+  return new EventSource(`${API_BASE_URL}/roadmaps/sse?sseToken=${encodeURIComponent(sseToken)}`);
 }
 
 /**

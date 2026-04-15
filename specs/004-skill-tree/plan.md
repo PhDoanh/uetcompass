@@ -1,103 +1,109 @@
-# Implementation Plan: Skill Tree – Personalized Academic Roadmap Tracker
+# Implementation Plan: Skill Tree
 
-**Branch**: `004-skill-tree` | **Date**: 2026-03-11 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/004-skill-tree/spec.md`
+**Branch**: `004-skill-tree` | **Date**: 2026-04-11 | **Spec**: [spec.md](spec.md)  
+**Input**: Feature specification from [specs/004-skill-tree/spec.md](spec.md)
 
 ## Summary
 
-Build an interactive, personalized Skill Tree that renders a student's UET academic roadmap as a top-down DAG. Feature 004 consumes canonical roadmap topology from Feature 009 (`GET /api/primary-roadmap` or service-layer equivalent) and does not own roadmap storage. Node states (`pending`/`in_progress`/`done`) are canonical in `skill_node_statuses` with explicit persisted `pending` records for every roadmap node; unlock logic is computed server-side via DAG traversal (O(V + E)). Clicking a node always opens a three-tab detail panel: (1) admin-seeded course resources, (2) on-demand Gemini-generated "Why This Course" explanation cached by `{courseCode, careerGoal}` in `course_ai_contexts`, and (3) market skills from Vietnamese job platform data with drill-down learning resources. Node state transition is performed by a dedicated action control in the detail panel (not by clicking the node itself), and this action remains blocked for locked nodes. A "Re-personalize" button appears when `studentProfile.updatedAt > primaryRoadmap.generatedAt`; Feature 004 delegates regeneration to Feature 009 and detects completion via 2500ms polling.
+Implement and align Skill Tree to consume Feature 009 contracts without schema drift:
+- Canonical node types: `topic`, `subtopic`
+- Canonical node fields: `nodeId`, `nodeType`, `skillName`, `parentNodeId`, `relatedCourses`, `reason`, `resources`
+- Canonical progress model: `pending`, `inProgress`, `completed`, `skip`
+- Contract-first error and lifecycle handling (`acceptedAt`, `ROADMAP_NOT_FOUND`, `INVALID_TRANSITION`, `CONFLICT`)
+
+This plan covers frontend behavior and any thin adapter layers required to preserve field fidelity.
 
 ## Technical Context
 
-**Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 (frontend)  
-**Primary Dependencies**:
-- Backend: Express.js, Mongoose 8, `@google/generative-ai` (Gemini SDK — for "Why This Course" on-demand generation), `jsonwebtoken` (existing auth middleware from Feature 001)
-- Frontend: React 18, React Router v6, `@xyflow/react` v12 (React Flow), Zustand 4 with `persist` middleware, Tailwind CSS (bundled with Vite)
-
-**Storage**: MongoDB Atlas free tier — new collections: `skill_node_statuses`, `course_ai_contexts`, `course_resources`; read-only collections: `market_skills`, `skill_learning_resources` (written by crawling service), `student_profiles` (Feature 001). Canonical roadmap data is consumed from Feature 009 via API/service contract (not from a local collection).  
-**Testing**: Jest — unit tests only; MongoDB, Gemini SDK, and auth middleware all mocked; no external services required to run tests  
-**Target Platform**: Backend → Render (Node.js web service, free tier, cold start ~50s); Frontend → Vercel (React SPA)  
-**Project Type**: Web application — React SPA + Node.js/Express modular-monolith backend  
-**Performance Goals**: Skill tree page fully interactive within 3s; node state transition visible within 500ms (optimistic update); detail side panel opens within 1s; AI "Why This Course" content returned within 5s  
-**Constraints**: No Redis; no WebSocket; no SSE for this feature — polling (2500ms, paused when tab hidden) for roadmap ready detection; Render free tier cold start handled by frontend skeleton loading state; Gemini free-tier token minimization enforced via `{courseCode, careerGoal}` cache  
-**Scale/Scope**: UET-VNU students only — hundreds to low thousands of concurrent users; roadmap nodes: 15–100 per student; Vietnamese names primary
+**Frontend stack**: React + Vite (existing project stack)  
+**Backend integration point**: Skill Tree adapter/service that reads from 009 APIs/services  
+**State handling**: Existing frontend store pattern (project-consistent)  
+**Routing**: Existing app router with Skill Tree route  
+**Data authority**: Feature 009 contracts
 
 ## Constitution Check
 
-*Pre-design gate — re-checked after Phase 1 design with explicit test-suite traceability for Principle V.*
+- [x] Scope is aligned with ownership boundaries.
+- [x] No duplicate roadmap generation logic is introduced.
+- [x] User-facing behavior is testable from acceptance scenarios.
+- [x] Plan enforces schema/contract fidelity with [spec.md](spec.md).
 
-- [x] **I — Modular Monolithic**: All backend code lives in `backend/src/modules/skill-tree/`. Cross-module dependencies are: (1) `auth.middleware.js` from the middleware layer (not a domain module), (2) `studentProfileService.findByUserId()` via service layer, (3) Feature 009 primary-roadmap adapter via service layer only. No direct model imports across modules. No new top-level packages or microservices.
-- [x] **II — UET-First**: Course codes, Vietnamese names, and career goal identifiers are all UET-VNU specific. Market skills are sourced from Vietnamese IT job platforms (TopDev, ITviec). No abstraction for other universities or locales.
-- [x] **III — Privacy by Minimalism**: `skill_node_statuses` stores only `{ studentId, nodeId, status, updatedAt }`. The Gemini prompt for "Why This Course" contains only course metadata (`nameVi`, `nameEn`, `credits`) and `careerGoal` — no student personal data (no name, no transcript, no credentials). No new personal data fields beyond what is strictly needed.
-- [x] **IV — AI-Assisted, Human-Controlled**: Gemini is called only for "Why This Course" tab content — a descriptive explanation, not a decision-maker. Gemini output is validated before caching (length ≥ 50 chars, no refusal pattern). Students retain full manual control over node states (override by clicking). DAG unlock logic and re-personalize trigger are pure code — no LLM.
-- [x] **V — Test What Matters**: Unit-test traceability is explicit and treated as a release gate. Required suites are mapped to file-level targets: (1) recommendation/DAG traversal in `backend/tests/unit/skill-tree/dagTraversal.test.js`, (2) skill-mapping regression in `backend/tests/unit/curriculum/skillMapping.test.js`, (3) scraping pipeline regression in `backend/tests/unit/onboarding/scrape.pipeline.test.js`, (4) Gemini parsing/validation in `backend/tests/unit/skill-tree/aiContextCache.test.js`, plus feature-critical suites for pending reconciliation, state guard, repersonalize flag, and `getNodesByStatus()` contract shape. All dependencies mocked — no external service required.
+## Workstreams
 
-## Project Structure
+### Workstream 1: Canonical Contract Binding
 
-### Documentation (this feature)
+Deliverables:
+- Audit and remove any legacy mapping that assumes `skill`/`related_knowledge`/`roadmap_reference`
+- Ensure adapters pass through canonical 009 fields unchanged
+- Normalize roadmap lifecycle handling around `acceptedAt`
 
-```text
-specs/004-skill-tree/
-├── plan.md              ← this file
-├── spec.md              ← feature requirements
-├── research.md          ← Phase 0: 9 decisions resolved
-├── data-model.md        ← Phase 1: canonical roadmap contract + progress data model + state machine
-├── quickstart.md        ← Phase 1: local dev setup + manual test guide
-├── contracts/
-│   └── rest-api.md      ← Phase 1: 7 endpoint contracts + downstream service contract
-└── tasks.md             ← Phase 2 output (/speckit.tasks — NOT created here)
-```
+Acceptance alignment:
+- FR-001, FR-002, FR-003, FR-015, FR-016
+- SC-001, SC-002
 
-### Source Code (repository root)
+### Workstream 2: Tree Graph Construction
 
-```text
-backend/
-├── src/
-│   └── modules/
-│       └── skill-tree/
-│           ├── skillNodeStatus.model.js        # Mongoose schema: skill_node_statuses collection
-│           ├── aiContext.model.js               # Mongoose schema: course_ai_contexts collection
-│           ├── skillTree.service.js             # DAG traversal, explicit pending sync, state guard, repersonalize flag
-│           ├── primaryRoadmap.service.js        # Adapter: consume Feature 009 canonical roadmap API/service
-│           ├── aiContext.service.js             # Gemini "Why This Course" + cache read/write
-│           ├── courseResource.service.js        # Read course_resources collection
-│           ├── marketSkill.service.js           # Read market_skills + skill_learning_resources
-│           ├── skillTree.controller.js          # Express handlers (thin — delegates to services)
-│           ├── skillTree.routes.js              # Express Router + auth middleware applied
-│           └── skillTree.validation.js          # Input validation: status enum, courseCode format
-└── tests/
-    └── unit/
-        └── skill-tree/
-            ├── dagTraversal.test.js             # isUnlocked: single prereq, multi-prereq, diamond DAG, no prereqs
-            ├── stateGuard.test.js               # Locked node → 403; invalid transition → 400; valid → pass
-            ├── aiContextCache.test.js           # Cache hit (no Gemini call); cache miss (Gemini called + validation)
-            ├── repersonalizeFlag.test.js        # updatedAt > generatedAt(primary roadmap) → true; equal or older → false
-            ├── pendingSync.test.js              # explicit pending upsert for missing node status rows
-            └── getNodesByStatus.test.js         # roadmapId/roadmapName + done/inProgress/pending arrays always present
+Deliverables:
+- Build main-flow edges from ordered `topic` nodes
+- Build branch edges from `topic` to `subtopic` using `parentNodeId`
+- Preserve vertical-first layout with controlled horizontal branching
 
-frontend/
-├── src/
-│   ├── features/
-│   │   └── skill-tree/
-│   │       ├── SkillTreePage.jsx               # Top-level page component (rendered by React Router <Route>)
-│   │       ├── SkillTreeCanvas.jsx             # <ReactFlow> wrapper with custom node type
-│   │       ├── CourseNode.jsx                  # Custom React Flow node: state badge + locked indicator
-│   │       ├── RepersonalizeButton.jsx         # Shown when needsRepersonalization; shows loading during job
-│   │       ├── CourseDetailPanel.jsx           # Side panel: 3 tabs (Resources / Why / Market Skills)
-│   │       ├── ResourcesTab.jsx                # Grouped materials (textbook, slide, lab, assignment)
-│   │       ├── WhyThisCourseTab.jsx            # AI content (loading state + 502 error fallback)
-│   │       ├── MarketSkillsTab.jsx             # Skill list sorted by job count; click opens sub-panel
-│   │       ├── SkillResourcesModal.jsx         # Sub-panel/modal: free + paid resources for a skill
-│   │       └── useSkillTree.js                 # Polling hook: 2500ms interval, visibilitychange, optimistic update
-│   ├── stores/
-│   │   └── skillTreeStore.js                   # Zustand: nodes[], activeCourseId, activeTab, activeSkillName
-│   └── services/
-│       └── skillTree.api.js                    # Fetch wrappers: getTree, patchNodeStatus, getResources,
-│                                               #   getWhyCourse, getMarketSkills, getLearningResources, repersonalize
-```
+Acceptance alignment:
+- FR-004, FR-005, FR-006, FR-007
+- SC-001
 
-**Structure Decision**: Option 2 — Web application. Modular monolith backend with all Skill Tree logic isolated in `backend/src/modules/skill-tree/`. Feature-folder structure on the frontend mirrors the backend module boundary and is consistent with Feature 001 (`frontend/src/features/<module>`). The `/skill-tree` route is registered in the root React Router setup. Communication from `skill-tree` to other domains is service-layer only: `studentProfileService` (Feature 001) and `primaryRoadmapService` (Feature 009), with no cross-module schema/model imports.
+### Workstream 3: Node Detail Experience
 
-## Complexity Tracking
+Deliverables:
+- Detail panel renders canonical fields: `skillName`, `reason`, `resources`, `relatedCourses`
+- Related courses shown with `courseCode`, `courseName`, `credits`
+- Stable empty-state rendering for missing optional content
 
-No Constitution violations — complexity tracking table not required.
+Acceptance alignment:
+- FR-008, FR-009
+- SC-002
+
+### Workstream 4: Progress Orchestration with 009
+
+Deliverables:
+- Read progress from `GET /api/roadmaps/:roadmapId/progress`
+- Write transitions via `PATCH /api/roadmaps/:roadmapId/progress/node`
+- UI state derived from `pending`, `inProgress`, `completed`, `skip`
+- Error handling for `INVALID_TRANSITION` and `CONFLICT`
+
+Acceptance alignment:
+- FR-010, FR-011, FR-012, FR-013
+- SC-003, SC-004
+
+### Workstream 5: Lifecycle and Empty States
+
+Deliverables:
+- Low-personalisation notice (`personalisationLevel = low`)
+- Missing primary roadmap state (`ROADMAP_NOT_FOUND`)
+- Retryable/failed indication when `acceptedAt` is null
+
+Acceptance alignment:
+- FR-014, FR-015, FR-016, FR-017
+- SC-005
+
+## Documentation and Verification
+
+- Keep [quickstart.md](quickstart.md) aligned with canonical transitions and API codes.
+- Keep [data-model.md](data-model.md) aligned with 009 field names and progress states.
+- Keep [research.md](research.md) aligned with contract decisions.
+- Validate checklist in [checklists/requirements.md](checklists/requirements.md).
+
+## Risks and Mitigations
+
+- Risk: Legacy adapter still emits old node fields.
+  - Mitigation: Add integration tests that assert exact 009 field presence and naming.
+- Risk: Orphan `subtopic` nodes degrade layout.
+  - Mitigation: Render safe fallback group and log client warning.
+- Risk: Progress transition conflicts from concurrent updates.
+  - Mitigation: Show conflict feedback and re-fetch progress snapshot after failed mutation.
+
+## Done Criteria
+
+- All requirements in [spec.md](spec.md) are reflected in implementation and tests.
+- No schema translation layer renames or drops canonical 009 fields.
+- Progress behavior is fully driven by 009 transitions and error semantics.

@@ -1,36 +1,47 @@
 # Specification Quality Checklist: Skill Tree
 
-**Purpose**: Validate specification completeness and quality before proceeding to planning  
-**Created**: 2026-03-11  
+**Purpose**: Validate that Feature 004 documents are fully aligned with Feature 009 contracts  
+**Created**: 2026-04-07  
+**Updated**: 2026-04-11  
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 
-- [x] No implementation details (languages, frameworks, APIs)
-- [x] Focused on user value and business needs
-- [x] Written for non-technical stakeholders
-- [x] All mandatory sections completed
+- [x] Scope is clearly frontend-focused and does not duplicate 009 business logic
+- [x] Contract sections reference canonical roadmap/progress APIs from 009
+- [x] Terminology is consistent across spec, data model, plan, quickstart, and research
+- [x] Mandatory sections are complete and internally consistent
 
 ## Requirement Completeness
 
-- [x] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable and unambiguous
+- [x] No unresolved clarification markers
+- [x] Functional requirements are testable and unambiguous
 - [x] Success criteria are measurable
-- [x] Success criteria are technology-agnostic (no implementation details)
-- [x] All acceptance scenarios are defined
-- [x] Edge cases are identified
-- [x] Scope is clearly bounded
-- [x] Dependencies and assumptions identified
+- [x] Acceptance scenarios cover happy path and error path
+- [x] Edge cases include missing parent references and progress mismatches
+- [x] Ownership boundaries are explicit (004 presentation; 009 lifecycle and schema)
+- [x] Dependencies and assumptions are documented
+
+## Contract Fidelity Checks
+
+- [x] Node taxonomy uses only `topic` and `subtopic`
+- [x] Node identity uses `nodeId` consistently
+- [x] Node detail fields are canonical: `skillName`, `reason`, `resources`, `relatedCourses`
+- [x] Related course fields are canonical: `courseCode`, `courseName`, `credits`
+- [x] Progress states are canonical: `pending`, `inProgress`, `completed`, `skip`
+- [x] Progress writes are limited to valid 009 transitions
+- [x] Lifecycle handling uses `acceptedAt` semantics
+- [x] Error handling references 009 domain codes (`ROADMAP_NOT_FOUND`, `INVALID_TRANSITION`, `CONFLICT`)
 
 ## Feature Readiness
 
-- [x] All functional requirements have clear acceptance criteria
-- [x] User scenarios cover primary flows
-- [x] Feature meets measurable outcomes defined in Success Criteria
-- [x] No implementation details leak into specification
+- [x] Functional requirements map to acceptance scenarios
+- [x] Quickstart scenarios validate both contract reads and writes
+- [x] Plan workstreams are traceable to FR/SC sets in spec
+- [x] Data model reflects canonical 009 schema without legacy aliases
+- [x] Research decisions document reasons for contract-first design
 
 ## Notes
 
-- All checklist items pass. Spec is ready for `/speckit.clarify` or `/speckit.plan`.
-- Assumptions section explicitly documents the 4 external dependencies (personalization JSON, resource seeding, market data crawling, LLM service).
-- State transition model (one-directional, no skip) is documented as an assumption to avoid ambiguity during planning.
+- The documentation set is now contract-aligned with Feature 009.
+- Remaining implementation risk is legacy adapter code in backend/frontend services that may still map old fields.

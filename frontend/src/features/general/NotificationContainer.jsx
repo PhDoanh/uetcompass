@@ -1,5 +1,7 @@
 import React, { useState, useCallback, createContext, useContext, useEffect, useRef } from 'react';
+import Notification from './Notification';
 import { openRoadmapNotificationStream } from '../../services/notification.api';
+import { acceptPrimaryRoadmap } from '../../services/roadmap.api';
 import { useSkillTreeStore } from '../../stores/skillTreeStore';
 import '../../style/general-component.css';
 
@@ -12,6 +14,7 @@ export function useNotification() {
 export function NotificationProvider({ children, sseToken }) {
   const [notifications, setNotifications] = useState([]);
   const eventSourceRef = useRef(null);
+  const acceptingPreviewRef = useRef(false);
   const requestRefetch = useSkillTreeStore((s) => s.requestRefetch);
 
   const addNotification = useCallback((message, type = 'info', duration = 5000) => {
@@ -37,15 +40,43 @@ export function NotificationProvider({ children, sseToken }) {
         if (payload.type && payload.message) {
           addNotification(payload.message, payload.type);
         }
-      } catch {}
-    });
-    es.addEventListener('roadmap:status', (event) => {
-      try {
-        const payload = JSON.parse(event.data);
         if (payload.status === 'completed') {
           requestRefetch();
         }
       } catch {}
+    });
+    es.addEventListener('roadmap_preview_ready', async (event) => {
+      if (acceptingPreviewRef.current) {
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(event.data || '{}');
+        const studentProfileId = String(payload?.studentProfileId || '').trim();
+        const roadmapName = String(payload?.roadmapName || '').trim();
+        const personalisationLevel = payload?.personalisationLevel === 'low' ? 'low' : 'full';
+        const nodes = Array.isArray(payload?.preview?.nodes) ? payload.preview.nodes : [];
+
+        if (!sseToken || !studentProfileId || !roadmapName || nodes.length === 0) {
+          return;
+        }
+
+        acceptingPreviewRef.current = true;
+        await acceptPrimaryRoadmap(sseToken, {
+          studentProfileId,
+          roadmapName,
+          personalisationLevel,
+          isPrimary: true,
+          nodes,
+        });
+
+        addNotification('Roadmap generated and accepted successfully.', 'success');
+        requestRefetch();
+      } catch (error) {
+        addNotification(error?.message || 'Failed to accept generated roadmap preview.', 'error');
+      } finally {
+        acceptingPreviewRef.current = false;
+      }
     });
     es.addEventListener('error', () => {
       addNotification('Lost connection to roadmap updates.', 'error');

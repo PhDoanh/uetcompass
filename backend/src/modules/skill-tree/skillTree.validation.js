@@ -1,35 +1,48 @@
-// Validation helpers for Skill Tree endpoints
+const VALID_STATES = new Set(['pending', 'inProgress', 'completed', 'skip']);
 
-function validateStatus(status) {
-  const validStatuses = ['pending', 'in_progress', 'done'];
-  if (!status || !validStatuses.includes(status)) {
-    return { valid: false, error: 'Invalid status. Must be one of: pending, in_progress, done' };
+const ALLOWED_TRANSITIONS = {
+  pending: new Set(['inProgress', 'completed', 'skip']),
+  inProgress: new Set(['pending', 'completed', 'skip']),
+  completed: new Set(['pending', 'inProgress', 'skip']),
+  skip: new Set(['pending', 'inProgress', 'completed']),
+};
+
+function validateNodeId(nodeId) {
+  if (!nodeId || typeof nodeId !== 'string' || !nodeId.trim()) {
+    return { valid: false, error: 'nodeId is required and must be a non-empty string.' };
   }
   return { valid: true };
 }
 
-function validateCourseCode(courseCode) {
-  if (!courseCode || typeof courseCode !== 'string') {
-    return { valid: false, error: 'Course code is required and must be a string' };
-  }
-  // UET course codes are typically IT<numbers>
-  if (!/^[A-Z]{2,3}\d{3,4}[A-Z]?$/.test(courseCode)) {
-    return { valid: false, error: 'Invalid course code format' };
+function validateProgressState(state, fieldName) {
+  if (!VALID_STATES.has(state)) {
+    return {
+      valid: false,
+      error: `${fieldName} must be one of: pending, inProgress, completed, skip.`,
+    };
   }
   return { valid: true };
 }
 
-function getNextStatus(currentStatus) {
-  const transitions = {
-    pending: 'in_progress',
-    in_progress: 'done',
-    done: 'done', // no further transition
-  };
-  return transitions[currentStatus] || 'pending';
+function validateProgressTransition(fromState, toState) {
+  const fromValidation = validateProgressState(fromState, 'fromState');
+  if (!fromValidation.valid) return fromValidation;
+
+  const toValidation = validateProgressState(toState, 'toState');
+  if (!toValidation.valid) return toValidation;
+
+  if (!ALLOWED_TRANSITIONS[fromState].has(toState)) {
+    return {
+      valid: false,
+      error: `Transition from '${fromState}' to '${toState}' is not allowed.`,
+    };
+  }
+
+  return { valid: true };
 }
 
 module.exports = {
-  validateStatus,
-  validateCourseCode,
-  getNextStatus,
+  validateNodeId,
+  validateProgressState,
+  validateProgressTransition,
 };

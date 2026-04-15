@@ -7,13 +7,16 @@ async function getPrimaryByUser(userId) {
 }
 
 async function getCompletedByUser(userId) {
-	return Roadmap.findOne({ userId, status: 'completed', isPrimary: true }).lean();
+	return Roadmap.findOne({ userId, isPrimary: true, acceptedAt: { $ne: null } }).lean();
 }
 
-async function listByUser(userId, { status, page = 1, limit = 20 } = {}) {
+async function getRetryableByUser(userId) {
+	return Roadmap.findOne({ userId, acceptedAt: null }).lean();
+}
+
+async function listByUser(userId, { page = 1, limit = 20 } = {}) {
 	limit = Math.min(limit, 100);
 	const filter = { userId };
-	if (status) filter.status = status;
 
 	const [items, total] = await Promise.all([
 		Roadmap.find(filter, { nodes: 0 })
@@ -31,15 +34,15 @@ async function getByIdForUser(roadmapId, userId) {
 	return Roadmap.findOne({ _id: roadmapId, userId }).lean();
 }
 
-async function upsertFailed(userId, errorMessage) {
+async function upsertFailed(userId, message) {
+	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return Roadmap.findOneAndUpdate(
-		{ userId, status: 'failed' },
+		{ userId, acceptedAt: null },
 		{
-			$set: { errorMessage, updatedAt: new Date() },
+			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
 				isPrimary: false,
-				status: 'failed',
 				nodes: [],
 				acceptedAt: null,
 			},
@@ -48,17 +51,17 @@ async function upsertFailed(userId, errorMessage) {
 	);
 }
 
-async function upsertFailedWithProfile(userId, studentProfileId, errorMessage, personalisationLevel = 'full') {
+async function upsertFailedWithProfile(userId, studentProfileId, message, personalisationLevel = 'full') {
+	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return Roadmap.findOneAndUpdate(
-		{ userId, status: 'failed' },
+		{ userId, acceptedAt: null },
 		{
-			$set: { errorMessage, updatedAt: new Date() },
+			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
 				isPrimary: false,
 				studentProfileId,
 				personalisationLevel,
-				status: 'failed',
 				nodes: [],
 				acceptedAt: null,
 			},
@@ -67,7 +70,7 @@ async function upsertFailedWithProfile(userId, studentProfileId, errorMessage, p
 	);
 }
 
-async function commitAccepted(userId, { studentProfileId, personalisationLevel, isPrimary, nodes }) {
+async function commitAccepted(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes }) {
 	if (isPrimary) {
 		await Roadmap.updateMany(
 			{ userId, isPrimary: true },
@@ -79,9 +82,8 @@ async function commitAccepted(userId, { studentProfileId, personalisationLevel, 
 		userId,
 		isPrimary: !!isPrimary,
 		studentProfileId,
+		roadmapName,
 		personalisationLevel,
-		status: 'completed',
-		errorMessage: null,
 		nodes,
 		acceptedAt: new Date(),
 	});
@@ -122,6 +124,7 @@ async function switchPrimary(roadmapId, userId) {
 module.exports = {
 	getPrimaryByUser,
 	getCompletedByUser,
+	getRetryableByUser,
 	listByUser,
 	getByIdForUser,
 	upsertFailed,

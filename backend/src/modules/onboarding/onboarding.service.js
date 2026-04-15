@@ -82,6 +82,20 @@ async function resolveProgramByMajorName(majorName) {
 	);
 }
 
+async function resolveProgramByProgramId(programId) {
+	const normalizedProgramId = normalizeOptionalValue(programId);
+	if (!normalizedProgramId) {
+		return null;
+	}
+
+	return resolveMaybeLean(
+		Program.findOne(
+			{ programId: normalizedProgramId },
+			{ _id: 0, programId: 1, nameEN: 1, careerTracks: 1 }
+		)
+	);
+}
+
 async function getElectiveCourseCodesByProgramId(programId) {
 	if (!programId) {
 		return new Set();
@@ -140,11 +154,26 @@ async function normalizePayload(payload = {}) {
 	const careerGoal = payload.careerGoal || {};
 	validateField('careerGoal.graduationTimeline', careerGoal.graduationTimeline);
 
+	const hasProgramId = Object.prototype.hasOwnProperty.call(payload, 'programId');
+	const normalizedProgramId = hasProgramId ? normalizeOptionalValue(payload.programId) : null;
 	const hasMajor = Object.prototype.hasOwnProperty.call(payload, 'major');
 	const normalizedMajor = hasMajor ? normalizeOptionalValue(payload.major) : null;
 
 	let resolvedProgram = null;
-	if (hasMajor && normalizedMajor) {
+	if (normalizedProgramId) {
+		resolvedProgram = await resolveProgramByProgramId(normalizedProgramId);
+		if (!resolvedProgram) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'programId: Invalid major selection', {
+				field: 'programId',
+			});
+		}
+
+		if (normalizedMajor && resolvedProgram.nameEN !== normalizedMajor) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'major: Mismatch between major and programId', {
+				field: 'major',
+			});
+		}
+	} else if (normalizedMajor) {
 		resolvedProgram = await resolveProgramByMajorName(normalizedMajor);
 		if (!resolvedProgram) {
 			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'major: Invalid major selection', {
@@ -153,8 +182,11 @@ async function normalizePayload(payload = {}) {
 		}
 	}
 
+	const resolvedMajor = resolvedProgram?.nameEN || normalizedMajor || null;
+	const resolvedProgramId = resolvedProgram?.programId || normalizedProgramId || null;
+
 	const normalizedRole = normalizeOptionalValue(careerGoal.role);
-	if (normalizedRole && !normalizedMajor) {
+	if (normalizedRole && !resolvedMajor) {
 		throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'careerGoal.role: Selected major is required', {
 			field: 'careerGoal.role',
 		});
@@ -168,19 +200,24 @@ async function normalizePayload(payload = {}) {
 	const canNormalizeCourses = Object.prototype.hasOwnProperty.call(payload, 'completedCourses');
 	let canonicalCourses;
 	if (canNormalizeCourses) {
-		if (!normalizedMajor) {
+		if (!resolvedMajor) {
 			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'completedCourses require a selected major', {
 				field: 'completedCourses',
 			});
 		}
 
-		const electiveCodes = await getElectiveCourseCodesByProgramId(resolvedProgram?.programId);
-		canonicalCourses = canonicalizeCompletedCourses(payload.completedCourses, normalizedMajor, electiveCodes);
+		const electiveCodes = await getElectiveCourseCodesByProgramId(resolvedProgramId);
+		canonicalCourses = canonicalizeCompletedCourses(payload.completedCourses, resolvedMajor, electiveCodes);
 	}
 
+	const hasMajorSelectionField = hasMajor || hasProgramId;
+
 	return {
-		...(hasMajor
-			? { major: normalizedMajor }
+		...(hasMajorSelectionField
+			? {
+				programId: resolvedProgramId,
+				major: resolvedMajor,
+			}
 			: {}),
 		...(canNormalizeCourses
 			? { completedCourses: canonicalCourses }
@@ -234,7 +271,7 @@ async function getCourseCatalog() {
 		.lean();
 
 	const majors = [];
-	const roleOptionsByMajor = {};
+	const roleOptionsByProgramId = {};
 	const requiredCourseLinks = {};
 	const programById = new Map();
 
@@ -245,8 +282,11 @@ async function getCourseCatalog() {
 			continue;
 		}
 
-		majors.push(majorName);
-		roleOptionsByMajor[majorName] = normalizeRoleOptions(program.careerTracks);
+		majors.push({
+			programId,
+			nameEN: majorName,
+		});
+		roleOptionsByProgramId[programId] = normalizeRoleOptions(program.careerTracks);
 		programById.set(programId, majorName);
 	}
 
@@ -273,7 +313,7 @@ async function getCourseCatalog() {
 	}
 
 	for (const [programId, majorName] of programById.entries()) {
-		requiredCourseLinks[majorName] = requiredLinkByProgramId.get(programId) || null;
+		requiredCourseLinks[programId] = requiredLinkByProgramId.get(programId) || null;
 	}
 
 	const rows = await CourseUnit.find(
@@ -288,21 +328,21 @@ async function getCourseCatalog() {
 		.sort({ programId: 1, code: 1 })
 		.lean();
 
-	const catalogByMajor = new Map();
+	const catalogByProgramId = new Map();
 
 	for (const row of rows) {
-		const major = programById.get(normalizeOptionalValue(row.programId));
+		const programId = normalizeOptionalValue(row.programId);
 		const courseCode = String(row.code || '').trim();
 		const name = String(row.name || '').trim();
-		if (!major || !courseCode || !name) {
+		if (!programById.has(programId) || !courseCode || !name) {
 			continue;
 		}
 
-		if (!catalogByMajor.has(major)) {
-			catalogByMajor.set(major, new Map());
+		if (!catalogByProgramId.has(programId)) {
+			catalogByProgramId.set(programId, new Map());
 		}
 
-		const byCode = catalogByMajor.get(major);
+		const byCode = catalogByProgramId.get(programId);
 		if (!byCode.has(courseCode)) {
 			byCode.set(courseCode, {
 				courseCode,
@@ -314,17 +354,17 @@ async function getCourseCatalog() {
 
 	const courseCatalog = Object.fromEntries(
 		majors.map((major) => {
-			const courses = [...(catalogByMajor.get(major)?.values() || [])].sort((a, b) =>
+			const courses = [...(catalogByProgramId.get(major.programId)?.values() || [])].sort((a, b) =>
 				a.courseCode.localeCompare(b.courseCode, 'en')
 			);
-			return [major, courses];
+			return [major.programId, courses];
 		})
 	);
 
 	return {
 		majors,
 		courseCatalog,
-		roleOptionsByMajor,
+		roleOptionsByProgramId,
 		requiredCourseLinks,
 	};
 }

@@ -16,7 +16,7 @@ export default function AuthGuard({ children }) {
 
   if (!isAuthenticated && !isPublicPath) {
     if (typeof window !== 'undefined') {
-      window.location.replace('/login');
+      window.location.replace('/');
     }
     return null;
   }

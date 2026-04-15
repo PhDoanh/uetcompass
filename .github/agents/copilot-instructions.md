@@ -43,4 +43,8 @@ JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard co
 
 
 <!-- MANUAL ADDITIONS START -->
+## Design System
+- Always follow tokens in `.stitch/DESIGN.md` for all UI code
+- When refining screens, use HTML in `.stitch/screens/` as visual reference
+- Preserve all existing state management and API calls when refactoring UI
 <!-- MANUAL ADDITIONS END -->

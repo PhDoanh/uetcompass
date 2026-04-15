@@ -1,0 +1,92 @@
+title: Data Analytics Roadmap
+description: A practical roadmap for learning spreadsheets, SQL, visualization, and analytics storytelling.
+nodes:
+  - nodeId: DATA_FOUNDATIONS
+    label: Data Foundations
+    description: Learn what data is and how analytics projects are structured.
+    status: done
+    prerequisites: []
+    skills:
+      - analytics-basics
+      - data-literacy
+    resources:
+      - title: Google Data Analytics overview
+        url: https://www.coursera.org/professional-certificates/google-data-analytics
+        type: link
+
+  - nodeId: SPREADSHEETS
+    label: Spreadsheets
+    description: Use Excel or Google Sheets for cleaning and quick analysis.
+    parent: DATA_FOUNDATIONS
+    status: in_progress
+    prerequisites: [DATA_FOUNDATIONS]
+    skills:
+      - excel
+      - google-sheets
+    resources:
+      - title: Excel training
+        url: https://support.microsoft.com/excel
+        type: link
+
+  - nodeId: SQL
+    label: SQL
+    description: Query relational data and build reporting datasets.
+    parent: DATA_FOUNDATIONS
+    status: pending
+    prerequisites: [DATA_FOUNDATIONS]
+    skills:
+      - sql
+      - joins
+    resources:
+      - title: SQLBolt lessons
+        url: https://sqlbolt.com/
+        type: link
+
+  - nodeId: DATA_CLEANING
+    label: Data Cleaning
+    description: Standardize, validate, and prepare data for analysis.
+    parent: DATA_FOUNDATIONS
+    status: pending
+    prerequisites: [DATA_FOUNDATIONS]
+    skills:
+      - cleaning
+      - transformation
+
+  - nodeId: DATA_VISUALIZATION
+    label: Data Visualization
+    description: Create charts and dashboards that communicate insights.
+    status: pending
+    prerequisites: [SQL]
+    skills:
+      - visualization
+      - dashboards
+    resources:
+      - title: Tableau public gallery
+        url: https://public.tableau.com/app/discover
+        type: link
+
+  - nodeId: STATISTICS
+    label: Statistics
+    description: Understand averages, variance, distributions, and inference.
+    status: locked
+    prerequisites: [DATA_FOUNDATIONS]
+    skills:
+      - statistics
+      - inference
+    resources:
+      - title: Khan Academy statistics
+        url: https://www.khanacademy.org/math/statistics-probability
+        type: link
+
+  - nodeId: ANALYTICS_STORYTELLING
+    label: Analytics Storytelling
+    description: Present findings and explain recommendations to stakeholders.
+    status: locked
+    prerequisites: [DATA_VISUALIZATION]
+    skills:
+      - storytelling
+      - reporting
+    resources:
+      - title: Storytelling with Data
+        url: https://www.storytellingwithdata.com/books
+        type: link

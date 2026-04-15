@@ -1,73 +1,112 @@
-title: Fullstack Web Roadmap (Manual Test)
-description: Sample YAML for testing manual roadmap creation flow.
+title: Frontend Foundations Roadmap
+description: A compact roadmap for learning frontend basics, internet concepts, and development tooling.
 nodes:
-  - nodeId: HTML_CSS
-    label: HTML & CSS Fundamentals
-    description: Build static pages and responsive layouts.
+  - nodeId: FRONTEND_STACK
+    label: Frontend Stack
+    description: Pick the core frontend technologies to start with.
     status: done
     prerequisites: []
     skills:
+      - html
+      - css
+      - javascript
+    resources:
+      - title: MDN Web Docs
+        url: https://developer.mozilla.org/
+        type: link
+
+  - nodeId: INTERNET_BASICS
+    label: Internet Basics
+    description: Understand how the browser talks to servers and resolves domains.
+    status: in_progress
+    prerequisites: []
+    skills:
+      - http
+      - dns
+    resources:
+      - title: How the Internet Works
+        url: https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/How_does_the_Internet_work
+        type: link
+
+  - nodeId: TOOLING_WORKFLOW
+    label: Tooling Workflow
+    description: Set up modern tooling and learn Git-based workflows.
+    status: pending
+    prerequisites: []
+    skills:
+      - git
+      - vite
+    resources:
+      - title: Vite documentation
+        url: https://vitejs.dev/guide/
+        type: link
+
+  - nodeId: HTML_CSS
+    label: HTML & CSS
+    description: Build semantic layouts and responsive interfaces.
+    parent: FRONTEND_STACK
+    status: done
+    prerequisites: [FRONTEND_STACK]
+    skills:
       - semantic-html
       - responsive-css
+    resources:
+      - title: MDN HTML guide
+        url: https://developer.mozilla.org/en-US/docs/Learn/HTML
+        type: link
 
-  - nodeId: JS_CORE
+  - nodeId: JAVASCRIPT_CORE
     label: JavaScript Core
-    description: Learn syntax, DOM, and async fundamentals.
+    description: Learn language fundamentals, DOM APIs, and async patterns.
+    parent: FRONTEND_STACK
     status: in_progress
-    prerequisites:
-      - HTML_CSS
+    prerequisites: [FRONTEND_STACK]
     skills:
-      - dom-manipulation
+      - dom
       - async-await
+    resources:
+      - title: JavaScript first steps
+        url: https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps
+        type: link
 
-  - nodeId: REACT_BASICS
-    label: React Basics
-    description: Components, state, props, and hooks.
+  - nodeId: HTTP_BROWSER
+    label: HTTP & Browser Basics
+    description: Understand requests, responses, rendering, and browser tools.
+    parent: INTERNET_BASICS
     status: pending
-    prerequisites:
-      - JS_CORE
+    prerequisites: [INTERNET_BASICS]
     skills:
-      - component-thinking
-      - state-management
+      - http
+      - browser-devtools
+    resources:
+      - title: HTTP overview
+        url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
+        type: link
 
-  - nodeId: NODE_EXPRESS
-    label: Node.js + Express API
-    description: Build REST APIs and middleware.
+  - nodeId: DOMAIN_DNS
+    label: Domain Name & DNS
+    description: Learn how domains map to servers through DNS.
+    parent: INTERNET_BASICS
     status: pending
-    prerequisites:
-      - JS_CORE
+    prerequisites: [INTERNET_BASICS]
     skills:
-      - express-routing
-      - api-design
+      - dns
+      - domains
+    resources:
+      - title: DNS explained
+        url: https://www.cloudflare.com/learning/dns/what-is-dns/
+        type: link
 
-  - nodeId: MONGODB_CRUD
-    label: MongoDB CRUD
-    description: Model data and perform CRUD operations.
-    status: pending
-    prerequisites:
-      - NODE_EXPRESS
-    skills:
-      - schema-design
-      - query-optimization
-
-  - nodeId: AUTH_JWT
-    label: Authentication with JWT
-    description: Protect APIs using token-based auth.
-    status: pending
-    prerequisites:
-      - NODE_EXPRESS
-    skills:
-      - jwt
-      - auth-guards
-
-  - nodeId: FULLSTACK_INTEGRATION
-    label: Fullstack Integration
-    description: Connect frontend to backend and deploy.
+  - nodeId: GIT_WORKFLOW
+    label: Git Workflow
+    description: Track changes, branch safely, and collaborate with Git.
+    parent: TOOLING_WORKFLOW
     status: locked
-    prerequisites:
-      - REACT_BASICS
-      - MONGODB_CRUD
-      - AUTH_JWT
+    prerequisites: [TOOLING_WORKFLOW]
     skills:
-      - integration-testing
-      - deployment
+      - git-branching
+      - pull-requests
+    resources:
+      - title: Git book
+        url: https://git-scm.com/book/en/v2
+        type: link

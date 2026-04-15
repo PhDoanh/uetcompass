@@ -1,0 +1,96 @@
+title: Cloud DevOps Roadmap
+description: A roadmap for infrastructure basics, CI/CD, containers, observability, and deployment.
+nodes:
+  - nodeId: CLOUD_BASES
+    label: Cloud Basics
+    description: Understand cloud service models and core concepts.
+    status: done
+    prerequisites: []
+    skills:
+      - cloud-concepts
+      - iaas-paas-saas
+    resources:
+      - title: AWS Cloud Practitioner essentials
+        url: https://aws.amazon.com/certification/certified-cloud-practitioner/
+        type: link
+
+  - nodeId: LINUX_SHELL
+    label: Linux & Shell
+    description: Navigate servers, automate tasks, and manage files from the terminal.
+    parent: CLOUD_BASES
+    status: in_progress
+    prerequisites: [CLOUD_BASES]
+    skills:
+      - linux
+      - bash
+    resources:
+      - title: Linux command line tutorial
+        url: https://linuxjourney.com/
+        type: link
+
+  - nodeId: GIT_CICD
+    label: Git & CI/CD
+    description: Automate testing and deployment with pipelines.
+    parent: CLOUD_BASES
+    status: pending
+    prerequisites: [CLOUD_BASES]
+    skills:
+      - git
+      - cicd
+    resources:
+      - title: GitHub Actions docs
+        url: https://docs.github.com/actions
+        type: link
+
+  - nodeId: CONTAINERS
+    label: Containers
+    description: Package services using Docker and run them consistently.
+    parent: CLOUD_BASES
+    status: pending
+    prerequisites: [CLOUD_BASES]
+    skills:
+      - docker
+      - containers
+    resources:
+      - title: Docker getting started
+        url: https://docs.docker.com/get-started/
+        type: link
+
+  - nodeId: KUBERNETES
+    label: Kubernetes
+    description: Orchestrate containers and manage service scaling.
+    status: pending
+    prerequisites: [CONTAINERS]
+    skills:
+      - kubernetes
+      - orchestration
+    resources:
+      - title: Kubernetes basics
+        url: https://kubernetes.io/docs/tutorials/kubernetes-basics/
+        type: link
+
+  - nodeId: OBSERVABILITY
+    label: Observability
+    description: Track logs, metrics, and traces in production.
+    status: locked
+    prerequisites: [GIT_CICD]
+    skills:
+      - logging
+      - monitoring
+    resources:
+      - title: OpenTelemetry docs
+        url: https://opentelemetry.io/docs/
+        type: link
+
+  - nodeId: DEPLOYMENT_STRATEGY
+    label: Deployment Strategy
+    description: Learn blue-green, canary, and rolling deployment patterns.
+    status: locked
+    prerequisites: [KUBERNETES, OBSERVABILITY]
+    skills:
+      - deployment
+      - release-management
+    resources:
+      - title: Cloud deployment patterns
+        url: https://cloud.google.com/architecture/application-deployment-and-testing-strategies
+        type: link

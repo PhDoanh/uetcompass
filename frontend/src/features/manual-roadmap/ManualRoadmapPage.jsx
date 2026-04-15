@@ -5,6 +5,39 @@ import { dump, load } from 'js-yaml';
 import manualRoadmapApi from './manualRoadmap.api';
 import ManualRoadmapPreview from './ManualRoadmapPreview';
 import { parseManualRoadmapYaml } from './manualRoadmap.validation';
+import '../skill-tree/skill-tree.css';
+import './manual-roadmap.css';
+import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
+import dataAnalyticsSample from '../../../../specs/001-manual-roadmap-generator/sample-data-analytics-roadmap.yaml?raw';
+import cloudDevopsSample from '../../../../specs/001-manual-roadmap-generator/sample-cloud-devops-roadmap.yaml?raw';
+import cybersecuritySample from '../../../../specs/001-manual-roadmap-generator/sample-cybersecurity-roadmap.yaml?raw';
+
+const SAMPLE_ROADMAPS = [
+  {
+    key: 'web-development',
+    label: 'Web Development Basics',
+    description: 'Frontend fundamentals with HTML, CSS, JavaScript, HTTP, and browser tools.',
+    yaml: webDevelopmentSample,
+  },
+  {
+    key: 'data-analytics',
+    label: 'Data Analytics Starter',
+    description: 'Spreadsheets, SQL, visualization, and analytics storytelling.',
+    yaml: dataAnalyticsSample,
+  },
+  {
+    key: 'cloud-devops',
+    label: 'Cloud DevOps Path',
+    description: 'Cloud basics, CI/CD, containers, observability, and deployment.',
+    yaml: cloudDevopsSample,
+  },
+  {
+    key: 'cybersecurity',
+    label: 'Cybersecurity Foundations',
+    description: 'Security basics, networking, web security, and incident response.',
+    yaml: cybersecuritySample,
+  },
+];
 
 function parseQueryParam(name) {
   if (typeof window === 'undefined') return null;
@@ -35,7 +68,8 @@ function findNodeLine(yamlText, nodeId) {
 export default function ManualRoadmapPage() {
   const { accessToken } = useAuth();
   const roadmapId = parseQueryParam('id');
-  const [yamlCode, setYamlCode] = useState(`title: Fullstack Web Roadmap (Manual Test)\ndescription: Sample YAML for testing manual roadmap creation flow.\nnodes:\n  - nodeId: HTML_CSS\n    label: HTML & CSS Fundamentals\n    description: Build static pages and responsive layouts.\n    status: done\n    prerequisites: []\n    skills:\n      - semantic-html\n      - responsive-css\n\n  - nodeId: JS_CORE\n    label: JavaScript Core\n    description: Learn syntax, DOM, and async fundamentals.\n    status: in_progress\n    prerequisites:\n      - HTML_CSS\n    skills:\n      - dom-manipulation\n      - async-await\n\n  - nodeId: REACT_BASICS\n    label: React Basics\n    description: Components, state, props, and hooks.\n    status: pending\n    prerequisites:\n      - JS_CORE\n    skills:\n      - component-thinking\n      - state-management\n\n  - nodeId: NODE_EXPRESS\n    label: Node.js + Express API\n    description: Build REST APIs and middleware.\n    status: pending\n    prerequisites:\n      - JS_CORE\n    skills:\n      - express-routing\n      - api-design\n\n  - nodeId: MONGODB_CRUD\n    label: MongoDB CRUD\n    description: Model data and perform CRUD operations.\n    status: pending\n    prerequisites:\n      - NODE_EXPRESS\n    skills:\n      - schema-design\n      - query-optimization\n\n  - nodeId: AUTH_JWT\n    label: Authentication with JWT\n    description: Protect APIs using token-based auth.\n    status: pending\n    prerequisites:\n      - NODE_EXPRESS\n    skills:\n      - jwt\n      - auth-guards\n\n  - nodeId: FULLSTACK_INTEGRATION\n    label: Fullstack Integration\n    description: Connect frontend to backend and deploy.\n    status: locked\n    prerequisites:\n      - REACT_BASICS\n      - MONGODB_CRUD\n      - AUTH_JWT\n    skills:\n      - integration-testing\n      - deployment\n`);
+  const [selectedSampleKey, setSelectedSampleKey] = useState(SAMPLE_ROADMAPS[0].key);
+  const [yamlCode, setYamlCode] = useState(() => SAMPLE_ROADMAPS[0].yaml);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [preview, setPreview] = useState({ title: '', description: '', nodes: [] });
@@ -49,6 +83,7 @@ export default function ManualRoadmapPage() {
   const [resourceType, setResourceType] = useState('link');
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
+  const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
 
   useEffect(() => {
     try {
@@ -71,6 +106,7 @@ export default function ManualRoadmapPage() {
         const roadmap = await manualRoadmapApi.getManualRoadmap(accessToken, roadmapId);
         if (!isMounted) return;
         setYamlCode(roadmap.yamlCode || yamlCode);
+        setSelectedSampleKey('custom');
         setTitle(roadmap.title || '');
         setDescription(roadmap.description || '');
       } catch (err) {
@@ -83,6 +119,33 @@ export default function ManualRoadmapPage() {
       isMounted = false;
     };
   }, [accessToken, roadmapId]);
+
+  const handleSampleChange = (event) => {
+    const nextKey = event.target.value;
+
+    if (nextKey === 'custom') {
+      setSelectedSampleKey('custom');
+      return;
+    }
+
+    const nextSample = SAMPLE_ROADMAPS.find((sample) => sample.key === nextKey);
+
+    if (!nextSample) {
+      return;
+    }
+
+    setSelectedSampleKey(nextKey);
+    setYamlCode(nextSample.yaml);
+    setApiError('');
+    setSuccessMessage('');
+  };
+
+  const handleRestoreSample = () => {
+    setSelectedSampleKey(currentSample.key);
+    setYamlCode(currentSample.yaml);
+    setApiError('');
+    setSuccessMessage('');
+  };
 
   useEffect(() => {
     if (!Array.isArray(preview.nodes) || preview.nodes.length === 0) {
@@ -223,159 +286,174 @@ export default function ManualRoadmapPage() {
   const actionsDisabled = isSaving;
 
   return (
-    <div className="bg-background font-body text-on-surface min-h-screen flex flex-col overflow-hidden">
-      <div className="px-6 py-3 flex items-center justify-between bg-white border-b border-outline-variant/10">
-        <h1 className="font-headline text-xl font-extrabold text-[#003E79] tracking-tight">Quản lý lộ trình</h1>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low text-primary font-medium text-sm rounded-lg hover:bg-surface-container-high transition-colors">
-            <span className="material-symbols-outlined text-base">history</span>
-            Phục hồi
-          </button>
-          <button onClick={handleSave} disabled={actionsDisabled} className="flex items-center gap-2 px-3 py-1.5 bg-[#0055A2] text-white font-medium text-sm rounded-lg shadow-sm hover:opacity-90 transition-opacity">
-            <span className="material-symbols-outlined text-base">save</span>
-            {isSaving ? 'Đang lưu...' : 'Lưu lộ trình'}
-          </button>
-        </div>
-      </div>
+    <div className="skill-tree-page manual-roadmap-page">
+      <div className="skill-tree-layout manual-roadmap-layout">
+        <main className="skill-tree-layout__canvas manual-roadmap-layout__canvas" aria-label="Manual roadmap preview">
+          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
+            <h2 className="skill-tree-summary-card__title">{title || 'Manual roadmap draft'}</h2>
+            <p className="skill-tree-summary-card__meta">{description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}</p>
+          </section>
 
-      <main className="flex-1 grid grid-cols-12 overflow-hidden bg-surface-container-low gap-px">
-        <section className="col-span-5 flex flex-col bg-white overflow-hidden border-r border-outline-variant/20">
-          <div className="flex h-1/2 flex-col border-b border-outline-variant/20">
-            <div className="p-3 bg-surface-container-low border-b border-outline-variant/10 flex items-center justify-between">
-              <span className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Định nghĩa YAML</span>
-              <span className="material-symbols-outlined text-outline text-base">code</span>
-            </div>
-            <div className="flex-1 p-4">
-              <Editor
-                height="100%"
-                defaultLanguage="yaml"
-                value={yamlCode}
-                onChange={(value) => setYamlCode(value || '')}
-                onMount={(editor, monaco) => {
-                  editorRef.current = editor;
-                  monacoRef.current = monaco;
-                }}
-                options={{ minimap: { enabled: false }, fontSize: 14, wordWrap: 'on', theme: 'vs-light' }}
-              />
-              {validationError && (
-                <div className="mt-3 rounded-lg bg-[#ffebee] px-3 py-2 text-sm text-[#b71c1c]">{validationError}</div>
-              )}
+          <div className="manual-roadmap-preview-stage">
+            <ManualRoadmapPreview
+              nodes={displayNodes}
+              selectedNodeId={selectedNodeId}
+              onNodeSelect={(nodeId) => handleSelectNode(nodeId, { fromGraph: true })}
+            />
+          </div>
+        </main>
+
+        <aside className="skill-tree-panel manual-roadmap-panel" aria-label="Manual roadmap editor">
+          <div className="skill-tree-panel__header">
+            <div className="skill-tree-panel__title-row">
+              <div className="skill-tree-panel__title-wrap">
+                <h2 className="skill-tree-panel__title">Manual roadmap editor</h2>
+                <p className="skill-tree-panel__subtitle">YAML and resources</p>
+              </div>
+
+              <div className="manual-roadmap-panel__actions">
+                <button type="button" onClick={handleRestoreSample} className="manual-roadmap-button manual-roadmap-button--secondary">
+                  <span className="material-symbols-outlined manual-roadmap-button__icon">history</span>
+                  Phục hồi mẫu
+                </button>
+                <button type="button" onClick={handleSave} disabled={actionsDisabled} className="manual-roadmap-button manual-roadmap-button--primary">
+                  <span className="material-symbols-outlined manual-roadmap-button__icon">save</span>
+                  {isSaving ? 'Đang lưu...' : 'Lưu roadmap'}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex h-1/2 flex-col overflow-hidden">
-            <div className="p-3 bg-surface-container-low border-b border-outline-variant/10 flex items-center justify-between">
-              <span className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Quản lý học liệu</span>
-            </div>
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-slate-600">Node</label>
+          <div className="skill-tree-panel__content manual-roadmap-panel__content">
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Chọn mẫu roadmap</h4>
+              <div className="manual-roadmap-form__grid">
                 <select
-                  value={selectedNodeId}
-                  onChange={(event) => handleSelectNode(event.target.value)}
-                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
+                  className="manual-roadmap-input"
+                  value={selectedSampleKey}
+                  onChange={handleSampleChange}
                 >
-                  {displayNodes.map((node) => (
-                    <option key={node.nodeId} value={node.nodeId}>
-                      {node.label || node.nodeId}
+                  {SAMPLE_ROADMAPS.map((sample) => (
+                    <option key={sample.key} value={sample.key}>
+                      {sample.label}
                     </option>
                   ))}
+                  <option value="custom">Custom / loaded roadmap</option>
                 </select>
+                <p className="manual-roadmap-preview__sample-note">
+                  {currentSample?.description || 'Edit the YAML to create your own roadmap.'}
+                </p>
               </div>
+            </section>
 
-              <div className="grid gap-2">
-                <input
-                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                  placeholder="Resource title"
-                  value={resourceTitle}
-                  onChange={(event) => setResourceTitle(event.target.value)}
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Định nghĩa YAML</h4>
+              <div className="manual-roadmap-editor-shell">
+                <Editor
+                  height="100%"
+                  defaultLanguage="yaml"
+                  value={yamlCode}
+                  onChange={(value) => {
+                    setSelectedSampleKey('custom');
+                    setYamlCode(value || '');
+                  }}
+                  onMount={(editor, monaco) => {
+                    editorRef.current = editor;
+                    monacoRef.current = monaco;
+                  }}
+                  options={{ minimap: { enabled: false }, fontSize: 14, wordWrap: 'on', theme: 'vs-light' }}
                 />
-                <input
-                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                  placeholder="https://..."
-                  value={resourceUrl}
-                  onChange={(event) => setResourceUrl(event.target.value)}
-                />
-                <select
-                  className="w-full border border-slate-300 rounded px-2 py-2 text-sm"
-                  value={resourceType}
-                  onChange={(event) => setResourceType(event.target.value)}
-                >
-                  <option value="link">Link</option>
-                  <option value="video">Video</option>
-                  <option value="document">Document</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddResource}
-                  className="w-full bg-[#0055A2] text-white rounded px-3 py-2 text-sm font-medium"
-                >
-                  Add Resource
-                </button>
               </div>
+              {validationError && <div className="manual-roadmap-alert manual-roadmap-alert--error">{validationError}</div>}
+            </section>
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-700">Resources của {selectedNode?.label || 'node'}</h3>
-                {selectedResources.length === 0 ? (
-                  <p className="text-xs text-slate-500">Chưa có resource.</p>
-                ) : (
-                  selectedResources.map((resource, index) => (
-                    <div key={`${resource.title || 'resource'}-${index}`} className="border border-slate-200 rounded p-2 bg-slate-50">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{resource.title || `Resource ${index + 1}`}</p>
-                          <p className="text-xs text-slate-500 break-all">{resource.url || '-'}</p>
-                          <p className="text-xs text-slate-500">Type: {resource.type || 'link'}</p>
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Quản lý học liệu</h4>
+              <div className="manual-roadmap-form">
+                <div className="manual-roadmap-field">
+                  <label htmlFor="manual-roadmap-node" className="manual-roadmap-field__label">Node</label>
+                  <select
+                    id="manual-roadmap-node"
+                    value={selectedNodeId}
+                    onChange={(event) => handleSelectNode(event.target.value)}
+                    className="manual-roadmap-input"
+                  >
+                    {displayNodes.map((node) => (
+                      <option key={node.nodeId} value={node.nodeId}>
+                        {node.label || node.nodeId}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="manual-roadmap-form__grid">
+                  <input
+                    className="manual-roadmap-input"
+                    placeholder="Resource title"
+                    value={resourceTitle}
+                    onChange={(event) => setResourceTitle(event.target.value)}
+                  />
+                  <input
+                    className="manual-roadmap-input"
+                    placeholder="https://..."
+                    value={resourceUrl}
+                    onChange={(event) => setResourceUrl(event.target.value)}
+                  />
+                  <select
+                    className="manual-roadmap-input"
+                    value={resourceType}
+                    onChange={(event) => setResourceType(event.target.value)}
+                  >
+                    <option value="link">Link</option>
+                    <option value="video">Video</option>
+                    <option value="document">Document</option>
+                  </select>
+                  <button type="button" onClick={handleAddResource} className="manual-roadmap-button manual-roadmap-button--primary manual-roadmap-button--block">
+                    Add Resource
+                  </button>
+                </div>
+
+                <div className="manual-roadmap-resources">
+                  <h3 className="manual-roadmap-resources__title">Resources của {selectedNode?.label || 'node'}</h3>
+                  {selectedResources.length === 0 ? (
+                    <p className="manual-roadmap-resources__empty">Chưa có resource.</p>
+                  ) : (
+                    selectedResources.map((resource, index) => (
+                      <div key={`${resource.title || 'resource'}-${index}`} className="manual-roadmap-resource-item">
+                        <div className="manual-roadmap-resource-item__body">
+                          <p className="manual-roadmap-resource-item__title">{resource.title || `Resource ${index + 1}`}</p>
+                          <p className="manual-roadmap-resource-item__url">{resource.url || '-'}</p>
+                          <p className="manual-roadmap-resource-item__meta">Type: {resource.type || 'link'}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveResource(index)}
-                          className="text-xs px-2 py-1 rounded bg-red-100 text-red-700"
-                        >
+                        <button type="button" onClick={() => handleRemoveResource(index)} className="manual-roadmap-button manual-roadmap-button--danger">
                           Xóa
                         </button>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            </section>
           </div>
-        </section>
+        </aside>
+      </div>
 
-        <section className="col-span-7 flex flex-col bg-white overflow-hidden relative">
-          <div className="p-3 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low">
-            <span className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">Xem trước sơ đồ</span>
-            <span className="text-xs text-slate-500">{displayNodes.length} nodes</span>
-          </div>
-          <div className="flex-1 relative overflow-hidden skill-canvas">
-            <div className="absolute inset-0 p-4">
-              <ManualRoadmapPreview
-                nodes={displayNodes}
-                selectedNodeId={selectedNodeId}
-                onNodeSelect={(nodeId) => handleSelectNode(nodeId, { fromGraph: true })}
-              />
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="bg-white border-t border-outline-variant/10 py-3 px-6 z-30 flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-500 font-body">
+      <footer className="skill-tree-page__footer manual-roadmap-page__footer">
         <span>© 2024 UET-VNU University of Engineering and Technology</span>
-        <div className="flex gap-6">
-          <a className="hover:text-[#0055A2] transition-colors" href="#">GitHub</a>
-          <a className="hover:text-[#0055A2] transition-colors" href="#">Documentation</a>
-          <a className="hover:text-[#0055A2] transition-colors" href="#">Privacy Policy</a>
+        <div className="manual-roadmap-page__footer-links">
+          <a className="manual-roadmap-page__footer-link" href="#">GitHub</a>
+          <a className="manual-roadmap-page__footer-link" href="#">Documentation</a>
+          <a className="manual-roadmap-page__footer-link" href="#">Privacy Policy</a>
         </div>
       </footer>
 
       {apiError && (
-        <div className="fixed bottom-4 right-4 bg-error text-on-error px-4 py-2 rounded shadow-lg">
+        <div className="manual-roadmap-toast manual-roadmap-toast--error">
           {apiError}
         </div>
       )}
       {successMessage && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
+        <div className="manual-roadmap-toast manual-roadmap-toast--success">
           {successMessage}
         </div>
       )}

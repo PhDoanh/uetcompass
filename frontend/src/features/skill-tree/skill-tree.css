@@ -141,12 +141,14 @@
 }
 
 .skill-tree-roadmap-v2 {
+  --st-row-connector-y: 41px;
+  --st-row-connector-entry-offset-y: 12px;
   max-width: 1180px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 0;
 }
 
 .skill-tree-roadmap-v2__row-block {
@@ -154,7 +156,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 0;
+  position: relative;
+}
+
+.skill-tree-roadmap-v2__row-block--with-connector {
+  padding-bottom: 30px;
 }
 
 .skill-tree-roadmap-v2__row {
@@ -163,6 +170,95 @@
   justify-content: center;
   align-items: flex-start;
   gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.skill-tree-roadmap-v2__row-connector {
+  --line-thickness: 3px;
+  --outward: 34px;
+  --join-overlap: 3px;
+  --rail-offset: calc(max(var(--current-half), var(--next-half)) + var(--outward));
+  width: min(1180px, 100%);
+  height: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) + var(--join-overlap) + 12px);
+  position: absolute;
+  left: 50%;
+  top: var(--st-row-connector-y);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.skill-tree-roadmap-v2__row-connector-out,
+.skill-tree-roadmap-v2__row-connector-down,
+.skill-tree-roadmap-v2__row-connector-in {
+  position: absolute;
+  background: var(--st-line);
+}
+
+.skill-tree-roadmap-v2__row-connector-out,
+.skill-tree-roadmap-v2__row-connector-in {
+  height: var(--line-thickness);
+}
+
+.skill-tree-roadmap-v2__row-connector-down {
+  top: 0;
+  width: var(--line-thickness);
+  height: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) + var(--join-overlap));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-out {
+  top: 0;
+  left: calc(50% + var(--current-half));
+  width: calc(var(--rail-offset) - var(--current-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-down {
+  left: calc(50% + var(--rail-offset));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-in {
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y));
+  left: calc(50% + var(--next-half));
+  width: calc(var(--rail-offset) - var(--next-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-arrow {
+  position: absolute;
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) - 6px);
+  left: calc(50% + var(--next-half) - 10px);
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 12px solid var(--st-line);
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-out {
+  top: 0;
+  left: calc(50% - var(--rail-offset));
+  width: calc(var(--rail-offset) - var(--current-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-down {
+  left: calc(50% - var(--rail-offset));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-in {
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y));
+  left: calc(50% - var(--rail-offset));
+  width: calc(var(--rail-offset) - var(--next-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-arrow {
+  position: absolute;
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) - 6px);
+  left: calc(50% - var(--next-half) - 2px);
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 12px solid var(--st-line);
 }
 
 .skill-tree-roadmap-v2__cell {
@@ -172,6 +268,7 @@
   gap: 8px;
   position: relative;
   min-width: 260px;
+  z-index: 3;
 }
 
 .skill-tree-roadmap-v2__topic-link {
@@ -354,6 +451,14 @@
   margin-top: 4px;
   font-size: 0.66rem;
   color: #334155;
+}
+
+.roadmap-node-main .course-node__credits {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .skill-tree-panel {
@@ -750,6 +855,10 @@
     flex-direction: column;
     gap: 12px;
     align-items: center;
+  }
+
+  .skill-tree-roadmap-v2__row-connector {
+    display: none;
   }
 
   .skill-tree-roadmap-v2__topic-link {

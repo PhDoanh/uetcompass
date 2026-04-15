@@ -19,6 +19,7 @@ export default function CourseNode({ node, onSelect = () => {} }) {
   };
 
   const isSubtopic = node.nodeType === 'subtopic';
+  const relatedCount = (node.relatedCourses || []).length;
 
   return (
     <button
@@ -30,9 +31,9 @@ export default function CourseNode({ node, onSelect = () => {} }) {
           <h3 className="course-node__code">{node.skillName}</h3>
         </div>
       </div>
-      {!isSubtopic && (node.relatedCourses || []).length > 0 && (
+      {!isSubtopic && relatedCount > 0 && (
         <div className="course-node__credits">
-          {(node.relatedCourses || []).length} related course{(node.relatedCourses || []).length > 1 ? 's' : ''}
+          {relatedCount} related course{relatedCount !== 1 ? 's' : ''}
         </div>
       )}
     </button>

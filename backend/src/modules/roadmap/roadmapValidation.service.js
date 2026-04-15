@@ -59,14 +59,6 @@ function validateTopologicalOrder(nodes, courseUnits, completedCourseCodes = new
 			for (const prereq of prerequisites) {
 				if (completedCourseCodes.has(prereq)) continue;
 
-				if (!courseToNodePos.has(prereq)) {
-					const err = new Error(
-						`Prerequisite ${prereq} for skill "${node.skillName}" is missing from the roadmap and not in completed courses`
-					);
-					err.code = 'PREREQUISITE_VIOLATION';
-					throw err;
-				}
-
 				if (courseToNodePos.get(prereq) >= i) {
 					const err = new Error(
 						`Ordering violation: skill "${node.skillName}" (via ${rc.courseCode}) appears before its prerequisite ${prereq}`

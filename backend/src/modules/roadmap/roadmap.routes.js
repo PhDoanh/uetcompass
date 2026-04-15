@@ -3,6 +3,7 @@
 
 const express = require('express');
 const { requireAuth } = require('../../middleware/auth.middleware');
+const { verifyAccessToken } = require('../auth/token.service');
 const controller = require('./roadmap.controller');
 const { addConnection, addUserConnection } = require('./roadmap.sse');
 
@@ -15,11 +16,9 @@ roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
 roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
 
-roadmapRouter.use(requireAuth);
-
-// SSE connection endpoint for roadmap notifications (auth required for userId)
+// SSE endpoint supports EventSource by authenticating with JWT passed via sseToken query.
 roadmapRouter.get('/sse', (req, res) => {
-	const sseToken = req.query?.sseToken;
+	const sseToken = String(req.query?.sseToken || '').trim();
 	if (!sseToken) {
 		res.writeHead(400, {
 			'Content-Type': 'text/event-stream',
@@ -32,9 +31,42 @@ roadmapRouter.get('/sse', (req, res) => {
 		res.end();
 		return;
 	}
-	addConnection(String(sseToken), res);
-	addUserConnection(req.user.userId, res);
+
+	let userId = '';
+	try {
+		const payload = verifyAccessToken(sseToken);
+		userId = String(payload?.userId || '').trim();
+	} catch (_) {
+		res.writeHead(401, {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			Connection: 'keep-alive',
+			'X-Accel-Buffering': 'no',
+		});
+		res.write('event: error\n');
+		res.write('data: {"code":"UNAUTHORIZED","message":"Missing or invalid authentication"}\n\n');
+		res.end();
+		return;
+	}
+
+	if (!userId) {
+		res.writeHead(401, {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			Connection: 'keep-alive',
+			'X-Accel-Buffering': 'no',
+		});
+		res.write('event: error\n');
+		res.write('data: {"code":"UNAUTHORIZED","message":"Missing or invalid authentication"}\n\n');
+		res.end();
+		return;
+	}
+
+	addConnection(sseToken, res);
+	addUserConnection(userId, res);
 });
+
+roadmapRouter.use(requireAuth);
 
 roadmapRouter.post('/preview', controller.previewRoadmapHandler);
 roadmapRouter.get('/primary', controller.getPrimaryRoadmap);

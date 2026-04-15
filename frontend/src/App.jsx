@@ -4,10 +4,12 @@ import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
 import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
+import OnboardingPanel from './features/onboarding/OnboardingPanel';
 import LearningProfilePage from './features/onboarding/LearningProfilePage';
 import ManualRoadmapPage from './features/manual-roadmap/ManualRoadmapPage';
 import RoadmapSearchPage from './features/roadmap-search/RoadmapSearchPage';
 import NavBar from './features/general/NavBar';
+import { NotificationProvider } from './features/general/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
@@ -20,7 +22,7 @@ function normalizePathname(pathname) {
 }
 
 function AppContent() {
-	const { isAuthenticated, onboardingState } = useAuth();
+	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
@@ -47,11 +49,29 @@ function AppContent() {
 		content = <Homepage />;
 	}
 
-	if (!content && pathname === '/onboarding') {
-		if (typeof window !== 'undefined') {
-			window.location.replace('/');
-		}
-		return null;
+	if (!content && (pathname === '/onboarding' || pathname === '/on-boarding')) {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<OnboardingPanel
+						authToken={accessToken}
+						sseToken={accessToken}
+						onClose={() => {
+							if (typeof window !== 'undefined') {
+								window.location.assign('/');
+							}
+						}}
+						onCompleted={() => {
+							if (typeof window !== 'undefined') {
+								window.location.assign('/skill-tree');
+							}
+						}}
+						isFullPage
+						showDismissButton={false}
+					/>
+				</main>
+			</AuthGuard>
+		);
 	}
 
 	// Route to sample roadmap
@@ -131,7 +151,7 @@ function AppContent() {
 					: null;
 
 		return (
-			<>
+			<NotificationProvider sseToken={isAuthenticated ? (accessToken || '') : ''}>
 				<NavBar />
 				{content}
 				{isAuthPopupPath ? (
@@ -139,11 +159,6 @@ function AppContent() {
 						className="auth-modal-overlay"
 						role="dialog"
 						aria-modal="true"
-						onClick={(event) => {
-							if (event.target === event.currentTarget && typeof window !== 'undefined') {
-								window.location.assign('/');
-							}
-						}}
 					>
 						<div className="auth-modal-shell">
 							<button
@@ -162,7 +177,7 @@ function AppContent() {
 						</div>
 					</div>
 				) : null}
-			</>
+			</NotificationProvider>
 		);
 	}
 

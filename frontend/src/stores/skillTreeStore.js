@@ -7,18 +7,21 @@ import { create } from 'zustand';
 export const useSkillTreeStore = create((set) => ({
   // Tree data
   nodes: [],
+  edges: [],
   roadmapId: null,
   roadmapName: null,
-  careerGoal: null,
+  personalisationLevel: 'full',
+  createdAt: null,
+  acceptedAt: null,
+  progress: { pending: [], inProgress: [], completed: [], skip: [] },
 
   // UI panel state
-  activeCourseId: null,
-  activeTab: 'resources', // 'resources', 'why', 'skills'
-  activeSkillName: null,
+  activeNodeId: null,
 
   // Feature state
-  needsRepersonalization: false,
+  isRetryable: false,
   repersonalizing: false,
+  generationStatus: 'idle',
 
   // Loading/error
   loading: false,
@@ -30,49 +33,47 @@ export const useSkillTreeStore = create((set) => ({
   // Actions
   setTreeData: (data) => set((state) => ({
     nodes: data.nodes || [],
+    edges: data.edges || [],
     roadmapId: data.roadmapId,
     roadmapName: data.roadmapName,
-    careerGoal: data.careerGoal,
-    needsRepersonalization: data.needsRepersonalization || false,
-    repersonalizing: data.repersonalizing || false,
+    personalisationLevel: data.personalisationLevel || 'full',
+    createdAt: data.createdAt || null,
+    acceptedAt: data.acceptedAt || null,
+    progress: data.progress || { pending: [], inProgress: [], completed: [], skip: [] },
+    isRetryable: !!data.isRetryable,
+    generationStatus: data.generationStatus || 'idle',
     error: null,
   })),
 
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 
-  updateNodeStatus: (courseCode, status) => set((state) => {
-    const nodes = state.nodes.map((node) => {
-      if (node.courseCode === courseCode) {
-        return { ...node, status };
-      }
-      return node;
-    });
-    return { nodes };
+  updateProgressState: ({ nodeId, fromState, toState }) => set((state) => {
+    const current = state.progress || { pending: [], inProgress: [], completed: [], skip: [] };
+
+    const dedup = (arr) => (arr || []).filter((id) => id !== nodeId);
+
+    return {
+      progress: {
+        pending: dedup(current.pending),
+        inProgress: dedup(current.inProgress),
+        completed: dedup(current.completed),
+        skip: dedup(current.skip),
+        [toState]: [...dedup(current[toState]), nodeId],
+      },
+    };
   }),
 
-  openCourse: (courseCode) => set({
-    activeCourseId: courseCode,
-    activeTab: 'resources',
-    activeSkillName: null,
+  openNode: (nodeId) => set({
+    activeNodeId: nodeId,
   }),
 
-  closeCourse: () => set({
-    activeCourseId: null,
-    activeTab: 'resources',
-    activeSkillName: null,
+  closeNode: () => set({
+    activeNodeId: null,
   }),
-
-  setActiveTab: (tab) => set({
-    activeTab: tab,
-    activeSkillName: null, // Reset skill selection when changing tabs
-  }),
-
-  openSkill: (skillName) => set({ activeSkillName: skillName }),
-  closeSkill: () => set({ activeSkillName: null }),
 
   setRepersonalizing: (repersonalizing) => set({ repersonalizing }),
-  setNeedsRepersonalization: (needs) => set({ needsRepersonalization: needs }),
+  setRetryable: (retryable) => set({ isRetryable: retryable }),
 
   requestRefetch: () => set((state) => ({ refetchCount: state.refetchCount + 1 })),
 }));

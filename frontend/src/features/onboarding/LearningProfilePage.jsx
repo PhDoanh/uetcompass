@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import { BookOpenCheck, Save, Sparkles, User, GraduationCap } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { getCourseCatalog } from '../../services/onboarding.api';
-import MajorSelect from './MajorSelect';
-import CourseMultiSelect from './CourseMultiSelect';
-import CareerGoalForm from './CareerGoalForm';
+import SiteFooter from '../general/SiteFooter';
 import './onboarding-panel.css';
 
-function mapCompletedCourses(major, completedCourseIds = [], catalogByMajor = {}) {
-	if (!major) {
+function mapCompletedCourses(programId, major, completedCourseIds = [], catalogByProgramId = {}) {
+	if (!programId || !major) {
 		return [];
 	}
 
-	const options = Array.isArray(catalogByMajor?.[major]) ? catalogByMajor[major] : [];
+	const options = Array.isArray(catalogByProgramId?.[programId]) ? catalogByProgramId[programId] : [];
 	const byCourseCode = new Map(options.map((item) => [String(item.courseCode || '').trim(), item]));
 	const byCourseUnitId = new Map(options.map((item) => [String(item.courseUnitId || '').trim(), item]));
 
@@ -41,15 +40,20 @@ function mapCompletedCourses(major, completedCourseIds = [], catalogByMajor = {}
 	return [...unique.values()];
 }
 
-function mapProfileToOnboardingForm(profile, catalogByMajor = {}) {
+function mapProfileToOnboardingForm(profile, catalogByProgramId = {}, majors = []) {
 	const source = profile?.profile || {};
 	const major = String(source?.major || '').trim();
+	const programIdFromProfile = String(source?.programId || '').trim();
+	const inferredProgramId =
+		programIdFromProfile ||
+		String(majors.find((item) => String(item?.nameEN || '').trim() === major)?.programId || '').trim();
 	const completedCourseIds = Array.isArray(source?.completedCourseIds) ? source.completedCourseIds : [];
 	const careerGoal = source?.careerGoal || {};
 
 	return {
+		programId: inferredProgramId,
 		major,
-		completedCourses: mapCompletedCourses(major, completedCourseIds, catalogByMajor),
+		completedCourses: mapCompletedCourses(inferredProgramId, major, completedCourseIds, catalogByProgramId),
 		careerGoal: {
 			role: String(careerGoal?.role || '').trim(),
 			companyType: String(careerGoal?.companyType || '').trim(),
@@ -83,25 +87,55 @@ export default function LearningProfilePage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
 	const [form, setForm] = useState(mapProfileToOnboardingForm(null, {}));
 	const [initialSerialized, setInitialSerialized] = useState(() => serializeProfileForm(mapProfileToOnboardingForm(null, {})));
+	const [identity, setIdentity] = useState({
+		displayName: 'Sinh viên UET',
+		avatarUrl: '',
+	});
+	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [statusMessage, setStatusMessage] = useState('');
 	const [statusError, setStatusError] = useState('');
 	const [saving, setSaving] = useState(false);
 	const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
+	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	const [catalogLoading, setCatalogLoading] = useState(true);
 	const [catalogError, setCatalogError] = useState('');
 	const [catalogMajors, setCatalogMajors] = useState([]);
-	const [catalogByMajor, setCatalogByMajor] = useState({});
-	const [roleOptionsByMajor, setRoleOptionsByMajor] = useState({});
+	const [catalogByProgramId, setCatalogByProgramId] = useState({});
+	const [roleOptionsByProgramId, setRoleOptionsByProgramId] = useState({});
 	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
 
 	const currentSerialized = useMemo(() => serializeProfileForm(form), [form]);
 	const hasChanges = currentSerialized !== initialSerialized;
-	const courseOptions = useMemo(() => catalogByMajor[form.major] || [], [catalogByMajor, form.major]);
-	const roleOptions = useMemo(() => roleOptionsByMajor[form.major] || [], [roleOptionsByMajor, form.major]);
-	const requiredCourseLink = useMemo(() => requiredCourseLinks[form.major] || null, [requiredCourseLinks, form.major]);
+	const courseOptions = useMemo(() => catalogByProgramId[form.programId] || [], [catalogByProgramId, form.programId]);
+	const roleOptions = useMemo(() => roleOptionsByProgramId[form.programId] || [], [roleOptionsByProgramId, form.programId]);
+	const requiredCourseLink = useMemo(() => requiredCourseLinks[form.programId] || null, [requiredCourseLinks, form.programId]);
+	const selectedCourseKeys = useMemo(
+		() => new Set((form.completedCourses || []).map((item) => `${item.major}::${item.courseCode}`)),
+		[form.completedCourses]
+	);
+	const visibleCourseOptions = useMemo(() => (showAllCourses ? courseOptions : courseOptions.slice(0, 6)), [courseOptions, showAllCourses]);
+	const graduationLabel = useMemo(() => {
+		const raw = String(form?.careerGoal?.graduationTimeline || '').trim();
+		if (!raw) {
+			return 'Chưa cập nhật';
+		}
+
+		const [year, month] = raw.split('-').map((part) => Number(part));
+		if (!year || !month) {
+			return raw;
+		}
+
+		return `Tháng ${month}, ${year}`;
+	}, [form?.careerGoal?.graduationTimeline]);
+	const completionPercent = useMemo(() => {
+		if (!courseOptions.length) {
+			return 0;
+		}
+		return Math.min(100, Math.round(((form.completedCourses || []).length / courseOptions.length) * 100));
+	}, [courseOptions.length, form.completedCourses]);
 
 	const patchForm = (next) => {
 		setForm(next);
@@ -109,18 +143,40 @@ export default function LearningProfilePage() {
 		setStatusError('');
 	};
 
-	const handleMajorChange = (major) => {
-		const nextRoleOptions = roleOptionsByMajor[major] || [];
+	const handleMajorChange = (programId) => {
+		const nextRoleOptions = roleOptionsByProgramId[programId] || [];
 		const currentRole = form?.careerGoal?.role || '';
 		const keepRole = currentRole && nextRoleOptions.includes(currentRole);
+		const major = String(catalogMajors.find((item) => item?.programId === programId)?.nameEN || '').trim();
 
 		patchForm({
 			...form,
+			programId,
 			major,
+			completedCourses: major === form.major ? form.completedCourses : [],
 			careerGoal: {
 				...(form.careerGoal || {}),
 				role: keepRole ? currentRole : '',
 			},
+		});
+	};
+
+	const handleToggleCourse = (course) => {
+		const key = `${form.major}::${course.courseCode}`;
+		const selected = new Set(selectedCourseKeys);
+		if (selected.has(key)) {
+			selected.delete(key);
+		} else {
+			selected.add(key);
+		}
+
+		const next = courseOptions
+			.filter((item) => selected.has(`${form.major}::${item.courseCode}`))
+			.map((item) => ({ major: form.major, courseCode: item.courseCode, courseUnitId: item.courseUnitId }));
+
+		patchForm({
+			...form,
+			completedCourses: next,
 		});
 	};
 
@@ -193,17 +249,25 @@ export default function LearningProfilePage() {
 				]);
 
 				if (isMounted) {
-					const nextCatalogByMajor =
+					const identityPayload = profilePayload?.identity || {};
+					setAvatarBroken(false);
+					setIdentity({
+						displayName: String(identityPayload.displayName || identityPayload.fullName || 'Sinh viên UET').trim(),
+						avatarUrl: String(identityPayload.avatarUrl || '').trim(),
+					});
+
+					const majorsList = Array.isArray(catalogPayload?.majors) ? catalogPayload.majors : [];
+					const nextCatalogByProgramId =
 						catalogPayload?.courseCatalog && typeof catalogPayload.courseCatalog === 'object'
 							? catalogPayload.courseCatalog
 							: {};
-					const mapped = mapProfileToOnboardingForm(profilePayload, nextCatalogByMajor);
+					const mapped = mapProfileToOnboardingForm(profilePayload, nextCatalogByProgramId, majorsList);
 
 					setForm(mapped);
 					setInitialSerialized(serializeProfileForm(mapped));
-					setCatalogMajors(Array.isArray(catalogPayload?.majors) ? catalogPayload.majors : []);
-					setCatalogByMajor(nextCatalogByMajor);
-					setRoleOptionsByMajor(catalogPayload?.roleOptionsByMajor && typeof catalogPayload.roleOptionsByMajor === 'object' ? catalogPayload.roleOptionsByMajor : {});
+					setCatalogMajors(majorsList);
+					setCatalogByProgramId(nextCatalogByProgramId);
+					setRoleOptionsByProgramId(catalogPayload?.roleOptionsByProgramId && typeof catalogPayload.roleOptionsByProgramId === 'object' ? catalogPayload.roleOptionsByProgramId : {});
 					setRequiredCourseLinks(catalogPayload?.requiredCourseLinks && typeof catalogPayload.requiredCourseLinks === 'object' ? catalogPayload.requiredCourseLinks : {});
 				}
 			} catch (err) {
@@ -215,6 +279,7 @@ export default function LearningProfilePage() {
 				if (isMounted) {
 					setError(err?.message || 'Failed to load learning profile.');
 					setCatalogError(err?.message || 'Failed to load catalog.');
+					setIdentity({ displayName: 'Sinh viên UET', avatarUrl: '' });
 				}
 			} finally {
 				if (isMounted) {
@@ -232,44 +297,192 @@ export default function LearningProfilePage() {
 	}, [accessToken, logoutAndRedirect]);
 
 	return (
-		<main className="learning-profile-page">
+		<main className="learning-profile-page learning-profile-page--modern">
 			{loading ? <div style={{ marginBottom: 12 }}>Loading learning profile...</div> : null}
 			{error ? <div style={{ color: '#b00020', marginBottom: 12 }}>{error}</div> : null}
 			{!loading && !error ? (
-				<section className="learning-profile-content">
-					<h2 className="onboarding-panel-title">Learning Profile</h2>
-					<p className="onboarding-panel-description">Nội dung onboarding đã lưu. Bạn có thể chỉnh sửa và lưu lại.</p>
+				<>
+				<section className="learning-profile-content learning-profile-content--modern">
+					<section className="learning-profile-header">
+						<span className="learning-profile-badge">Hồ sơ sinh viên</span>
+						<div className="learning-profile-avatar-wrap">
+							<div className="learning-profile-avatar-ring">
+								{identity.avatarUrl && !avatarBroken ? (
+									<img
+										src={identity.avatarUrl}
+										alt={identity.displayName}
+										className="learning-profile-avatar"
+										onError={() => setAvatarBroken(true)}
+									/>
+								) : (
+									<div className="learning-profile-avatar learning-profile-avatar--fallback">
+										{identity.displayName.charAt(0).toUpperCase() || 'U'}
+									</div>
+								)}
+							</div>
+						</div>
+						<h1>{identity.displayName}</h1>
+						<p>{form.major || 'Chưa chọn ngành học'}</p>
+					</section>
 
 					{catalogLoading ? <div className="onboarding-panel-note">Loading majors and courses...</div> : null}
 					{catalogError ? <div className="onboarding-panel-error">{catalogError}</div> : null}
 
-					<MajorSelect
-						value={form.major}
-						selectedCourses={form.completedCourses || []}
-						onResetCourses={() => patchForm({ ...form, completedCourses: [] })}
-						onChange={handleMajorChange}
-						majors={catalogMajors}
-					/>
+					<div className="learning-profile-sections">
+						<section className="learning-section">
+							<div className="learning-section__head">
+								<User size={18} />
+								<h2>Thông tin cá nhân</h2>
+							</div>
+							<div className="learning-section__card learning-grid-two">
+								<div className="learning-field">
+									<label htmlFor="major" className="learning-label">Ngành học</label>
+									<select
+										id="major"
+										value={form.programId || ''}
+										onChange={(event) => handleMajorChange(event.target.value)}
+										className="learning-input learning-select"
+									>
+										<option value="">Chọn ngành học</option>
+										{catalogMajors.map((major) => (
+											<option key={major.programId} value={major.programId}>{major.nameEN}</option>
+										))}
+									</select>
+								</div>
 
-					<CourseMultiSelect
-						major={form.major}
-						requiredCourseLink={requiredCourseLink}
-						options={courseOptions}
-						value={form.completedCourses || []}
-						onChange={(completedCourses) => patchForm({ ...form, completedCourses })}
-					/>
+								<div className="learning-field">
+									<label htmlFor="target-role" className="learning-label">Mục tiêu nghề nghiệp</label>
+									<select
+										id="target-role"
+										value={form?.careerGoal?.role || ''}
+										onChange={(event) =>
+											patchForm({
+												...form,
+												careerGoal: {
+													...(form.careerGoal || {}),
+													role: event.target.value,
+												},
+											})
+										}
+										disabled={!form.programId || roleOptions.length === 0}
+										className="learning-input learning-select"
+									>
+										<option value="">
+											{form.programId
+												? roleOptions.length
+													? 'Chọn vai trò mục tiêu'
+													: 'Không có role cho ngành đã chọn'
+												: 'Chọn ngành học trước'}
+										</option>
+										{roleOptions.map((item) => (
+											<option key={item} value={item}>{item}</option>
+										))}
+									</select>
+								</div>
+							</div>
+						</section>
 
-					<CareerGoalForm value={form} roleOptions={roleOptions} onChange={patchForm} />
+						<section className="learning-section">
+							<div className="learning-section__head">
+								<BookOpenCheck size={18} />
+								<h2>Các môn đã học</h2>
+							</div>
+
+							{!form.programId ? (
+								<div className="learning-section__empty">Hãy chọn ngành học để hiển thị danh sách môn học.</div>
+							) : courseOptions.length === 0 ? (
+								<div className="learning-section__empty">
+									Không có dữ liệu môn học tự chọn cho ngành này.
+									{requiredCourseLink ? (
+										<a href={requiredCourseLink} target="_blank" rel="noreferrer">Xem danh sách môn học bắt buộc</a>
+									) : null}
+								</div>
+							) : (
+								<>
+									<div className="learning-course-list">
+										{visibleCourseOptions.map((course) => {
+											const key = `${form.major}::${course.courseCode}`;
+											const checked = selectedCourseKeys.has(key);
+											return (
+												<label key={key} className="learning-course-item">
+													<div>
+														<h3>{course.name || course.courseCode}</h3>
+														<p>
+															{course.courseCode}
+															{course.credit ? ` • ${course.credit} Tín chỉ` : ''}
+														</p>
+													</div>
+													<input
+														type="checkbox"
+														checked={checked}
+														onChange={() => handleToggleCourse(course)}
+													/>
+												</label>
+											);
+										})}
+									</div>
+
+									{courseOptions.length > 6 ? (
+										<button
+											type="button"
+											className="learning-expand-btn"
+											onClick={() => setShowAllCourses((prev) => !prev)}
+										>
+											{showAllCourses ? 'Thu gọn danh sách môn học' : 'Xem toàn bộ môn học'}
+										</button>
+									) : null}
+								</>
+							)}
+						</section>
+
+						<section className="learning-section">
+							<div className="learning-section__head">
+								<GraduationCap size={18} />
+								<h2>Dự kiến tốt nghiệp</h2>
+							</div>
+							<div className="learning-grad-card">
+								<div className="onboarding-field">
+									<label htmlFor="timeline" className="onboarding-label">Thời gian dự kiến</label>
+									<input
+										type="date"
+										id="timeline"
+										value={form?.careerGoal?.graduationTimeline || ''}
+										onChange={(event) =>
+											patchForm({
+												...form,
+												careerGoal: {
+													...(form.careerGoal || {}),
+													graduationTimeline: event.target.value,
+												},
+											})
+										}
+										className="onboarding-input"
+									/>
+								</div>
+
+								<p className="learning-grad-card__meta">Mốc thời gian hiện tại</p>
+								<p className="learning-grad-card__date">{graduationLabel}</p>
+								<div className="learning-progress-row">
+									<div className="learning-progress-bar">
+										<span style={{ width: `${completionPercent}%` }} />
+									</div>
+									<strong>{completionPercent}%</strong>
+								</div>
+							</div>
+						</section>
+					</div>
 
 					<div className="learning-profile-actions">
 						{hasChanges ? (
 							<button type="button" className="primary-btn" onClick={handleSaveProfile} disabled={saving}>
-								{saving ? 'Saving...' : 'Save profile'}
+								<Save size={17} />
+								{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 							</button>
 						) : null}
 						{showRegenRoadmap ? (
 							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap}>
-								Regen roadmap
+								<Sparkles size={17} />
+								Tạo lại Roadmap
 							</button>
 						) : null}
 					</div>
@@ -277,6 +490,8 @@ export default function LearningProfilePage() {
 					{statusError ? <div className="onboarding-panel-error">{statusError}</div> : null}
 					{statusMessage ? <div className="learning-profile-success">{statusMessage}</div> : null}
 				</section>
+				<SiteFooter />
+				</>
 			) : null}
 		</main>
 	);

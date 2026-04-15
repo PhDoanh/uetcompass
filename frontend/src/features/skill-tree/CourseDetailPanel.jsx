@@ -1,130 +1,118 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import ResourcesTab from './ResourcesTab';
-import WhyThisCourseTab from './WhyThisCourseTab';
-import MarketSkillsTab from './MarketSkillsTab';
+import { getNextTransitionOptions } from './skillTree.types';
 
-/**
- * T034: Dedicated status action control in detail panel
- * Separates node selection (click for panel) from state transition (dedicated button)
- */
+function toLabel(state) {
+  if (state === 'inProgress') return 'In Progress';
+  if (state === 'completed') return 'Completed';
+  if (state === 'skip') return 'Skip';
+  return 'Pending';
+}
 
 export default function CourseDetailPanel({
   node,
-  activeTab = 'resources',
-  activeSkillName = null,
-  onTabChange = () => {},
-  onSelectSkill = () => {},
-  onCloseSkill = () => {},
   onClosePanel = () => {},
-  onStatusChange = () => {},
+  onTransition = () => {},
 }) {
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const tabs = [
-    { id: 'resources', label: 'Resources', icon: '📚' },
-    { id: 'why', label: 'Why This Course', icon: '💡' },
-    { id: 'skills', label: 'Market Skills', icon: '📊' },
-  ];
+  const nextOptions = useMemo(
+    () => getNextTransitionOptions(node.progressState),
+    [node.progressState]
+  );
 
-  const statusOptions = [
-    { value: 'pending', label: 'pending' },
-    { value: 'in_progress', label: 'in progress' },
-    { value: 'done', label: 'done' },
-  ];
-
-  const handleStatusChange = async (event) => {
-    const nextStatus = event.target.value;
-    if (nextStatus === node.status || !node.isUnlocked) {
-      return;
-    }
-
+  const handleTransition = async (toState) => {
+    if (!toState || toState === node.progressState) return;
     try {
-      setIsUpdatingStatus(true);
-      await onStatusChange(nextStatus);
+      setIsUpdating(true);
+      await onTransition(node.progressState, toState);
     } finally {
-      setIsUpdatingStatus(false);
+      setIsUpdating(false);
     }
   };
 
-  const normalizedStatus = node.status === 'in_progress' ? 'in progress' : node.status;
-
   return (
-    <aside className="skill-tree-panel">
+    <aside className="skill-tree-panel" aria-label="Skill detail panel">
       <div className="skill-tree-panel__header">
         <div className="skill-tree-panel__title-row">
           <div className="skill-tree-panel__title-wrap">
-            <h2 className="skill-tree-panel__title">{node.courseCode}</h2>
-            <p className="skill-tree-panel__subtitle">{node.nameVi}</p>
-            {node.nameEn && <p className="skill-tree-panel__subtle">{node.nameEn}</p>}
+            <h2 className="skill-tree-panel__title">{node.skillName}</h2>
+            <p className="skill-tree-panel__subtitle">{node.nodeType === 'topic' ? 'Topic' : 'Subtopic'}</p>
           </div>
           <button
             onClick={onClosePanel}
             className="skill-tree-icon-button"
-            aria-label="Close course detail panel"
+            aria-label="Close node detail panel"
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="skill-tree-panel__status-row">
-          <span className={`skill-tree-status-chip skill-tree-status-chip--${node.status}`}>
-            {normalizedStatus}
+          <span className={`skill-tree-status-chip skill-tree-status-chip--${node.progressState}`}>
+            {toLabel(node.progressState)}
           </span>
-          {node.credits && <span className="skill-tree-panel__credits">{node.credits} credits</span>}
         </div>
 
-        <label className="skill-tree-select-label" htmlFor="status-select">
-          Status
-        </label>
-        <select
-          id="status-select"
-          value={node.status}
-          onChange={handleStatusChange}
-          disabled={!node.isUnlocked || isUpdatingStatus}
-          className="skill-tree-status-select"
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {!node.isUnlocked && (
-          <p className="skill-tree-panel__hint">This course is locked until prerequisites are done.</p>
-        )}
-      </div>
-
-      <div className="skill-tree-tabs" role="tablist" aria-label="Course details tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`skill-tree-tab ${activeTab === tab.id ? 'is-active' : ''}`}
-            role="tab"
-            aria-selected={activeTab === tab.id}
+        <div className="skill-tree-panel__transition-block">
+          <label className="skill-tree-select-label" htmlFor="status-select">
+            Move state
+          </label>
+          <select
+            id="status-select"
+            value=""
+            onChange={(e) => handleTransition(e.target.value)}
+            disabled={isUpdating}
+            className="skill-tree-status-select"
           >
-            <span>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+            <option value="" disabled>
+              Select next state
+            </option>
+            {nextOptions.map((option) => (
+              <option key={option} value={option}>
+                {toLabel(option)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="skill-tree-panel__content">
-        {activeTab === 'resources' && (
-          <ResourcesTab courseCode={node.courseCode} />
-        )}
-        {activeTab === 'why' && (
-          <WhyThisCourseTab courseCode={node.courseCode} />
-        )}
-        {activeTab === 'skills' && (
-          <MarketSkillsTab
-            courseCode={node.courseCode}
-            activeSkillName={activeSkillName}
-            onSelectSkill={onSelectSkill}
-            onCloseSkill={onCloseSkill}
-          />
-        )}
+        <section className="resources-tab__section">
+          <h4 className="resources-tab__heading">Why this skill?</h4>
+          {node.reason ? <p className="why-tab__content">{node.reason}</p> : <p className="skill-tree-muted-text">No reason available</p>}
+        </section>
+
+        <section className="resources-tab__section">
+          <h4 className="resources-tab__heading">Resources</h4>
+          {(node.resources || []).length === 0 ? (
+            <p className="skill-tree-muted-text">No resources available</p>
+          ) : (
+            <ul className="resources-tab__list">
+              {(node.resources || []).map((resource, idx) => (
+                <li key={`resource-${idx}`} className="resources-tab__item">
+                  <pre className="skill-tree-json-preview">{JSON.stringify(resource, null, 2)}</pre>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="resources-tab__section">
+          <h4 className="resources-tab__heading">Related Courses</h4>
+          {(node.relatedCourses || []).length === 0 ? (
+            <p className="skill-tree-muted-text">No related courses available</p>
+          ) : (
+            <ul className="resources-tab__list">
+              {(node.relatedCourses || []).map((course) => (
+                <li key={`${node.nodeId}-${course.courseCode}`} className="resources-tab__item">
+                  <div className="resources-tab__title">{course.courseCode} - {course.courseName}</div>
+                  <p className="resources-tab__description">Credits: {course.credits}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </aside>
   );

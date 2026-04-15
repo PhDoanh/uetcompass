@@ -141,20 +141,6 @@ async function previewRoadmapHandler(req, res) {
 	}
 }
 
-// Public endpoints - guest access
-async function getSampleRoadmap(req, res) {
-	try {
-		return res.json({
-			roadmapId: 'sample-roadmap',
-			roadmapName: 'Sample Roadmap',
-			personalisationLevel: 'low',
-			nodes: [],
-		});
-	} catch (err) {
-		return mapError(err, res);
-	}
-}
-
 async function getPublicSharedRoadmap(req, res) {
 	try {
 		const roadmapName = String(req.query.name || '').trim();
@@ -218,7 +204,6 @@ async function updateNodeStateHandler(req, res) {
 }
 
 module.exports = {
-	getSampleRoadmap,
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,

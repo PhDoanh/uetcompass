@@ -10,7 +10,7 @@ Feature 005 implements account self-management for users who already passed auth
 ## Technical Context
 
 **Language/Version**: JavaScript (Node.js 20 LTS backend, React 18 frontend)
-**Primary Dependencies**: Express 4, Mongoose 8, bcryptjs, jsonwebtoken, React 18, Zustand, Axios
+**Primary Dependencies**: Express 4, Mongoose 8, bcryptjs, jsonwebtoken, React 18, Zustand, Fetch API
 **Storage**: MongoDB Atlas/local MongoDB via Mongoose
 **Testing**: Jest 29 (backend + frontend unit tests), React Testing Library/Jest (frontend guard + settings flows)
 **Target Platform**: Web app (Vercel frontend + Render backend)

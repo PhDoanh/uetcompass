@@ -19,7 +19,7 @@ Three read-only REST endpoints expose the collected data to the React frontend w
 
 **Language/Version**: JavaScript — Node.js 20 LTS (backend), React 18 (frontend)  
 **Primary Dependencies**:
-- Backend: `express.js`, `mongoose 8`, `node-cron` (existing), `@google/generative-ai` (existing), `axios` (for Tavily), `cheerio` (new — HTML parsing if needed for fallback)
+- Backend: `express.js`, `mongoose 8`, `node-cron` (existing), `@google/generative-ai` (existing), built-in Fetch API (for Tavily), `cheerio` (new — HTML parsing if needed for fallback)
 - Frontend: React 18, React Router v6 — no new packages
 - External: **Tavily Search API** (free tier: 100 searches/month; `TAVILY_API_KEY` env var)
 

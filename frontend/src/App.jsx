@@ -13,6 +13,7 @@ import { NotificationProvider } from './features/general/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
+import { useEffect, useState } from 'react';
 
 function normalizePathname(pathname) {
 	if (!pathname || pathname === '/') {
@@ -23,11 +24,46 @@ function normalizePathname(pathname) {
 
 function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
+	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
 		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/roadmaps/search'].includes(pathname) ||
 		pathname.startsWith('/roadmaps/public/');
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const handleOpenOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(true);
+		};
+
+		const handleCloseOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(false);
+		};
+
+		const handleEscClose = (event) => {
+			if (event.key === 'Escape') {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+		window.addEventListener('keydown', handleEscClose);
+
+		if (pathname === '/roadmaps/search') {
+			setIsRoadmapSearchOverlayOpen(true);
+		}
+
+		return () => {
+			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+			window.removeEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+			window.removeEventListener('keydown', handleEscClose);
+		};
+	}, [pathname]);
 
 	if (isAuthenticated && isAuthPopupPath) {
 		if (typeof window !== 'undefined') {
@@ -98,11 +134,7 @@ function AppContent() {
 	}
 
 	if (!content && pathname === '/roadmaps/search') {
-		content = (
-			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
-				<RoadmapSearchPage />
-			</main>
-		);
+		content = <Homepage />;
 	}
 
 	// Route to Skill Tree if pathname includes /skill-tree
@@ -174,6 +206,30 @@ function AppContent() {
 								x
 							</button>
 							{authPopupContent}
+						</div>
+					</div>
+				) : null}
+				{isRoadmapSearchOverlayOpen ? (
+					<div
+						className="roadmap-search-overlay"
+						role="dialog"
+						aria-modal="true"
+						onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+					>
+						<div className="roadmap-search-overlay__backdrop" />
+						<div className="roadmap-search-overlay__panel" onClick={(event) => event.stopPropagation()}>
+							<div className="roadmap-search-overlay__header">
+								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
+								<button
+									type="button"
+									className="roadmap-search-overlay__close"
+									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+									aria-label="Close roadmap search"
+								>
+									x
+								</button>
+							</div>
+							<RoadmapSearchPage />
 						</div>
 					</div>
 				) : null}

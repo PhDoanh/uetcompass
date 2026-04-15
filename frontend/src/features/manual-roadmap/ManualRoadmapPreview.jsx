@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import '../skill-tree/skill-tree.css';
+import './manual-roadmap.css';
 
 function chunk(items, size) {
     const output = [];
@@ -36,17 +38,21 @@ function getStatusLabel(status) {
 export default function ManualRoadmapPreview({ nodes = [], selectedNodeId, onNodeSelect }) {
     // Organize nodes into parent and children groups
     const { parentNodes, childrenByParent } = useMemo(() => {
+        const nodeIdSet = new Set(nodes.map((node) => node.nodeId));
         const parents = [];
         const childMap = {};
 
         nodes.forEach((node) => {
-            if (!node.parent) {
+            const parentId = String(node.parent || '').trim();
+
+            // Treat missing/invalid parent references as root nodes
+            if (!parentId || !nodeIdSet.has(parentId)) {
                 parents.push(node);
             } else {
-                if (!childMap[node.parent]) {
-                    childMap[node.parent] = [];
+                if (!childMap[parentId]) {
+                    childMap[parentId] = [];
                 }
-                childMap[node.parent].push(node);
+                childMap[parentId].push(node);
             }
         });
 
@@ -95,6 +101,35 @@ export default function ManualRoadmapPreview({ nodes = [], selectedNodeId, onNod
         );
     };
 
+    const renderChildren = (parentNodeId, level = 1, ancestorSet = new Set()) => {
+        const children = childrenByParent[parentNodeId] || [];
+        if (children.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="skill-tree-roadmap-v2__chips" data-depth={level}>
+                {children.map((childNode) => {
+                    // Guard against malformed cyclic parent links
+                    if (ancestorSet.has(childNode.nodeId)) {
+                        return null;
+                    }
+
+                    const nextAncestors = new Set(ancestorSet);
+                    nextAncestors.add(childNode.nodeId);
+
+                    return (
+                        <div key={childNode.nodeId} className="skill-tree-roadmap-v2__chip-wrap">
+                            <div className="skill-tree-roadmap-v2__chip-line" aria-hidden="true" />
+                            {renderNodeButton(childNode, true)}
+                            {renderChildren(childNode.nodeId, level + 1, nextAncestors)}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
         <div className="skill-tree-canvas skill-canvas manual-roadmap-preview" role="list" aria-label="Manual roadmap preview">
             <div className="skill-tree-roadmap-v2">
@@ -134,17 +169,7 @@ export default function ManualRoadmapPreview({ nodes = [], selectedNodeId, onNod
                                         <div className="skill-tree-roadmap-v2__cell">
                                             {renderNodeButton(parentNode, false)}
 
-                                            {/* Children below parent node */}
-                                            {(childrenByParent[parentNode.nodeId] || []).length > 0 && (
-                                                <div className="skill-tree-roadmap-v2__chips">
-                                                    {(childrenByParent[parentNode.nodeId] || []).map((childNode) => (
-                                                        <div key={childNode.nodeId} className="skill-tree-roadmap-v2__chip-wrap">
-                                                            <div className="skill-tree-roadmap-v2__chip-line" aria-hidden="true" />
-                                                            {renderNodeButton(childNode, true)}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                            {renderChildren(parentNode.nodeId, 1, new Set([parentNode.nodeId]))}
                                         </div>
 
                                         {parentIndex < displayRow.length - 1 && (

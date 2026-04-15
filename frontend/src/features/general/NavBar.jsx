@@ -19,7 +19,8 @@ function getAvatarState(profile = {}) {
 }
 
 export function getRoadmapSearchTarget(pathname) {
-  return pathname === '/roadmaps/search' ? null : '/roadmaps/search';
+  const blockedPaths = ['/login', '/register', '/forgot-password'];
+  return !blockedPaths.includes(pathname);
 }
 
 function dispatchRoadmapSearchQuery(query) {
@@ -28,6 +29,13 @@ function dispatchRoadmapSearchQuery(query) {
   }
 
   window.dispatchEvent(new CustomEvent('roadmap-search-query', { detail: { query } }));
+}
+
+function dispatchOpenRoadmapSearchOverlay() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent('roadmap-search-overlay-open'));
 }
 
 export default function NavBar() {
@@ -69,9 +77,9 @@ export default function NavBar() {
 
   const goRoadmapSearch = () => {
     if (typeof window !== 'undefined') {
-      const nextPath = getRoadmapSearchTarget(window.location.pathname);
-      if (nextPath) {
-        window.location.assign(nextPath);
+      const canOpen = getRoadmapSearchTarget(window.location.pathname);
+      if (canOpen) {
+        dispatchOpenRoadmapSearchOverlay();
       }
     }
   };
@@ -178,31 +186,31 @@ export default function NavBar() {
           <Moon size={18} />
         </button>
 
-      {isAuthenticated ? (
-        <div className="navbar__avatar-wrapper" ref={avatarRef}>
-          <button
-            type="button"
-            className="navbar__auth-btn navbar__profile-trigger"
-            title="Tài khoản"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span className="navbar__profile-name">{displayName}</span>
-            <div className="navbar__avatar">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
-              ) : (
-                <span>{avatarFallback}</span>
-              )}
-            </div>
-          </button>
-          {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
-        </div>
-      ) : (
-        <div className="navbar__auth-actions">
-          <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
-          <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
-        </div>
-      )}
+        {isAuthenticated ? (
+          <div className="navbar__avatar-wrapper" ref={avatarRef}>
+            <button
+              type="button"
+              className="navbar__auth-btn navbar__profile-trigger"
+              title="Tài khoản"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span className="navbar__profile-name">{displayName}</span>
+              <div className="navbar__avatar">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
+                ) : (
+                  <span>{avatarFallback}</span>
+                )}
+              </div>
+            </button>
+            {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
+          </div>
+        ) : (
+          <div className="navbar__auth-actions">
+            <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
+            <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
+          </div>
+        )}
       </div>
     </nav>
   );

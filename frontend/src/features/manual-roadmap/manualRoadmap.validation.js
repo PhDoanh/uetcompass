@@ -45,18 +45,28 @@ export function parseManualRoadmapYaml(yamlCode) {
             throw new Error('Each node must have an id or nodeId.');
         }
 
+        const prerequisites = Array.isArray(node.prerequisites)
+            ? node.prerequisites.map((id) => String(id || '').trim()).filter(Boolean)
+            : [];
+        const metadata = typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {};
+        const parentNodeId = String(
+            node.parent || metadata.parentNodeId || node.parentNodeId || ''
+        ).trim();
+        const label = String(node.label || node.skillName || '').trim();
+        const description = String(node.description || node.reason || '').trim();
+
         return {
             nodeId,
-            label: String(node.label || '').trim(),
-            description: String(node.description || '').trim(),
-            parent: node.parent ? String(node.parent).trim() : undefined,
-            prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites.map((id) => String(id || '').trim()).filter(Boolean) : [],
+            label,
+            description,
+            parent: parentNodeId || undefined,
+            prerequisites,
             status: ['locked', 'pending', 'in_progress', 'done'].includes(node.status)
                 ? node.status
                 : 'pending',
             skills: Array.isArray(node.skills) ? node.skills.map((skill) => String(skill || '').trim()).filter(Boolean) : [],
             resources: Array.isArray(node.resources) ? node.resources : [],
-            metadata: typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {},
+            metadata,
         };
     });
 

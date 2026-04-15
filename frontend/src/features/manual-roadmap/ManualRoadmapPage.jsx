@@ -11,6 +11,7 @@ import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator
 import dataAnalyticsSample from '../../../../specs/001-manual-roadmap-generator/sample-data-analytics-roadmap.yaml?raw';
 import cloudDevopsSample from '../../../../specs/001-manual-roadmap-generator/sample-cloud-devops-roadmap.yaml?raw';
 import cybersecuritySample from '../../../../specs/001-manual-roadmap-generator/sample-cybersecurity-roadmap.yaml?raw';
+import fullstackExtendedSample from '../../../../specs/001-manual-roadmap-generator/sample-fullstack-engineering-extended-roadmap.yaml?raw';
 
 const SAMPLE_ROADMAPS = [
   {
@@ -36,6 +37,12 @@ const SAMPLE_ROADMAPS = [
     label: 'Cybersecurity Foundations',
     description: 'Security basics, networking, web security, and incident response.',
     yaml: cybersecuritySample,
+  },
+  {
+    key: 'fullstack-extended',
+    label: 'Fullstack Engineering Extended',
+    description: 'A larger sample roadmap with frontend, backend, data, testing, and deployment stages.',
+    yaml: fullstackExtendedSample,
   },
 ];
 
@@ -65,6 +72,42 @@ function findNodeLine(yamlText, nodeId) {
   return 0;
 }
 
+function normalizeYamlForPersistence(yamlText) {
+  const parsed = load(yamlText);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('YAML must be an object before saving.');
+  }
+
+  const next = { ...parsed };
+  const rawNodes = Array.isArray(next.nodes) ? next.nodes : [];
+
+  next.nodes = rawNodes.map((node) => {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    const normalizedNode = { ...node };
+    const parentNodeId = String(normalizedNode.parent || '').trim();
+
+    if (parentNodeId) {
+      const metadata = typeof normalizedNode.metadata === 'object' && normalizedNode.metadata !== null && !Array.isArray(normalizedNode.metadata)
+        ? { ...normalizedNode.metadata }
+        : {};
+
+      if (!String(metadata.parentNodeId || '').trim()) {
+        metadata.parentNodeId = parentNodeId;
+      }
+
+      normalizedNode.metadata = metadata;
+    }
+
+    delete normalizedNode.parent;
+    return normalizedNode;
+  });
+
+  return dump(next, { noRefs: true, lineWidth: 120, sortKeys: false });
+}
+
 export default function ManualRoadmapPage() {
   const { accessToken } = useAuth();
   const roadmapId = parseQueryParam('id');
@@ -87,7 +130,8 @@ export default function ManualRoadmapPage() {
 
   useEffect(() => {
     try {
-      const parsed = parseManualRoadmapYaml(yamlCode);
+      const normalizedYaml = normalizeYamlForPersistence(yamlCode);
+      const parsed = parseManualRoadmapYaml(normalizedYaml);
       setPreview(parsed);
       setValidationError('');
       setTitle(parsed.title || 'Computer Science Core');
@@ -238,11 +282,20 @@ export default function ManualRoadmapPage() {
       setApiError('Please fix validation errors before saving.');
       return;
     }
+
+    let persistableYamlCode = '';
+    try {
+      persistableYamlCode = normalizeYamlForPersistence(yamlCode);
+    } catch (err) {
+      setApiError(err.message || 'Unable to normalize YAML for saving.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const payload = await (roadmapId
-        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode })
-        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode }));
+        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
+        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
 
       setSuccessMessage(`Roadmap ${roadmapId ? 'updated' : 'created'} successfully.`);
       if (!roadmapId && payload?._id) {

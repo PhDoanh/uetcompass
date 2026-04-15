@@ -26,7 +26,7 @@ export default function RoadmapSearchPage() {
     }, []);
 
     return (
-        <main className="roadmap-search-page">
+        <div className="roadmap-search-page">
             <section className="roadmap-search-page__left">
                 {errorMessage ? (
                     <p style={{ color: '#b91c1c', marginTop: 0, marginBottom: '12px' }}>{errorMessage}</p>
@@ -48,6 +48,6 @@ export default function RoadmapSearchPage() {
                     errorMessage={errorMessage}
                 />
             </section>
-        </main>
+        </div>
     );
 }

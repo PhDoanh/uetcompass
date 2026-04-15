@@ -73,15 +73,39 @@ export function useRoadmapSearch(initialQuery = '') {
                 }
 
                 const nextResults = Array.isArray(payload?.items) ? payload.items : [];
-                setResults(nextResults);
 
                 if (nextResults.length === 0) {
+                    setResults([]);
                     setSelectedRoadmapId(null);
                     setPreviewStatus('idle');
                     setPreviewData(null);
                     setResultsStatus('empty');
                     return;
                 }
+
+                const details = await Promise.all(
+                    nextResults.map(async (result) => {
+                        try {
+                            const preview = await roadmapSearchApi.getPublicRoadmapPreviewById(result._id);
+                            return {
+                                ...result,
+                                nodeDetails: Array.isArray(preview?.nodes) ? preview.nodes : [],
+                                description: String(preview?.description || result.description || '').trim(),
+                            };
+                        } catch (_) {
+                            return {
+                                ...result,
+                                nodeDetails: [],
+                            };
+                        }
+                    })
+                );
+
+                if (requestRef.current !== requestId) {
+                    return;
+                }
+
+                setResults(details);
 
                 setSelectedRoadmapId(getInitialSelectedRoadmapId(nextResults));
                 setResultsStatus('loaded');

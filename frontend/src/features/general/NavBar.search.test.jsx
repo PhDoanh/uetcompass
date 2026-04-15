@@ -1,11 +1,11 @@
 describe('NavBar roadmap search behavior scaffold', () => {
-    test('search bar click should navigate to roadmap search route', async () => {
+    test('search bar click should open search overlay on normal pages', async () => {
         const { getRoadmapSearchTarget } = await import('./NavBar.jsx');
-        expect(getRoadmapSearchTarget('/')).toBe('/roadmaps/search');
+        expect(getRoadmapSearchTarget('/')).toBe(true);
     });
 
-    test('search route should remain stable for click-to-jump behavior', async () => {
+    test('auth popup pages should block search overlay opening', async () => {
         const { getRoadmapSearchTarget } = await import('./NavBar.jsx');
-        expect(getRoadmapSearchTarget('/roadmaps/search')).toBeNull();
+        expect(getRoadmapSearchTarget('/login')).toBe(false);
     });
 });

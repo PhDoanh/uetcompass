@@ -1,0 +1,241 @@
+title: Fullstack Engineering Extended Roadmap
+description: Balanced roadmap with around 20 nodes, including multiple parent tracks and distributed child nodes.
+nodes:
+  - nodeId: FRONTEND_CORE
+    label: Frontend Core
+    description: Build robust UIs with HTML, CSS, JavaScript, and component patterns.
+    status: in_progress
+    prerequisites: []
+    skills:
+      - html-css-js
+      - ui-development
+    resources:
+      - title: Frontend Developer Roadmap
+        url: https://roadmap.sh/frontend
+        type: link
+
+  - nodeId: BACKEND_CORE
+    label: Backend Core
+    description: Build APIs, business logic, middleware, and service boundaries.
+    status: in_progress
+    prerequisites: []
+    skills:
+      - rest-api
+      - service-layer
+    resources:
+      - title: Node.js Learn
+        url: https://nodejs.org/en/learn
+        type: docs
+
+  - nodeId: DATA_MODELING
+    label: Data Modeling
+    description: Design schemas, relationships, constraints, and migrations.
+    status: pending
+    prerequisites: []
+    skills:
+      - sql-schema-design
+      - data-integrity
+    resources:
+      - title: PostgreSQL Tutorial
+        url: https://www.postgresqltutorial.com/
+        type: docs
+
+  - nodeId: TESTING_QA
+    label: Testing & QA
+    description: Add unit, integration, and end-to-end tests into delivery flow.
+    status: pending
+    prerequisites: []
+    skills:
+      - unit-testing
+      - integration-testing
+    resources:
+      - title: Testing JavaScript
+        url: https://testingjavascript.com/
+        type: course
+
+  - nodeId: SECURITY_BASELINE
+    label: Security Baseline
+    description: Protect authentication, authorization, and sensitive data paths.
+    status: pending
+    prerequisites: []
+    skills:
+      - auth-security
+      - secure-coding
+    resources:
+      - title: OWASP Cheat Sheet Series
+        url: https://cheatsheetseries.owasp.org/
+        type: docs
+
+  - nodeId: DEVOPS_CORE
+    label: DevOps Core
+    description: Automate build, containerization, CI/CD, and runtime operations.
+    status: pending
+    prerequisites: []
+    skills:
+      - cicd
+      - docker
+    resources:
+      - title: Docker Get Started
+        url: https://docs.docker.com/get-started/
+        type: docs
+
+  - nodeId: SYSTEM_DESIGN
+    label: System Design
+    description: Design scalable architecture, caching strategy, and async workflows.
+    status: locked
+    prerequisites: []
+    skills:
+      - scalability
+      - architecture-design
+    resources:
+      - title: System Design Primer
+        url: https://github.com/donnemartin/system-design-primer
+        type: docs
+
+  - nodeId: FE_COMPONENT_ARCH
+    label: Component Architecture
+    description: Structure components, feature modules, and reusable UI patterns.
+    parent: FRONTEND_CORE
+    status: pending
+    prerequisites: [FRONTEND_CORE]
+    skills:
+      - component-design
+      - frontend-modularity
+
+  - nodeId: FE_STATE_MANAGEMENT
+    label: State Management
+    description: Handle shared client state and async data in complex screens.
+    parent: FRONTEND_CORE
+    status: pending
+    prerequisites: [FRONTEND_CORE]
+    skills:
+      - state-management
+      - data-fetching
+    resources:
+      - title: Zustand Docs
+        url: https://zustand-demo.pmnd.rs/
+        type: docs
+
+  - nodeId: FE_ACCESSIBILITY
+    label: Accessibility
+    description: Build keyboard-friendly, semantic, and inclusive interfaces.
+    parent: FRONTEND_CORE
+    status: pending
+    prerequisites: [FRONTEND_CORE]
+    skills:
+      - accessibility
+      - semantic-markup
+
+  - nodeId: BE_API_DESIGN
+    label: API Design
+    description: Define API contracts, validation, pagination, and versioning.
+    parent: BACKEND_CORE
+    status: pending
+    prerequisites: [BACKEND_CORE]
+    skills:
+      - api-contracts
+      - request-validation
+
+  - nodeId: BE_CACHE_QUEUE
+    label: Cache & Queue
+    description: Use cache and asynchronous jobs to improve throughput.
+    parent: BACKEND_CORE
+    status: pending
+    prerequisites: [BACKEND_CORE]
+    skills:
+      - caching
+      - background-jobs
+
+  - nodeId: BE_DATA_ACCESS
+    label: Data Access Layer
+    description: Implement repositories, transaction boundaries, and query tuning.
+    parent: DATA_MODELING
+    status: pending
+    prerequisites: [DATA_MODELING, BACKEND_CORE]
+    skills:
+      - repository-pattern
+      - query-optimization
+
+  - nodeId: QA_API_AUTOMATION
+    label: API Automation
+    description: Automate endpoint tests for contracts, edge cases, and regressions.
+    parent: TESTING_QA
+    status: pending
+    prerequisites: [TESTING_QA, BACKEND_CORE]
+    skills:
+      - api-automation
+      - regression-testing
+
+  - nodeId: SEC_AUTHZ_POLICIES
+    label: Authorization Policies
+    description: Build role and permission models with least-privilege rules.
+    parent: SECURITY_BASELINE
+    status: locked
+    prerequisites: [SECURITY_BASELINE, BACKEND_CORE]
+    skills:
+      - rbac
+      - authorization
+
+  - nodeId: DEVOPS_RELEASE_PIPELINE
+    label: Release Pipeline
+    description: Create safe rollout strategies with staged and canary deployment.
+    parent: DEVOPS_CORE
+    status: locked
+    prerequisites: [DEVOPS_CORE, TESTING_QA]
+    skills:
+      - release-management
+      - deployment-strategy
+
+  - nodeId: DEVOPS_INFRA_AS_CODE
+    label: Infrastructure as Code
+    description: Manage infrastructure with repeatable, versioned definitions.
+    parent: DEVOPS_CORE
+    status: locked
+    prerequisites: [DEVOPS_CORE]
+    skills:
+      - terraform
+      - infrastructure-automation
+
+  - nodeId: OBSERVABILITY_CORE
+    label: Observability Core
+    description: Monitor logs, metrics, traces, and production incidents.
+    parent: SYSTEM_DESIGN
+    status: locked
+    prerequisites: [SYSTEM_DESIGN, DEVOPS_CORE]
+    skills:
+      - monitoring
+      - alerting
+    resources:
+      - title: OpenTelemetry Docs
+        url: https://opentelemetry.io/docs/
+        type: docs
+
+  - nodeId: DESIGN_SCALABILITY_PATTERN
+    label: Scalability Patterns
+    description: Apply caching, partitioning, and queue-driven architecture patterns.
+    parent: SYSTEM_DESIGN
+    status: locked
+    prerequisites: [SYSTEM_DESIGN, DATA_MODELING]
+    skills:
+      - caching-patterns
+      - message-queue-architecture
+
+  - nodeId: CAPSTONE_FULLSTACK_PRODUCT
+    label: Fullstack Product Capstone
+    description: Deliver a production-grade fullstack product with full lifecycle coverage.
+    parent: SYSTEM_DESIGN
+    status: locked
+    prerequisites:
+      [
+        SYSTEM_DESIGN,
+        OBSERVABILITY_CORE,
+        QA_API_AUTOMATION,
+        FE_STATE_MANAGEMENT,
+      ]
+    skills:
+      - fullstack-delivery
+      - production-readiness
+    resources:
+      - title: The Odin Project Full Stack JavaScript
+        url: https://www.theodinproject.com/paths/full-stack-javascript
+        type: course

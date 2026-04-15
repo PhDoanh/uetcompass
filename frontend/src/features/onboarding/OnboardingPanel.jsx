@@ -175,9 +175,9 @@ export default function OnboardingPanel({
 	}, [authToken]);
 
 	const mergedForm = form;
-	const courseOptions = useMemo(() => catalogByMajor[mergedForm.major] || [], [catalogByMajor, mergedForm.major]);
-	const roleOptions = useMemo(() => roleOptionsByMajor[mergedForm.major] || [], [roleOptionsByMajor, mergedForm.major]);
-	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.major] || null, [requiredCourseLinks, mergedForm.major]);
+	const courseOptions = useMemo(() => catalogByMajor[mergedForm.programId] || [], [catalogByMajor, mergedForm.programId]);
+	const roleOptions = useMemo(() => roleOptionsByProgramId[mergedForm.programId] || [], [roleOptionsByProgramId, mergedForm.programId]);
+	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.programId] || null, [requiredCourseLinks, mergedForm.programId]);
 	const selectedCourseKeys = useMemo(
 		() => new Set((mergedForm.completedCourses || []).map((item) => `${mergedForm.major}::${item.courseCode}`)),
 		[mergedForm.completedCourses, mergedForm.major]
@@ -221,9 +221,7 @@ export default function OnboardingPanel({
 		}
 	}, [catalogMajors, mergedForm.programId, mergedForm.major]);
 
-	const courseOptions = useMemo(() => catalogByMajor[mergedForm.programId] || [], [catalogByMajor, mergedForm.programId]);
-	const roleOptions = useMemo(() => roleOptionsByProgramId[mergedForm.programId] || [], [roleOptionsByProgramId, mergedForm.programId]);
-	const requiredCourseLink = useMemo(() => requiredCourseLinks[mergedForm.programId] || null, [requiredCourseLinks, mergedForm.programId]);
+	
 	const selectedMajorName = useMemo(() => {
 		const matched = catalogMajors.find((item) => item?.programId === mergedForm.programId);
 		return matched?.nameEN || mergedForm.major || '';
@@ -271,7 +269,7 @@ export default function OnboardingPanel({
 		});
 	};
 
-	const canSubmit = !isViewMode && !!mergedForm.major;
+	const canSubmit = !isViewMode && !!mergedForm.programId;
 
 	const closePanel = () => {
 		setIsOpen(false);
@@ -388,13 +386,13 @@ export default function OnboardingPanel({
 							<label htmlFor="onboarding-major">Ngành học hiện tại</label>
 							<select
 								id="onboarding-major"
-								value={mergedForm.major || ''}
+								value={mergedForm.programId || ''}
 								onChange={(event) => handleMajorChange(event.target.value)}
 								disabled={isViewMode}
 							>
 								<option value="">Chọn ngành học</option>
 								{catalogMajors.map((major) => (
-									<option key={major} value={major}>{major}</option>
+									<option key={major.programId} value={major.programId}>{major.nameEN}</option>
 								))}
 							</select>
 						</div>
@@ -413,9 +411,9 @@ export default function OnboardingPanel({
 										},
 									})
 								}
-								disabled={isViewMode || !mergedForm.major || roleOptions.length === 0}
+								disabled={isViewMode || !mergedForm.programId || roleOptions.length === 0}
 							>
-								<option value="">{mergedForm.major ? 'Chọn vai trò mục tiêu' : 'Chọn ngành học trước'}</option>
+								<option value="">{mergedForm.programId ? 'Chọn vai trò mục tiêu' : 'Chọn ngành học trước'}</option>
 								{roleOptions.map((role) => (
 									<option key={role} value={role}>{role}</option>
 								))}
@@ -441,12 +439,12 @@ export default function OnboardingPanel({
 										placeholder="Tìm kiếm mã môn hoặc tên..."
 										value={courseSearch}
 										onChange={(event) => setCourseSearch(event.target.value)}
-										disabled={isViewMode || !mergedForm.major}
+										disabled={isViewMode || !mergedForm.programId}
 									/>
 								</div>
 
 								<div className="onboarding-modern-course-list">
-									{!mergedForm.major ? (
+									{!mergedForm.programId ? (
 										<div className="onboarding-panel-note">Chọn ngành học để hiển thị danh sách môn học.</div>
 									) : visibleCourses.length === 0 ? (
 										<div className="onboarding-panel-note">Không tìm thấy môn học phù hợp.</div>

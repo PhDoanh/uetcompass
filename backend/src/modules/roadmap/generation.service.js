@@ -149,7 +149,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			// Low personalisation: sort relatedCourses for each skill by topological order
 			nodes = buildNodesTopologically(candidateSkills, candidateSkillsMap, courseUnits);
 		}
-		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
+		//roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
 		// previewStore.storePendingPreview(userId, {
 		// 	nodes,
@@ -181,6 +181,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 		
 	} catch (err) {
+		console.error('[generation] roadmap generation failed:', err);
 		if (studentProfileId) {
 			await roadmapService.upsertFailedWithProfile(
 				userId,

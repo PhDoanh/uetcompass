@@ -1,137 +1,136 @@
 # Research: Skill Tree
 
-**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-07
+**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-11
 
-This document records design decisions that shape the Skill Tree implementation scope and behavior.
+This document records contract and UX decisions for Skill Tree after alignment with Feature 009 canonical schemas.
 
 ---
 
-## Decision 1: Frontend-Only Scope for Feature 004
+## Decision 1: Feature 009 Is the Single Source of Truth
 
-**Decision**: Feature 004 focuses on presentation, interaction handling, and frontend state behavior. It does not own roadmap generation or backend data sourcing.
+**Decision**: Feature 004 consumes roadmap and progress data only from Feature 009 contracts (`/api/roadmaps/*`).
 
 **Rationale**:
-- Keeps feature boundaries explicit and stable.
-- Avoids duplicate business logic across features.
-- Aligns with product requirement that roadmap data lifecycle is external to this feature.
+- Eliminates schema drift between frontend and backend.
+- Keeps lifecycle and transition rules in one ownership boundary.
+- Prevents duplicate business logic in Feature 004.
 
 ---
 
-## Decision 2: Node Taxonomy Fixed to Three Types
+## Decision 2: Canonical Node Taxonomy Is topic/subtopic
 
-**Decision**: The tree uses three node types only:
-- `skill`
-- `related_knowledge`
-- `roadmap_reference`
+**Decision**: Skill Tree uses only two node types from 009:
+- `topic`
+- `subtopic`
 
 **Rationale**:
-- Clear visual language for users.
-- Reduces ambiguity in click behaviors.
-- Keeps detail rendering and navigation rules deterministic.
+- Matches persisted roadmap documents exactly.
+- Avoids adapter-level reinterpretation into legacy node categories.
 
 ---
 
-## Decision 3: Visual Semantics by Node Type and Status
+## Decision 3: Canonical Node Identity and Fields
+
+**Decision**: `nodeId` is the only persistent node identity used by UI actions and progress updates. Display data must be read from `skillName`, `reason`, `resources`, and `relatedCourses`.
+
+**Rationale**:
+- Guarantees write operations target the same identity used by progress APIs.
+- Preserves compatibility with `roadmap_progress` state arrays containing `nodeId` values.
+
+---
+
+## Decision 4: Graph Semantics Derived from Node Structure
 
 **Decision**:
-- `skill` (pending): yellow
-- `related_knowledge` (pending): light orange
-- `roadmap_reference`: blue
-- `in_progress` (both content node types): light purple
-- `done` states: strikethrough + tone change by node type
+- Main flow is derived from ordered `topic` nodes.
+- Branch edges are derived from `subtopic.parentNodeId -> topic.nodeId`.
 
 **Rationale**:
-- Users can identify both type and progress state at a glance.
-- Supports fast roadmap scanning without opening detail panels.
+- Uses data already present in roadmap nodes.
+- Keeps graph generation deterministic without extra backend fields.
 
 ---
 
-## Decision 4: Edge Semantics by Relationship Type
+## Decision 5: Progress Model Is Owned by 009
+
+**Decision**: Feature 004 renders and mutates only these states from 009:
+- `pending`
+- `inProgress`
+- `completed`
+- `skip`
+
+Allowed write transitions:
+- `pending -> inProgress`
+- `pending -> skip`
+- `inProgress -> completed`
+
+**Rationale**:
+- Matches 009 transition rules and error semantics.
+- Prevents invalid client-invented transition paths.
+
+---
+
+## Decision 6: Lifecycle Read Model Uses acceptedAt
 
 **Decision**:
-- `skill -> skill`: bold solid line
-- `skill -> related_knowledge`: lighter dashed line
+- `acceptedAt` present: accepted/active roadmap state.
+- `acceptedAt` null: failed/retryable state.
 
 **Rationale**:
-- Distinguishes core progression from supporting knowledge.
-- Keeps cognitive hierarchy visible in dense trees.
+- Aligns with 009 lifecycle contract where no separate `status` field is canonical.
 
 ---
 
-## Decision 5: Tree Axis Strategy
+## Decision 7: Low-Personalisation UX Signal
 
-**Decision**: The main progression among core skill nodes is primarily vertical, with optional left/right branching when local density is high.
+**Decision**: When `personalisationLevel = low`, Skill Tree must show a clear notice about reduced personalisation quality.
 
 **Rationale**:
-- Vertical spine preserves progression clarity.
-- Horizontal branching prevents overlap in sections with many related nodes.
-- Matches the intended roadmap.sh-like reading experience.
+- Communicates roadmap quality context to users.
+- Reflects canonical data rather than heuristic inference.
 
 ---
 
-## Decision 6: Node Click Behavior Split by Type
+## Decision 8: Detail Panel Is Contract-Faithful
 
-**Decision**:
-- Clicking `skill` or `related_knowledge` opens the detail panel.
-- Clicking `roadmap_reference` navigates to another roadmap.
+**Decision**: Node detail panel shows canonical fields only:
+- `skillName`
+- `reason`
+- `resources`
+- `relatedCourses` (`courseCode`, `courseName`, `credits`)
 
 **Rationale**:
-- Supports two distinct user intents: inspect details vs continue to another roadmap.
-- Prevents ambiguous interaction models.
+- Prevents information loss caused by custom remapping.
+- Keeps frontend resilient when resources are empty arrays.
 
 ---
 
-## Decision 7: Detail Panel Information Contract
+## Decision 9: Error Handling Uses Domain Error Codes
 
-**Decision**: Detail panel for content nodes always includes:
-- Content name
-- Short explanation
-- Free Resources
-- Paid Resources
-- Related Courses (at bottom)
+**Decision**: Feature 004 handles backend states by 009 error codes (`ROADMAP_NOT_FOUND`, `INVALID_TRANSITION`, `CONFLICT`) and never by parsing free-text messages.
 
 **Rationale**:
-- Provides predictable structure.
-- Keeps learning actions and academic recommendations in one place.
+- Improves stability across backend message wording changes.
+- Enables consistent UX branches for retry and re-sync.
 
 ---
 
-## Decision 8: Related Courses as Trusted Academic Recommendations
+## Decision 10: Resilience for Incomplete Graph References
 
-**Decision**: Related courses shown in detail panel are UET curriculum-based recommendations provided by external data processing.
+**Decision**: Missing/invalid `parentNodeId` for `subtopic` must not crash rendering; UI should apply fallback placement and log diagnostic warnings.
 
 **Rationale**:
-- Keeps recommendations academically grounded and trustworthy.
-- Preserves separation of concern between data processing and UI feature delivery.
+- Preserves usability despite data anomalies.
+- Supports incremental backend hardening without blocking the user experience.
 
 ---
 
-## Decision 9: Progress Tracking Without Prerequisite Locking
+## Final Integration Notes
 
-**Decision**: Node status updates are enabled for progress tracking only. No prerequisite lock/unlock mechanism is enforced in this feature.
-
-**Rationale**:
-- Matches intended product behavior for this version.
-- Simplifies interaction model and reduces user friction.
-
----
-
-## Decision 10: Roadmap Reference Nodes Are Limited and Intentional
-
-**Decision**: `roadmap_reference` nodes are used sparingly, primarily:
-- Near roadmap endpoints for continuation
-- At complex topics requiring a dedicated external roadmap
-
-**Rationale**:
-- Maintains focus and readability of the current roadmap.
-- Still enables cross-roadmap learning continuity when needed.
-
----
-
-## Decision 11: Stable Empty-State Rendering
-
-**Decision**: Missing optional node sections must render explicit empty states instead of hidden or collapsing blocks.
-
-**Rationale**:
-- Prevents layout breakage.
-- Improves user trust and comprehension when data is incomplete.
+- Backend Skill Tree routes now expose canonical progress endpoints:
+	- `GET /api/skill-tree/roadmaps/:roadmapId/progress`
+	- `PATCH /api/skill-tree/roadmaps/:roadmapId/progress/node`
+- Legacy `skill_node_statuses` persistence model has been removed from runtime code paths.
+- Frontend graph construction now derives topic main flow and subtopic branches directly from 009 node fields.
+- Frontend progress state is sourced from canonical arrays: `pending`, `inProgress`, `completed`, `skip`.
+- Error handling is normalized to domain envelopes using `ROADMAP_NOT_FOUND`, `INVALID_PAYLOAD`, `INVALID_TRANSITION`, `CONFLICT`.

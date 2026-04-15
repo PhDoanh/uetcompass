@@ -64,6 +64,7 @@ export function sanitizeOnboardingDraft(draft) {
   const careerGoal = source.careerGoal && typeof source.careerGoal === 'object' ? source.careerGoal : {};
 
   return {
+    programId: source.programId || null,
     major: source.major || null,
     completedCourseIds: Array.isArray(source.completedCourseIds) ? source.completedCourseIds : [],
     careerGoal: {
@@ -77,10 +78,6 @@ export function sanitizeOnboardingDraft(draft) {
 
 // --- ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI SYNTAX ---
 export function decidePostLoginRoute(onboardingState) {
-  if (onboardingState === 'NEVER_STARTED' || onboardingState === 'DRAFT_IN_PROGRESS') {
-    return '/onboarding';
-  }
-
   return '/';
 }
 

@@ -4,10 +4,13 @@ import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
 import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
+import OnboardingPanel from './features/onboarding/OnboardingPanel';
+import LearningProfilePage from './features/onboarding/LearningProfilePage';
 import NavBar from './features/general/NavBar';
+import { NotificationProvider } from './features/general/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
-import { AuthProvider, useAuth } from './providers/AuthProvider';
+import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
 
 function normalizePathname(pathname) {
 	if (!pathname || pathname === '/') {
@@ -17,22 +20,18 @@ function normalizePathname(pathname) {
 }
 
 function AppContent() {
-	const { isAuthenticated } = useAuth();
+	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
+	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
 		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
 		pathname.startsWith('/roadmaps/public/');
 
-	if (pathname === '/login') {
-		return <LoginPage />;
-	}
-
-	if (pathname === '/register') {
-		return <RegisterPage />;
-	}
-
-	if (pathname === '/forgot-password') {
-		return <ForgotPasswordPage />;
+	if (isAuthenticated && isAuthPopupPath) {
+		if (typeof window !== 'undefined') {
+			window.location.replace(decidePostLoginRoute(onboardingState));
+		}
+		return null;
 	}
 
 	if (!isAuthenticated && !isPublicPath) {
@@ -46,6 +45,31 @@ function AppContent() {
 
 	if (pathname === '/') {
 		content = <Homepage />;
+	}
+
+	if (!content && (pathname === '/onboarding' || pathname === '/on-boarding')) {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<OnboardingPanel
+						authToken={accessToken}
+						sseToken={accessToken}
+						onClose={() => {
+							if (typeof window !== 'undefined') {
+								window.location.assign('/');
+							}
+						}}
+						onCompleted={() => {
+							if (typeof window !== 'undefined') {
+								window.location.assign('/skill-tree');
+							}
+						}}
+						isFullPage
+						showDismissButton={false}
+					/>
+				</main>
+			</AuthGuard>
+		);
 	}
 
 	// Route to sample roadmap
@@ -87,23 +111,53 @@ function AppContent() {
 		content = (
 			<AuthGuard>
 				<OnboardingGuard>
-					<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
-						<div style={{ padding: '24px' }}>
-							<h1>Learning Profile</h1>
-							<p>Trang Learning Profile đang được phát triển.</p>
-						</div>
-					</main>
+					<LearningProfilePage />
 				</OnboardingGuard>
 			</AuthGuard>
 		);
 	}
 
+	if (!content && isAuthPopupPath) {
+		content = <Homepage />;
+	}
+
 	if (content) {
+		const authPopupContent = pathname === '/login'
+			? <LoginPage />
+			: pathname === '/register'
+				? <RegisterPage />
+				: pathname === '/forgot-password'
+					? <ForgotPasswordPage />
+					: null;
+
 		return (
-			<>
+			<NotificationProvider sseToken={isAuthenticated ? (accessToken || '') : ''}>
 				<NavBar />
 				{content}
-			</>
+				{isAuthPopupPath ? (
+					<div
+						className="auth-modal-overlay"
+						role="dialog"
+						aria-modal="true"
+					>
+						<div className="auth-modal-shell">
+							<button
+								type="button"
+								className="auth-modal-close"
+								onClick={() => {
+									if (typeof window !== 'undefined') {
+										window.location.assign('/');
+									}
+								}}
+								aria-label="Close authentication popup"
+							>
+								x
+							</button>
+							{authPopupContent}
+						</div>
+					</div>
+				) : null}
+			</NotificationProvider>
 		);
 	}
 

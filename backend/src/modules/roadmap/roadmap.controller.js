@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const roadmapService = require('./roadmap.service');
 const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
@@ -101,16 +103,13 @@ async function retryGeneration(req, res) {
 	try {
 		const userId = req.user.userId;
 
-		const retryable = await roadmapService.getRetryableByUser(userId);
-		if (!retryable) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'No incomplete roadmap found. Retry is only available after a generation failure.');
-
 		if (isGenerating(userId)) throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'A roadmap generation is already running for this user. Please wait for it to complete.');
 
 		const sseToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
 		await triggerGeneration(userId, 'retry', sseToken);
 
 		return res.status(202).json({
-			message: 'Roadmap generation retry started. You will be notified when it completes.',
+			message: 'Roadmap generation started. You will be notified when it completes.',
 		});
 	} catch (err) {
 		return mapError(err, res);
@@ -142,20 +141,33 @@ async function previewRoadmapHandler(req, res) {
 	}
 }
 
-// Public endpoints - guest access
 async function getPublicSharedRoadmap(req, res) {
 	try {
-		const shareId = String(req.params.shareId || '').trim();
-		if (!shareId || !shareId.match(/^[a-f\d]{24}$/i)) throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'shareId is invalid.');
+		const roadmapName = String(req.query.name || '').trim();
+		if (!roadmapName) throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Roadmap name is required.');
 
-		const roadmap = await Roadmap.findById(shareId).lean();
-		if (!roadmap || !roadmap.acceptedAt) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
+		// Read from data files
+		const dataDir = path.join(__dirname, '../../..', 'backend', 'data');
+		const files = fs.readdirSync(dataDir).filter(file => file.endsWith('.json'));
+
+		let foundRoadmap = null;
+		for (const file of files) {
+			const filePath = path.join(dataDir, file);
+			const content = fs.readFileSync(filePath, 'utf-8');
+			const data = JSON.parse(content);
+			
+			if (data.roadmapName === roadmapName) {
+				foundRoadmap = data;
+				break;
+			}
+		}
+
+		if (!foundRoadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
 
 		return res.json({
-			roadmapId: String(roadmap._id),
-			personalisationLevel: roadmap.personalisationLevel,
-			acceptedAt: roadmap.acceptedAt,
-			nodes: roadmap.nodes || [],
+			roadmapName: foundRoadmap.roadmapName,
+			personalisationLevel: foundRoadmap.personalisationLevel,
+			nodes: foundRoadmap.nodes || [],
 		});
 	} catch (err) {
 		return mapError(err, res);

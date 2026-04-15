@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
 import { AuthField, AuthShell } from './AuthModule';
+
+const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
@@ -38,7 +41,7 @@ export default function LoginPage() {
     if (lockRemaining <= 0) {
       return '';
     }
-    return `Too many failed attempts. Try again in ${formatCountdown(lockRemaining)}.`;
+    return `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${formatCountdown(lockRemaining)}.`;
   }, [lockRemaining]);
 
   async function handleSubmit(event) {
@@ -52,13 +55,16 @@ export default function LoginPage() {
     try {
       const result = await authApi.login({ email, password });
       applyLoginResult(result);
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
       window.location.assign(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
         setLockRemaining(Math.max(1, seconds));
       }
-      setError('Invalid email or password.');
+      setError('Email hoặc mật khẩu không đúng.');
     } finally {
       setIsSubmitting(false);
     }
@@ -69,60 +75,94 @@ export default function LoginPage() {
     try {
       const result = await authApi.googleLogin({ credential: credentialResponse?.credential });
       applyLoginResult(result);
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
       window.location.assign(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
-        setError('Please use your @vnu.edu.vn Google account.');
+        setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');
         return;
       }
-      setError('Google sign-in failed. Please try again.');
+      setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
     }
   }
 
   const content = (
     <AuthShell
-      title="Email Login"
-      description="Sign in with your VNU account."
+      title="UETCompass"
+      description="Dẫn lối cho sự nghiệp tương lai của bạn"
       isLoading={isSubmitting}
       error={error || lockMessage}
+      icon={<Compass size={24} />}
+      tabs={[
+        { href: '/login', label: 'Đăng nhập', active: true },
+        { href: '/register', label: 'Đăng ký', active: false },
+      ]}
+      footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
+      footerLinks={[
+        { href: '#', label: 'Trung tâm hỗ trợ' },
+        { href: '#', label: 'Chính sách & Điều khoản' },
+      ]}
     >
-      <form onSubmit={handleSubmit} className="auth-form">
+      <div className="auth-google-block">
+        {hasGoogleClientId ? (
+          <div className="auth-google-button-wrap">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
+              useOneTap={false}
+              theme="outline"
+              shape="pill"
+              size="large"
+              text="continue_with"
+              width="350"
+            />
+          </div>
+        ) : (
+          <p className="auth-status helper tight">Không thể dùng đăng nhập Google: thiếu VITE_GOOGLE_CLIENT_ID.</p>
+        )}
+        <div className="auth-google-divider">Hoặc</div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: 12 }}>
         <AuthField id="email" label="Email">
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="student@vnu.edu.vn"
-            required
-            className="auth-input"
-          />
+          <div className="auth-input-wrap">
+            <Mail size={16} className="auth-leading-icon" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="student@vnu.edu.vn"
+              required
+              className="auth-input has-leading"
+            />
+          </div>
         </AuthField>
 
-        <AuthField id="password" label="Password">
+        <AuthField
+          id="password"
+          label="Mật khẩu"
+          action={<a href="/forgot-password" className="auth-inline-link">Quên mật khẩu?</a>}
+        >
           <div className="auth-password-wrapper">
+            <Lock size={16} className="auth-leading-icon" />
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className="auth-input"
+              className="auth-input has-leading has-trailing"
             />
             <button
               type="button"
               className="auth-password-toggle"
               onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
             >
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="auth-eye-icon">
-                <path
-                  d="M2 12C3.7 8.2 7.3 5.5 12 5.5C16.7 5.5 20.3 8.2 22 12C20.3 15.8 16.7 18.5 12 18.5C7.3 18.5 3.7 15.8 2 12Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-              </svg>
+              {showPassword ? <EyeOff className="auth-eye-icon" /> : <Eye className="auth-eye-icon" />}
             </button>
           </div>
         </AuthField>
@@ -132,32 +172,13 @@ export default function LoginPage() {
           disabled={isSubmitting || lockRemaining > 0}
           className={`auth-button primary ${isSubmitting || lockRemaining > 0 ? 'disabled' : ''}`}
         >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
       </form>
 
-      <div className="auth-google-block">
-        {hasGoogleClientId ? (
-          <div className="auth-google-button-wrap">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google sign-in failed. Please try again.')}
-              useOneTap={false}
-              theme="filled_blue"
-              shape="pill"
-              size="large"
-              text="continue_with"
-              width="360"
-            />
-          </div>
-        ) : (
-          <p className="auth-status helper">Google sign-in is unavailable: missing VITE_GOOGLE_CLIENT_ID.</p>
-        )}
-      </div>
-
       <div className="auth-links">
-        <a href="/register">Create account</a>
-        <a href="/forgot-password">Forgot password</a>
+        <a href="/register">Tạo tài khoản</a>
+        <a href="/forgot-password">Quên mật khẩu</a>
       </div>
     </AuthShell>
   );

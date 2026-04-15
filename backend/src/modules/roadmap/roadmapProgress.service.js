@@ -5,8 +5,10 @@ const { RoadmapProgress } = require('./roadmapProgress.model');
 const VALID_STATES = new Set(['pending', 'inProgress', 'completed', 'skip']);
 
 const ALLOWED_TRANSITIONS = new Map([
-	['pending', new Set(['inProgress', 'skip'])],
-	['inProgress', new Set(['completed'])],
+	['pending', new Set(['inProgress', 'completed', 'skip'])],
+	['inProgress', new Set(['pending', 'completed', 'skip'])],
+	['completed', new Set(['pending', 'inProgress', 'skip'])],
+	['skip', new Set(['pending', 'inProgress', 'completed'])],
 ]);
 
 /**

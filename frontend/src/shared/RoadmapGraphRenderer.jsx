@@ -15,6 +15,7 @@ export function RoadmapGraphRenderer({
     onNodeSelect,
     loading = false,
     controlsVisible = true,
+    selectedNodeId = '',
 }) {
     const NODE_DIMENSIONS = {
         main_topic: { width: 330, height: 96 },
@@ -46,6 +47,7 @@ export function RoadmapGraphRenderer({
                 id: node.nodeId,
                 label: displayName,
                 type: nodeType,
+                status: String(node.status || node.progressState || 'pending'),
                 parentNodeId: node.parentNodeId || null,
                 prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites : [],
                 position: pos ? { x: pos.x, y: pos.y } : { x: 0, y: 0 },
@@ -63,6 +65,7 @@ export function RoadmapGraphRenderer({
             id: node.id,
             label: node.label || node.id,
             type: node.type || 'main_topic',
+            status: node.status || 'pending',
             parentNodeId: node.parentNodeId || null,
             prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites : [],
             width: Math.round(node.width || 180),
@@ -573,12 +576,13 @@ export function RoadmapGraphRenderer({
                             {planeNodes.map((node) => (
                                 <div
                                     key={node.id}
-                                    className={`roadmap-graph-renderer__fallback-node roadmap-graph-renderer__fallback-node--${node.type} ${node.parentNodeId ? 'roadmap-graph-renderer__fallback-node--child' : 'roadmap-graph-renderer__fallback-node--parent'}`}
+                                    className={`roadmap-graph-renderer__fallback-node roadmap-graph-renderer__fallback-node--${node.type} roadmap-graph-renderer__fallback-node--state-${node.status} ${node.parentNodeId ? 'roadmap-graph-renderer__fallback-node--child' : 'roadmap-graph-renderer__fallback-node--parent'} ${node.id === selectedNodeId ? 'roadmap-graph-renderer__fallback-node--selected' : ''}`}
                                     style={{ left: `${node.x}px`, top: `${node.y}px`, width: `${node.width}px`, height: `${node.height}px` }}
                                     title={node.id}
                                     onClick={() => onNodeSelect?.(node.id)}
                                     role="button"
                                     tabIndex={0}
+                                    aria-pressed={node.id === selectedNodeId}
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter' || event.key === ' ') {
                                             event.preventDefault();

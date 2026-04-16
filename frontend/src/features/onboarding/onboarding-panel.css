@@ -1032,3 +1032,78 @@
     min-height: 44px;
   }
 }
+
+/* Dark theme - Learning Profile */
+html[data-theme='dark'] .learning-profile-page--modern {
+  background: radial-gradient(circle at 15% 8%, #173154 0%, #0f2138 42%, #0a1628 100%);
+}
+
+html[data-theme='dark'] .learning-profile-content--modern,
+html[data-theme='dark'] .learning-profile-header h1,
+html[data-theme='dark'] .learning-section__head h2 {
+  color: #dceafd;
+}
+
+html[data-theme='dark'] .learning-profile-badge {
+  border: 1px solid rgba(101, 152, 220, 0.46);
+  color: #b6d7ff;
+  background: rgba(26, 49, 79, 0.82);
+}
+
+html[data-theme='dark'] .learning-profile-header p,
+html[data-theme='dark'] .learning-label,
+html[data-theme='dark'] .learning-course-item p,
+html[data-theme='dark'] .learning-section__empty,
+html[data-theme='dark'] .learning-section__empty a,
+html[data-theme='dark'] .learning-profile-success {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .learning-section__card {
+  background: #142741;
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  box-shadow: 0 10px 22px rgba(2, 9, 20, 0.42);
+}
+
+html[data-theme='dark'] .learning-input,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input {
+  border: 1px solid rgba(93, 143, 210, 0.42);
+  background: #1a304d;
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .learning-input::placeholder,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input::placeholder {
+  color: #95aed0;
+}
+
+html[data-theme='dark'] .learning-input:focus,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input:focus {
+  border-color: #66a8ff;
+  box-shadow: 0 0 0 3px rgba(74, 151, 245, 0.2);
+}
+
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-label,
+html[data-theme='dark'] .learning-label {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .learning-course-item {
+  background: #1a304d;
+  border: 1px solid rgba(93, 143, 210, 0.35);
+}
+
+html[data-theme='dark'] .learning-course-item:hover {
+  background: #233c5f;
+  border-color: rgba(120, 170, 232, 0.52);
+}
+
+html[data-theme='dark'] .learning-expand-btn,
+html[data-theme='dark'] .secondary-btn {
+  background: #243e61;
+  color: #cfe4ff;
+}
+
+html[data-theme='dark'] .learning-profile-actions {
+  border-top: 1px solid rgba(94, 145, 214, 0.3);
+}

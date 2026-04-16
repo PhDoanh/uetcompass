@@ -14,8 +14,32 @@ function parseArgs(argv) {
 	const args = {};
 	for (let i = 0; i < argv.length; i += 1) {
 		const token = argv[i];
-		if (token === '--file') args.file = argv[i + 1];
-		if (token === '--programId') args.programId = argv[i + 1];
+
+		if (token === '--file') {
+			args.file = argv[i + 1];
+			i += 1;
+			continue;
+		}
+
+		if (token.startsWith('--file=')) {
+			args.file = token.slice('--file='.length);
+			continue;
+		}
+
+		if (token === '--programId') {
+			args.programId = argv[i + 1];
+			i += 1;
+			continue;
+		}
+
+		if (token.startsWith('--programId=')) {
+			args.programId = token.slice('--programId='.length);
+			continue;
+		}
+
+		if (!token.startsWith('--') && !args.file) {
+			args.file = token; // fallback positional
+		}
 	}
 	return args;
 }
@@ -32,6 +56,7 @@ async function runApplyCli() {
 	await ensureDbConnection();
 	const args = parseArgs(process.argv.slice(2));
 	const filePath = args.file ? path.resolve(args.file) : null;
+	// const filePath = "D:\\phdoanh\\uetcompass\\backend\\logs\\backend-engineer-courses.json";
 	const result = await applySkillsReview({ filePath });
 	console.log(JSON.stringify({ event: 'SKILLS_REVIEW_APPLIED', ...result }));
 	await mongoose.disconnect();

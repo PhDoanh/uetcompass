@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import globals from "globals";
 import pluginReact from "eslint-plugin-react";
+import pluginReactRecommended from "eslint-plugin-react/configs/recommended.js";
 import css from "@eslint/css";
 import { defineConfig } from "eslint/config";
 

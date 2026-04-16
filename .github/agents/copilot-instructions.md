@@ -8,14 +8,10 @@ Auto-generated from all feature plans. Last updated: 2026-03-07
 - MongoDB Atlas free tier — `users` collection (auth + lockout state), `refresh_tokens` collection (RT rotation + reuse detection with TTL index), `notifications` collection (in-app notification persistence); `student_profiles` collection (read/write — owned by Feature 001, extended here with `repersonalizationPending` flag) (005-account-management)
 - MongoDB Atlas free tier — new `roadmap_progress_cache` collection (owned by this feature); reads `roadmap_nodes` collection (owned by Feature 004 — Skill Tree) (007-progress-tracking)
 - MongoDB Atlas free tier — 3 new collections: `learning_resources`, `academic_documents`, `skill_trend_snapshots`; reads `skills` collection (owned by Roadmap module) (003-resource-curation)
-- JavaScript (Node.js backend, React frontend) + Express, Mongoose, jsonwebtoken, bcryptjs, nodemailer, google-auth-library, React, React Router, Axios/Zustand (011-authentication)
+- JavaScript (Node.js backend, React frontend) + Express, Mongoose, jsonwebtoken, bcryptjs, nodemailer, google-auth-library, React, React Router, Fetch API/Zustand (011-authentication)
 - MongoDB (accounts, otp challenge state, sessions, audit events) (011-authentication)
-- JavaScript (Node.js 20 LTS backend, React 18 frontend) + Express 4, Mongoose 8, bcryptjs, jsonwebtoken, nodemailer, React 18, Zustand, Axios (005-account-management)
+- JavaScript (Node.js 20 LTS backend, React 18 frontend) + Express 4, Mongoose 8, bcryptjs, jsonwebtoken, nodemailer, React 18, Zustand, Fetch API (005-account-management)
 - MongoDB Atlas/local MongoDB via Mongoose (005-account-management)
-- JavaScript / Node.js 20 LTS backend, React 18 frontend + Express 4, Mongoose 8, js-yaml, ajv, @xyflow/react (React Flow), Monaco Editor, Jest, supertest (001-manual-roadmap-generator)
-- MongoDB Atlas via Mongoose (`roadmaps` collection with manual roadmap subtype fields) (001-manual-roadmap-generator)
-- JavaScript (Node.js backend + React 18 frontend) + Express 4, Mongoose 8, React 18, Vite 5, Lucide React, existing roadmap modules (012-roadmap-search-page)
-- MongoDB (`manual_roadmaps` for shared items) and existing JSON roadmap data for legacy public preview fallback (012-roadmap-search-page)
 
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (001-profile-onboarding)
 - JavaScript — Node.js 20 LTS (backend), React 18 (frontend) (004-skill-tree)
@@ -44,9 +40,6 @@ JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard co
 - 001-manual-roadmap-generator: Added JavaScript / Node.js 20 LTS backend, React 18 frontend + Express 4, Mongoose 8, js-yaml, ajv, @xyflow/react (React Flow), Monaco Editor, Jest, supertest
 <<<<<<< HEAD
 - 001-manual-roadmap-generator: Added Node.js 20 LTS (backend), React 18 (frontend) + js-yaml (parsing), Monaco Editor (YAML editing), Cytoscape.js (graph visualization), ajv (validation), @xyflow/react (React Flow)
-=======
->>>>>>> ad4be3c6cd3f0d142131c7708f8061eff82ae850
-
 
 <!-- MANUAL ADDITIONS START -->
 ## Design System

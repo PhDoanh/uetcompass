@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
+import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 
 function normalizePreviewNodes(nodes = []) {
     const mappedNodes = nodes
@@ -70,6 +71,48 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
     const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
     const [layoutPositions, setLayoutPositions] = useState({});
     const [isComputingLayout, setIsComputingLayout] = useState(false);
+    const [openingRoadmap, setOpeningRoadmap] = useState(false);
+
+    const handleOpenRoadmap = async () => {
+        if (openingRoadmap || typeof window === 'undefined' || !previewData) {
+            return;
+        }
+
+        setOpeningRoadmap(true);
+
+        try {
+            let roadmapId = String(previewData?._id || '').trim();
+
+            if (!roadmapId) {
+                const normalizedTitle = String(previewData?.title || '').trim();
+                if (!normalizedTitle) {
+                    throw new Error('Missing roadmap title');
+                }
+
+                const searchResult = await manualRoadmapApi.listPublicManualRoadmaps({
+                    q: normalizedTitle,
+                    page: 1,
+                    limit: 20,
+                });
+                const items = Array.isArray(searchResult?.items) ? searchResult.items : [];
+                const matchedRoadmap = items.find(
+                    (roadmap) => String(roadmap?.title || '').trim().toLowerCase() === normalizedTitle.toLowerCase()
+                ) || items[0] || null;
+
+                roadmapId = String(matchedRoadmap?._id || '').trim();
+            }
+
+            if (!roadmapId) {
+                throw new Error('Roadmap not found');
+            }
+
+            window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+        } catch {
+            // Keep panel interaction non-blocking; fail silently like homepage card flow.
+        } finally {
+            setOpeningRoadmap(false);
+        }
+    };
 
     useEffect(() => {
         if (normalizedNodes.length === 0) {
@@ -130,8 +173,8 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
                         <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
                         <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
                     </div>
-                    <button type="button" onClick={() => { }} className="roadmap-preview-panel__cta">
-                        Mở trong skill tree
+                    <button type="button" onClick={handleOpenRoadmap} className="roadmap-preview-panel__cta" disabled={openingRoadmap}>
+                        {openingRoadmap ? 'Đang mở...' : 'Mở roadmap'}
                     </button>
                 </div>
                 <p className="roadmap-preview-panel__state">No nodes to preview yet.</p>
@@ -147,8 +190,8 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
                     <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
                     <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
                 </div>
-                <button type="button" onClick={() => { }} className="roadmap-preview-panel__cta">
-                    Mở trong skill tree
+                <button type="button" onClick={handleOpenRoadmap} className="roadmap-preview-panel__cta" disabled={openingRoadmap}>
+                    {openingRoadmap ? 'Đang mở...' : 'Mở roadmap'}
                 </button>
             </div>
             <div className="roadmap-preview-panel__graph-shell">

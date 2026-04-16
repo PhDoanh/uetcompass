@@ -14,6 +14,7 @@ export function RoadmapGraphRenderer({
     positions = {},
     onNodeSelect,
     loading = false,
+    controlsVisible = true,
 }) {
     const NODE_DIMENSIONS = {
         main_topic: { width: 330, height: 96 },
@@ -422,19 +423,21 @@ export function RoadmapGraphRenderer({
 
             {!loading && planeNodes.length > 0 && (
                 <div className="roadmap-graph-renderer__fallback" role="status" aria-live="polite">
-                    <div className="roadmap-graph-renderer__controls">
-                        <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(0.1)}>+</button>
-                        <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(-0.1)}>-</button>
-                        <button type="button" className="roadmap-graph-renderer__control-btn" onClick={resetView}>1:1</button>
-                        <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => centerRoadmap(zoom)}>Center</button>
-                        <button
-                            type="button"
-                            className={`roadmap-graph-renderer__control-btn ${showClusters ? 'is-active' : ''}`}
-                            onClick={() => setShowClusters((value) => !value)}
-                        >
-                            Cluster
-                        </button>
-                    </div>
+                    {controlsVisible ? (
+                        <div className="roadmap-graph-renderer__controls">
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(0.1)}>+</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(-0.1)}>-</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={resetView}>1:1</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => centerRoadmap(zoom)}>Center</button>
+                            <button
+                                type="button"
+                                className={`roadmap-graph-renderer__control-btn ${showClusters ? 'is-active' : ''}`}
+                                onClick={() => setShowClusters((value) => !value)}
+                            >
+                                Cluster
+                            </button>
+                        </div>
+                    ) : null}
 
                     <div
                         ref={viewportRef}

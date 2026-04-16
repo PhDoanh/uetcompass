@@ -28,12 +28,19 @@ export default function RoadmapSearchPage() {
     return (
         <div className="roadmap-search-page">
             <section className="roadmap-search-page__left">
+                <div className="roadmap-search-page__section-header">
+                    <div>
+                        <p className="roadmap-search-page__eyebrow">Search workspace</p>
+                        <h2 className="roadmap-search-page__title">Roadmaps</h2>
+                        <p className="roadmap-search-page__subtitle">
+                            Find public manual roadmaps by name, then preview them on the right.
+                        </p>
+                    </div>
+                    <div className="roadmap-search-page__hint-chip">2+ characters</div>
+                </div>
                 {errorMessage ? (
-                    <p style={{ color: '#b91c1c', marginTop: 0, marginBottom: '12px' }}>{errorMessage}</p>
+                    <p className="roadmap-search-page__error">{errorMessage}</p>
                 ) : null}
-                <p style={{ color: '#64748b', marginTop: 0, marginBottom: '12px' }}>
-                    Use the navbar search field above to search roadmap names.
-                </p>
                 <RoadmapSearchResults
                     results={results}
                     resultsStatus={resultsStatus}

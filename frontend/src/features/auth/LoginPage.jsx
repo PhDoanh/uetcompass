@@ -3,9 +3,11 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
+import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
+const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
 const BUTTON_DELAY_MS = 2000;
 
 function formatCountdown(seconds) {
@@ -17,6 +19,8 @@ function formatCountdown(seconds) {
 
 export default function LoginPage() {
   const { applyLoginResult } = useAuth();
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,6 +61,18 @@ export default function LoginPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const successMessage = window.sessionStorage.getItem(REGISTER_SUCCESS_NOTICE_KEY);
+    if (!successMessage) {
+      return;
+    }
+    addNotification(successMessage, 'success');
+    window.sessionStorage.removeItem(REGISTER_SUCCESS_NOTICE_KEY);
+  }, [addNotification]);
+
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
@@ -85,8 +101,10 @@ export default function LoginPage() {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
         setLockRemaining(Math.max(1, seconds));
+        addNotification('Tài khoản tạm thời bị khóa do nhập sai nhiều lần.', 'warning');
       }
       setError('Email hoặc mật khẩu không đúng.');
+      addNotification('Đăng nhập thất bại. Vui lòng kiểm tra email hoặc mật khẩu.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,9 +122,11 @@ export default function LoginPage() {
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
         setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');
+        addNotification('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.', 'warning');
         return;
       }
       setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+      addNotification('Đăng nhập Google thất bại. Vui lòng thử lại.', 'error');
     }
   }
 

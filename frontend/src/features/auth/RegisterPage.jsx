@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import authApi from '../../services/auth.api';
+import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
 function isVnuEmail(value) {
@@ -8,8 +9,11 @@ function isVnuEmail(value) {
 }
 
 const BUTTON_DELAY_MS = 5000;
+const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
 
 export default function RegisterPage() {
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [step, setStep] = useState('register');
   const [form, setForm] = useState({ fullName: '', email: '', password: '', otp: '' });
   const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
@@ -73,6 +77,7 @@ export default function RegisterPage() {
 
     if (emailError) {
       setError(emailError);
+      addNotification(emailError, 'warning');
       return;
     }
 
@@ -83,9 +88,11 @@ export default function RegisterPage() {
         password: form.password,
       });
       setInfo(result.message || 'Đã gửi mã OTP');
+      addNotification(result.message || 'Đã gửi mã OTP', 'success');
       setStep('verify');
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại');
+      addNotification(err.message || 'Đăng ký thất bại', 'error');
     }
   }
 
@@ -104,12 +111,16 @@ export default function RegisterPage() {
         email: form.email,
         otp: form.otp,
       });
-      setInfo(result.message || 'Xác thực email thành công');
+      const successMessage = result.message || 'Đăng ký thành công. Bạn có thể đăng nhập ngay.';
+      setInfo(successMessage);
+      addNotification(successMessage, 'success');
       if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(REGISTER_SUCCESS_NOTICE_KEY, successMessage);
         window.location.assign('/login');
       }
     } catch (err) {
       setError(err.message || 'Xác thực thất bại');
+      addNotification(err.message || 'Xác thực thất bại', 'error');
     }
   }
 
@@ -125,8 +136,10 @@ export default function RegisterPage() {
     try {
       const result = await authApi.resendOtp({ email: form.email });
       setInfo(result.message || 'Đã gửi lại OTP');
+      addNotification(result.message || 'Đã gửi lại OTP', 'success');
     } catch (err) {
       setError(err.message || 'Gửi lại OTP thất bại');
+      addNotification(err.message || 'Gửi lại OTP thất bại', 'error');
     }
   }
 

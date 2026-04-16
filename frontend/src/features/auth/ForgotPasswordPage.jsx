@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Compass, Eye, EyeOff, Lock, LockKeyhole, Mail, Send } from 'lucide-react';
 import authApi from '../../services/auth.api';
+import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
 const BUTTON_DELAY_MS = 2000;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function ForgotPasswordPage() {
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [step, setStep] = useState('request');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -64,9 +67,11 @@ export default function ForgotPasswordPage() {
     try {
       const result = await authApi.forgotPassword({ email });
       setMessage(result.message || 'Nếu tài khoản tồn tại, mã khôi phục đã được gửi.');
+      addNotification(result.message || 'Nếu tài khoản tồn tại, mã khôi phục đã được gửi.', 'success');
       setStep('verifyOtp');
     } catch (err) {
       setError(err.message || 'Không thể gửi mã khôi phục.');
+      addNotification(err.message || 'Không thể gửi mã khôi phục.', 'error');
     }
   }
 
@@ -84,16 +89,20 @@ export default function ForgotPasswordPage() {
       const result = await authApi.verifyResetOtp({ email, otp });
       setResetToken(result.resetToken || '');
       setMessage(result.message || 'Xác thực OTP thành công. Bạn có thể đặt mật khẩu mới.');
+      addNotification(result.message || 'Xác thực OTP thành công. Bạn có thể đặt mật khẩu mới.', 'success');
       setStep('resetPassword');
     } catch (err) {
       setError(err.message || 'Mã khôi phục không hợp lệ hoặc đã hết hạn.');
+      addNotification(err.message || 'Mã khôi phục không hợp lệ hoặc đã hết hạn.', 'error');
     }
   }
 
   async function submitResetPassword(event) {
     event.preventDefault();
     if (!isNewPasswordValid) {
-      setError('Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.');
+      const nextError = 'Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.';
+      setError(nextError);
+      addNotification(nextError, 'warning');
       return;
     }
 
@@ -108,9 +117,11 @@ export default function ForgotPasswordPage() {
     try {
       const result = await authApi.resetPassword({ resetToken, newPassword });
       setMessage(result.message || 'Đặt lại mật khẩu thành công.');
+      addNotification(result.message || 'Đặt lại mật khẩu thành công.', 'success');
       setStep('done');
     } catch (err) {
       setError(err.message || 'Không thể đặt lại mật khẩu.');
+      addNotification(err.message || 'Không thể đặt lại mật khẩu.', 'error');
     }
   }
 
@@ -126,8 +137,10 @@ export default function ForgotPasswordPage() {
     try {
       const result = await authApi.forgotPassword({ email });
       setMessage(result.message || 'Mã khôi phục mới đã được gửi.');
+      addNotification(result.message || 'Mã khôi phục mới đã được gửi.', 'success');
     } catch (err) {
       setError(err.message || 'Không thể gửi lại mã khôi phục.');
+      addNotification(err.message || 'Không thể gửi lại mã khôi phục.', 'error');
     }
   }
 
@@ -272,7 +285,6 @@ export default function ForgotPasswordPage() {
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
-                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
                 required
                 className="auth-input has-leading has-trailing"
               />

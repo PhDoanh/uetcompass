@@ -1,9 +1,26 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Moon, Search } from "lucide-react";
+import { Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import '../../style/general-component.css';
+
+const THEME_STORAGE_KEY = 'uetcompass-theme';
+
+function resolveInitialTheme() {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const stored = String(window.localStorage.getItem(THEME_STORAGE_KEY) || '').trim();
+  if (stored === 'dark' || stored === 'light') {
+    return stored;
+  }
+
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
 
 function getAvatarState(profile = {}) {
   const avatarUrl = String(profile?.avatarUrl || '').trim();
@@ -44,8 +61,18 @@ export default function NavBar() {
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [searchText, setSearchText] = useState('');
   const [displayName, setDisplayName] = useState('Người dùng');
+  const [theme, setTheme] = useState(resolveInitialTheme);
   const avatarRef = useRef(null);
   const { isAuthenticated, accessToken } = useAuth();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     function onScroll() {
@@ -82,6 +109,10 @@ export default function NavBar() {
         dispatchOpenRoadmapSearchOverlay();
       }
     }
+  };
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   // Close menu on click outside
@@ -182,8 +213,14 @@ export default function NavBar() {
         />
       </div>
       <div className="navbar__actions">
-        <button type="button" className="navbar__icon-btn" aria-label="Dark mode">
-          <Moon size={18} />
+        <button
+          type="button"
+          className="navbar__icon-btn"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
         {isAuthenticated ? (

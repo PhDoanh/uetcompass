@@ -1,5 +1,11 @@
 import { load } from 'js-yaml';
 
+/**
+ * Parse YAML string → JavaScript Object
+ * Hỗ trợ cấu trúc đồ thị: nodes + edges
+ * @param {string} yamlCode - YAML input
+ * @returns {Object} { title, description, nodes, edges }
+ */
 export function parseManualRoadmapYaml(yamlCode) {
     if (typeof yamlCode !== 'string') {
         throw new Error('YAML input must be a string.');
@@ -17,7 +23,7 @@ export function parseManualRoadmapYaml(yamlCode) {
     try {
         parsed = load(yamlCode);
     } catch (err) {
-        throw new Error(`YAML syntax error: ${err.message}`);
+        throw new Error(`YAML syntax error at line ${err.mark?.line + 1}: ${err.message}`);
     }
 
     if (!parsed || typeof parsed !== 'object') {
@@ -35,44 +41,83 @@ export function parseManualRoadmapYaml(yamlCode) {
         throw new Error('At least one node is required.');
     }
 
-    const nodes = rawNodes.map((node) => {
+    // Parse nodes
+    const nodes = rawNodes.map((node, idx) => {
         if (!node || typeof node !== 'object') {
-            throw new Error('Each roadmap node must be an object.');
+            throw new Error(`Each roadmap node must be an object (error at node ${idx}).`);
         }
 
         const nodeId = String(node.nodeId || node.id || '').trim();
         if (!nodeId) {
-            throw new Error('Each node must have an id or nodeId.');
+            throw new Error(`Node at index ${idx}: must have "nodeId" or "id" field.`);
         }
 
-        const prerequisites = Array.isArray(node.prerequisites)
-            ? node.prerequisites.map((id) => String(id || '').trim()).filter(Boolean)
+        const roadmapName = String(node.roadmapName || node.label || '').trim();
+        if (!roadmapName) {
+            throw new Error(`Node "${nodeId}": must have "roadmapName" field.`);
+        }
+
+        const legacySkills = Array.isArray(node.skills)
+            ? node.skills.map(skill => String(skill || '').trim()).filter(Boolean)
             : [];
-        const metadata = typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {};
-        const parentNodeId = String(
-            node.parent || metadata.parentNodeId || node.parentNodeId || ''
-        ).trim();
-        const label = String(node.label || node.skillName || '').trim();
-        const description = String(node.description || node.reason || '').trim();
+
+        const skillName = String(node.skillName || legacySkills[0] || '').trim();
+
+        // Parse type (main_topic, sub_topic, group_container)
+        const type = ['main_topic', 'sub_topic', 'group_container', 'choice_item'].includes(node.type)
+            ? node.type
+            : 'main_topic';
+
+        // Parent relationship (explicit, not inferred from prerequisites)
+        const parentNodeId = String(node.parentNodeId || node.parent || '').trim() || null;
+
+        // Prerequisites (for semantic meaning, but not used for layout)
+        const prerequisites = Array.isArray(node.prerequisites)
+            ? node.prerequisites.map(id => String(id || '').trim()).filter(Boolean)
+            : [];
+
+        // ELK.js layout options
+        const elkOptions = typeof node.elkOptions === 'object' && node.elkOptions !== null
+            ? node.elkOptions
+            : {};
 
         return {
             nodeId,
-            label,
-            description,
-            parent: parentNodeId || undefined,
+            type,
+            roadmapName,
+            label: roadmapName,
+            description: String(node.description || node.reason || '').trim(),
+            parentNodeId,
             prerequisites,
-            status: ['locked', 'pending', 'in_progress', 'done'].includes(node.status)
-                ? node.status
-                : 'pending',
-            skills: Array.isArray(node.skills) ? node.skills.map((skill) => String(skill || '').trim()).filter(Boolean) : [],
+            skillName,
+            skills: skillName ? [skillName] : [],
+            elkOptions,
             resources: Array.isArray(node.resources) ? node.resources : [],
-            metadata,
+            metadata: typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {},
         };
     });
+
+    // Parse edges (if explicitly provided in YAML) or return empty array
+    // Backend will generate edges from parentNodeId relationships
+    let edges = [];
+    if (Array.isArray(parsed.edges)) {
+        edges = parsed.edges.map((edge, idx) => {
+            if (!edge.id || !edge.source || !edge.target) {
+                throw new Error(`Edge at index ${idx}: must have "id", "source", and "target" fields.`);
+            }
+            return {
+                edgeId: String(edge.id).trim(),
+                source: String(edge.source).trim(),
+                target: String(edge.target).trim(),
+                type: edge.type || 'default',
+            };
+        });
+    }
 
     return {
         title,
         description,
         nodes,
+        edges,
     };
 }

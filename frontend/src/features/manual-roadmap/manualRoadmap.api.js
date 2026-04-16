@@ -1,12 +1,24 @@
 ﻿const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 
-async function request(path, method, authToken, body) {
+async function request(path, method, authToken, body, { requireAuth = true } = {}) {
+    const token = typeof authToken === 'string' ? authToken.trim() : '';
+    if (requireAuth && !token) {
+        const error = new Error('Authentication required. Please sign in again.');
+        error.status = 401;
+        error.code = 'UNAUTHORIZED';
+        throw error;
+    }
+
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
         method,
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-        },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
     });
 
@@ -18,7 +30,11 @@ async function request(path, method, authToken, body) {
     }
 
     if (!response.ok) {
-        const error = new Error(payload?.error?.message || 'Manual roadmap request failed');
+        const error = new Error(
+            response.status === 401
+                ? 'Your session has expired. Please sign in again.'
+                : (payload?.error?.message || 'Manual roadmap request failed')
+        );
         error.status = response.status;
         error.code = payload?.error?.code;
         throw error;
@@ -48,7 +64,7 @@ export function shareManualRoadmap(authToken, roadmapId) {
 }
 
 export function listPublicManualRoadmaps({ page = 1, limit = 20 } = {}) {
-    return request(`/roadmaps/manual-roadmaps/public?page=${page}&limit=${limit}`, 'GET');
+    return request(`/roadmaps/manual-roadmaps/public?page=${page}&limit=${limit}`, 'GET', null, undefined, { requireAuth: false });
 }
 
 const manualRoadmapApi = {

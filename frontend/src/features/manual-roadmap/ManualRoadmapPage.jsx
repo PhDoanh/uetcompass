@@ -1,10 +1,12 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import Editor from '@monaco-editor/react';
 import { dump, load } from 'js-yaml';
 import manualRoadmapApi from './manualRoadmap.api';
-import ManualRoadmapPreview from './ManualRoadmapPreview';
 import { parseManualRoadmapYaml } from './manualRoadmap.validation';
+import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
+import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
+import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -12,6 +14,7 @@ import dataAnalyticsSample from '../../../../specs/001-manual-roadmap-generator/
 import cloudDevopsSample from '../../../../specs/001-manual-roadmap-generator/sample-cloud-devops-roadmap.yaml?raw';
 import cybersecuritySample from '../../../../specs/001-manual-roadmap-generator/sample-cybersecurity-roadmap.yaml?raw';
 import fullstackExtendedSample from '../../../../specs/001-manual-roadmap-generator/sample-fullstack-engineering-extended-roadmap.yaml?raw';
+import renderShowcaseSample from '../../../../specs/001-manual-roadmap-generator/sample-render-showcase-roadmap.yaml?raw';
 
 const SAMPLE_ROADMAPS = [
   {
@@ -44,7 +47,22 @@ const SAMPLE_ROADMAPS = [
     description: 'A larger sample roadmap with frontend, backend, data, testing, and deployment stages.',
     yaml: fullstackExtendedSample,
   },
+  {
+    key: 'render-showcase',
+    label: 'Render Showcase (All Node Types)',
+    description: 'Purpose-built sample covering main/sub/group/choice nodes, prerequisites, and explicit edges.',
+    yaml: renderShowcaseSample,
+  },
 ];
+
+const MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO = 0.32;
+const MANUAL_ROADMAP_SPLIT_MIN_RATIO = 0.2;
+const MANUAL_ROADMAP_SPLIT_MAX_RATIO = 0.8;
+const MANUAL_ROADMAP_RESIZER_WIDTH = 14;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
 
 function parseQueryParam(name) {
   if (typeof window === 'undefined') return null;
@@ -115,7 +133,7 @@ export default function ManualRoadmapPage() {
   const [yamlCode, setYamlCode] = useState(() => SAMPLE_ROADMAPS[0].yaml);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [preview, setPreview] = useState({ title: '', description: '', nodes: [] });
+  const [preview, setPreview] = useState({ title: '', description: '', nodes: [], edges: [] });
   const [validationError, setValidationError] = useState('');
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -124,8 +142,16 @@ export default function ManualRoadmapPage() {
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
   const [resourceType, setResourceType] = useState('link');
+  const [layoutPositions, setLayoutPositions] = useState({});
+  const [isComputingLayout, setIsComputingLayout] = useState(false);
+  const [editorRatio, setEditorRatio] = useState(MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO);
+  const [layoutWidth, setLayoutWidth] = useState(0);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [isResizingLayout, setIsResizingLayout] = useState(false);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
+  const layoutRef = useRef(null);
+  const resizeDragRef = useRef({ startX: 0, startRatio: MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO });
   const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
 
   useEffect(() => {
@@ -140,6 +166,166 @@ export default function ManualRoadmapPage() {
       setValidationError(err.message);
     }
   }, [yamlCode]);
+
+  /**
+   * Compute ELK.js layout whenever nodes/edges change
+   */
+  useEffect(() => {
+    if (preview.nodes.length === 0) {
+      setLayoutPositions({});
+      return;
+    }
+
+    let isMounted = true;
+    setIsComputingLayout(true);
+
+    (async () => {
+      try {
+        const positions = await computeLayoutSafe(
+          preview.nodes,
+          preview.edges,
+          { direction: 'RIGHT', nodeSpacing: 40, rankSpacing: 80 },
+          true  // useFallback
+        );
+
+        if (isMounted) {
+          setLayoutPositions(positions);
+        }
+      } catch (err) {
+        console.error('Layout computation error:', err);
+        if (isMounted) {
+          setValidationError(`Layout computation failed: ${err.message}`);
+        }
+      } finally {
+        if (isMounted) {
+          setIsComputingLayout(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [preview.nodes, preview.edges]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const syncEditorWidth = () => {
+      setIsCompactLayout(window.matchMedia('(max-width: 1100px)').matches);
+      const layoutWidth = layoutRef.current?.getBoundingClientRect().width || 0;
+      setLayoutWidth(layoutWidth);
+      if (!layoutWidth) {
+        return;
+      }
+
+      setEditorRatio((currentRatio) => clamp(currentRatio, MANUAL_ROADMAP_SPLIT_MIN_RATIO, MANUAL_ROADMAP_SPLIT_MAX_RATIO));
+    };
+
+    syncEditorWidth();
+    window.addEventListener('resize', syncEditorWidth);
+
+    return () => {
+      window.removeEventListener('resize', syncEditorWidth);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isResizingLayout || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    const applyWidth = (clientX) => {
+      const currentLayoutWidth = layoutRef.current?.getBoundingClientRect().width || 0;
+      if (!currentLayoutWidth) {
+        return;
+      }
+
+      const delta = (resizeDragRef.current.startX - clientX) / currentLayoutWidth;
+      const nextRatio = clamp(
+        resizeDragRef.current.startRatio + delta,
+        MANUAL_ROADMAP_SPLIT_MIN_RATIO,
+        MANUAL_ROADMAP_SPLIT_MAX_RATIO,
+      );
+
+      setEditorRatio(nextRatio);
+    };
+
+    const handlePointerMove = (event) => {
+      applyWidth(event.clientX);
+    };
+
+    const stopResizing = () => {
+      setIsResizingLayout(false);
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', stopResizing);
+    window.addEventListener('pointercancel', stopResizing);
+
+    return () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopResizing);
+      window.removeEventListener('pointercancel', stopResizing);
+    };
+  }, [isResizingLayout]);
+
+  const handleResizePointerDown = useCallback((event) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const layoutWidth = layoutRef.current?.getBoundingClientRect().width || 0;
+    if (!layoutWidth) {
+      return;
+    }
+
+    event.preventDefault();
+    resizeDragRef.current = {
+      startX: event.clientX,
+      startRatio: editorRatio,
+    };
+    setIsResizingLayout(true);
+  }, [editorRatio]);
+
+  const handleResizeKeyDown = useCallback((event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Home' && event.key !== 'End') {
+      return;
+    }
+
+    const layoutWidth = layoutRef.current?.getBoundingClientRect().width || 0;
+    if (!layoutWidth) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.key === 'Home') {
+      setEditorRatio(MANUAL_ROADMAP_SPLIT_MIN_RATIO);
+      return;
+    }
+
+    if (event.key === 'End') {
+      setEditorRatio(MANUAL_ROADMAP_SPLIT_MAX_RATIO);
+      return;
+    }
+
+    const step = event.shiftKey ? 48 : 24;
+    setEditorRatio((currentRatio) => clamp(
+      currentRatio + (event.key === 'ArrowLeft' ? -step : step) / layoutWidth,
+      MANUAL_ROADMAP_SPLIT_MIN_RATIO,
+      MANUAL_ROADMAP_SPLIT_MAX_RATIO,
+    ));
+  }, [layoutWidth]);
 
   useEffect(() => {
     if (!roadmapId || !accessToken) return;
@@ -278,6 +464,12 @@ export default function ManualRoadmapPage() {
   const handleSave = async () => {
     setApiError('');
     setSuccessMessage('');
+
+    if (!accessToken) {
+      setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để lưu roadmap.');
+      return;
+    }
+
     if (validationError) {
       setApiError('Please fix validation errors before saving.');
       return;
@@ -302,7 +494,11 @@ export default function ManualRoadmapPage() {
         window.history.replaceState({}, '', `/manual-roadmap?id=${payload._id}`);
       }
     } catch (err) {
-      setApiError(err.message || 'Unable to save roadmap.');
+      if (err?.status === 401) {
+        setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi lưu lại roadmap.');
+      } else {
+        setApiError(err.message || 'Unable to save roadmap.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -336,32 +532,85 @@ export default function ManualRoadmapPage() {
   const displayNodes = preview.nodes || [];
   const selectedNode = displayNodes.find((node) => node.nodeId === selectedNodeId);
   const selectedResources = Array.isArray(selectedNode?.resources) ? selectedNode.resources : [];
+  const selectedNodeName = selectedNode?.roadmapName || selectedNode?.label || 'node';
   const actionsDisabled = isSaving;
+  const renderStatusMessage = validationError
+    ? `YAML không hợp lệ: ${validationError}`
+    : isComputingLayout
+      ? 'Đang render preview...'
+      : displayNodes.length === 0
+        ? 'Chưa có node hợp lệ để preview.'
+        : 'Preview đã sẵn sàng.';
+
+  const editorPaneWidth = layoutWidth > 0 ? Math.round(layoutWidth * editorRatio) : 0;
+  const previewPaneWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - editorPaneWidth - MANUAL_ROADMAP_RESIZER_WIDTH) : 0;
 
   return (
     <div className="skill-tree-page manual-roadmap-page">
-      <div className="skill-tree-layout manual-roadmap-layout">
-        <main className="skill-tree-layout__canvas manual-roadmap-layout__canvas" aria-label="Manual roadmap preview">
+      <div
+        className="skill-tree-layout manual-roadmap-layout"
+        ref={layoutRef}
+      >
+        <main
+          className="skill-tree-layout__canvas manual-roadmap-layout__canvas"
+          aria-label="Manual roadmap preview"
+          style={layoutWidth > 0 && !isCompactLayout
+            ? {
+              flexBasis: `${previewPaneWidth}px`,
+              width: `${previewPaneWidth}px`,
+            }
+            : undefined
+          }
+        >
           <section className="skill-tree-summary-card" aria-label="Roadmap summary">
             <h2 className="skill-tree-summary-card__title">{title || 'Manual roadmap draft'}</h2>
             <p className="skill-tree-summary-card__meta">{description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}</p>
+            <div className={`manual-roadmap-summary-card__status ${validationError ? 'manual-roadmap-summary-card__status--error' : 'manual-roadmap-summary-card__status--info'}`} role="status" aria-live="polite">
+              {renderStatusMessage}
+            </div>
           </section>
 
           <div className="manual-roadmap-preview-stage">
-            <ManualRoadmapPreview
+            <RoadmapGraphRenderer
               nodes={displayNodes}
-              selectedNodeId={selectedNodeId}
+              edges={preview.edges || []}
+              positions={layoutPositions}
               onNodeSelect={(nodeId) => handleSelectNode(nodeId, { fromGraph: true })}
+              loading={isComputingLayout}
             />
           </div>
         </main>
 
-        <aside className="skill-tree-panel manual-roadmap-panel" aria-label="Manual roadmap editor">
+        <div
+          className="manual-roadmap-layout__divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize roadmap preview and editor"
+          aria-valuemin={Math.round(MANUAL_ROADMAP_SPLIT_MIN_RATIO * 100)}
+          aria-valuemax={Math.round(MANUAL_ROADMAP_SPLIT_MAX_RATIO * 100)}
+          aria-valuenow={Math.round(editorRatio * 100)}
+          tabIndex={0}
+          onPointerDown={handleResizePointerDown}
+          onKeyDown={handleResizeKeyDown}
+        >
+          <ManualRoadmapDividerHandle />
+        </div>
+
+        <aside
+          className="skill-tree-panel manual-roadmap-panel"
+          aria-label="Manual roadmap editor"
+          style={layoutWidth > 0 && !isCompactLayout
+            ? {
+              flexBasis: `${editorPaneWidth}px`,
+              width: `${editorPaneWidth}px`,
+            }
+            : undefined
+          }
+        >
           <div className="skill-tree-panel__header">
             <div className="skill-tree-panel__title-row">
               <div className="skill-tree-panel__title-wrap">
-                <h2 className="skill-tree-panel__title">Manual roadmap editor</h2>
-                <p className="skill-tree-panel__subtitle">YAML and resources</p>
+                <h2 className="skill-tree-panel__title">Editor roadmap thủ công</h2>
               </div>
 
               <div className="manual-roadmap-panel__actions">
@@ -462,12 +711,12 @@ export default function ManualRoadmapPage() {
                     <option value="document">Document</option>
                   </select>
                   <button type="button" onClick={handleAddResource} className="manual-roadmap-button manual-roadmap-button--primary manual-roadmap-button--block">
-                    Add Resource
+                    Thêm học liệu
                   </button>
                 </div>
 
                 <div className="manual-roadmap-resources">
-                  <h3 className="manual-roadmap-resources__title">Resources của {selectedNode?.label || 'node'}</h3>
+                  <h3 className="manual-roadmap-resources__title">Resources của {selectedNodeName}</h3>
                   {selectedResources.length === 0 ? (
                     <p className="manual-roadmap-resources__empty">Chưa có resource.</p>
                   ) : (
@@ -490,15 +739,6 @@ export default function ManualRoadmapPage() {
           </div>
         </aside>
       </div>
-
-      <footer className="skill-tree-page__footer manual-roadmap-page__footer">
-        <span>© 2024 UET-VNU University of Engineering and Technology</span>
-        <div className="manual-roadmap-page__footer-links">
-          <a className="manual-roadmap-page__footer-link" href="#">GitHub</a>
-          <a className="manual-roadmap-page__footer-link" href="#">Documentation</a>
-          <a className="manual-roadmap-page__footer-link" href="#">Privacy Policy</a>
-        </div>
-      </footer>
 
       {apiError && (
         <div className="manual-roadmap-toast manual-roadmap-toast--error">

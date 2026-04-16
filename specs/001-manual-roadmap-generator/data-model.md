@@ -21,7 +21,7 @@
 | `title` | String | yes | — | `1..200` chars | User-facing roadmap title |
 | `description` | String | no | `''` | `<=1000` chars | Optional description |
 | `yamlCode` | String | yes | — | `<=10240` chars | Raw YAML source; validated on save |
-| `nodes` | RoadmapNode[] | yes | `[]` | Topologically ordered by prerequisites | Canonical graph payload |
+| `nodes` | RoadmapNode[] | yes | `[]` | Stable node order for rendering/export | Canonical graph payload |
 | `shared` | Boolean | yes | `false` | | Shared state for community visibility |
 | `isPublic` | Boolean | yes | `false` | | Public visibility flag for community listing |
 | `status` | String | yes | `draft` | Enum: `draft` \\| `published` \\| `archived` | Document lifecycle state |
@@ -41,7 +41,7 @@
 ### Validation rules applied at service layer
 
 - `yamlCode` is parsed by `js-yaml` and validated by `ajv` against the roadmap JSON schema.
-- `nodes` must be a DAG with no cycles; every `prerequisites` value must refer to an existing `nodeId`.
+- `nodes` must be a valid graph payload with unique `nodeId` values.
 - `nodes` must be topologically ordered; the server may normalize order before persisting.
 - `status` transitions are controlled by feature lifecycle: `draft → published → archived`.
 - `sharedAt` is set when `shared` becomes `true` and cleared only if `shared` is reverted.
@@ -57,21 +57,21 @@
 | Field | Type | Required | Default | Constraints | Notes |
 |---|---|---|---|---|---|
 | `nodeId` | String | yes | — | Unique within roadmap | Primary node key |
-| `label` | String | yes | — | Non-empty | Display title |
+| `roadmapName` | String | yes | — | Non-empty | Display title |
 | `description` | String | no | `''` | `<=1000` chars | Optional details |
-| `prerequisites` | String[] | yes | `[]` | Each entry is a valid `nodeId` | DAG edges |
 | `status` | String | yes | `pending` | Enum: `locked` \\| `pending` \\| `in_progress` \\| `done` | Status semantics follow Feature 004 |
-| `skills` | String[] | yes | `[]` | Skill labels or IDs supported by node | Optional skill mapping |
+| `skillName` | String | no | `''` | Single skill label or ID | Optional skill mapping |
 | `metadata` | Object | no | `{}` | | Additional node metadata for UI or integration |
 
 ### Node semantics
 
-- `locked`: prerequisites are not all complete; this is a computed state and may be stored for UI convenience.
+- `locked`: node is not available yet; this is a computed state and may be stored for UI convenience.
 - `pending`: explicit initial state for unlocked nodes.
 - `in_progress`: the user has started work on the node.
 - `done`: the node is complete.
-- A node is only considered unlocked when all referenced prerequisites are `done`.
+- Node unlock rules are implementation-defined and can be driven by metadata.
 - The frontend may display locked nodes with a faded style and show details for `pending`/`in_progress`/`done` states.
+- Each node stores exactly one `skillName` value; multi-skill arrays are not part of this model.
 
 ---
 
@@ -108,5 +108,5 @@ The `users` collection is assumed to be shared with other features.
 - Users may fork a shared roadmap into a new `draft` version.
 - Public roadmaps are visible in community listings only when `isPublic: true`.
 - YAML validation occurs on every save and every share.
-- Node unlock semantics follow Feature 004: locked nodes become available only when prerequisites are `done`.
+- Node unlock semantics follow Feature 004 and are evaluated from node metadata/state.
 - The roadmap data model intentionally mirrors Feature 009's node-driven graph payload so shared exports and integrations remain compatible.

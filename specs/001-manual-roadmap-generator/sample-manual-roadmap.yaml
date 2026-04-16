@@ -2,110 +2,88 @@ title: Frontend Foundations Roadmap
 description: A compact roadmap for learning frontend basics, internet concepts, and development tooling.
 nodes:
   - nodeId: FRONTEND_STACK
-    label: Frontend Stack
+    type: main_topic
+    roadmapName: Frontend Stack
     description: Pick the core frontend technologies to start with.
-    status: done
-    prerequisites: []
-    skills:
-      - html
-      - css
-      - javascript
+    parentNodeId: null
+    skillName: html
     resources:
       - title: MDN Web Docs
         url: https://developer.mozilla.org/
         type: link
 
   - nodeId: INTERNET_BASICS
-    label: Internet Basics
+    type: main_topic
+    roadmapName: Internet Basics
     description: Understand how the browser talks to servers and resolves domains.
-    status: in_progress
-    prerequisites: []
-    skills:
-      - http
-      - dns
+    parentNodeId: null
+    skillName: http
     resources:
       - title: How the Internet Works
         url: https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/How_does_the_Internet_work
         type: link
 
   - nodeId: TOOLING_WORKFLOW
-    label: Tooling Workflow
+    type: main_topic
+    roadmapName: Tooling Workflow
     description: Set up modern tooling and learn Git-based workflows.
-    status: pending
-    prerequisites: []
-    skills:
-      - git
-      - vite
+    parentNodeId: null
+    skillName: git
     resources:
       - title: Vite documentation
         url: https://vitejs.dev/guide/
         type: link
 
   - nodeId: HTML_CSS
-    label: HTML & CSS
+    type: sub_topic
+    roadmapName: HTML & CSS
     description: Build semantic layouts and responsive interfaces.
-    parent: FRONTEND_STACK
-    status: done
-    prerequisites: [FRONTEND_STACK]
-    skills:
-      - semantic-html
-      - responsive-css
+    parentNodeId: FRONTEND_STACK
+    skillName: semantic-html
     resources:
       - title: MDN HTML guide
         url: https://developer.mozilla.org/en-US/docs/Learn/HTML
         type: link
 
   - nodeId: JAVASCRIPT_CORE
-    label: JavaScript Core
+    type: sub_topic
+    roadmapName: JavaScript Core
     description: Learn language fundamentals, DOM APIs, and async patterns.
-    parent: FRONTEND_STACK
-    status: in_progress
-    prerequisites: [FRONTEND_STACK]
-    skills:
-      - dom
-      - async-await
+    parentNodeId: FRONTEND_STACK
+    skillName: dom
     resources:
       - title: JavaScript first steps
         url: https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps
         type: link
 
   - nodeId: HTTP_BROWSER
-    label: HTTP & Browser Basics
+    type: sub_topic
+    roadmapName: HTTP & Browser Basics
     description: Understand requests, responses, rendering, and browser tools.
-    parent: INTERNET_BASICS
-    status: pending
-    prerequisites: [INTERNET_BASICS]
-    skills:
-      - http
-      - browser-devtools
+    parentNodeId: INTERNET_BASICS
+    skillName: http
     resources:
       - title: HTTP overview
         url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
         type: link
 
   - nodeId: DOMAIN_DNS
-    label: Domain Name & DNS
+    type: sub_topic
+    roadmapName: Domain Name & DNS
     description: Learn how domains map to servers through DNS.
-    parent: INTERNET_BASICS
-    status: pending
-    prerequisites: [INTERNET_BASICS]
-    skills:
-      - dns
-      - domains
+    parentNodeId: INTERNET_BASICS
+    skillName: dns
     resources:
       - title: DNS explained
         url: https://www.cloudflare.com/learning/dns/what-is-dns/
         type: link
 
   - nodeId: GIT_WORKFLOW
-    label: Git Workflow
+    type: sub_topic
+    roadmapName: Git Workflow
     description: Track changes, branch safely, and collaborate with Git.
-    parent: TOOLING_WORKFLOW
-    status: locked
-    prerequisites: [TOOLING_WORKFLOW]
-    skills:
-      - git-branching
-      - pull-requests
+    parentNodeId: TOOLING_WORKFLOW
+    skillName: git-branching
     resources:
       - title: Git book
         url: https://git-scm.com/book/en/v2

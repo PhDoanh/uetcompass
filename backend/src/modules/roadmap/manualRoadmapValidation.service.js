@@ -11,6 +11,25 @@ const roadmapSchema = {
     properties: {
         title: { type: 'string', minLength: 1, maxLength: 200 },
         description: { type: 'string', maxLength: 1000 },
+        edges: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string', minLength: 1 },
+                    edgeId: { type: 'string', minLength: 1 },
+                    source: { type: 'string', minLength: 1 },
+                    target: { type: 'string', minLength: 1 },
+                    type: { type: 'string', enum: ['default', 'dashed', 'smoothstep'] },
+                },
+                anyOf: [
+                    { required: ['id'] },
+                    { required: ['edgeId'] },
+                ],
+                required: ['source', 'target'],
+                additionalProperties: false,
+            },
+        },
         nodes: {
             type: 'array',
             items: {
@@ -18,6 +37,10 @@ const roadmapSchema = {
                 properties: {
                     id: { type: 'string', minLength: 1 },
                     nodeId: { type: 'string', minLength: 1 },
+                    type: { type: 'string', enum: ['main_topic', 'sub_topic', 'group_container', 'choice_item'] },
+                    parentNodeId: { type: ['string', 'null'], minLength: 1 },
+                    parent: { type: ['string', 'null'], minLength: 1 },
+                    roadmapName: { type: 'string', minLength: 1 },
                     label: { type: 'string', minLength: 1 },
                     description: { type: 'string' },
                     prerequisites: {
@@ -26,18 +49,22 @@ const roadmapSchema = {
                         uniqueItems: true,
                     },
                     status: { type: 'string', enum: ['locked', 'pending', 'in_progress', 'done'] },
+                    skillName: { type: 'string', minLength: 1 },
                     skills: {
                         type: 'array',
                         items: { type: 'string', minLength: 1 },
-                        uniqueItems: true,
                     },
                     resources: {
                         type: 'array',
                         items: {},
                     },
+                    elkOptions: { type: 'object' },
                     metadata: { type: 'object' },
                 },
-                required: ['label'],
+                anyOf: [
+                    { required: ['roadmapName'] },
+                    { required: ['label'] },
+                ],
                 additionalProperties: false,
             },
             minItems: 1,
@@ -52,15 +79,30 @@ const validate = ajv.compile(roadmapSchema);
 function normalizeNode(node) {
     if (!node || typeof node !== 'object') return null;
     const nodeId = String(node.nodeId || node.id || '').trim();
+    const metadata = typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {};
+    const parentNodeId = String(node.parentNodeId || node.parent || metadata.parentNodeId || '').trim();
+    const type = ['main_topic', 'sub_topic', 'group_container', 'choice_item'].includes(node.type)
+        ? node.type
+        : 'main_topic';
+    const roadmapName = String(node.roadmapName || node.label || '').trim();
+    const legacySkills = Array.isArray(node.skills) ? node.skills.map(String).map((skill) => skill.trim()).filter(Boolean) : [];
+    const skillName = String(node.skillName || legacySkills[0] || '').trim();
     return {
         nodeId,
-        label: String(node.label || '').trim(),
+        type,
+        parentNodeId: parentNodeId || null,
+        roadmapName,
+        label: roadmapName,
         description: String(node.description || '').trim(),
         prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites.map(String).map((id) => id.trim()).filter(Boolean) : [],
         status: ['locked', 'pending', 'in_progress', 'done'].includes(node.status) ? node.status : 'pending',
-        skills: Array.isArray(node.skills) ? node.skills.map(String).map((skill) => skill.trim()).filter(Boolean) : [],
+        elkOptions: typeof node.elkOptions === 'object' && node.elkOptions !== null && !Array.isArray(node.elkOptions)
+            ? node.elkOptions
+            : {},
+        skillName,
+        skills: skillName ? [skillName] : [],
         resources: Array.isArray(node.resources) ? node.resources : [],
-        metadata: typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {},
+        metadata,
     };
 }
 

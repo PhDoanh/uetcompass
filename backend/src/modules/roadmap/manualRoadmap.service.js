@@ -4,6 +4,7 @@ const { ManualRoadmap } = require('./manualRoadmap.model');
 const { Roadmap } = require('./roadmap.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
+const { generateEdgesFromHierarchy, enrichNodes, validateHierarchy } = require('./graph.generator');
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -24,14 +25,15 @@ function toRoadmapNode(node) {
     const resources = Array.isArray(node.resources)
         ? node.resources
         : (Array.isArray(metadata.resources) ? metadata.resources : []);
+    const roadmapName = String(node.roadmapName || node.label || '').trim();
 
     return {
         nodeId: node.nodeId,
         nodeType: prerequisites.length > 0 ? 'subtopic' : 'topic',
-        skillName: node.label,
+        skillName: String(node.skillName || roadmapName).trim(),
         parentNodeId: metadata.parentNodeId || prerequisites[0] || null,
         relatedCourses,
-        reason: node.description || metadata.reason || `Learn ${node.label}`,
+        reason: node.description || metadata.reason || `Learn ${roadmapName}`,
         resources,
     };
 }
@@ -73,7 +75,7 @@ async function listPublic({ q = '', page = 1, limit = 20 } = {}) {
     }
 
     const [items, total] = await Promise.all([
-        ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0 })
+        ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0, edges: 0 })
             .sort({ sharedAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -87,12 +89,37 @@ async function listPublic({ q = '', page = 1, limit = 20 } = {}) {
 async function getPublicPreviewById(roadmapId) {
     return ManualRoadmap.findOne(
         { _id: roadmapId },
-        { title: 1, description: 1, nodes: 1, sharedAt: 1 }
+        { title: 1, description: 1, nodes: 1, edges: 1, sharedAt: 1 }
     ).lean();
 }
 
+/**
+ * Fetch roadmap for EDITING (include yamlCode)
+ * Editor will re-parse YAML if user modifies it
+ */
+async function getByIdForEdit(roadmapId, userId) {
+    return ManualRoadmap.findOne(
+        { _id: roadmapId, userId },
+        { yamlCode: 1, title: 1, description: 1, status: 1 }
+    ).lean();
+}
+
+/**
+ * Fetch roadmap for VIEWING (include parsed nodes + edges, no yamlCode)
+ * Frontend will use nodes/edges directly with ELK.js layout
+ */
+async function getByIdForView(roadmapId, userId) {
+    return ManualRoadmap.findOne(
+        { _id: roadmapId, userId },
+        { title: 1, description: 1, nodes: 1, edges: 1, positions: 1 }
+    ).lean();
+}
+
+/**
+ * Legacy method for backward compatibility
+ */
 async function getByIdForUser(roadmapId, userId) {
-    return ManualRoadmap.findOne({ _id: roadmapId, userId }).lean();
+    return getByIdForEdit(roadmapId, userId);
 }
 
 async function listByUser(userId, { page = 1, limit = 20 } = {}) {
@@ -100,7 +127,7 @@ async function listByUser(userId, { page = 1, limit = 20 } = {}) {
     const filter = { userId };
 
     const [items, total] = await Promise.all([
-        ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0 })
+        ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0, edges: 0 })
             .sort({ updatedAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -112,18 +139,34 @@ async function listByUser(userId, { page = 1, limit = 20 } = {}) {
 }
 
 async function createDraft(userId, { title, description, yamlCode, nodes }) {
+    // Enrich nodes with defaults
+    const enrichedNodes = enrichNodes(nodes);
+
+    // Generate edges from parent relationships
+    const edges = generateEdgesFromHierarchy(enrichedNodes, {
+        includePrerequisites: true,
+        deduplicateEdges: true,
+    });
+
+    // Validate hierarchy (check for circular dependencies, missing nodes)
+    const validation = validateHierarchy(enrichedNodes, edges);
+    if (!validation.isValid) {
+        throw new RoadmapError(400, ERROR_CODES.INVALID_DATA, `Hierarchy validation failed: ${validation.errors.join('; ')}`);
+    }
+
     const manualRoadmap = await ManualRoadmap.create({
         userId,
         title,
         description,
         yamlCode,
-        nodes,
+        nodes: enrichedNodes,
+        edges,
         shared: false,
         isPublic: false,
         status: 'draft',
     });
 
-    await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes });
+    await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
     return manualRoadmap;
 }
 
@@ -137,14 +180,28 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
         throw new RoadmapError(409, ERROR_CODES.PUBLICATION_ERROR, 'Only draft roadmaps can be updated. Create a new manual roadmap for a new version.');
     }
 
+    // Enrich and validate new nodes
+    const enrichedNodes = enrichNodes(nodes);
+    const edges = generateEdgesFromHierarchy(enrichedNodes, {
+        includePrerequisites: true,
+        deduplicateEdges: true,
+    });
+
+    const validation = validateHierarchy(enrichedNodes, edges);
+    if (!validation.isValid) {
+        throw new RoadmapError(400, ERROR_CODES.INVALID_DATA, `Hierarchy validation failed: ${validation.errors.join('; ')}`);
+    }
+
+    // Update document
     existing.title = title;
     existing.description = description;
     existing.yamlCode = yamlCode;
-    existing.nodes = nodes;
+    existing.nodes = enrichedNodes;
+    existing.edges = edges;
     existing.updatedAt = new Date();
 
     await existing.save();
-    await syncToRoadmapCollection(existing._id, userId, { title, nodes });
+    await syncToRoadmapCollection(existing._id, userId, { title, nodes: enrichedNodes });
     return existing.toObject();
 }
 
@@ -170,6 +227,8 @@ async function share(roadmapId, userId) {
 module.exports = {
     listByUser,
     getByIdForUser,
+    getByIdForEdit,
+    getByIdForView,
     createDraft,
     updateDraft,
     share,

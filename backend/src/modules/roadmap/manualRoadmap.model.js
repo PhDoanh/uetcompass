@@ -2,6 +2,40 @@
 
 const mongoose = require('mongoose');
 
+/**
+ * Schema cho Edges (connections giữa nodes)
+ * Cần thiết cho ELK.js layout engine và ReactFlow renderer
+ */
+const ManualRoadmapEdgeSchema = new mongoose.Schema(
+    {
+        edgeId: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        source: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        target: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        type: {
+            type: String,
+            enum: ['default', 'dashed', 'smoothstep'],
+            default: 'default',
+        },
+    },
+    { _id: false }
+);
+
+/**
+ * Schema cho Roadmap Nodes
+ * Parsed từ YAML input, chứa cấu trúc đồ thị
+ */
 const ManualRoadmapNodeSchema = new mongoose.Schema(
     {
         nodeId: {
@@ -9,7 +43,16 @@ const ManualRoadmapNodeSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
-        label: {
+        type: {
+            type: String,
+            enum: ['main_topic', 'sub_topic', 'group_container', 'choice_item'],
+            default: 'main_topic',
+        },
+        parentNodeId: {
+            type: String,
+            default: null,
+        },
+        roadmapName: {
             type: String,
             required: true,
             trim: true,
@@ -23,14 +66,14 @@ const ManualRoadmapNodeSchema = new mongoose.Schema(
             type: [String],
             default: [],
         },
-        status: {
-            type: String,
-            enum: ['locked', 'pending', 'in_progress', 'done'],
-            default: 'pending',
+        elkOptions: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
         },
-        skills: {
-            type: [String],
-            default: [],
+        skillName: {
+            type: String,
+            trim: true,
+            default: '',
         },
         resources: {
             type: [mongoose.Schema.Types.Mixed],
@@ -72,6 +115,14 @@ const ManualRoadmapSchema = new mongoose.Schema(
         nodes: {
             type: [ManualRoadmapNodeSchema],
             default: [],
+        },
+        edges: {
+            type: [ManualRoadmapEdgeSchema],
+            default: [],
+        },
+        positions: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
         },
         shared: {
             type: Boolean,

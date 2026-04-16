@@ -3,7 +3,7 @@ description: A practical roadmap for learning spreadsheets, SQL, visualization, 
 nodes:
   - nodeId: DATA_FOUNDATIONS
     type: main_topic
-    roadmapName: Data Foundations
+    label: Data Foundations
     description: Learn what data is and how analytics projects are structured.
     parentNodeId: null
     skillName: analytics-basics
@@ -14,7 +14,7 @@ nodes:
 
   - nodeId: SPREADSHEETS
     type: sub_topic
-    roadmapName: Spreadsheets
+    label: Spreadsheets
     description: Use Excel or Google Sheets for cleaning and quick analysis.
     parentNodeId: DATA_FOUNDATIONS
     skillName: excel
@@ -25,7 +25,7 @@ nodes:
 
   - nodeId: SQL
     type: sub_topic
-    roadmapName: SQL
+    label: SQL
     description: Query relational data and build reporting datasets.
     parentNodeId: DATA_FOUNDATIONS
     skillName: sql
@@ -36,14 +36,14 @@ nodes:
 
   - nodeId: DATA_CLEANING
     type: sub_topic
-    roadmapName: Data Cleaning
+    label: Data Cleaning
     description: Standardize, validate, and prepare data for analysis.
     parentNodeId: DATA_FOUNDATIONS
     skillName: cleaning
 
   - nodeId: DATA_VISUALIZATION
     type: main_topic
-    roadmapName: Data Visualization
+    label: Data Visualization
     description: Create charts and dashboards that communicate insights.
     parentNodeId: null
     skillName: visualization
@@ -54,7 +54,7 @@ nodes:
 
   - nodeId: STATISTICS
     type: main_topic
-    roadmapName: Statistics
+    label: Statistics
     description: Understand averages, variance, distributions, and inference.
     parentNodeId: null
     skillName: statistics
@@ -64,7 +64,7 @@ nodes:
         type: link
 
   - nodeId: ANALYTICS_STORYTELLING
-    roadmapName: Analytics Storytelling
+    label: Analytics Storytelling
     description: Present findings and explain recommendations to stakeholders.
     status: locked
     skillName: storytelling

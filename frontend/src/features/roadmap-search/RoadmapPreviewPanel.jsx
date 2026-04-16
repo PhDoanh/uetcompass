@@ -30,7 +30,6 @@ function normalizePreviewNodes(nodes = []) {
 
             return {
                 nodeId,
-                roadmapName: String(node?.roadmapName || node?.label || node?.skillName || nodeId).trim(),
                 label: String(node?.label || node?.skillName || nodeId).trim(),
                 description: String(node?.description || node?.reason || '').trim(),
                 parent: parentNodeId || undefined,

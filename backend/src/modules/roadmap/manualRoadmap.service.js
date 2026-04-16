@@ -25,15 +25,15 @@ function toRoadmapNode(node) {
     const resources = Array.isArray(node.resources)
         ? node.resources
         : (Array.isArray(metadata.resources) ? metadata.resources : []);
-    const roadmapName = String(node.roadmapName || node.label || '').trim();
+    const label = String(node.label || '').trim();
 
     return {
         nodeId: node.nodeId,
         nodeType: prerequisites.length > 0 ? 'subtopic' : 'topic',
-        skillName: String(node.skillName || roadmapName).trim(),
+        skillName: String(node.skillName || label).trim(),
         parentNodeId: metadata.parentNodeId || prerequisites[0] || null,
         relatedCourses,
-        reason: node.description || metadata.reason || `Learn ${roadmapName}`,
+        reason: node.description || metadata.reason || `Learn ${label}`,
         resources,
     };
 }

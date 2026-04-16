@@ -133,7 +133,7 @@ function enrichNodes(nodes) {
         type: node.type || 'main_topic',
         parentNodeId: node.parentNodeId || null,
         prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites : [],
-        roadmapName: String(node.roadmapName || node.label || '').trim(),
+        label: String(node.label || '').trim(),
         skillName: String(node.skillName || '').trim(),
         elkOptions: node.elkOptions || {
             // Default ELK layout options

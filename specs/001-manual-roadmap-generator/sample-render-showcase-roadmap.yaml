@@ -3,104 +3,104 @@ description: Full rendering showcase with parent spine, left-right children, gro
 nodes:
   - nodeId: FOUNDATION_SPINE
     type: main_topic
-    roadmapName: Foundation Spine
+    label: Foundation Spine
     description: Core fundamentals for the whole roadmap.
     parentNodeId: null
     skillName: fundamentals
 
   - nodeId: PLATFORM_SPINE
     type: main_topic
-    roadmapName: Platform Spine
+    label: Platform Spine
     description: Platform and architecture layer.
     parentNodeId: null
     skillName: platform-thinking
 
   - nodeId: DELIVERY_SPINE
     type: main_topic
-    roadmapName: Delivery Spine
+    label: Delivery Spine
     description: Delivery and operations layer.
     parentNodeId: null
     skillName: delivery
 
   - nodeId: FE_TRACK
     type: group_container
-    roadmapName: Frontend Track
+    label: Frontend Track
     description: Group for UI and client-side modules.
     parentNodeId: FOUNDATION_SPINE
 
   - nodeId: BE_TRACK
     type: group_container
-    roadmapName: Backend Track
+    label: Backend Track
     description: Group for APIs and service modules.
     parentNodeId: FOUNDATION_SPINE
 
   - nodeId: FE_CORE
     type: sub_topic
-    roadmapName: Frontend Core
+    label: Frontend Core
     description: Components, state, and rendering basics.
     parentNodeId: FOUNDATION_SPINE
     skillName: components
 
   - nodeId: BE_CORE
     type: sub_topic
-    roadmapName: Backend Core
+    label: Backend Core
     description: Routing, service layer, and validation.
     parentNodeId: FOUNDATION_SPINE
     skillName: api-design
 
   - nodeId: DATA_LAYER
     type: sub_topic
-    roadmapName: Data Layer
+    label: Data Layer
     description: Persistence and schema design.
     parentNodeId: PLATFORM_SPINE
     skillName: schema-design
 
   - nodeId: OBS_TRACK
     type: sub_topic
-    roadmapName: Observability
+    label: Observability
     description: Logging, metrics, and traces.
     parentNodeId: DELIVERY_SPINE
     skillName: monitoring
 
   - nodeId: UI_PATH_CHOICE
     type: choice_item
-    roadmapName: UI Path Choice
+    label: UI Path Choice
     description: Choose one UI ecosystem as primary.
     parentNodeId: FE_TRACK
 
   - nodeId: API_STYLE_CHOICE
     type: choice_item
-    roadmapName: API Style Choice
+    label: API Style Choice
     description: Choose REST-first or event-first API style.
     parentNodeId: BE_TRACK
 
   - nodeId: REACT_PATH
     type: sub_topic
-    roadmapName: React Path
+    label: React Path
     description: React-focused frontend path.
     parentNodeId: UI_PATH_CHOICE
 
   - nodeId: VUE_PATH
     type: sub_topic
-    roadmapName: Vue Path
+    label: Vue Path
     description: Vue-focused frontend path.
     parentNodeId: UI_PATH_CHOICE
 
   - nodeId: REST_PATH
     type: sub_topic
-    roadmapName: REST Path
+    label: REST Path
     description: REST API path with contract-driven design.
     parentNodeId: API_STYLE_CHOICE
 
   - nodeId: EVENT_PATH
     type: sub_topic
-    roadmapName: Event-Driven Path
+    label: Event-Driven Path
     description: Event-first integration path.
     parentNodeId: API_STYLE_CHOICE
 
   - nodeId: CAPSTONE
     type: sub_topic
-    roadmapName: Capstone Release
+    label: Capstone Release
     description: Final integrated release milestone.
     parentNodeId: DELIVERY_SPINE
     resources:

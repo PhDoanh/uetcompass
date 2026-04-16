@@ -3,7 +3,7 @@ description: A beginner-friendly roadmap for security fundamentals, threat model
 nodes:
   - nodeId: SECURITY_FOUNDATIONS
     type: main_topic
-    roadmapName: Security Foundations
+    label: Security Foundations
     description: Learn core security ideas such as confidentiality, integrity, and availability.
     parentNodeId: null
     skillName: cia-triad
@@ -14,7 +14,7 @@ nodes:
 
   - nodeId: NETWORKING
     type: sub_topic
-    roadmapName: Networking Basics
+    label: Networking Basics
     description: Understand ports, protocols, and how traffic moves between systems.
     parentNodeId: SECURITY_FOUNDATIONS
     skillName: tcp-ip
@@ -25,7 +25,7 @@ nodes:
 
   - nodeId: LINUX_SECURITY
     type: sub_topic
-    roadmapName: Linux Security
+    label: Linux Security
     description: Harden Linux systems and manage users, permissions, and services.
     parentNodeId: SECURITY_FOUNDATIONS
     skillName: permissions
@@ -36,7 +36,7 @@ nodes:
 
   - nodeId: WEB_SECURITY
     type: sub_topic
-    roadmapName: Web Security
+    label: Web Security
     description: Protect web apps from injection, auth bugs, and XSS.
     parentNodeId: SECURITY_FOUNDATIONS
     skillName: xss
@@ -47,7 +47,7 @@ nodes:
 
   - nodeId: THREAT_MODELING
     type: main_topic
-    roadmapName: Threat Modeling
+    label: Threat Modeling
     description: Identify assets, attack paths, and mitigations early.
     parentNodeId: null
     skillName: threat-modeling
@@ -58,7 +58,7 @@ nodes:
 
   - nodeId: AUTHENTICATION
     type: main_topic
-    roadmapName: Authentication & Authorization
+    label: Authentication & Authorization
     description: Secure identity flows and access control.
     parentNodeId: null
     skillName: auth
@@ -69,7 +69,7 @@ nodes:
 
   - nodeId: INCIDENT_RESPONSE
     type: main_topic
-    roadmapName: Incident Response
+    label: Incident Response
     description: Prepare for detection, triage, containment, and recovery.
     parentNodeId: null
     skillName: incident-response

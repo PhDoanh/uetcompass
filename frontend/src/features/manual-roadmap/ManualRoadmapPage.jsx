@@ -531,7 +531,7 @@ export default function ManualRoadmapPage() {
   const displayNodes = preview.nodes || [];
   const selectedNode = displayNodes.find((node) => node.nodeId === selectedNodeId);
   const selectedResources = Array.isArray(selectedNode?.resources) ? selectedNode.resources : [];
-  const selectedNodeName = selectedNode?.roadmapName || selectedNode?.label || 'node';
+  const selectedNodeName = selectedNode?.label || 'node';
   const actionsDisabled = isSaving;
   const renderStatusMessage = validationError
     ? `YAML không hợp lệ: ${validationError}`

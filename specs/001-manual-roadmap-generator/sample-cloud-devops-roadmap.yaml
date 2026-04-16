@@ -3,7 +3,7 @@ description: A roadmap for infrastructure basics, CI/CD, containers, observabili
 nodes:
   - nodeId: CLOUD_BASES
     type: main_topic
-    roadmapName: Cloud Basics
+    label: Cloud Basics
     description: Understand cloud service models and core concepts.
     parentNodeId: null
     skillName: cloud-concepts
@@ -14,7 +14,7 @@ nodes:
 
   - nodeId: LINUX_SHELL
     type: sub_topic
-    roadmapName: Linux & Shell
+    label: Linux & Shell
     description: Navigate servers, automate tasks, and manage files from the terminal.
     parentNodeId: CLOUD_BASES
     skillName: linux
@@ -25,7 +25,7 @@ nodes:
 
   - nodeId: GIT_CICD
     type: sub_topic
-    roadmapName: Git & CI/CD
+    label: Git & CI/CD
     description: Automate testing and deployment with pipelines.
     parentNodeId: CLOUD_BASES
     skillName: git
@@ -36,7 +36,7 @@ nodes:
 
   - nodeId: CONTAINERS
     type: sub_topic
-    roadmapName: Containers
+    label: Containers
     description: Package services using Docker and run them consistently.
     parentNodeId: CLOUD_BASES
     skillName: docker
@@ -47,7 +47,7 @@ nodes:
 
   - nodeId: KUBERNETES
     type: main_topic
-    roadmapName: Kubernetes
+    label: Kubernetes
     description: Orchestrate containers and manage service scaling.
     parentNodeId: null
     skillName: kubernetes
@@ -58,7 +58,7 @@ nodes:
 
   - nodeId: OBSERVABILITY
     type: main_topic
-    roadmapName: Observability
+    label: Observability
     description: Track logs, metrics, and traces in production.
     parentNodeId: null
     skillName: logging
@@ -69,7 +69,7 @@ nodes:
 
   - nodeId: DEPLOYMENT_STRATEGY
     type: main_topic
-    roadmapName: Deployment Strategy
+    label: Deployment Strategy
     description: Learn blue-green, canary, and rolling deployment patterns.
     parentNodeId: null
     skillName: deployment

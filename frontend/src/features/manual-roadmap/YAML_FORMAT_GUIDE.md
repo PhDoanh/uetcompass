@@ -1,395 +1,266 @@
-# Hướng Dẫn YAML Format Cho Manual Roadmap
+# Hướng Dẫn YAML Cho Manual Roadmap
 
-##  Tổng Quát
+## Tổng Quan
 
-Tính năng **Manual Roadmap (Lộ trình thủ công)** cho phép bạn định nghĩa các con đường học tập bằng cú pháp **YAML**. Quy trình hoạt động:
+Manual Roadmap dùng YAML để mô tả một lộ trình học dưới dạng đồ thị gồm `nodes` và `edges`.
 
-1. **Lưu trữ** - YAML được lưu nguyên văn trong database (để chỉnh sửa sau)
-2. **Phân tích** - Chuyển đổi thành cấu trúc đồ thị (nodes + edges)
-3. **Bố cục** - Tự động sắp xếp bằng ELK.js
-4. **Render** - Hiển thị tương tác với ReactFlow
+Quy trình xử lý:
+
+1. YAML được lưu nguyên văn để có thể chỉnh sửa lại sau.
+2. Hệ thống phân tích YAML thành dữ liệu chuẩn.
+3. ELK.js tính vị trí hiển thị cho từng node.
+4. Graph renderer hiển thị roadmap trực quan trên giao diện.
 
 ---
 
-##  Cấu Trúc Cơ Bản
+## Cấu Trúc Tối Thiểu
 
 ```yaml
-title: Tiêu Đề Lộ Trình
-description: Mô tả ngắn gọn về lộ trình học tập
+title: Tên Lộ Trình
+description: Mô tả ngắn gọn về lộ trình
 
 nodes:
-  - nodeId: node-1
-    type: main_topic              # Loại node
-    roadmapName: Tên Hiển Thị
-    description: Mô tả chi tiết (không bắt buộc)
-    parentNodeId: null            # ID của node cha (null = node gốc)
-    skillName: kỹ-năng-1          # Tên kỹ năng (không bắt buộc)
-    resources:                     # Tài liệu học (không bắt buộc)
-      - title: Tiêu Đề Tài Liệu
-        url: https://example.com
+  - nodeId: frontend-core
+    label: Frontend Cơ Bản
+    type: main_topic
+    description: Nền tảng phát triển giao diện web
+    parentNodeId: null
+    skillName: html5
+    resources:
+      - title: MDN Web Docs
+        url: https://developer.mozilla.org/
         type: link
-    elkOptions:                    # Cấu hình bố cục (không bắt buộc)
-      width: 220
-      height: 80
 
-edges:                             # Kết nối giữa nodes (tự động nếu bỏ trống)
+edges:
   - id: e_1
-    source: node-1
-    target: node-2
+    source: frontend-core
+    target: html-basics
     type: default
 ```
 
 ---
 
-##  Các Loại Node
+## Trường Quan Trọng
 
-### 1️ `main_topic` - Node Chính (Root)
+### Top-level fields
 
-Các lĩnh vực học tập chính, được hiển thị **to lớn** (220×80px).
+| Trường | Bắt buộc | Mô tả |
+|---|---|---|
+| `title` | Có | Tiêu đề của roadmap |
+| `description` | Không | Mô tả ngắn cho roadmap |
+| `nodes` | Có | Danh sách các node |
+| `edges` | Không | Danh sách cạnh; có thể để hệ thống tự sinh |
 
-```yaml
-- nodeId: frontend-dev
-  type: main_topic
-  roadmapName: Phát Triển Frontend
-  parentNodeId: null              # KHÔNG có node cha
-  description: Nền tảng phát triển web
-```
+### Node fields
 
-**Ví dụ:** Frontend Development, Backend APIs, DevOps Basics
+| Trường | Bắt buộc | Mô tả |
+|---|---|---|
+| `nodeId` | Có | ID duy nhất của node |
+| `label` | Có | Tên hiển thị trên đồ thị |
+| `type` | Không | `main_topic`, `sub_topic`, `group_container`, `choice_item` |
+| `description` | Không | Mô tả chi tiết cho node |
+| `parentNodeId` | Không | ID node cha để tạo phân cấp |
+| `skillName` | Không | Tên kỹ năng dùng cho logic tiến trình |
+| `prerequisites` | Không | Danh sách node phải học trước |
+| `resources` | Không | Tài nguyên học tập |
+| `elkOptions` | Không | Tùy chỉnh bố cục cho ELK.js |
+
+### Resource fields
+
+| Trường | Bắt buộc | Mô tả |
+|---|---|---|
+| `title` | Có | Tên tài nguyên |
+| `url` | Có | Đường dẫn tài nguyên |
+| `type` | Không | Loại tài nguyên như `link`, `docs`, `course`, `video`, `book` |
 
 ---
 
-### 2️ `sub_topic` - Node Con (Child)
+## Các Loại Node
 
-Các kỹ năng con nằm dưới một main_topic, hiển thị **nhỏ hơn** (160×60px).
+### `main_topic`
+Node cấp cao nhất, thường đại diện cho một mảng kiến thức lớn.
+
+```yaml
+- nodeId: frontend-core
+  label: Frontend Cơ Bản
+  type: main_topic
+  parentNodeId: null
+```
+
+### `sub_topic`
+Node con nằm dưới một `main_topic`.
 
 ```yaml
 - nodeId: html-basics
+  label: HTML Cơ Bản
   type: sub_topic
-  roadmapName: HTML Cơ Bản
-  parentNodeId: frontend-dev      # PHẢI có node cha
-  description: HTML5, semantic markup
+  parentNodeId: frontend-core
 ```
 
-**Ví dụ:** HTML Basics, CSS Styling, JavaScript DOM
-
----
-
-### 3️ `group_container` - Nhóm Container
-
-Vùng chứa để nhóm các node liên quan.
+### `group_container`
+Node dùng để gom nhóm các node liên quan.
 
 ```yaml
-- nodeId: testing-tools
+- nodeId: testing-group
+  label: Nhóm Kiểm Thử
   type: group_container
-  roadmapName: Công Cụ Kiểm Thử
-  description: Jest, Mocha, Cypress, ...
 ```
 
----
-
-### 4️ `choice_item` - Lựa Chọn Thay Thế
-
-Đại diện cho các con đường học tập tùy chọn hoặc thay thế.
+### `choice_item`
+Node đại diện cho một lựa chọn thay thế.
 
 ```yaml
-- nodeId: js-or-ts
+- nodeId: react-or-vue
+  label: React hoặc Vue
   type: choice_item
-  roadmapName: JavaScript HOẶC TypeScript
-  description: Chọn một để học
 ```
 
 ---
 
-##  Bảng Định Nghĩa Các Trường
-
-### Trường Cấp Top-Level
-
-| Trường | Kiểu | Bắt Buộc | Mô Tả |
-|--------|------|----------|--------|
-| **title** | chuỗi | ✅ | Tiêu đề lộ trình (tối đa 200 ký tự) |
-| **description** | chuỗi | ❌ | Mô tả lộ trình (tối đa 1000 ký tự) |
-| **nodes** | mảng | ✅ | Danh sách các node |
-| **edges** | mảng | ❌ | Danh sách kết nối (tự động nếu bỏ trống) |
-
-### Trường Node
-
-| Trường | Kiểu | Bắt Buộc | Mô Tả |
-|--------|------|----------|--------|
-| **nodeId** | chuỗi | ✅ | ID duy nhất (không có khoảng trắng) |
-| **roadmapName** | chuỗi | ✅ | Tên hiển thị trên đồ thị |
-| **type** | chuỗi | ❌ | Loại node (mặc định: main_topic) |
-| **description** | chuỗi | ❌ | Mô tả chi tiết |
-| **parentNodeId** | chuỗi | ❌ | ID node cha (cho phân cấp) |
-| **skillName** | chuỗi | ❌ | Tên kỹ năng |
-| **resources** | mảng | ❌ | Danh sách tài liệu học |
-| **elkOptions** | object | ❌ | Cấu hình bố cục |
-
-### Trường Resource (Tài Liệu)
-
-| Trường | Kiểu | Bắt Buộc | Mô Tả |
-|--------|------|----------|--------|
-| **title** | chuỗi | ✅ | Tiêu đề tài liệu |
-| **url** | chuỗi | ✅ | Liên kết URL |
-| **type** | chuỗi | ❌ | Loại (link, docs, course, video, book) |
-
----
-
-##  Ví Dụ Hoàn Chỉnh
+## Ví Dụ Hoàn Chỉnh
 
 ```yaml
 title: Full-Stack Engineering Bootcamp
-description: Từ HTML đến triển khai production
+description: Lộ trình từ nền tảng web đến triển khai production
 
 nodes:
-  # === Frontend ===
   - nodeId: frontend-core
+    label: Frontend Fundamentals
     type: main_topic
-    roadmapName: Frontend Cơ Bản
-    description: Nền tảng phát triển web
+    description: Nền tảng phát triển giao diện web
     parentNodeId: null
     skillName: html5
     resources:
       - title: MDN Web Docs
-        url: https://mdn.org
-        type: docs
-      - title: W3Schools HTML
-        url: https://w3schools.com/html
-        type: course
-
-  - nodeId: react-basics
-    type: sub_topic
-    roadmapName: React Cơ Bản
-    description: Components, Props, State, Hooks
-    parentNodeId: frontend-core
-    skillName: react
-    resources:
-      - title: React Chính Thức
-        url: https://react.dev
+        url: https://developer.mozilla.org/
         type: docs
 
-  - nodeId: react-advanced
+  - nodeId: html-basics
+    label: HTML Cơ Bản
     type: sub_topic
-    roadmapName: React Nâng Cao
-    description: Context API, Redux, Performance
+    description: Semantic HTML và cấu trúc trang
     parentNodeId: frontend-core
-    skillName: react-advanced
+    skillName: html
 
-  # === Backend ===
+  - nodeId: css-basics
+    label: CSS Cơ Bản
+    type: sub_topic
+    description: Layout, responsive design và styling
+    parentNodeId: frontend-core
+    skillName: css
+
+  - nodeId: javascript-core
+    label: JavaScript Core
+    type: sub_topic
+    description: Biến, hàm, DOM và async
+    parentNodeId: frontend-core
+    skillName: javascript
+    prerequisites:
+      - html-basics
+      - css-basics
+
   - nodeId: backend-core
+    label: Backend Development
     type: main_topic
-    roadmapName: Backend Development
-    description: API REST, Database, Authentication
+    description: API, database và authentication
     parentNodeId: null
     skillName: nodejs
-    resources:
-      - title: Node.js Docs
-        url: https://nodejs.org/docs
-        type: docs
 
-  - nodeId: nodejs-express
-    type: sub_topic
-    roadmapName: Express.js
-    description: Web framework cho Node.js
-    parentNodeId: backend-core
-    skillName: expressjs
-
-  - nodeId: database
-    type: sub_topic
-    roadmapName: Database (SQL/NoSQL)
-    description: PostgreSQL hoặc MongoDB
-    parentNodeId: backend-core
-    skillName: database
-
-  # === DevOps ===
   - nodeId: devops-core
+    label: DevOps & Deployment
     type: main_topic
-    roadmapName: DevOps & Deployment
-    description: Docker, Kubernetes, CI/CD
+    description: Docker, CI/CD và triển khai
     parentNodeId: null
     skillName: docker
 
 edges:
   - id: e_1
     source: frontend-core
-    target: react-basics
+    target: html-basics
     type: default
-
   - id: e_2
     source: frontend-core
-    target: react-advanced
+    target: css-basics
     type: default
-
   - id: e_3
-    source: backend-core
-    target: nodejs-express
-    type: default
-
+    source: html-basics
+    target: javascript-core
+    type: dashed
   - id: e_4
     source: backend-core
-    target: database
-    type: default
+    target: devops-core
+    type: dashed
 ```
 
 ---
 
-##  Best Practices (Thực Hành Tốt Nhất)
+## Quy Tắc Viết YAML
 
-### 1. Sử Dụng kebab-case cho ID
+1. **Luôn dùng `label` cho tên hiển thị của node**.
+2. **`nodeId` phải duy nhất** trong toàn bộ roadmap.
+3. **`parentNodeId` phải trỏ tới một node có thật** nếu bạn muốn tạo phân cấp.
+4. **`prerequisites` phải là danh sách `nodeId` hợp lệ**.
+5. **Tránh vòng lặp phụ thuộc** giữa các node.
+6. **Giữ YAML dưới 10KB** cho mỗi roadmap.
 
-✅ **Đúng:**
-```yaml
-nodeId: react-hooks-advanced
-nodeId: html-semantic-markup
-```
+---
 
-❌ **Sai:**
-```yaml
-nodeId: ReactHooksAdvanced
-nodeId: react hooks advanced
-nodeId: react_hooks_advanced
-```
+## Ví Dụ Tốt / Chưa Tốt
 
-### 2. Mô tả ngắn gọn, rõ ràng
-
-✅ **Tốt:**
-```yaml
-description: Learn React Hooks, State Management, Custom Hooks
-```
-
-❌ **Tệ:**
-```yaml
-description: In this module we will learn about many things related to React including hooks...
-```
-
-### 3. Phân cấp rõ ràng
+### Tốt
 
 ```yaml
-nodes:
-  - nodeId: javascript           # main_topic (gốc)
-    type: main_topic
-    parentNodeId: null
-
-  - nodeId: dom-manipulation     # sub_topic (con)
-    type: sub_topic
-    parentNodeId: javascript     #  Rõ ràng phân cấp
+- nodeId: react-hooks
+  label: React Hooks
+  type: sub_topic
+  parentNodeId: frontend-core
 ```
 
-### 4. Giữ số main_topic hợp lý
-
-- **Tốt:** 3-5 main_topic trên một hàng
-- **Tẻ:** 10+ main_topic sẽ làm đồ thị rối loạn
-
-### 5. Thêm tài liệu học cho mỗi node
+### Chưa tốt
 
 ```yaml
-resources:
-  - title: Tên Tài Liệu
-    url: https://link-to-resource
-    type: docs  # hoặc: link, course, video, book
+- nodeId: React Hooks
+  label: React Hooks
+  type: sub_topic
 ```
 
----
-
-##  Quy Tắc Xác Thực (Validation)
-
-Hệ thống sẽ kiểm tra:
-
-| Lỗi | Thông Báo | Cách Sửa |
-|-----|-----------|---------|
-| Thiếu `title` | "Tiêu đề là bắt buộc" | Thêm `title:` ở đầu |
-| Thiếu `nodes` | "Cần ít nhất 1 node" | Thêm danh sách `nodes:` |
-| Thiếu `nodeId` | "Mỗi node cần `nodeId`" | Thêm `nodeId: unique-id` |
-| Thiếu `roadmapName` | "Mỗi node cần `roadmapName`" | Thêm tên hiển thị |
-| Lỗi YAML Syntax | "YAML chứa lỗi cú pháp" | Kiểm tra thụt lề (2 space) |
-| ID trùng lặp | "ID bị trùng" | Đảm bảo mỗi nodeId duy nhất |
-| Parent không tồn tại | "Node cha không tìm thấy" | Kiểm tra parentNodeId tồn tại |
+Lý do: `nodeId` không nên chứa khoảng trắng.
 
 ---
 
-##  Gợi Ý Chỉnh Sửa
+## Thông Báo Lỗi Thường Gặp
 
-### Trong Monaco Editor
-
-| Phím Tắt | Chức Năng |
-|----------|-----------|
-| **Ctrl+/** | Comment/Uncomment dòng |
-| **Ctrl+Z** | Undo |
-| **Ctrl+F** | Tìm kiếm node |
-| **Hover** | Xem lỗi validation (dòng đỏ) |
-| **Ctrl+Shift+P** | Mở Command Palette |
-
-### Màu Sắc Phản Hồi
-
-- 🔵 **main_topic** → Xanh lam đậm
-- 🔵 **sub_topic** → Xanh lam nhạt
-- 🟣 **group_container** → Tím
-- 🔴 **Validation errors** → Đỏ (underline)
+| Lỗi | Cách sửa |
+|---|---|
+| Thiếu `title` | Thêm tiêu đề ở đầu file YAML |
+| Thiếu `nodes` | Thêm danh sách node |
+| Thiếu `nodeId` | Thêm `nodeId` cho từng node |
+| Thiếu `label` | Thêm tên hiển thị cho node |
+| `nodeId` bị trùng | Đổi sang ID khác |
+| `parentNodeId` không tồn tại | Kiểm tra lại ID node cha |
+| YAML sai cú pháp | Kiểm tra thụt lề, dấu `:` và danh sách `-` |
 
 ---
 
-## 🔧 Khắc Phục Sự Cố
+## Mẹo Thực Tế
 
-###  Node không xuất hiện trên đồ thị
-
-**Kiểm tra:**
-- [ ] Mỗi `nodeId` có duy nhất?
-- [ ] Có trường `title` và `nodes`?
-- [ ] Thụt lề đúng (bội số của 2 space)?
-
-###  Node không kết nối đúng
-
-**Kiểm tra:**
-- [ ] `parentNodeId` có khớp với `nodeId` hiện tại?
-- [ ] Có lỗi gõ trong ID?
-- [ ] Node cha có tồn tại?
-
-###  Đồ thị trông chật chội
-
-**Giải pháp:**
-- [ ] Giảm số node trên một hàng
-- [ ] Sử dụng `sub_topic` để phân cấp
-- [ ] Điều chỉnh `elkOptions` nếu cần layout tùy chỉnh
+- Dùng thụt lề 2 spaces cho dễ đọc.
+- Viết `label` ngắn, rõ nghĩa.
+- Tách roadmap lớn thành nhiều `main_topic`.
+- Thêm `resources` nếu muốn roadmap hữu ích hơn.
+- Dùng `prerequisites` để thể hiện thứ tự học.
 
 ---
 
-##  Định Dạng Khi Lưu
+## Ghi Chú Về Lưu Trữ
 
-Sau khi lưu, lộ trình được lưu trữ với cấu trúc:
+Sau khi lưu, roadmap sẽ có:
 
-```json
-{
-  "_id": "unique-id",
-  "title": "Tiêu đề",
-  "description": "Mô tả",
-  "yamlCode": "... YAML gốc ...",         // Dùng để chỉnh sửa
-  "nodes": [...],                          // Nodes đã phân tích
-  "edges": [...],                          // Edges tính toán sẵn
-  "positions": {...},                      // Vị trí bố cục (cached)
-  "status": "draft",
-  "createdAt": "2026-04-16T...",
-  "updatedAt": "2026-04-16T..."
-}
-```
-
-- **Chỉnh sửa** → Dùng `yamlCode` (để sửa đổi)
-- **Xem** → Dùng `nodes`, `edges`, `positions` (nhanh hơn)
+- `yamlCode`: YAML gốc để chỉnh sửa lại
+- `nodes`: dữ liệu node đã chuẩn hóa
+- `edges`: cạnh đã được tính sẵn
+- `positions`: vị trí bố cục cho graph
 
 ---
 
-##  Mẹo Thêm
-
-- **Lớp lót**: Tối đa 3-4 cấp phân cấp để dễ đọc
-- **Loại node**: Mỗi loại có color và size khác nhau
-- **Resource**: Thêm link tài liệu để người dùng học
-- **Description**: Giúp người dùng hiểu mục đích của node
-
----
-
-##  Học Thêm
-
-Nhấp vào dropdown **"Chọn mẫu roadmap"** để xem các ví dụ thực tế!
-
----
-
-**Hỏi? Bấm nút `?` lại để xem hướng dẫn này bất cứ lúc nào!** ❓
+**Mẹo nhanh:** Nếu bạn chỉ cần xem cách viết, hãy mở dropdown mẫu roadmap và sao chép cấu trúc gần giống nhất với nhu cầu của bạn.

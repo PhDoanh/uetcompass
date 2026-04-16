@@ -3,7 +3,7 @@ description: A compact roadmap for learning frontend basics, internet concepts, 
 nodes:
   - nodeId: FRONTEND_STACK
     type: main_topic
-    roadmapName: Frontend Stack
+    label: Frontend Stack
     description: Pick the core frontend technologies to start with.
     parentNodeId: null
     skillName: html
@@ -14,7 +14,7 @@ nodes:
 
   - nodeId: INTERNET_BASICS
     type: main_topic
-    roadmapName: Internet Basics
+    label: Internet Basics
     description: Understand how the browser talks to servers and resolves domains.
     parentNodeId: null
     skillName: http
@@ -25,7 +25,7 @@ nodes:
 
   - nodeId: TOOLING_WORKFLOW
     type: main_topic
-    roadmapName: Tooling Workflow
+    label: Tooling Workflow
     description: Set up modern tooling and learn Git-based workflows.
     parentNodeId: null
     skillName: git
@@ -36,7 +36,7 @@ nodes:
 
   - nodeId: HTML_CSS
     type: sub_topic
-    roadmapName: HTML & CSS
+    label: HTML & CSS
     description: Build semantic layouts and responsive interfaces.
     parentNodeId: FRONTEND_STACK
     skillName: semantic-html
@@ -47,7 +47,7 @@ nodes:
 
   - nodeId: JAVASCRIPT_CORE
     type: sub_topic
-    roadmapName: JavaScript Core
+    label: JavaScript Core
     description: Learn language fundamentals, DOM APIs, and async patterns.
     parentNodeId: FRONTEND_STACK
     skillName: dom
@@ -58,7 +58,7 @@ nodes:
 
   - nodeId: HTTP_BROWSER
     type: sub_topic
-    roadmapName: HTTP & Browser Basics
+    label: HTTP & Browser Basics
     description: Understand requests, responses, rendering, and browser tools.
     parentNodeId: INTERNET_BASICS
     skillName: http
@@ -69,7 +69,7 @@ nodes:
 
   - nodeId: DOMAIN_DNS
     type: sub_topic
-    roadmapName: Domain Name & DNS
+    label: Domain Name & DNS
     description: Learn how domains map to servers through DNS.
     parentNodeId: INTERNET_BASICS
     skillName: dns
@@ -80,7 +80,7 @@ nodes:
 
   - nodeId: GIT_WORKFLOW
     type: sub_topic
-    roadmapName: Git Workflow
+    label: Git Workflow
     description: Track changes, branch safely, and collaborate with Git.
     parentNodeId: TOOLING_WORKFLOW
     skillName: git-branching

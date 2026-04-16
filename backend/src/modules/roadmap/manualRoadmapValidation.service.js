@@ -40,7 +40,6 @@ const roadmapSchema = {
                     type: { type: 'string', enum: ['main_topic', 'sub_topic', 'group_container', 'choice_item'] },
                     parentNodeId: { type: ['string', 'null'], minLength: 1 },
                     parent: { type: ['string', 'null'], minLength: 1 },
-                    roadmapName: { type: 'string', minLength: 1 },
                     label: { type: 'string', minLength: 1 },
                     description: { type: 'string' },
                     prerequisites: {
@@ -62,7 +61,6 @@ const roadmapSchema = {
                     metadata: { type: 'object' },
                 },
                 anyOf: [
-                    { required: ['roadmapName'] },
                     { required: ['label'] },
                 ],
                 additionalProperties: false,
@@ -84,15 +82,14 @@ function normalizeNode(node) {
     const type = ['main_topic', 'sub_topic', 'group_container', 'choice_item'].includes(node.type)
         ? node.type
         : 'main_topic';
-    const roadmapName = String(node.roadmapName || node.label || '').trim();
+    const label = String(node.label || '').trim();
     const legacySkills = Array.isArray(node.skills) ? node.skills.map(String).map((skill) => skill.trim()).filter(Boolean) : [];
     const skillName = String(node.skillName || legacySkills[0] || '').trim();
     return {
         nodeId,
         type,
         parentNodeId: parentNodeId || null,
-        roadmapName,
-        label: roadmapName,
+        label,
         description: String(node.description || '').trim(),
         prerequisites: Array.isArray(node.prerequisites) ? node.prerequisites.map(String).map((id) => id.trim()).filter(Boolean) : [],
         status: ['locked', 'pending', 'in_progress', 'done'].includes(node.status) ? node.status : 'pending',

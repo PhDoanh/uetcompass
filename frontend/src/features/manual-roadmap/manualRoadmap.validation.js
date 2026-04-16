@@ -52,9 +52,9 @@ export function parseManualRoadmapYaml(yamlCode) {
             throw new Error(`Node at index ${idx}: must have "nodeId" or "id" field.`);
         }
 
-        const roadmapName = String(node.roadmapName || node.label || '').trim();
-        if (!roadmapName) {
-            throw new Error(`Node "${nodeId}": must have "roadmapName" field.`);
+        const label = String(node.label || '').trim();
+        if (!label) {
+            throw new Error(`Node "${nodeId}": must have "label" field.`);
         }
 
         const legacySkills = Array.isArray(node.skills)
@@ -84,8 +84,7 @@ export function parseManualRoadmapYaml(yamlCode) {
         return {
             nodeId,
             type,
-            roadmapName,
-            label: roadmapName,
+            label,
             description: String(node.description || node.reason || '').trim(),
             parentNodeId,
             prerequisites,

@@ -52,7 +52,7 @@ const ManualRoadmapNodeSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
-        roadmapName: {
+        label: {
             type: String,
             required: true,
             trim: true,

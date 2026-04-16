@@ -41,7 +41,7 @@ export function RoadmapGraphRenderer({
             const pos = positions[node.nodeId];
             const nodeType = node.type || 'main_topic';
             const dims = NODE_DIMENSIONS[nodeType] || NODE_DIMENSIONS.default;
-            const displayName = node.roadmapName || node.label || node.nodeId;
+            const displayName = node.label || node.nodeId;
             return {
                 id: node.nodeId,
                 label: displayName,

@@ -2,6 +2,7 @@ import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
+import PublicSkillTreePage from './features/skill-tree/PublicSkillTreePage';
 import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
@@ -26,9 +27,12 @@ function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
+	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
+	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
 		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/roadmaps/search'].includes(pathname) ||
+		Boolean(publicSkillTreeRoadmapId) ||
 		pathname.startsWith('/roadmaps/public/');
 
 	useEffect(() => {
@@ -137,8 +141,16 @@ function AppContent() {
 		content = <Homepage />;
 	}
 
-	// Route to Skill Tree if pathname includes /skill-tree
-	if (!content && pathname.includes('/skill-tree')) {
+	if (!content && publicSkillTreeRoadmapId) {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<PublicSkillTreePage roadmapId={publicSkillTreeRoadmapId} />
+			</main>
+		);
+	}
+
+	// Route to Skill Tree for personalized roadmap
+	if (!content && pathname === '/skill-tree') {
 		content = (
 			<OnboardingGuard>
 				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>

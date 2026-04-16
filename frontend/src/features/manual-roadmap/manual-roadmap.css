@@ -633,3 +633,39 @@
     border-color: #93c5fd !important;
     background: #eff6ff !important;
 }
+
+/* YAML Guide Help Button */
+.manual-roadmap-help-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background-color: #f0f9ff;
+    color: #0284c7;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0;
+    margin-left: 8px;
+}
+
+.manual-roadmap-help-button:hover {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.manual-roadmap-help-button:active {
+    background-color: #bae6fd;
+    transform: scale(0.95);
+}
+
+.manual-roadmap-help-button .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.manual-roadmap-help-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

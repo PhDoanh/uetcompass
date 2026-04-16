@@ -7,6 +7,7 @@ import { parseManualRoadmapYaml } from './manualRoadmap.validation';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
+import YamlGuideOverlay from './YamlGuideOverlay';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -148,6 +149,7 @@ export default function ManualRoadmapPage() {
   const [layoutWidth, setLayoutWidth] = useState(0);
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [isResizingLayout, setIsResizingLayout] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const layoutRef = useRef(null);
@@ -608,6 +610,15 @@ export default function ManualRoadmapPage() {
             <div className="skill-tree-panel__title-row">
               <div className="skill-tree-panel__title-wrap">
                 <h2 className="skill-tree-panel__title">Editor roadmap thủ công</h2>
+                <button
+                  type="button"
+                  onClick={() => setIsGuideOpen(true)}
+                  className="manual-roadmap-help-button"
+                  title="View YAML format guide"
+                  aria-label="Open YAML format guide"
+                >
+                  <span className="material-symbols-outlined">help</span>
+                </button>
               </div>
 
               <div className="manual-roadmap-panel__actions">
@@ -747,6 +758,8 @@ export default function ManualRoadmapPage() {
           {successMessage}
         </div>
       )}
+
+      <YamlGuideOverlay isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>
   );
 }

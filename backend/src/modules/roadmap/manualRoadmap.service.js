@@ -154,6 +154,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes }) {
         throw new RoadmapError(400, ERROR_CODES.INVALID_DATA, `Hierarchy validation failed: ${validation.errors.join('; ')}`);
     }
 
+    const sharedAt = new Date();
     const manualRoadmap = await ManualRoadmap.create({
         userId,
         title,
@@ -161,9 +162,10 @@ async function createDraft(userId, { title, description, yamlCode, nodes }) {
         yamlCode,
         nodes: enrichedNodes,
         edges,
-        shared: false,
-        isPublic: false,
+        shared: true,
+        isPublic: true,
         status: 'draft',
+        sharedAt,
     });
 
     await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
@@ -198,6 +200,9 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.yamlCode = yamlCode;
     existing.nodes = enrichedNodes;
     existing.edges = edges;
+    existing.shared = true;
+    existing.isPublic = true;
+    existing.sharedAt = existing.sharedAt || new Date();
     existing.updatedAt = new Date();
 
     await existing.save();

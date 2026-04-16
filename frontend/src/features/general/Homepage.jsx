@@ -3,7 +3,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
+<<<<<<< 011-authentication
 import { useNotification } from './NotificationContainer';
+=======
+import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
+>>>>>>> dev
 import SiteFooter from './SiteFooter';
 import '../../style/general-component.css';
 
@@ -42,6 +46,7 @@ export default function Homepage() {
   const { addNotification } = useNotification();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState('');
+  const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
 
   const shouldPromptOnboarding = useMemo(
@@ -80,6 +85,20 @@ export default function Homepage() {
   useEffect(() => {
     let isMounted = true;
 
+    async function loadPublicRoadmaps() {
+      try {
+        const result = await manualRoadmapApi.listPublicManualRoadmaps({ limit: 6 });
+        if (isMounted) {
+          setPublicRoadmaps(result.items || []);
+        }
+      } catch (err) {
+        // Silently fail for public roadmaps
+        if (isMounted) {
+          setPublicRoadmaps([]);
+        }
+      }
+    }
+
     async function loadDisplayName() {
       if (!accessToken) {
         if (isMounted) {
@@ -110,6 +129,7 @@ export default function Homepage() {
       }
     }
 
+    loadPublicRoadmaps();
     loadDisplayName();
 
     return () => {

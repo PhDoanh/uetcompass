@@ -36,11 +36,10 @@ npm test; npm run lint
 JavaScript — Node.js 20 LTS (backend), React 18 (frontend): Follow standard conventions
 
 ## Recent Changes
-- 011-authentication: Added JavaScript (Node.js backend, React frontend) + Express, Mongoose, jsonwebtoken, bcryptjs, nodemailer, google-auth-library, React, React Router, Fetch API/Zustand
-- 005-account-management: Added JavaScript (Node.js 20 LTS backend, React 18 frontend) + Express 4, Mongoose 8, bcryptjs, jsonwebtoken, nodemailer, React 18, Zustand, Fetch API
-- 010-roadmap-community: Added JavaScript — Node.js 20 LTS (backend), React 18 (frontend)
-- 010-roadmap-community: Added TypeScript — Node.js 20 LTS (backend), React 18 (frontend). This feature introduces TypeScript + NestJS as the evolving target stack; existing modules remain in their current JS/Express form.
-
+- 012-roadmap-search-page: Added JavaScript (Node.js backend + React 18 frontend) + Express 4, Mongoose 8, React 18, Vite 5, Lucide React, existing roadmap modules
+- 001-manual-roadmap-generator: Added JavaScript / Node.js 20 LTS backend, React 18 frontend + Express 4, Mongoose 8, js-yaml, ajv, @xyflow/react (React Flow), Monaco Editor, Jest, supertest
+<<<<<<< HEAD
+- 001-manual-roadmap-generator: Added Node.js 20 LTS (backend), React 18 (frontend) + js-yaml (parsing), Monaco Editor (YAML editing), Cytoscape.js (graph visualization), ajv (validation), @xyflow/react (React Flow)
 
 <!-- MANUAL ADDITIONS START -->
 ## Design System

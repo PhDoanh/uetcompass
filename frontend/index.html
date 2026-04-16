@@ -1,19 +1,95 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
-      rel="stylesheet"
-    />
-    <title>UETCompass</title>
-  </head>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <title>UETCompass</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-fixed-dim": "#a7c8ff",
+            "surface-variant": "#d8e3f6",
+            "on-secondary": "#ffffff",
+            "inverse-surface": "#263140",
+            "secondary": "#006783",
+            "error": "#ba1a1a",
+            "surface-container-high": "#dee9fc",
+            "on-error": "#ffffff",
+            "on-surface": "#111c2a",
+            "surface-container-low": "#eff4ff",
+            "surface-container": "#e5eeff",
+            "surface": "#f8f9ff",
+            "on-tertiary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-container": "#005c75",
+            "surface-container-highest": "#d8e3f6",
+            "inverse-primary": "#a7c8ff",
+            "on-tertiary-container": "#bccbeb",
+            "on-background": "#111c2a",
+            "primary": "#003e79",
+            "error-container": "#ffdad6",
+            "secondary-fixed": "#bce9ff",
+            "tertiary-fixed-dim": "#b8c7e6",
+            "surface-tint": "#185eac",
+            "on-primary-container": "#aeccff",
+            "tertiary-fixed": "#d6e3ff",
+            "inverse-on-surface": "#eaf1ff",
+            "primary-fixed": "#d5e3ff",
+            "on-tertiary-fixed": "#0b1c34",
+            "secondary-fixed-dim": "#6bd3fc",
+            "primary-container": "#0055a2",
+            "tertiary": "#303f58",
+            "secondary-container": "#6ed6ff",
+            "on-primary": "#ffffff",
+            "on-primary-fixed": "#001b3c",
+            "on-tertiary-fixed-variant": "#384761",
+            "on-surface-variant": "#424751",
+            "background": "#f8f9ff",
+            "outline-variant": "#c2c6d3",
+            "outline": "#727782",
+            "on-primary-fixed-variant": "#004788",
+            "on-secondary-fixed-variant": "#004d63",
+            "tertiary-container": "#475671",
+            "surface-bright": "#f8f9ff",
+            "on-secondary-fixed": "#001f29",
+            "on-error-container": "#93000a",
+            "surface-dim": "#cfdbee"
+          },
+          borderRadius: {
+            DEFAULT: "0.125rem",
+            lg: "0.25rem",
+            xl: "0.5rem",
+            full: "0.75rem"
+          },
+          fontFamily: {
+            headline: ["Be Vietnam Pro"],
+            body: ["Inter"],
+            label: ["Inter"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

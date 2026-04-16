@@ -1,0 +1,74 @@
+title: Data Analytics Roadmap
+description: A practical roadmap for learning spreadsheets, SQL, visualization, and analytics storytelling.
+nodes:
+  - nodeId: DATA_FOUNDATIONS
+    type: main_topic
+    label: Data Foundations
+    description: Learn what data is and how analytics projects are structured.
+    parentNodeId: null
+    skillName: analytics-basics
+    resources:
+      - title: Google Data Analytics overview
+        url: https://www.coursera.org/professional-certificates/google-data-analytics
+        type: link
+
+  - nodeId: SPREADSHEETS
+    type: sub_topic
+    label: Spreadsheets
+    description: Use Excel or Google Sheets for cleaning and quick analysis.
+    parentNodeId: DATA_FOUNDATIONS
+    skillName: excel
+    resources:
+      - title: Excel training
+        url: https://support.microsoft.com/excel
+        type: link
+
+  - nodeId: SQL
+    type: sub_topic
+    label: SQL
+    description: Query relational data and build reporting datasets.
+    parentNodeId: DATA_FOUNDATIONS
+    skillName: sql
+    resources:
+      - title: SQLBolt lessons
+        url: https://sqlbolt.com/
+        type: link
+
+  - nodeId: DATA_CLEANING
+    type: sub_topic
+    label: Data Cleaning
+    description: Standardize, validate, and prepare data for analysis.
+    parentNodeId: DATA_FOUNDATIONS
+    skillName: cleaning
+
+  - nodeId: DATA_VISUALIZATION
+    type: main_topic
+    label: Data Visualization
+    description: Create charts and dashboards that communicate insights.
+    parentNodeId: null
+    skillName: visualization
+    resources:
+      - title: Tableau public gallery
+        url: https://public.tableau.com/app/discover
+        type: link
+
+  - nodeId: STATISTICS
+    type: main_topic
+    label: Statistics
+    description: Understand averages, variance, distributions, and inference.
+    parentNodeId: null
+    skillName: statistics
+    resources:
+      - title: Khan Academy statistics
+        url: https://www.khanacademy.org/math/statistics-probability
+        type: link
+
+  - nodeId: ANALYTICS_STORYTELLING
+    label: Analytics Storytelling
+    description: Present findings and explain recommendations to stakeholders.
+    status: locked
+    skillName: storytelling
+    resources:
+      - title: Storytelling with Data
+        url: https://www.storytellingwithdata.com/books
+        type: link

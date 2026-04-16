@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 const roadmapService = require('./roadmap.service');
+const { ManualRoadmap } = require('./manualRoadmap.model');
+const manualRoadmapService = require('./manualRoadmap.service');
+const manualRoadmapValidation = require('./manualRoadmapValidation.service');
 const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
@@ -45,6 +48,95 @@ async function getRoadmapById(req, res) {
 	try {
 		const roadmap = await roadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
 		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Roadmap not found.');
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function listPublicManualRoadmaps(req, res) {
+	try {
+		const { q, page, limit } = req.query;
+		const normalizedQuery = String(q || '').trim();
+
+		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
+			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
+		}
+
+		const result = await manualRoadmapService.listPublic({
+			q: normalizedQuery,
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getPublicManualRoadmapPreviewById(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.getPublicPreviewById(req.params.roadmapId);
+		if (!roadmap) {
+			throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
+		}
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getManualRoadmapById(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
+		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function createManualRoadmap(req, res) {
+	try {
+		const { yamlCode } = req.body ?? {};
+		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
+		const { title, description, nodes } = parsed;
+
+		const roadmap = await manualRoadmapService.createDraft(req.user.userId, {
+			title,
+			description,
+			yamlCode: String(yamlCode || '').trim(),
+			nodes,
+		});
+
+		return res.status(201).json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function updateManualRoadmap(req, res) {
+	try {
+		const { yamlCode } = req.body ?? {};
+		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
+		const { title, description, nodes } = parsed;
+
+		const roadmap = await manualRoadmapService.updateDraft(req.params.roadmapId, req.user.userId, {
+			title,
+			description,
+			yamlCode: String(yamlCode || '').trim(),
+			nodes,
+		});
+
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function shareManualRoadmap(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.share(req.params.roadmapId, req.user.userId);
 		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
@@ -155,7 +247,7 @@ async function getPublicSharedRoadmap(req, res) {
 			const filePath = path.join(dataDir, file);
 			const content = fs.readFileSync(filePath, 'utf-8');
 			const data = JSON.parse(content);
-			
+
 			if (data.roadmapName === roadmapName) {
 				foundRoadmap = data;
 				break;
@@ -208,6 +300,12 @@ module.exports = {
 	getPrimaryRoadmap,
 	listRoadmaps,
 	getRoadmapById,
+	listPublicManualRoadmaps,
+	getPublicManualRoadmapPreviewById,
+	createManualRoadmap,
+	getManualRoadmapById,
+	updateManualRoadmap,
+	shareManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,
 	retryGeneration,

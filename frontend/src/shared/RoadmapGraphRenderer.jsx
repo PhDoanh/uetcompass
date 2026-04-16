@@ -126,23 +126,17 @@ export function RoadmapGraphRenderer({
         });
 
         const centerX = CENTER_X;
-        const rowGapY = 174;
+        const rowGapY = 42;
         const topStartY = 80;
         const sideOffset = CHILD_SIDE_GAP;
         const sideStackGap = 82;
 
         const laidOut = [];
 
-        orderedParentIds.forEach((parentId, rowIndex) => {
+        let currentRowTop = topStartY;
+        orderedParentIds.forEach((parentId) => {
             const parent = byId.get(parentId);
             if (!parent) return;
-
-            const parentY = topStartY + rowIndex * rowGapY;
-            laidOut.push({
-                ...parent,
-                x: Math.round(centerX - parent.width / 2),
-                y: parentY,
-            });
 
             const children = (childrenByParent.get(parentId) || [])
                 .slice()
@@ -155,8 +149,27 @@ export function RoadmapGraphRenderer({
                 else rightChildren.push(child);
             });
 
+            const getColumnHeight = (items) => {
+                if (items.length === 0) return 0;
+                const maxChildHeight = items.reduce((max, item) => Math.max(max, item.height), 0);
+                return Math.max(maxChildHeight, (items.length - 1) * sideStackGap + maxChildHeight);
+            };
+
+            const leftHeight = getColumnHeight(leftChildren);
+            const rightHeight = getColumnHeight(rightChildren);
+            const childrenBlockHeight = Math.max(leftHeight, rightHeight);
+            const rowHeight = Math.max(parent.height, childrenBlockHeight);
+
+            const parentY = Math.round(currentRowTop + (rowHeight - parent.height) / 2);
+            laidOut.push({
+                ...parent,
+                x: Math.round(centerX - parent.width / 2),
+                y: parentY,
+            });
+
             const placeSide = (items, side) => {
-                const baseY = parentY - Math.round(((items.length - 1) * sideStackGap) / 2);
+                const columnHeight = getColumnHeight(items);
+                const baseY = Math.round(currentRowTop + (rowHeight - columnHeight) / 2);
                 items.forEach((child, idx) => {
                     const y = baseY + idx * sideStackGap;
                     // Fixed two columns: left and right are locked regardless of label length.
@@ -174,10 +187,12 @@ export function RoadmapGraphRenderer({
 
             placeSide(leftChildren, 'left');
             placeSide(rightChildren, 'right');
+
+            currentRowTop += rowHeight + rowGapY;
         });
 
         if (orphanNodes.length > 0) {
-            const orphanY = topStartY + orderedParentIds.length * rowGapY;
+            const orphanY = currentRowTop;
             const gapX = 36;
             const rowWidth = orphanNodes.reduce((sum, node) => sum + node.width, 0) + Math.max(0, orphanNodes.length - 1) * gapX;
             let xCursor = Math.round(centerX - rowWidth / 2);
@@ -200,17 +215,26 @@ export function RoadmapGraphRenderer({
     }, [planeNodes]);
 
     const derivedEdges = useMemo(() => {
-        const merged = [];
-        const seen = new Set();
+        const byPair = new Map();
+
+        const edgePriority = {
+            manual: 4,
+            'parent-child': 3,
+            'parent-chain': 2,
+            prerequisite: 1,
+        };
 
         const pushEdge = (source, target, type) => {
             if (!source || !target || source === target) return;
             if (!nodeById.has(source) || !nodeById.has(target)) return;
 
-            const key = `${source}__${target}__${type}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            merged.push({ source, target, type });
+            const pairKey = `${source}__${target}`;
+            const incomingPriority = edgePriority[type] || 0;
+            const existing = byPair.get(pairKey);
+
+            if (!existing || incomingPriority >= (edgePriority[existing.type] || 0)) {
+                byPair.set(pairKey, { source, target, type });
+            }
         };
 
         const mainParents = planeNodes
@@ -233,7 +257,7 @@ export function RoadmapGraphRenderer({
             pushEdge(edge.source, edge.target, type);
         }
 
-        return merged;
+        return Array.from(byPair.values());
     }, [planeNodes, edges, nodeById]);
 
     const parentClusters = useMemo(() => {

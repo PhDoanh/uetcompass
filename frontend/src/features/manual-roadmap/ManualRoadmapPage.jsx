@@ -485,14 +485,11 @@ export default function ManualRoadmapPage() {
 
     setIsSaving(true);
     try {
-      const payload = await (roadmapId
+      await (roadmapId
         ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
         : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
 
       setSuccessMessage(`Roadmap ${roadmapId ? 'updated' : 'created'} successfully.`);
-      if (!roadmapId && payload?._id) {
-        window.history.replaceState({}, '', `/manual-roadmap?id=${payload._id}`);
-      }
     } catch (err) {
       if (err?.status === 401) {
         setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi lưu lại roadmap.');

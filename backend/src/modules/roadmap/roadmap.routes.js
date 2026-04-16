@@ -13,6 +13,8 @@ const roadmapRouter = express.Router();
 
 // Public endpoints - no auth required
 roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
+roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
+roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
 
 // SSE endpoint supports EventSource by authenticating with JWT passed via sseToken query.
 roadmapRouter.get('/sse', (req, res) => {
@@ -71,6 +73,12 @@ roadmapRouter.get('/primary', controller.getPrimaryRoadmap);
 roadmapRouter.post('/primary/regenerate', controller.retryGeneration);
 roadmapRouter.post('/primary/accept', controller.acceptRoadmapHandler);
 roadmapRouter.post('/primary/reject', controller.rejectRoadmap);
+
+roadmapRouter.post('/manual-roadmaps', controller.createManualRoadmap);
+roadmapRouter.get('/manual-roadmaps/:roadmapId', controller.getManualRoadmapById);
+roadmapRouter.patch('/manual-roadmaps/:roadmapId', controller.updateManualRoadmap);
+roadmapRouter.post('/manual-roadmaps/:roadmapId/share', controller.shareManualRoadmap);
+
 // roadmapRouter.get('/', controller.listRoadmaps); // Deprecated compatibility alias, now removed
 roadmapRouter.get('/:roadmapId', controller.getRoadmapById);
 roadmapRouter.patch('/:roadmapId/primary', controller.switchPrimaryHandler);

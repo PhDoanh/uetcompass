@@ -1,0 +1,520 @@
+/* Roadmap Graph Renderer Styles */
+
+.roadmap-graph-renderer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    background: #f9fafb;
+}
+
+.roadmap-graph-renderer__viewport {
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+}
+
+.roadmap-graph-renderer__viewport .react-flow {
+    width: 100%;
+    height: 100%;
+}
+
+.roadmap-graph-renderer__fallback {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    background: #f8fbff;
+}
+
+.roadmap-graph-renderer__fallback-note {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    border: 1px solid #93c5fd;
+    border-radius: 8px;
+    background: #e0f2fe;
+    color: #075985;
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.roadmap-graph-renderer__controls {
+    position: absolute;
+    top: 62px;
+    right: 12px;
+    z-index: 3;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 380px;
+}
+
+.roadmap-graph-renderer__control-btn {
+    border: 1px solid #93c5fd;
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 8px;
+    min-width: 36px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.roadmap-graph-renderer__control-btn:hover {
+    background: #eff6ff;
+}
+
+.roadmap-graph-renderer__control-btn.is-active {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    color: #1e3a8a;
+}
+
+.roadmap-graph-renderer__fallback-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    padding-top: 52px;
+    overflow: hidden;
+    background-image: linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.roadmap-graph-renderer__plane {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 0;
+    transition: transform 140ms ease;
+}
+
+.roadmap-graph-renderer__plane::before {
+    content: '';
+    position: absolute;
+    left: 760px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(37, 99, 235, 0.22), rgba(37, 99, 235, 0.08));
+    z-index: 0;
+}
+
+.roadmap-graph-renderer__cluster {
+    position: absolute;
+    border: 1px dashed #93c5fd;
+    border-radius: 14px;
+    background: rgba(219, 234, 254, 0.2);
+    z-index: 0;
+}
+
+.roadmap-graph-renderer__cluster-label {
+    position: absolute;
+    left: 10px;
+    top: -12px;
+    background: #dbeafe;
+    color: #1e3a8a;
+    border: 1px solid #93c5fd;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+}
+
+.roadmap-graph-renderer__edges {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.roadmap-graph-renderer__edge {
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.72;
+}
+
+.roadmap-graph-renderer__edge--hierarchy {
+    stroke: #2563eb;
+}
+
+.roadmap-graph-renderer__edge--parent-chain {
+    stroke: #1d4ed8;
+    stroke-width: 2.2;
+    opacity: 0.9;
+}
+
+.roadmap-graph-renderer__edge--parent-child {
+    stroke: #2563eb;
+    opacity: 0.74;
+}
+
+.roadmap-graph-renderer__edge--manual {
+    stroke: #0ea5e9;
+    opacity: 0.56;
+}
+
+.roadmap-graph-renderer__edge--prerequisite {
+    stroke: #64748b;
+    stroke-dasharray: 6 4;
+    opacity: 0.42;
+}
+
+.roadmap-graph-renderer__fallback-node {
+    position: absolute;
+    border: 1px solid #60a5fa;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+    color: #0f172a;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    word-break: break-word;
+    cursor: pointer;
+    z-index: 2;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.roadmap-graph-renderer__fallback-node--parent {
+    border-width: 2px;
+}
+
+.roadmap-graph-renderer__fallback-node--child {
+    border-width: 1px;
+}
+
+.roadmap-graph-renderer__fallback-node:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18);
+}
+
+.roadmap-graph-renderer__fallback-node:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.roadmap-graph-renderer__fallback-node--main_topic {
+    border-color: #1e3a8a;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    box-shadow: 0 12px 24px rgba(30, 58, 138, 0.26);
+}
+
+.roadmap-graph-renderer__fallback-node--sub_topic {
+    border-color: #0891b2;
+    background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+    box-shadow: 0 8px 16px rgba(8, 145, 178, 0.18);
+}
+
+.roadmap-graph-renderer__fallback-node--group_container {
+    border-style: dashed;
+    border-color: #6d28d9;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    box-shadow: 0 8px 16px rgba(109, 40, 217, 0.16);
+}
+
+.roadmap-graph-renderer__fallback-node--choice_item {
+    border-color: #d97706;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    box-shadow: 0 8px 16px rgba(217, 119, 6, 0.16);
+}
+
+.roadmap-graph-renderer__fallback-node--default {
+    border-color: #94a3b8;
+    background: #f8fafc;
+    box-shadow: 0 8px 16px rgba(100, 116, 139, 0.12);
+}
+
+.roadmap-graph-renderer__fallback-node-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.roadmap-graph-renderer__fallback-node--main_topic .roadmap-graph-renderer__fallback-node-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0b2a67;
+}
+
+.roadmap-graph-renderer__fallback-node--sub_topic .roadmap-graph-renderer__fallback-node-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f4b5c;
+}
+
+.roadmap-graph-renderer__fallback-node--group_container .roadmap-graph-renderer__fallback-node-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #4c1d95;
+}
+
+.roadmap-graph-renderer__fallback-node--choice_item .roadmap-graph-renderer__fallback-node-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #78350f;
+}
+
+.roadmap-graph-renderer__empty {
+    position: absolute;
+    inset: 12px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed #93c5fd;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 14px;
+    text-align: center;
+    padding: 16px;
+}
+
+/* Loading indicator */
+.roadmap-graph-renderer__loading {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.loading-spinner::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Node Styles */
+
+.node {
+    padding: 12px;
+    border: 2px solid #3b82f6;
+    border-radius: 6px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+        'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.node:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.node--selected {
+    border-color: #1e40af;
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Main Topic Nodes (Root level) */
+.node--main-topic {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.node--main-topic .node__header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e40af;
+    margin-bottom: 6px;
+}
+
+.node--main-topic .node__description {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    max-height: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.node--main-topic .node__meta {
+    font-size: 10px;
+    color: #9ca3af;
+    display: flex;
+    gap: 8px;
+}
+
+/* Sub Topic Nodes */
+.node--sub-topic {
+    border-color: #60a5fa;
+    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+    padding: 10px;
+}
+
+.node--sub-topic .node__header {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1e40af;
+}
+
+.node--sub-topic .node__description {
+    display: none;
+}
+
+/* Group Container Nodes */
+.node--group {
+    border: 2px dashed #a78bfa;
+    background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
+    border-radius: 8px;
+}
+
+.node--group .node__header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7c3aed;
+}
+
+.node--group .node__description {
+    display: none;
+}
+
+.node--group .node__meta {
+    display: none;
+}
+
+/* Node parts */
+
+.node__header {
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.node__description {
+    opacity: 0.9;
+    word-break: break-word;
+}
+
+.node__meta {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.node__meta span {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* ReactFlow/XYFlow specific */
+
+.xyflowinput.string,
+.xyflowinput.default {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Handle styling (connection points) */
+.react-flow__handle {
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+.react-flow__handle:hover {
+    background: #1e40af;
+}
+
+.react-flow__handle-bottom {
+    bottom: -4px;
+}
+
+.react-flow__handle-top {
+    top: -4px;
+}
+
+/* Mini map */
+.react-flow__minimap {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+}
+
+/* Controls */
+.react-flow__controls {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls button {
+    border-color: #e5e7eb;
+    background: white;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.react-flow__controls button:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.react-flow__controls button:active {
+    background: #e5e7eb;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .node {
+        padding: 8px;
+        font-size: 11px;
+    }
+
+    .node--main-topic .node__header {
+        font-size: 12px;
+    }
+
+    .node--main-topic .node__description {
+        font-size: 10px;
+    }
+
+    .roadmap-graph-renderer__loading {
+        top: 10px;
+        left: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}

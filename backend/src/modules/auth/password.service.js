@@ -9,6 +9,7 @@ const { enforceOtpResendPolicy, hashRefreshToken } = require('./token.service');
 const PASSWORD_HASH_ROUNDS = 12;
 const RESET_OTP_EXPIRY_MS = 2 * 60 * 1000;
 const RESET_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -158,8 +159,12 @@ async function resetPasswordWithToken({ resetToken, newPassword, currentSessionI
   const nextPassword = String(newPassword || '');
   const normalizedSessionId = String(currentSessionId || '').trim() || null;
 
-  if (!normalizedToken || nextPassword.length < 8) {
-    throw buildError(400, 'INVALID_INPUT', 'resetToken and a valid newPassword are required.');
+  if (!normalizedToken || !PASSWORD_POLICY_REGEX.test(nextPassword)) {
+    throw buildError(
+      400,
+      'INVALID_INPUT',
+      'newPassword must be at least 8 chars and include uppercase, lowercase, number, and one of @$!%*?&.'
+    );
   }
 
   const tokenHash = hashResetToken(normalizedToken);

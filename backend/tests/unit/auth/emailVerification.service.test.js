@@ -30,11 +30,11 @@ const authService = require('../../../src/modules/auth/auth.service');
 describe('email verification lifecycle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    authService.__testOnlyClearPendingRegistrations();
   });
 
   test('register creates pending account and sends OTP', async () => {
     User.findOne.mockResolvedValueOnce(null);
-    User.create.mockResolvedValueOnce({ _id: 'u1' });
 
     const result = await authService.registerWithEmail({
       fullName: 'Test User',
@@ -43,22 +43,28 @@ describe('email verification lifecycle', () => {
     });
 
     expect(result.code).toBe('OTP_SENT');
-    expect(User.create).toHaveBeenCalled();
+    expect(User.create).not.toHaveBeenCalled();
     expect(sendRegistrationOtpEmail).toHaveBeenCalled();
   });
 
   test('verify rejects expired OTP and locks account', async () => {
-    User.findOne.mockResolvedValueOnce({
-      _id: 'u1',
-      status: 'pending-verification',
-      emailVerification: { otp: '1111', expiresAt: new Date(Date.now() - 1000) },
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    User.findOne.mockResolvedValueOnce(null);
+
+    await authService.registerWithEmail({
+      fullName: 'Test User',
+      email: 'test@vnu.edu.vn',
+      password: 'secret',
     });
+
+    nowSpy.mockReturnValue(1_000_000 + 2 * 60 * 1000 + 1);
 
     await expect(authService.verifyEmailOtp({ email: 'test@vnu.edu.vn', otp: '1111' })).rejects.toMatchObject({
       status: 423,
       code: 'ACCOUNT_LOCKED_UNVERIFIED',
     });
-    expect(User.updateOne).toHaveBeenCalled();
+
+    nowSpy.mockRestore();
   });
 
   test('resend OTP works for locked account', async () => {

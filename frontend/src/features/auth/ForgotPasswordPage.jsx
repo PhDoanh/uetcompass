@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Compass, Eye, EyeOff, Lock, LockKeyhole, Mail, Send } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { AuthField, AuthShell } from './AuthModule';
+
+const BUTTON_DELAY_MS = 2000;
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState('request');
@@ -13,6 +16,26 @@ export default function ForgotPasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
+  const isNewPasswordValid = PASSWORD_POLICY_REGEX.test(String(newPassword || ''));
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
+
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
 
   const passwordStrength = (() => {
     const value = String(newPassword || '');
@@ -21,7 +44,7 @@ export default function ForgotPasswordPage() {
     if (/[A-Z]/.test(value)) score += 1;
     if (/[a-z]/.test(value)) score += 1;
     if (/\d/.test(value)) score += 1;
-    if (/[^A-Za-z0-9]/.test(value)) score += 1;
+    if (/[@$!%*?&]/.test(value)) score += 1;
 
     if (score <= 2) return { level: 'Yếu', className: 'weak', activeBars: 1 };
     if (score <= 4) return { level: 'Trung bình', className: 'medium', activeBars: 2 };
@@ -30,6 +53,11 @@ export default function ForgotPasswordPage() {
 
   async function submitRequest(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setMessage('');
 
@@ -44,6 +72,11 @@ export default function ForgotPasswordPage() {
 
   async function submitVerifyOtp(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setMessage('');
 
@@ -59,6 +92,16 @@ export default function ForgotPasswordPage() {
 
   async function submitResetPassword(event) {
     event.preventDefault();
+    if (!isNewPasswordValid) {
+      setError('Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.');
+      return;
+    }
+
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setMessage('');
 
@@ -72,6 +115,11 @@ export default function ForgotPasswordPage() {
   }
 
   async function handleResendOtp() {
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setMessage('');
 
@@ -180,7 +228,7 @@ export default function ForgotPasswordPage() {
               />
             </div>
           </AuthField>
-          <button type="submit" className="auth-button primary">
+          <button type="submit" className="auth-button primary" disabled={isButtonCoolingDown}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               Gửi mã khôi phục
               <Send size={14} />
@@ -208,9 +256,9 @@ export default function ForgotPasswordPage() {
           <p className="auth-otp-hint">
             Không nhận được mã?
             {' '}
-            <button type="button" onClick={handleResendOtp}>Gửi lại mã</button>
+            <button type="button" onClick={handleResendOtp} disabled={isButtonCoolingDown}>Gửi lại mã</button>
           </p>
-          <button type="submit" className="auth-button primary">Xác thực mã</button>
+          <button type="submit" className="auth-button primary" disabled={isButtonCoolingDown}>Xác thực mã</button>
         </form>
       ) : null}
 
@@ -224,6 +272,7 @@ export default function ForgotPasswordPage() {
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
+                pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
                 required
                 className="auth-input has-leading has-trailing"
               />
@@ -247,9 +296,18 @@ export default function ForgotPasswordPage() {
                 <span className={passwordStrength.activeBars >= 2 ? `on ${passwordStrength.className}` : ''} />
                 <span className={passwordStrength.activeBars >= 3 ? `on ${passwordStrength.className}` : ''} />
               </div>
+              <p className="auth-helper-text" style={{ marginTop: 8 }}>
+                Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.
+              </p>
             </div>
           </AuthField>
-          <button type="submit" className="auth-button primary">Đổi mật khẩu</button>
+          <button
+            type="submit"
+            className="auth-button primary"
+            disabled={isButtonCoolingDown || !isNewPasswordValid}
+          >
+            Đổi mật khẩu
+          </button>
 
           <div className="auth-links" style={{ marginTop: 2 }}>
             <a href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { AuthField, AuthShell } from './AuthModule';
@@ -7,6 +7,8 @@ function isVnuEmail(value) {
   return /@vnu\.edu\.vn$/i.test(String(value || '').trim());
 }
 
+const BUTTON_DELAY_MS = 5000;
+
 export default function RegisterPage() {
   const [step, setStep] = useState('register');
   const [form, setForm] = useState({ fullName: '', email: '', password: '', otp: '' });
@@ -14,6 +16,25 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
+
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
 
   const passwordStrength = useMemo(() => {
     const value = String(form.password || '');
@@ -42,6 +63,11 @@ export default function RegisterPage() {
 
   async function submitRegister(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
@@ -65,6 +91,11 @@ export default function RegisterPage() {
 
   async function submitVerify(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
@@ -83,6 +114,11 @@ export default function RegisterPage() {
   }
 
   async function handleResend() {
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
@@ -214,8 +250,8 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={Boolean(emailError)}
-            className={`auth-button primary ${emailError ? 'disabled' : ''}`}
+            disabled={Boolean(emailError) || isButtonCoolingDown}
+            className={`auth-button primary ${emailError || isButtonCoolingDown ? 'disabled' : ''}`}
           >
             Tạo tài khoản
           </button>
@@ -240,10 +276,10 @@ export default function RegisterPage() {
           <p className="auth-otp-hint">
             Không nhận được mã?
             {' '}
-            <button type="button" onClick={handleResend}>Gửi lại mã</button>
+            <button type="button" onClick={handleResend} disabled={isButtonCoolingDown}>Gửi lại mã</button>
           </p>
 
-          <button type="submit" className="auth-button primary" disabled={form.otp.length !== 4}>
+          <button type="submit" className="auth-button primary" disabled={form.otp.length !== 4 || isButtonCoolingDown}>
             Xác thực
           </button>
         </form>

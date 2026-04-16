@@ -11,6 +11,7 @@ const { emitAuthEvent } = require('./audit.service');
 
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_MINUTES = 15;
+const pendingRegistrations = new Map();
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -55,6 +56,31 @@ function buildOtpExpiry() {
   return new Date(Date.now() + 2 * 60 * 1000);
 }
 
+function getPendingRegistration(email) {
+  const entry = pendingRegistrations.get(email);
+  if (!entry) {
+    return null;
+  }
+  return { ...entry };
+}
+
+function setPendingRegistration(email, payload) {
+  pendingRegistrations.set(email, {
+    fullName: payload.fullName,
+    passwordHash: payload.passwordHash,
+    otp: payload.otp,
+    expiresAt: payload.expiresAt,
+  });
+}
+
+function deletePendingRegistration(email) {
+  pendingRegistrations.delete(email);
+}
+
+function clearPendingRegistrationsForTests() {
+  pendingRegistrations.clear();
+}
+
 async function safeEmit(eventType, payload) {
   try {
     await emitAuthEvent(eventType, payload);
@@ -78,17 +104,11 @@ async function registerWithEmail(payload) {
 
   const passwordHash = await passwordService.hashPassword(password);
   const otp = generateOtp();
-  await User.create({
-    email,
+  setPendingRegistration(email, {
     fullName,
-    displayName: fullName,
     passwordHash,
-    status: 'pending-verification',
-    emailVerification: {
-      otp,
-      expiresAt: buildOtpExpiry(),
-      verified: false,
-    },
+    otp,
+    expiresAt: buildOtpExpiry(),
   });
 
   await sendRegistrationOtpEmail(email, otp);
@@ -113,6 +133,70 @@ async function verifyEmailOtp({ email, otp }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedOtp = String(otp || '').trim();
 
+  const pending = getPendingRegistration(normalizedEmail);
+  if (pending) {
+    if (new Date(pending.expiresAt).getTime() < Date.now()) {
+      await safeEmit('otp_verify_fail', {
+        actorType: 'uet_student',
+        outcome: 'fail',
+        metadata: { flowType: 'verify_email', reason: 'expired' },
+      });
+      throw buildError(
+        423,
+        'ACCOUNT_LOCKED_UNVERIFIED',
+        'Verification window expired. Please request a new OTP to unlock your account.'
+      );
+    }
+
+    if (String(pending.otp) !== normalizedOtp) {
+      await safeEmit('otp_verify_fail', {
+        actorType: 'uet_student',
+        outcome: 'fail',
+        metadata: { flowType: 'verify_email', reason: 'otp_mismatch' },
+      });
+      throw buildError(400, 'OTP_INVALID', 'The code is incorrect or has expired.');
+    }
+
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing && existing.status !== 'soft-deleted') {
+      throw buildError(409, 'EMAIL_ALREADY_EXISTS', 'An account with this email already exists. Please log in instead.');
+    }
+
+    if (existing?.status === 'soft-deleted') {
+      await User.updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            fullName: pending.fullName,
+            displayName: pending.fullName,
+            passwordHash: pending.passwordHash,
+            status: 'active',
+            softDeletedAt: null,
+            emailVerification: null,
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          },
+        }
+      );
+    } else {
+      await User.create({
+        email: normalizedEmail,
+        fullName: pending.fullName,
+        displayName: pending.fullName,
+        passwordHash: pending.passwordHash,
+        status: 'active',
+        emailVerification: null,
+      });
+    }
+
+    deletePendingRegistration(normalizedEmail);
+
+    return {
+      code: 'EMAIL_VERIFIED',
+      message: 'Email verified successfully. You may now log in.',
+    };
+  }
+
   const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     await safeEmit('otp_verify_fail', {
@@ -123,6 +207,7 @@ async function verifyEmailOtp({ email, otp }) {
     throw buildError(400, 'OTP_INVALID', 'The code is incorrect or has expired.');
   }
 
+  // Legacy compatibility for accounts created under old pending-verification model.
   if (!user.emailVerification || !user.emailVerification.otp || !user.emailVerification.expiresAt) {
     await safeEmit('otp_verify_fail', {
       userId: user._id,
@@ -136,7 +221,6 @@ async function verifyEmailOtp({ email, otp }) {
   if (new Date(user.emailVerification.expiresAt).getTime() < Date.now()) {
     await User.updateOne({ _id: user._id }, { $set: { status: 'locked' } });
     await safeEmit('otp_verify_fail', {
-      userId: user._id,
       actorType: 'uet_student',
       outcome: 'fail',
       metadata: { flowType: 'verify_email', reason: 'expired' },
@@ -177,9 +261,10 @@ async function verifyEmailOtp({ email, otp }) {
 async function resendVerificationOtp({ email, requestIp }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedIp = String(requestIp || '').trim() || null;
+  const pending = getPendingRegistration(normalizedEmail);
   const user = await User.findOne({ email: normalizedEmail });
 
-  if (!user) {
+  if (!pending && !user) {
     return {
       code: 'OTP_RESENT',
       message: `A new OTP has been sent to ${normalizedEmail}.`,
@@ -197,29 +282,39 @@ async function resendVerificationOtp({ email, requestIp }) {
   });
 
   const otp = generateOtp();
-  await User.updateOne(
-    { _id: user._id },
-    {
-      $set: {
-        emailVerification: {
-          otp,
-          expiresAt: buildOtpExpiry(),
-          verified: false,
+  if (pending) {
+    setPendingRegistration(normalizedEmail, {
+      fullName: pending.fullName,
+      passwordHash: pending.passwordHash,
+      otp,
+      expiresAt: buildOtpExpiry(),
+    });
+  } else if (user) {
+    // Keep compatibility for legacy pending users already stored in users collection.
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          emailVerification: {
+            otp,
+            expiresAt: buildOtpExpiry(),
+            verified: false,
+          },
         },
-      },
-    }
-  );
+      }
+    );
+  }
 
   await sendRegistrationOtpEmail(normalizedEmail, otp);
   await safeEmit('otp_resend', {
-    userId: user._id,
+    ...(user?._id ? { userId: user._id } : {}),
     actorType: 'uet_student',
     requestIp: normalizedIp,
     outcome: 'success',
     metadata: { flowType: 'verify_email', email: normalizedEmail },
   });
   await safeEmit('otp_send', {
-    userId: user._id,
+    ...(user?._id ? { userId: user._id } : {}),
     actorType: 'uet_student',
     requestIp: normalizedIp,
     outcome: 'success',
@@ -496,4 +591,5 @@ module.exports = {
   loginWithPassword,
   loginWithGoogle,
   logoutSession,
+  __testOnlyClearPendingRegistrations: clearPendingRegistrationsForTests,
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
@@ -6,6 +6,7 @@ import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
 import { AuthField, AuthShell } from './AuthModule';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
+const BUTTON_DELAY_MS = 2000;
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
@@ -22,8 +23,21 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [lockRemaining, setLockRemaining] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const hasGoogleClientId = Boolean(String(googleClientId).trim());
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
 
   useEffect(() => {
     if (lockRemaining <= 0) {
@@ -37,6 +51,12 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [lockRemaining]);
 
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
+
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
@@ -47,9 +67,11 @@ export default function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    if (lockRemaining > 0) {
+    if (lockRemaining > 0 || isButtonCoolingDown) {
       return;
     }
+
+    triggerButtonDelay();
 
     setIsSubmitting(true);
     try {
@@ -169,8 +191,8 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting || lockRemaining > 0}
-          className={`auth-button primary ${isSubmitting || lockRemaining > 0 ? 'disabled' : ''}`}
+          disabled={isSubmitting || lockRemaining > 0 || isButtonCoolingDown}
+          className={`auth-button primary ${isSubmitting || lockRemaining > 0 || isButtonCoolingDown ? 'disabled' : ''}`}
         >
           {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>

@@ -13,6 +13,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import useAccountSettingsStore from '../../stores/accountSettings.store';
 import SiteFooter from '../general/SiteFooter';
+import { useNotification } from '../general/NotificationContainer';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 import './account-settings-page.css';
 
@@ -76,6 +77,7 @@ async function compressAvatarFile(file) {
 
 export default function AccountSettingsPage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
+	const { addNotification } = useNotification();
 	const {
 		loading,
 		setLoading,
@@ -95,8 +97,6 @@ export default function AccountSettingsPage() {
 	const [newPassword, setNewPassword] = useState('');
 	const [imageError, setImageError] = useState('');
 	const [pageError, setPageError] = useState('');
-	const [profileStatus, setProfileStatus] = useState({ error: '', success: '' });
-	const [passwordStatus, setPasswordStatus] = useState({ error: '', success: '' });
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -115,7 +115,7 @@ export default function AccountSettingsPage() {
 		if (/[A-Z]/.test(value)) score += 1;
 		if (/[a-z]/.test(value)) score += 1;
 		if (/\d/.test(value)) score += 1;
-		if (/[^A-Za-z0-9]/.test(value)) score += 1;
+		if (/[@$!%*?&]/.test(value)) score += 1;
 
 		if (score <= 2) {
 			return { label: 'Weak', color: 'weak', score: 1 };
@@ -167,7 +167,6 @@ export default function AccountSettingsPage() {
 		resetStatus();
 		setImageError('');
 		setPageError('');
-		setProfileStatus({ error: '', success: '' });
 
 		const payload = {
 			displayName: identity.displayName,
@@ -178,7 +177,7 @@ export default function AccountSettingsPage() {
 
 		const validation = validateProfilePayload(payload);
 		if (!validation.ok) {
-			setProfileStatus({ error: Object.values(validation.errors)[0], success: '' });
+			addNotification(Object.values(validation.errors)[0], 'error');
 			return;
 		}
 
@@ -210,10 +209,10 @@ export default function AccountSettingsPage() {
 					})
 				);
 			}
-			setProfileStatus({ error: '', success: result?.message || 'Profile updated' });
+			addNotification(result?.message || 'Profile updated', 'success');
 		} catch (err) {
 			const message = err?.message || 'Failed to update profile';
-			setProfileStatus({ error: message, success: '' });
+			addNotification(message, 'error');
 			setError(message);
 		} finally {
 			setLoading(false);
@@ -255,13 +254,9 @@ export default function AccountSettingsPage() {
 		event.preventDefault();
 		resetStatus();
 		setPageError('');
-		setPasswordStatus({ error: '', success: '' });
 
 		if (!canSubmitPassword) {
-			setPasswordStatus({
-				error: 'Mật khẩu mới phải có ít nhất 8 ký tự gồm chữ, số và ký tự đặc biệt',
-				success: '',
-			});
+			addNotification('Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.', 'error');
 			return;
 		}
 
@@ -271,12 +266,12 @@ export default function AccountSettingsPage() {
 				currentPassword,
 				newPassword,
 			});
-			setPasswordStatus({ error: '', success: result?.message || 'Password changed successfully' });
+			addNotification(result?.message || 'Password changed successfully', 'success');
 			setCurrentPassword('');
 			setNewPassword('');
 		} catch (err) {
 			const message = err?.message || 'Failed to change password';
-			setPasswordStatus({ error: message, success: '' });
+			addNotification(message, 'error');
 			setError(message);
 		} finally {
 			setLoading(false);
@@ -377,8 +372,6 @@ export default function AccountSettingsPage() {
 										Save Changes
 									</button>
 								</div>
-								{profileStatus.error ? <p className="message error">{profileStatus.error}</p> : null}
-								{profileStatus.success ? <p className="message success">{profileStatus.success}</p> : null}
 							</form>
 						</div>
 					</section>
@@ -402,7 +395,6 @@ export default function AccountSettingsPage() {
 											type={showCurrentPassword ? 'text' : 'password'}
 											value={currentPassword}
 											onChange={(e) => setCurrentPassword(e.target.value)}
-											placeholder="••••••••••••"
 										/>
 										<button
 											type="button"
@@ -439,7 +431,7 @@ export default function AccountSettingsPage() {
 										</div>
 										<div className="strength-meta">
 											<span>Password: {passwordStrength.label}</span>
-											<span>{canSubmitPassword ? 'Policy valid' : 'At least 8 chars + letters + number + symbol'}</span>
+											<span>{canSubmitPassword ? 'Policy valid' : 'At least 8 chars + upper + lower + number + @$!%*?&'}</span>
 										</div>
 									</div>
 								</div>
@@ -450,8 +442,6 @@ export default function AccountSettingsPage() {
 										Update Password
 									</button>
 								</div>
-								{passwordStatus.error ? <p className="message error">{passwordStatus.error}</p> : null}
-								{passwordStatus.success ? <p className="message success">{passwordStatus.success}</p> : null}
 							</form>
 						</div>
 

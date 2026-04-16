@@ -3,6 +3,7 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { resolvePublicIdentity } = require('./identity.policy');
 const passwordService = require('./password.service');
 const { SecurityAudit } = require('./securityAudit.model');
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -206,8 +207,12 @@ async function changePassword(userId, { currentPassword, newPassword }) {
   const next = String(newPassword || '');
   const hasLocalPassword = Boolean(user.passwordHash);
 
-  if (newPassword.length < 8) {
-    throw buildError(400, 'INVALID_INPUT', 'A valid newPassword is required.');
+  if (!PASSWORD_POLICY_REGEX.test(next)) {
+    throw buildError(
+      400,
+      'INVALID_INPUT',
+      'newPassword must be at least 8 chars and include uppercase, lowercase, number, and one of @$!%*?&.'
+    );
   }
 
   if (hasLocalPassword && !current) {

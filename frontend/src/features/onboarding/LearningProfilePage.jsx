@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, Save, Sparkles, User, GraduationCap } from 'lucide-react';
 import authApi from '../../services/auth.api';
+import { retryRoadmapGeneration } from '../../services/roadmap.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { getCourseCatalog } from '../../services/onboarding.api';
 import { useNotification } from '../general/NotificationContainer';
@@ -97,6 +98,7 @@ export default function LearningProfilePage() {
 	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [regenerating, setRegenerating] = useState(false);
 	const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
 	const [showAllCourses, setShowAllCourses] = useState(false);
 
@@ -215,8 +217,25 @@ export default function LearningProfilePage() {
 		}
 	};
 
-	const handleRegenRoadmap = () => {
-		addNotification('Đã gửi yêu cầu Regen Roadmap thành công (tạm thời).', 'success');
+	const handleRegenRoadmap = async () => {
+		if (!accessToken) {
+			return;
+		}
+
+		setRegenerating(true);
+		try {
+			await retryRoadmapGeneration(accessToken);
+			addNotification('Đã gửi yêu cầu tạo lại Roadmap thành công.', 'success');
+		} catch (err) {
+			if (err?.status === 401) {
+				await logoutAndRedirect();
+				return;
+			}
+
+			addNotification(err?.message || 'Không thể tạo lại Roadmap.', 'error');
+		} finally {
+			setRegenerating(false);
+		}
 	};
 
 	useEffect(() => {
@@ -470,9 +489,9 @@ export default function LearningProfilePage() {
 							</button>
 						) : null}
 						{showRegenRoadmap ? (
-							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap}>
+							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 								<Sparkles size={17} />
-								Tạo lại Roadmap
+								{regenerating ? 'Đang tạo lại Roadmap...' : 'Tạo lại Roadmap'}
 							</button>
 						) : null}
 					</div>

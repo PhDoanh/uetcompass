@@ -89,7 +89,7 @@ async function listPublic({ q = '', page = 1, limit = 20 } = {}) {
 async function getPublicPreviewById(roadmapId) {
     return ManualRoadmap.findOne(
         { _id: roadmapId },
-        { title: 1, description: 1, nodes: 1, edges: 1, sharedAt: 1 }
+        { title: 1, description: 1, nodes: 1, edges: 1, yamlCode: 1, sharedAt: 1 }
     ).lean();
 }
 

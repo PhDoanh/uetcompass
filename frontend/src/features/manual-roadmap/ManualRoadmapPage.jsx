@@ -60,6 +60,7 @@ const MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO = 0.32;
 const MANUAL_ROADMAP_SPLIT_MIN_RATIO = 0.2;
 const MANUAL_ROADMAP_SPLIT_MAX_RATIO = 0.8;
 const MANUAL_ROADMAP_RESIZER_WIDTH = 14;
+const MANUAL_ROADMAP_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -155,6 +156,35 @@ export default function ManualRoadmapPage() {
   const layoutRef = useRef(null);
   const resizeDragRef = useRef({ startX: 0, startRatio: MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO });
   const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const serializedPrefill = window.sessionStorage.getItem(MANUAL_ROADMAP_PREFILL_STORAGE_KEY);
+    if (!serializedPrefill) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(MANUAL_ROADMAP_PREFILL_STORAGE_KEY);
+
+    try {
+      const parsedPrefill = JSON.parse(serializedPrefill);
+      const prefillYamlCode = typeof parsedPrefill?.yamlCode === 'string' ? parsedPrefill.yamlCode : '';
+
+      if (!prefillYamlCode.trim()) {
+        return;
+      }
+
+      setSelectedSampleKey('custom');
+      setYamlCode(prefillYamlCode);
+      setApiError('');
+      setSuccessMessage('');
+    } catch {
+      // Ignore malformed prefill payload and keep default editor content.
+    }
+  }, []);
 
   useEffect(() => {
     try {

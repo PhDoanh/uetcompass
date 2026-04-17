@@ -146,6 +146,38 @@ html[data-theme='dark'] .skill-tree-summary-card__meta {
   gap: 12px;
 }
 
+.skill-tree-summary-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-tree-edit-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skill-tree-edit-button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button {
+  background: #2b6fd0;
+  border-color: #4b8ef0;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button:hover {
+  background: #2059ad;
+  border-color: #3977d2;
+}
+
 .skill-tree-back-button {
   border: 1px solid #93c5fd;
   background: #ffffff;

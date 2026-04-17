@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
+import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
+import { useNotification } from '../general/NotificationContainer';
 import './skill-tree.css';
+
+const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
+const YAML_MAX_LENGTH = 10 * 1024;
 
 function normalizeNodeState(state) {
   const normalized = String(state || '').trim();
@@ -71,6 +76,8 @@ function normalizePreviewNodes(nodes = []) {
 }
 
 export default function PublicSkillTreePage({ roadmapId = '' }) {
+  const { isAuthenticated } = useAuth();
+  const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -104,6 +111,32 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     }
 
     window.location.assign('/');
+  };
+
+  const handleOpenInEditor = () => {
+    if (!isAuthenticated) {
+      addNotification('Vui lòng đăng nhập để chỉnh sửa roadmap.', 'warning');
+      return;
+    }
+
+    const yamlCode = typeof previewData?.yamlCode === 'string' ? previewData.yamlCode : '';
+
+    if (!yamlCode.trim() || yamlCode.length > YAML_MAX_LENGTH) {
+      addNotification('Yaml code không khả dụng.', 'error');
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(
+        ROADMAP_EDITOR_PREFILL_STORAGE_KEY,
+        JSON.stringify({ yamlCode, sourceRoadmapId: roadmapId, savedAt: Date.now() })
+      );
+    } catch {
+      addNotification('Không thể tải nội dung YAML vào editor.', 'error');
+      return;
+    }
+
+    window.location.assign('/manual-roadmap');
   };
 
   useEffect(() => {
@@ -225,7 +258,16 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           <section className="skill-tree-summary-card" aria-label="Roadmap summary">
             <div className="skill-tree-summary-card__top-row">
               <h2 className="skill-tree-summary-card__title">{previewData?.title || 'Roadmap'}</h2>
-              <button type="button" className="skill-tree-back-button" onClick={handleBack}>Back</button>
+              <div className="skill-tree-summary-card__actions">
+                <button
+                  type="button"
+                  className="skill-tree-edit-button"
+                  onClick={handleOpenInEditor}
+                >
+                  Chỉnh sửa Roadmap
+                </button>
+                <button type="button" className="skill-tree-back-button" onClick={handleBack}>Quay lại</button>
+              </div>
             </div>
             <p className="skill-tree-summary-card__meta">{previewData?.description || 'No description available.'}</p>
           </section>

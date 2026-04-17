@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, Save, Sparkles, User, GraduationCap } from 'lucide-react';
 import authApi from '../../services/auth.api';
+import { retryRoadmapGeneration } from '../../services/roadmap.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { getCourseCatalog } from '../../services/onboarding.api';
+import { useNotification } from '../general/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import './onboarding-panel.css';
 
@@ -85,6 +87,8 @@ function serializeProfileForm(profile = {}) {
 
 export default function LearningProfilePage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
+	const notificationApi = useNotification();
+	const addNotification = notificationApi?.addNotification || (() => {});
 	const [form, setForm] = useState(mapProfileToOnboardingForm(null, {}));
 	const [initialSerialized, setInitialSerialized] = useState(() => serializeProfileForm(mapProfileToOnboardingForm(null, {})));
 	const [identity, setIdentity] = useState({
@@ -93,15 +97,12 @@ export default function LearningProfilePage() {
 	});
 	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
-	const [statusMessage, setStatusMessage] = useState('');
-	const [statusError, setStatusError] = useState('');
 	const [saving, setSaving] = useState(false);
+	const [regenerating, setRegenerating] = useState(false);
 	const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
 	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	const [catalogLoading, setCatalogLoading] = useState(true);
-	const [catalogError, setCatalogError] = useState('');
 	const [catalogMajors, setCatalogMajors] = useState([]);
 	const [catalogByProgramId, setCatalogByProgramId] = useState({});
 	const [roleOptionsByProgramId, setRoleOptionsByProgramId] = useState({});
@@ -139,8 +140,6 @@ export default function LearningProfilePage() {
 
 	const patchForm = (next) => {
 		setForm(next);
-		setStatusMessage('');
-		setStatusError('');
 	};
 
 	const handleMajorChange = (programId) => {
@@ -181,8 +180,6 @@ export default function LearningProfilePage() {
 	};
 
 	const handleSaveProfile = async () => {
-		setStatusMessage('');
-		setStatusError('');
 		setSaving(true);
 
 		const major = String(form?.major || '').trim();
@@ -207,22 +204,38 @@ export default function LearningProfilePage() {
 
 			setInitialSerialized(serializeProfileForm(form));
 			setShowRegenRoadmap(true);
-			setStatusMessage('Save profile thành công.');
+			addNotification('Save profile thành công.', 'success');
 		} catch (err) {
 			if (err?.status === 401) {
 				await logoutAndRedirect();
 				return;
 			}
 
-			setStatusError(err?.message || 'Lưu profile thất bại.');
+			addNotification(err?.message || 'Lưu profile thất bại.', 'error');
 		} finally {
 			setSaving(false);
 		}
 	};
 
-	const handleRegenRoadmap = () => {
-		setStatusError('');
-		setStatusMessage('Đã gửi yêu cầu Regen Roadmap thành công (tạm thời).');
+	const handleRegenRoadmap = async () => {
+		if (!accessToken) {
+			return;
+		}
+
+		setRegenerating(true);
+		try {
+			await retryRoadmapGeneration(accessToken);
+			addNotification('Đã gửi yêu cầu tạo lại Roadmap thành công.', 'success');
+		} catch (err) {
+			if (err?.status === 401) {
+				await logoutAndRedirect();
+				return;
+			}
+
+			addNotification(err?.message || 'Không thể tạo lại Roadmap.', 'error');
+		} finally {
+			setRegenerating(false);
+		}
 	};
 
 	useEffect(() => {
@@ -239,8 +252,6 @@ export default function LearningProfilePage() {
 
 			setLoading(true);
 			setCatalogLoading(true);
-			setError('');
-			setCatalogError('');
 
 			try {
 				const [profilePayload, catalogPayload] = await Promise.all([
@@ -277,8 +288,8 @@ export default function LearningProfilePage() {
 				}
 
 				if (isMounted) {
-					setError(err?.message || 'Failed to load learning profile.');
-					setCatalogError(err?.message || 'Failed to load catalog.');
+					const message = err?.message || 'Failed to load learning profile.';
+					addNotification(message, 'error');
 					setIdentity({ displayName: 'Sinh viên UET', avatarUrl: '' });
 				}
 			} finally {
@@ -294,13 +305,12 @@ export default function LearningProfilePage() {
 		return () => {
 			isMounted = false;
 		};
-	}, [accessToken, logoutAndRedirect]);
+	}, [accessToken, logoutAndRedirect, addNotification]);
 
 	return (
 		<main className="learning-profile-page learning-profile-page--modern">
 			{loading ? <div style={{ marginBottom: 12 }}>Loading learning profile...</div> : null}
-			{error ? <div style={{ color: '#b00020', marginBottom: 12 }}>{error}</div> : null}
-			{!loading && !error ? (
+			{!loading ? (
 				<>
 				<section className="learning-profile-content learning-profile-content--modern">
 					<section className="learning-profile-header">
@@ -326,7 +336,6 @@ export default function LearningProfilePage() {
 					</section>
 
 					{catalogLoading ? <div className="onboarding-panel-note">Loading majors and courses...</div> : null}
-					{catalogError ? <div className="onboarding-panel-error">{catalogError}</div> : null}
 
 					<div className="learning-profile-sections">
 						<section className="learning-section">
@@ -480,15 +489,12 @@ export default function LearningProfilePage() {
 							</button>
 						) : null}
 						{showRegenRoadmap ? (
-							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap}>
+							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 								<Sparkles size={17} />
-								Tạo lại Roadmap
+								{regenerating ? 'Đang tạo lại Roadmap...' : 'Tạo lại Roadmap'}
 							</button>
 						) : null}
 					</div>
-
-					{statusError ? <div className="onboarding-panel-error">{statusError}</div> : null}
-					{statusMessage ? <div className="learning-profile-success">{statusMessage}</div> : null}
 				</section>
 				<SiteFooter />
 				</>

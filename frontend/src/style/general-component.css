@@ -673,7 +673,9 @@ html[data-theme='dark'] .homepage-popup {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   min-height: 46px;
+  line-height: 1.2;
   border-radius: 12px;
   border: 2px solid rgba(255, 255, 255, 0.28);
   background: rgba(255, 255, 255, 0.12);
@@ -684,6 +686,13 @@ html[data-theme='dark'] .homepage-popup {
   font-weight: 700;
   padding: 0.5rem 1.1rem;
   transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+button.homepage-wire-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  cursor: pointer;
 }
 
 .homepage-wire-btn:hover {
@@ -1043,6 +1052,10 @@ html[data-theme='dark'] .homepage-popup {
   max-width: 340px;
 }
 
+.homepage-hero-actions--column .homepage-wire-btn {
+  width: 100%;
+}
+
 .homepage-wire-btn--white {
   background: #fff;
   color: #0055a2;
@@ -1253,7 +1266,7 @@ html[data-theme='dark'] .homepage-popup {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: 1fr;
-  padding: 3.5rem 22px;
+  padding: 3.5rem 22px 3.5rem 40px;
 }
 
 .homepage-footer h4,

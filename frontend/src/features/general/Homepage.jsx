@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
+import { useNotification } from './NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import SiteFooter from './SiteFooter';
 import '../../style/general-component.css';
@@ -40,8 +41,8 @@ function resolveDisplayName(accessToken) {
 
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
+  const { addNotification } = useNotification();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
-  const [popupMessage, setPopupMessage] = useState('');
   const [profileDisplayName, setProfileDisplayName] = useState('');
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
@@ -63,9 +64,9 @@ export default function Homepage() {
       return;
     }
 
-    setPopupMessage(nextMessage);
+    addNotification(nextMessage, 'warning');
     window.sessionStorage.removeItem(ONBOARDING_REDIRECT_NOTICE_KEY);
-  }, []);
+  }, [addNotification]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !accessToken || onboardingState === 'COMPLETED') {
@@ -328,13 +329,13 @@ export default function Homepage() {
             </p>
 
             <div className="homepage-hero-actions homepage-hero-actions--column">
-              <a href="/sample-roadmap" className="homepage-wire-btn homepage-wire-btn--white">Khám phá Roadmap</a>
+              <a href="#roadmap-community" className="homepage-wire-btn homepage-wire-btn--white">Khám phá Roadmap</a>
               {shouldPromptOnboarding ? (
                 <button type="button" onClick={handleOpenOnboarding} className="homepage-wire-btn homepage-wire-btn--translucent">
                   Nhận roadmap cá nhân hóa
                 </button>
               ) : accessToken ? (
-                <a href="/learning-profile" className="homepage-wire-btn homepage-wire-btn--translucent">
+                <a href="/manual-roadmap" className="homepage-wire-btn homepage-wire-btn--translucent">
                   Nhận roadmap cá nhân hóa
                 </a>
               ) : (
@@ -362,7 +363,7 @@ export default function Homepage() {
           </div>
         </section>
 
-        <section className="homepage-section homepage-section--blank" aria-label="Roadmap gallery">
+        <section id="roadmap-community" className="homepage-section homepage-section--blank" aria-label="Roadmap gallery">
           <div className="homepage-roadmap-head">
             <div>
               <h2>Roadmap cộng đồng</h2>
@@ -439,24 +440,6 @@ export default function Homepage() {
 
         <SiteFooter />
       </main>
-
-      {popupMessage ? (
-        <div className="homepage-popup-overlay" role="dialog" aria-modal="true" aria-labelledby="homepage-popup-title">
-          <div className="homepage-popup">
-            <h2 id="homepage-popup-title" className="homepage-popup__title">Thông báo</h2>
-            <p className="homepage-popup__message">{popupMessage}</p>
-            <div className="homepage-popup__actions">
-              <button
-                type="button"
-                className="homepage-popup__button"
-                onClick={() => setPopupMessage('')}
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {showOnboardingPanel && (
         <div className="homepage-onboarding-overlay">

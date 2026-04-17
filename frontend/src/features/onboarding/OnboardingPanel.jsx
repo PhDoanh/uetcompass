@@ -3,6 +3,7 @@ import { Compass, Map, GitBranch, LibraryBig, Users, Search } from 'lucide-react
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
 import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
+import { useNotification } from '../general/NotificationContainer';
 import './onboarding-panel.css';
 
 const EMPTY_FORM = {
@@ -75,7 +76,6 @@ export default function OnboardingPanel({
 	const [draftHydrated, setDraftHydrated] = useState(false);
 	const [submitState, setSubmitState] = useState('idle');
 	const [submitError, setSubmitError] = useState(null);
-	const [submitSuccess, setSubmitSuccess] = useState('');
 	const [showLowPersonalization, setShowLowPersonalization] = useState(false);
 	const [catalogLoading, setCatalogLoading] = useState(true);
 	const [catalogError, setCatalogError] = useState(null);
@@ -85,6 +85,8 @@ export default function OnboardingPanel({
 	const [requiredCourseLinks, setRequiredCourseLinks] = useState({});
 	const [courseSearch, setCourseSearch] = useState('');
 	const [showAllCourses, setShowAllCourses] = useState(false);
+	const notificationApi = useNotification();
+	const addNotification = notificationApi?.addNotification || (() => {});
 
 	const { draft, loading, saving, scheduleSave } = useOnboardingDraft({
 		authToken,
@@ -205,7 +207,6 @@ export default function OnboardingPanel({
 			return;
 		}
 
-		setSubmitSuccess('');
 		setForm(nextForm);
 		if (draftEnabled) {
 			scheduleSave(nextForm);
@@ -285,7 +286,6 @@ export default function OnboardingPanel({
 
 		setSubmitState('submitting');
 		setSubmitError(null);
-		setSubmitSuccess('');
 
 		try {
 			const response = onSubmitForm
@@ -297,7 +297,7 @@ export default function OnboardingPanel({
 			}
 
 			setSubmitState('submitted');
-			setSubmitSuccess(successLabel);
+			addNotification(successLabel, 'success');
 
 			if (closeOnSubmit) {
 				closePanel();
@@ -313,6 +313,7 @@ export default function OnboardingPanel({
 		} catch (error) {
 			setSubmitState('failed');
 			setSubmitError(error.message);
+			addNotification(error?.message || 'Submit failed.', 'error');
 		}
 	};
 
@@ -495,7 +496,6 @@ export default function OnboardingPanel({
 					</div>
 
 					{!isViewMode && submitError ? <div className="onboarding-panel-error">{submitError}</div> : null}
-					{!isViewMode && submitSuccess ? <div className="onboarding-panel-note onboarding-panel-note--success">{submitSuccess}</div> : null}
 					{!isViewMode && showLowPersonalization ? (
 						<div className="onboarding-panel-warning">
 							Roadmap is in generic mode. Add target role to improve personalization.

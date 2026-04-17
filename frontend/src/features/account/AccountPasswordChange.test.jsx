@@ -1,6 +1,6 @@
 function isPasswordPolicyValid(value) {
   const password = String(value || '');
-  return password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password) && /[^A-Za-z\d]/.test(password);
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
 }
 
 describe('Account password change validation', () => {
@@ -10,5 +10,9 @@ describe('Account password change validation', () => {
 
   test('rejects weak password', () => {
     expect(isPasswordPolicyValid('abcdefg')).toBe(false);
+  });
+
+  test('rejects unsupported special characters', () => {
+    expect(isPasswordPolicyValid('Abcd1234#')).toBe(false);
   });
 });

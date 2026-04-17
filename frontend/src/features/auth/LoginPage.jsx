@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
+import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
+const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
+const BUTTON_DELAY_MS = 5000;
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
@@ -16,14 +19,29 @@ function formatCountdown(seconds) {
 
 export default function LoginPage() {
   const { applyLoginResult } = useAuth();
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [lockRemaining, setLockRemaining] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const hasGoogleClientId = Boolean(String(googleClientId).trim());
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
 
   useEffect(() => {
     if (lockRemaining <= 0) {
@@ -37,6 +55,24 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [lockRemaining]);
 
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const successMessage = window.sessionStorage.getItem(REGISTER_SUCCESS_NOTICE_KEY);
+    if (!successMessage) {
+      return;
+    }
+    addNotification(successMessage, 'success');
+    window.sessionStorage.removeItem(REGISTER_SUCCESS_NOTICE_KEY);
+  }, [addNotification]);
+
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
@@ -47,9 +83,11 @@ export default function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    if (lockRemaining > 0) {
+    if (lockRemaining > 0 || isButtonCoolingDown) {
       return;
     }
+
+    triggerButtonDelay();
 
     setIsSubmitting(true);
     try {
@@ -63,8 +101,10 @@ export default function LoginPage() {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
         setLockRemaining(Math.max(1, seconds));
+        addNotification('Tài khoản tạm thời bị khóa do nhập sai nhiều lần.', 'warning');
       }
       setError('Email hoặc mật khẩu không đúng.');
+      addNotification('Đăng nhập thất bại. Vui lòng kiểm tra email hoặc mật khẩu.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -82,9 +122,11 @@ export default function LoginPage() {
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
         setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');
+        addNotification('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.', 'warning');
         return;
       }
       setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+      addNotification('Đăng nhập Google thất bại. Vui lòng thử lại.', 'error');
     }
   }
 
@@ -169,8 +211,8 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting || lockRemaining > 0}
-          className={`auth-button primary ${isSubmitting || lockRemaining > 0 ? 'disabled' : ''}`}
+          disabled={isSubmitting || lockRemaining > 0 || isButtonCoolingDown}
+          className={`auth-button primary ${isSubmitting || lockRemaining > 0 || isButtonCoolingDown ? 'disabled' : ''}`}
         >
           {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>

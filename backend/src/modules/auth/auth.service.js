@@ -11,6 +11,7 @@ const { emitAuthEvent } = require('./audit.service');
 
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCK_MINUTES = 15;
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const pendingRegistrations = new Map();
 
 function buildError(status, code, message, details) {
@@ -41,6 +42,16 @@ function validateRegisterInput(input = {}) {
       error: {
         code: 'INVALID_INPUT',
         message: 'email must end with @vnu.edu.vn',
+      },
+    };
+  }
+
+  if (!PASSWORD_POLICY_REGEX.test(password)) {
+    return {
+      valid: false,
+      error: {
+        code: 'INVALID_INPUT',
+        message: 'password must be at least 8 chars and include uppercase, lowercase, number, and one of @$!%*?&.',
       },
     };
   }
@@ -265,10 +276,11 @@ async function resendVerificationOtp({ email, requestIp }) {
   const user = await User.findOne({ email: normalizedEmail });
 
   if (!pending && !user) {
-    return {
-      code: 'OTP_RESENT',
-      message: `A new OTP has been sent to ${normalizedEmail}.`,
-    };
+    throw buildError(
+      404,
+      'NO_PENDING_VERIFICATION',
+      'No pending verification found for this email. Please register again.'
+    );
   }
 
   if (user.status === 'active') {

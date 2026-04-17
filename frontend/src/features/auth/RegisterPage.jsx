@@ -10,6 +10,7 @@ function isVnuEmail(value) {
 
 const BUTTON_DELAY_MS = 5000;
 const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function RegisterPage() {
   const notificationApi = useNotification();
@@ -47,7 +48,7 @@ export default function RegisterPage() {
     if (/[A-Z]/.test(value)) score += 1;
     if (/[a-z]/.test(value)) score += 1;
     if (/\d/.test(value)) score += 1;
-    if (/[^A-Za-z0-9]/.test(value)) score += 1;
+    if (/[@$!%*?&]/.test(value)) score += 1;
 
     if (score <= 2) {
       return { level: 'Yếu', className: 'weak', activeBars: 1 };
@@ -65,6 +66,15 @@ export default function RegisterPage() {
     return isVnuEmail(form.email) ? '' : 'Email phải có đuôi @vnu.edu.vn';
   }, [form.email]);
 
+  const passwordError = useMemo(() => {
+    if (!form.password) {
+      return '';
+    }
+    return PASSWORD_POLICY_REGEX.test(String(form.password || ''))
+      ? ''
+      : 'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.';
+  }, [form.password]);
+
   async function submitRegister(event) {
     event.preventDefault();
     if (isButtonCoolingDown) {
@@ -78,6 +88,12 @@ export default function RegisterPage() {
     if (emailError) {
       setError(emailError);
       addNotification(emailError, 'warning');
+      return;
+    }
+
+    if (passwordError) {
+      setError(passwordError);
+      addNotification(passwordError, 'warning');
       return;
     }
 
@@ -126,6 +142,7 @@ export default function RegisterPage() {
 
   async function handleResend() {
     if (isButtonCoolingDown) {
+      addNotification('Vui lòng đợi vài giây trước khi gửi lại mã.', 'warning');
       return;
     }
     triggerButtonDelay();
@@ -138,8 +155,11 @@ export default function RegisterPage() {
       setInfo(result.message || 'Đã gửi lại OTP');
       addNotification(result.message || 'Đã gửi lại OTP', 'success');
     } catch (err) {
-      setError(err.message || 'Gửi lại OTP thất bại');
-      addNotification(err.message || 'Gửi lại OTP thất bại', 'error');
+      const nextMessage = err?.code === 'NO_PENDING_VERIFICATION'
+        ? 'Không tìm thấy phiên xác thực đang chờ. Vui lòng đăng ký lại để nhận OTP mới.'
+        : (err.message || 'Gửi lại OTP thất bại');
+      setError(nextMessage);
+      addNotification(nextMessage, 'error');
     }
   }
 
@@ -178,7 +198,7 @@ export default function RegisterPage() {
           ? 'Đăng ký tài khoản bằng email @vnu.edu.vn.'
           : 'Nhập mã OTP 4 số được gửi đến email của bạn.'
       }
-      error={error || emailError}
+      error={error || emailError || passwordError}
       success={info}
       icon={<Compass size={24} />}
       tabs={[
@@ -248,6 +268,11 @@ export default function RegisterPage() {
               </button>
             </div>
 
+            <p className={passwordError ? 'auth-helper-text error' : 'auth-helper-text'}>
+              <Info size={12} style={{ verticalAlign: 'text-top', marginRight: 4 }} />
+              Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.
+            </p>
+
             <div className="auth-strength">
               <div className="auth-strength-head">
                 <span>Độ mạnh mật khẩu</span>
@@ -263,8 +288,8 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={Boolean(emailError) || isButtonCoolingDown}
-            className={`auth-button primary ${emailError || isButtonCoolingDown ? 'disabled' : ''}`}
+            disabled={Boolean(emailError) || Boolean(passwordError) || isButtonCoolingDown}
+            className={`auth-button primary ${emailError || passwordError || isButtonCoolingDown ? 'disabled' : ''}`}
           >
             Tạo tài khoản
           </button>

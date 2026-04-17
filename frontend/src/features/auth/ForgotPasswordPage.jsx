@@ -4,7 +4,7 @@ import authApi from '../../services/auth.api';
 import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
-const BUTTON_DELAY_MS = 2000;
+const BUTTON_DELAY_MS = 5000;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function ForgotPasswordPage() {

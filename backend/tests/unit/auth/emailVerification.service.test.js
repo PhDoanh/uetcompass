@@ -39,7 +39,7 @@ describe('email verification lifecycle', () => {
     const result = await authService.registerWithEmail({
       fullName: 'Test User',
       email: 'test@vnu.edu.vn',
-      password: 'secret',
+      password: 'Secret123!',
     });
 
     expect(result.code).toBe('OTP_SENT');
@@ -54,7 +54,7 @@ describe('email verification lifecycle', () => {
     await authService.registerWithEmail({
       fullName: 'Test User',
       email: 'test@vnu.edu.vn',
-      password: 'secret',
+      password: 'Secret123!',
     });
 
     nowSpy.mockReturnValue(1_000_000 + 2 * 60 * 1000 + 1);
@@ -75,5 +75,16 @@ describe('email verification lifecycle', () => {
     expect(result.code).toBe('OTP_RESENT');
     expect(User.updateOne).toHaveBeenCalled();
     expect(sendRegistrationOtpEmail).toHaveBeenCalled();
+  });
+
+  test('resend OTP fails when no pending verification exists', async () => {
+    User.findOne.mockResolvedValueOnce(null);
+
+    await expect(authService.resendVerificationOtp({ email: 'missing@vnu.edu.vn' })).rejects.toMatchObject({
+      status: 404,
+      code: 'NO_PENDING_VERIFICATION',
+    });
+
+    expect(sendRegistrationOtpEmail).not.toHaveBeenCalled();
   });
 });

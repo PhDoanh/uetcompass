@@ -8,7 +8,7 @@ import { AuthField, AuthShell } from './AuthModule';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
-const BUTTON_DELAY_MS = 2000;
+const BUTTON_DELAY_MS = 5000;
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));

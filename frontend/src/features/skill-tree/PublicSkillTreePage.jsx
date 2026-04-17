@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
+import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../general/NotificationContainer';
@@ -75,6 +76,7 @@ function normalizePreviewNodes(nodes = []) {
 }
 
 export default function PublicSkillTreePage({ roadmapId = '' }) {
+  const { isAuthenticated } = useAuth();
   const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);
@@ -112,6 +114,11 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   };
 
   const handleOpenInEditor = () => {
+    if (!isAuthenticated) {
+      addNotification('Vui lòng đăng nhập để chỉnh sửa roadmap.', 'warning');
+      return;
+    }
+
     const yamlCode = typeof previewData?.yamlCode === 'string' ? previewData.yamlCode : '';
 
     if (!yamlCode.trim() || yamlCode.length > YAML_MAX_LENGTH) {

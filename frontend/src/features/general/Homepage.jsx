@@ -3,11 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
-<<<<<<< 011-authentication
 import { useNotification } from './NotificationContainer';
-=======
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
->>>>>>> dev
 import SiteFooter from './SiteFooter';
 import '../../style/general-component.css';
 
@@ -338,7 +335,7 @@ export default function Homepage() {
                   Nhận roadmap cá nhân hóa
                 </button>
               ) : accessToken ? (
-                <a href="/learning-profile" className="homepage-wire-btn homepage-wire-btn--translucent">
+                <a href="/manual-roadmap" className="homepage-wire-btn homepage-wire-btn--translucent">
                   Nhận roadmap cá nhân hóa
                 </a>
               ) : (

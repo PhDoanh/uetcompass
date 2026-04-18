@@ -35,6 +35,14 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		}
 		studentProfileId = profile._id;
 
+		if (profile.careerGoal?.role || profile.careerGoal?.companyType) {
+			// If either role or companyType is present, set personalisationLevel to 'full'
+			   if (!profile.careerGoal?.role) {
+				   // Notify client via SSE and exit early
+				   notifyGenerationFailed(sseToken, "You have to choose a role to get personalized roadmap");
+				   return;
+			   }
+			}
 		personalisationLevel =
 			profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
 

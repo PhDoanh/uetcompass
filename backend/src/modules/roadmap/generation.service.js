@@ -8,6 +8,7 @@ const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const {
 	toKebabCase,
@@ -90,8 +91,10 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
 
 				// AI evaluates relevance of off-template skills to the career goal
-				const approvedExtras = await evaluateOffTemplateSkills(offTemplateSkills, profile);
-
+				const approvedExtras = []; //await evaluateOffTemplateSkills(offTemplateSkills, profile);
+				
+				await sleep(10000);
+				
 				console.log('approvedExtras:', approvedExtras == null ? 'null' : approvedExtras.length)
 
 				// Off-template nodes are always subtopic, attached to the nearest template topic

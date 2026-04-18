@@ -17,7 +17,7 @@ const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers')
 const app = express();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '200kb';
+// const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '200kb';
 const LOCALHOST_ORIGIN_PATTERN = /^http:\/\/localhost:\d+$/;
 
 

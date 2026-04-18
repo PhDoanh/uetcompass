@@ -35,11 +35,11 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		}
 		studentProfileId = profile._id;
 
-		if (profile.careerGoal?.role || profile.careerGoal?.companyType) {
+		if (profile.careerGoal?.role || profile.major) {
 			// If either role or companyType is present, set personalisationLevel to 'full'
 			   if (!profile.careerGoal?.role) {
 				   // Notify client via SSE and exit early
-				   notifyGenerationFailed(sseToken, "You have to choose a role to get personalized roadmap");
+				   notifyGenerationFailed(sseToken, profile.major ? "You have to choose a major" : "You have to choose a role to get personalized roadmap");
 				   return;
 			   }
 			}

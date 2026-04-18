@@ -45,7 +45,7 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 - [x] T002 Create frontend resources feature directory: `frontend/src/features/resources/` with subdirectories for components and API service layer
 - [x] T003 Add `TAVILY_API_KEY` environment variable to `backend/.env.example` and document in quickstart.md
 - [x] T004 Update `backend/.env` with Tavily API key for local development
-- [x] T005 Install backend dependencies: `npm install axios` (for Tavily HTTP client) in `backend/package.json`
+- [x] T005 Configure backend HTTP client strategy to use built-in Fetch API for Tavily requests (no additional HTTP client dependency needed)
 - [x] T006 Update MongoDB schema: Create TTL index on `skill_trend_snapshots.expiresAt` field (30-day expiry per data-model.md)
 
 ### Foundational: Data Models & Core Adapter
@@ -364,7 +364,7 @@ This feature is implemented in **3 sequential user story phases** (US1, US2, US3
 - [ ] T055 Update `backend/.env.example` with all new variables: `TAVILY_API_KEY`
 - [ ] T056 Update `backend/README.md` or feature-specific doc with setup instructions (copy from quickstart.md)
 - [ ] T057 Create `frontend/src/features/resources/__tests__/resources.api.test.js` with API wrapper tests:
-  - Mock fetch/axios calls to backend endpoints
+  - Mock fetch calls to backend endpoints
   - Test error handling (network error, 401, server error)
   - Test response parsing
 - [ ] T058 Add type checking (TypeScript / PropTypes) to all React components and API wrappers

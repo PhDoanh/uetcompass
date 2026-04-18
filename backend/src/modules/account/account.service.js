@@ -5,6 +5,7 @@ const accountAuditService = require('./accountAudit.service');
 const { resolveEffectiveDisplayName } = require('./identity.policy');
 
 const BCRYPT_ROUNDS = 12;
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -16,11 +17,7 @@ function buildError(status, code, message, details) {
 
 function validatePasswordPolicy(value) {
   const password = String(value || '');
-  const meetsLength = password.length >= 8;
-  const hasLetter = /[A-Za-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecial = /[^A-Za-z\d]/.test(password);
-  return meetsLength && hasLetter && hasNumber && hasSpecial;
+  return PASSWORD_POLICY_REGEX.test(password);
 }
 
 function mapIdentity(user) {
@@ -220,7 +217,7 @@ async function changePassword(userId, payload = {}) {
     throw buildError(
       400,
       'INVALID_INPUT',
-      'New password must be at least 8 characters and include letters, numbers, and special characters',
+      'New password must be at least 8 characters and include uppercase, lowercase, number, and one of @$!%*?&',
       { field: 'newPassword' }
     );
   }

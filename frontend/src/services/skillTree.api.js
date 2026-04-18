@@ -1,10 +1,8 @@
-import axios from 'axios';
-
-const API_BASE = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:3001/api';
-const client = axios.create({ baseURL: API_BASE });
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+	(typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 
 function getDevUserId() {
-  return import.meta?.env?.VITE_SKILL_TREE_DEV_USER_ID || '000000000000000000000001';
+  return import.meta.env.VITE_SKILL_TREE_DEV_USER_ID || '000000000000000000000001';
 }
 
 function createHeaders(authToken) {
@@ -20,101 +18,87 @@ function createHeaders(authToken) {
   };
 }
 
-// Helper: convert API errors to structured objects
-function handleError(err) {
-  if (err.response) {
-    const { status, data } = err.response;
-    const message = data?.error?.message || data?.message || 'Unknown error';
-    const code = data?.error?.code || data?.code || 'UNKNOWN';
-    const details = data?.error?.details || data?.details || {};
+async function request(path, options = {}) {
+  const headers = {
+    ...(options.headers || {}),
+  };
+
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || payload?.message || 'Unknown error';
+    const code = payload?.error?.code || payload?.code || 'UNKNOWN';
+    const details = payload?.error?.details || payload?.details || {};
     const error = new Error(message);
-    error.status = status;
+    error.status = response.status;
     error.code = code;
     error.details = details;
     throw error;
   }
-  throw err;
+
+  return payload;
 }
 
 export async function getTree(authToken) {
-  try {
-    const response = await client.get('/skill-tree', {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request('/skill-tree', {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 export async function patchNodeStatus(authToken, roadmapId, nodeId, fromState, toState) {
-  try {
-    const response = await client.patch(`/skill-tree/roadmaps/${roadmapId}/progress/node`, {
+  return request(`/skill-tree/roadmaps/${roadmapId}/progress/node`, {
+    method: 'PATCH',
+    headers: createHeaders(authToken),
+    body: JSON.stringify({
       nodeId,
       fromState,
       toState,
-    }, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+    }),
+  });
 }
 
 export async function getRoadmapProgress(authToken, roadmapId) {
-  try {
-    const response = await client.get(`/skill-tree/roadmaps/${roadmapId}/progress`, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request(`/skill-tree/roadmaps/${roadmapId}/progress`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 export async function getResources(authToken, courseCode) {
-  try {
-    const response = await client.get(`/skill-tree/nodes/${courseCode}/resources`, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request(`/skill-tree/nodes/${courseCode}/resources`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 export async function getWhyCourse(authToken, courseCode) {
-  try {
-    const response = await client.get(`/skill-tree/nodes/${courseCode}/why`, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request(`/skill-tree/nodes/${courseCode}/why`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 export async function getMarketSkills(authToken, courseCode) {
-  try {
-    const response = await client.get(`/skill-tree/nodes/${courseCode}/market-skills`, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request(`/skill-tree/nodes/${courseCode}/market-skills`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 export async function getLearningResources(authToken, skillName) {
-  try {
-    const response = await client.get(`/skill-tree/skills/${encodeURIComponent(skillName)}/learning-resources`, {
-      headers: createHeaders(authToken),
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request(`/skill-tree/skills/${encodeURIComponent(skillName)}/learning-resources`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
 }
 
 // Backward-compatible aliases for older call sites.
@@ -129,14 +113,11 @@ export const getSkillLearningResources = getLearningResources;
  * Skill Tree does not trigger repersonalization anymore
  */
 export async function repersonalize(authToken) {
-  try {
-    const response = await client.post('/roadmaps/primary/regenerate', {}, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    });
-    return response.data;
-  } catch (err) {
-    handleError(err);
-  }
+  return request('/roadmaps/primary/regenerate', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${authToken}` },
+    body: JSON.stringify({}),
+  });
 }
 
 const skillTreeApi = {

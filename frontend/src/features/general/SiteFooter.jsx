@@ -7,9 +7,9 @@ export default function SiteFooter() {
       </div>
       <div className="homepage-footer__col">
         <h5>Tài nguyên</h5>
-        <a href="#">Tài liệu</a>
+        <a href="https://tailieuvnu.com/">Tài liệu</a>
         <a href="#">Cộng đồng</a>
-        <a href="#">GitHub</a>
+        <a href="https://github.com/PhDoanh/uetcompass.git">GitHub</a>
       </div>
       <div className="homepage-footer__col">
         <h5>Pháp lý</h5>

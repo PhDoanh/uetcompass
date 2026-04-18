@@ -66,6 +66,21 @@ describe('auth service', () => {
     });
   });
 
+  test('registerWithEmail rejects weak password', async () => {
+    await expect(
+      authService.registerWithEmail({
+        fullName: 'Student',
+        email: 'student@vnu.edu.vn',
+        password: 'weakpass',
+      })
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'INVALID_INPUT',
+    });
+
+    expect(User.findOne).not.toHaveBeenCalled();
+  });
+
   test('verifyEmailOtp locks account when OTP expired', async () => {
     User.findOne.mockResolvedValueOnce({
       _id: 'u2',

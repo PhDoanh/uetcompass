@@ -1,0 +1,90 @@
+title: Frontend Foundations Roadmap
+description: A compact roadmap for learning frontend basics, internet concepts, and development tooling.
+nodes:
+  - nodeId: FRONTEND_STACK
+    type: main_topic
+    label: Frontend Stack
+    description: Pick the core frontend technologies to start with.
+    parentNodeId: null
+    skillName: html
+    resources:
+      - title: MDN Web Docs
+        url: https://developer.mozilla.org/
+        type: link
+
+  - nodeId: INTERNET_BASICS
+    type: main_topic
+    label: Internet Basics
+    description: Understand how the browser talks to servers and resolves domains.
+    parentNodeId: null
+    skillName: http
+    resources:
+      - title: How the Internet Works
+        url: https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/How_does_the_Internet_work
+        type: link
+
+  - nodeId: TOOLING_WORKFLOW
+    type: main_topic
+    label: Tooling Workflow
+    description: Set up modern tooling and learn Git-based workflows.
+    parentNodeId: null
+    skillName: git
+    resources:
+      - title: Vite documentation
+        url: https://vitejs.dev/guide/
+        type: link
+
+  - nodeId: HTML_CSS
+    type: sub_topic
+    label: HTML & CSS
+    description: Build semantic layouts and responsive interfaces.
+    parentNodeId: FRONTEND_STACK
+    skillName: semantic-html
+    resources:
+      - title: MDN HTML guide
+        url: https://developer.mozilla.org/en-US/docs/Learn/HTML
+        type: link
+
+  - nodeId: JAVASCRIPT_CORE
+    type: sub_topic
+    label: JavaScript Core
+    description: Learn language fundamentals, DOM APIs, and async patterns.
+    parentNodeId: FRONTEND_STACK
+    skillName: dom
+    resources:
+      - title: JavaScript first steps
+        url: https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps
+        type: link
+
+  - nodeId: HTTP_BROWSER
+    type: sub_topic
+    label: HTTP & Browser Basics
+    description: Understand requests, responses, rendering, and browser tools.
+    parentNodeId: INTERNET_BASICS
+    skillName: http
+    resources:
+      - title: HTTP overview
+        url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
+        type: link
+
+  - nodeId: DOMAIN_DNS
+    type: sub_topic
+    label: Domain Name & DNS
+    description: Learn how domains map to servers through DNS.
+    parentNodeId: INTERNET_BASICS
+    skillName: dns
+    resources:
+      - title: DNS explained
+        url: https://www.cloudflare.com/learning/dns/what-is-dns/
+        type: link
+
+  - nodeId: GIT_WORKFLOW
+    type: sub_topic
+    label: Git Workflow
+    description: Track changes, branch safely, and collaborate with Git.
+    parentNodeId: TOOLING_WORKFLOW
+    skillName: git-branching
+    resources:
+      - title: Git book
+        url: https://git-scm.com/book/en/v2
+        type: link

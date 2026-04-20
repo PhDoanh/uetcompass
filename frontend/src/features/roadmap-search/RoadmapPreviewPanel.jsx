@@ -169,7 +169,6 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
             <div className="roadmap-preview-panel" aria-label="Roadmap preview panel">
                 <div className="roadmap-preview-panel__hero">
                     <div>
-                        <p className="roadmap-preview-panel__eyebrow">Preview</p>
                         <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
                         <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
                     </div>
@@ -186,7 +185,6 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
         <div className="roadmap-preview-panel" aria-label="Roadmap preview panel">
             <div className="roadmap-preview-panel__hero">
                 <div>
-                    <p className="roadmap-preview-panel__eyebrow">Preview</p>
                     <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
                     <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
                 </div>

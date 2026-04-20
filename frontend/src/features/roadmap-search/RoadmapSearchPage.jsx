@@ -30,13 +30,11 @@ export default function RoadmapSearchPage() {
             <section className="roadmap-search-page__left">
                 <div className="roadmap-search-page__section-header">
                     <div>
-                        <p className="roadmap-search-page__eyebrow">Search workspace</p>
                         <h2 className="roadmap-search-page__title">Roadmaps</h2>
                         <p className="roadmap-search-page__subtitle">
                             Find public manual roadmaps by name, then preview them on the right.
                         </p>
                     </div>
-                    <div className="roadmap-search-page__hint-chip">2+ characters</div>
                 </div>
                 {errorMessage ? (
                     <p className="roadmap-search-page__error">{errorMessage}</p>

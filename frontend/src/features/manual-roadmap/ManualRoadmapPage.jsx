@@ -296,7 +296,9 @@ export default function ManualRoadmapPage() {
         return;
       }
 
-      const delta = (resizeDragRef.current.startX - clientX) / currentLayoutWidth;
+      const resizableWidth = Math.max(1, currentLayoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH);
+
+      const delta = (resizeDragRef.current.startX - clientX) / resizableWidth;
       const nextRatio = clamp(
         resizeDragRef.current.startRatio + delta,
         MANUAL_ROADMAP_SPLIT_MIN_RATIO,
@@ -370,8 +372,9 @@ export default function ManualRoadmapPage() {
     }
 
     const step = event.shiftKey ? 48 : 24;
+    const resizableWidth = Math.max(1, layoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH);
     setEditorRatio((currentRatio) => clamp(
-      currentRatio + (event.key === 'ArrowLeft' ? -step : step) / layoutWidth,
+      currentRatio + (event.key === 'ArrowLeft' ? -step : step) / resizableWidth,
       MANUAL_ROADMAP_SPLIT_MIN_RATIO,
       MANUAL_ROADMAP_SPLIT_MAX_RATIO,
     ));
@@ -589,8 +592,9 @@ export default function ManualRoadmapPage() {
         ? 'Chưa có node hợp lệ để preview.'
         : 'Preview đã sẵn sàng.';
 
-  const editorPaneWidth = layoutWidth > 0 ? Math.round(layoutWidth * editorRatio) : 0;
-  const previewPaneWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - editorPaneWidth - MANUAL_ROADMAP_RESIZER_WIDTH) : 0;
+  const resizableWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH) : 0;
+  const editorPaneWidth = layoutWidth > 0 ? Math.round(resizableWidth * editorRatio) : 0;
+  const previewPaneWidth = layoutWidth > 0 ? Math.max(0, resizableWidth - editorPaneWidth) : 0;
 
   return (
     <div className="skill-tree-page manual-roadmap-page">

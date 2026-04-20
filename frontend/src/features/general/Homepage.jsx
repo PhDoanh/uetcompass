@@ -11,6 +11,7 @@ import '../../style/general-component.css';
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
+const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 3;
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -39,15 +40,47 @@ function resolveDisplayName(accessToken) {
   return null;
 }
 
+function resolveUserId(accessToken) {
+  if (!accessToken || typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const payloadPart = accessToken.split('.')[1] || '';
+    const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = window.atob(normalized);
+    const payload = JSON.parse(decoded);
+    const userId = String(payload?.userId || payload?.sub || '').trim();
+    return userId || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function formatRoadmapDate(value) {
+  if (!value) {
+    return 'N/A';
+  }
+
+  try {
+    return `Cập nhật ${new Date(value).toLocaleDateString('vi-VN')}`;
+  } catch (_) {
+    return 'N/A';
+  }
+}
+
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const { addNotification } = useNotification();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState('');
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
+  const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
+  const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
   const [roadmapPage, setRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
+  const userId = useMemo(() => resolveUserId(accessToken), [accessToken]);
 
   const shouldPromptOnboarding = useMemo(
     () => onboardingState !== 'COMPLETED' && Boolean(accessToken),
@@ -129,13 +162,65 @@ export default function Homepage() {
       }
     }
 
+    async function loadMyManualRoadmaps() {
+      if (!accessToken) {
+        if (isMounted) {
+          setMyManualRoadmaps([]);
+          setIsLoadingMyManualRoadmaps(false);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsLoadingMyManualRoadmaps(true);
+      }
+
+      try {
+        const result = await manualRoadmapApi.listManualRoadmaps(accessToken, {
+          page: 1,
+          limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
+        });
+        const items = Array.isArray(result?.items) ? result.items : [];
+
+        if (isMounted) {
+          setMyManualRoadmaps(items);
+        }
+      } catch (err) {
+        if (err?.status === 401) {
+          await logoutAndRedirect();
+          return;
+        }
+
+        try {
+          const fallback = await manualRoadmapApi.listPublicManualRoadmaps({ page: 1, limit: 100 });
+          const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
+          const ownRoadmaps = fallbackItems
+            .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
+            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
+
+          if (isMounted) {
+            setMyManualRoadmaps(ownRoadmaps);
+          }
+        } catch (_) {
+          if (isMounted) {
+            setMyManualRoadmaps([]);
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMyManualRoadmaps(false);
+        }
+      }
+    }
+
     loadPublicRoadmaps();
     loadDisplayName();
+    loadMyManualRoadmaps();
 
     return () => {
       isMounted = false;
     };
-  }, [accessToken, logoutAndRedirect]);
+  }, [accessToken, logoutAndRedirect, userId]);
 
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
@@ -303,6 +388,11 @@ export default function Homepage() {
     (roadmapPage + 1) * ROADMAPS_PER_PAGE
   );
   const isSingleRoadmapCardPage = visibleRoadmapCards.length === 1;
+  const hasPersonalizedRoadmap = onboardingState === 'COMPLETED' && Boolean(accessToken);
+  const myManualRoadmapCards = Array.isArray(myManualRoadmaps)
+    ? myManualRoadmaps.filter((roadmap) => String(roadmap?._id || '').trim())
+    : [];
+  const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
 
   const handlePrevRoadmapPage = () => {
     setRoadmapPage((prev) => Math.max(0, prev - 1));
@@ -335,7 +425,7 @@ export default function Homepage() {
                   Nhận roadmap cá nhân hóa
                 </button>
               ) : accessToken ? (
-                <a href="/manual-roadmap" className="homepage-wire-btn homepage-wire-btn--translucent">
+                <a href="/skill-tree" className="homepage-wire-btn homepage-wire-btn--translucent">
                   Nhận roadmap cá nhân hóa
                 </a>
               ) : (
@@ -362,6 +452,95 @@ export default function Homepage() {
             </div>
           </div>
         </section>
+
+        {shouldShowMyRoadmapsSection ? (
+          <section className="homepage-section homepage-section--blank" aria-label="My roadmap gallery">
+            <div className="homepage-roadmap-head">
+              <div>
+                <h2>Roadmap của tôi</h2>
+                <p>Không gian roadmap dành riêng cho tài khoản của bạn.</p>
+              </div>
+            </div>
+
+            <div className="homepage-roadmap-grid">
+              {hasPersonalizedRoadmap ? (
+                <article className="homepage-roadmap-card homepage-roadmap-card--featured">
+                  <div className="homepage-roadmap-card__image-wrap">
+                    <img src="/images/uetstone.jpg" alt="Roadmap cá nhân hóa" className="homepage-roadmap-card__image" />
+                    <div className="homepage-roadmap-card__chips">
+                      <span className="homepage-chip homepage-chip--neutral">Sẵn sàng</span>
+                      <span className="homepage-chip homepage-chip--indigo">Skill Tree</span>
+                    </div>
+                  </div>
+                  <div className="homepage-roadmap-card__body">
+                    <h3 className="homepage-roadmap-card__title">
+                      Roadmap cá nhân hóa
+                      <span className="homepage-feature-pill">Nổi bật</span>
+                    </h3>
+                    <p className="homepage-roadmap-card__description">
+                      Đã hoàn tất onboarding, bạn có thể học theo skill tree cá nhân hóa.
+                    </p>
+                    <div className="homepage-roadmap-card__meta">
+                      <small>Sẵn sàng học tập</small>
+                      <button
+                        type="button"
+                        className="homepage-card-action"
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            window.location.assign('/skill-tree');
+                          }
+                        }}
+                      >
+                        Mở skill tree
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
+
+              {myManualRoadmapCards.map((roadmap) => {
+                const roadmapId = String(roadmap?._id || '').trim();
+                const roadmapTitle = String(roadmap?.title || '').trim() || 'Roadmap tạo thủ công';
+                const roadmapDescription = String(roadmap?.description || '').trim() || 'Roadmap thủ công do bạn tạo.';
+                const roadmapMeta = formatRoadmapDate(roadmap?.updatedAt || roadmap?.createdAt || null);
+
+                return (
+                  <article key={roadmapId} className="homepage-roadmap-card">
+                    <div className="homepage-roadmap-card__image-wrap">
+                      <img
+                        src="https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1200&q=80"
+                        alt={roadmapTitle}
+                        className="homepage-roadmap-card__image"
+                      />
+                      <div className="homepage-roadmap-card__chips">
+                        <span className="homepage-chip homepage-chip--neutral">Đã có</span>
+                        <span className="homepage-chip homepage-chip--blue">Manual</span>
+                      </div>
+                    </div>
+                    <div className="homepage-roadmap-card__body">
+                      <h3 className="homepage-roadmap-card__title">{roadmapTitle}</h3>
+                      <p className="homepage-roadmap-card__description">{roadmapDescription}</p>
+                      <div className="homepage-roadmap-card__meta">
+                        <small>{roadmapMeta}</small>
+                        <button
+                          type="button"
+                          className="homepage-card-action"
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              window.location.assign(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
+                            }
+                          }}
+                        >
+                          Mở roadmap
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         <section id="roadmap-community" className="homepage-section homepage-section--blank" aria-label="Roadmap gallery">
           <div className="homepage-roadmap-head">

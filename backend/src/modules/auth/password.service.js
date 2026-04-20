@@ -47,47 +47,49 @@ async function requestPasswordReset({ email, requestIp }) {
   const normalizedIp = String(requestIp || '').trim() || null;
   const user = await User.findOne({ email: normalizedEmail });
 
-  if (user && user.status !== 'deleted') {
-    const isResend = Boolean(user.passwordReset?.otp && user.passwordReset?.expiresAt);
-    await enforceOtpResendPolicy({
-      flowType: 'forgot_password',
-      accountKey: normalizedEmail,
-      requestIp: normalizedIp,
-    });
+  if (!user || user.status === 'soft-deleted') {
+    throw buildError(404, 'EMAIL_NOT_FOUND', 'No account found for this email.');
+  }
 
-    const otp = generateOtp();
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          passwordReset: {
-            otp,
-            expiresAt: new Date(Date.now() + RESET_OTP_EXPIRY_MS),
-            attempts: 0,
-            resetTokenHash: null,
-            resetTokenExpiresAt: null,
-          },
+  const isResend = Boolean(user.passwordReset?.otp && user.passwordReset?.expiresAt);
+  await enforceOtpResendPolicy({
+    flowType: 'forgot_password',
+    accountKey: normalizedEmail,
+    requestIp: normalizedIp,
+  });
+
+  const otp = generateOtp();
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        passwordReset: {
+          otp,
+          expiresAt: new Date(Date.now() + RESET_OTP_EXPIRY_MS),
+          attempts: 0,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
         },
-      }
-    );
-    await sendResetOtpEmail(normalizedEmail, otp);
-
-    try {
-      await emitAuthEvent(isResend ? 'otp_resend' : 'otp_send', {
-        userId: user._id,
-        actorType: 'uet_student',
-        requestIp: normalizedIp,
-        outcome: 'success',
-        metadata: { flowType: 'forgot_password', email: normalizedEmail },
-      });
-    } catch (_) {
-      // Ignore audit emission failures.
+      },
     }
+  );
+  await sendResetOtpEmail(normalizedEmail, otp);
+
+  try {
+    await emitAuthEvent(isResend ? 'otp_resend' : 'otp_send', {
+      userId: user._id,
+      actorType: 'uet_student',
+      requestIp: normalizedIp,
+      outcome: 'success',
+      metadata: { flowType: 'forgot_password', email: normalizedEmail },
+    });
+  } catch (_) {
+    // Ignore audit emission failures.
   }
 
   return {
     code: 'FORGOT_PASSWORD_REQUEST_ACCEPTED',
-    message: 'If an account exists for this email, a reset code has been sent.',
+    message: 'Password reset code has been sent.',
   };
 }
 

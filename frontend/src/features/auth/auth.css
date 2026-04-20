@@ -317,6 +317,11 @@
   justify-content: center;
 }
 
+.auth-google-button-center {
+  display: flex;
+  justify-content: center;
+}
+
 .auth-status.helper.tight {
   margin: 0;
 }
@@ -344,6 +349,13 @@
   color: #346099;
   font-size: 0.68rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.auth-helper-icon {
+  flex-shrink: 0;
 }
 
 .auth-helper-text.error {

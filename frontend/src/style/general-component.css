@@ -1670,7 +1670,7 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
 /* Roadmap Search Page */
 .roadmap-search-overlay {
   position: fixed;
-  top: 70px;
+  top: var(--navbar-height);
   right: 0;
   bottom: 0;
   left: 0;

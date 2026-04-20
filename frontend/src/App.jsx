@@ -31,7 +31,7 @@ function AppContent() {
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/roadmaps/search'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
 		pathname.startsWith('/roadmaps/public/');
 
@@ -57,10 +57,6 @@ function AppContent() {
 		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
 		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
 		window.addEventListener('keydown', handleEscClose);
-
-		if (pathname === '/roadmaps/search') {
-			setIsRoadmapSearchOverlayOpen(true);
-		}
 
 		return () => {
 			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
@@ -135,10 +131,6 @@ function AppContent() {
 				</main>
 			</AuthGuard>
 		);
-	}
-
-	if (!content && pathname === '/roadmaps/search') {
-		content = <Homepage />;
 	}
 
 	if (!content && publicSkillTreeRoadmapId) {

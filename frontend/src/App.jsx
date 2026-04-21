@@ -14,7 +14,7 @@ import { NotificationProvider } from './features/general/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function normalizePathname(pathname) {
 	if (!pathname || pathname === '/') {
@@ -26,6 +26,7 @@ function normalizePathname(pathname) {
 function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
+	const roadmapSearchPanelRef = useRef(null);
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
 	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
@@ -64,6 +65,52 @@ function AppContent() {
 			window.removeEventListener('keydown', handleEscClose);
 		};
 	}, [pathname]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
+			return undefined;
+		}
+
+		const isOutsideOverlayPanel = (target) => {
+			const panel = roadmapSearchPanelRef.current;
+			if (!panel || !(target instanceof Node)) {
+				return false;
+			}
+
+			if (typeof target.composedPath === 'function') {
+				return !target.composedPath().includes(panel);
+			}
+
+			return !panel.contains(target);
+		};
+
+		const handleOutsideInteraction = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		const handleOutsideWheel = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				event.preventDefault();
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleOutsideInteraction, true);
+		document.addEventListener('touchstart', handleOutsideInteraction, true);
+		document.addEventListener('click', handleOutsideInteraction, true);
+		window.addEventListener('wheel', handleOutsideWheel, { capture: true, passive: false });
+		window.addEventListener('touchmove', handleOutsideWheel, { capture: true, passive: false });
+
+		return () => {
+			document.removeEventListener('mousedown', handleOutsideInteraction, true);
+			document.removeEventListener('touchstart', handleOutsideInteraction, true);
+			document.removeEventListener('click', handleOutsideInteraction, true);
+			window.removeEventListener('wheel', handleOutsideWheel, true);
+			window.removeEventListener('touchmove', handleOutsideWheel, true);
+		};
+	}, [isRoadmapSearchOverlayOpen]);
 
 	if (isAuthenticated && isAuthPopupPath) {
 		if (typeof window !== 'undefined') {
@@ -221,7 +268,11 @@ function AppContent() {
 						onClick={() => setIsRoadmapSearchOverlayOpen(false)}
 					>
 						<div className="roadmap-search-overlay__backdrop" />
-						<div className="roadmap-search-overlay__panel" onClick={(event) => event.stopPropagation()}>
+						<div
+							ref={roadmapSearchPanelRef}
+							className="roadmap-search-overlay__panel"
+							onClick={(event) => event.stopPropagation()}
+						>
 							<div className="roadmap-search-overlay__header">
 								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
 								<button

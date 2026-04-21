@@ -1,6 +1,6 @@
 # Tasks: Manual Roadmap Generator
 
-**Input**: Design documents from `specs/001-manual-roadmap-generator/`
+**Input**: Design documents from `specs/013-manual-roadmap-generator/`
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/rest-api.md`
 
 ## Phase 1: Setup (Shared Infrastructure)
@@ -95,11 +95,11 @@
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [X] T033 [P] Update `specs/001-manual-roadmap-generator/quickstart.md` and `specs/001-manual-roadmap-generator/plan.md` to reflect the final implementation details and user flows
+- [X] T033 [P] Update `specs/013-manual-roadmap-generator/quickstart.md` and `specs/013-manual-roadmap-generator/plan.md` to reflect the final implementation details and user flows
 - [ ] T034 [P] Add final backend unit tests for manual roadmap model validation and publish state transitions in `backend/tests/unit/roadmap/manualRoadmap.model.test.js`
 - [ ] T035 [P] Add final frontend regression tests in `frontend/src/features/manual-roadmap/ManualRoadmapPage.test.jsx`
 - [X] T036 [P] Review and refactor manual roadmap backend and frontend code for consistency, removing any placeholder or scaffold code in `backend/src/modules/roadmap/` and `frontend/src/features/manual-roadmap/`
-- [X] T037 [P] Validate `specs/001-manual-roadmap-generator/contracts/rest-api.md` against implemented endpoints and update the contract if needed
+- [X] T037 [P] Validate `specs/013-manual-roadmap-generator/contracts/rest-api.md` against implemented endpoints and update the contract if needed
 - [X] T038 [P] Ensure shared roadmaps are only visible in the community section and not on private-only views in `frontend/src/features/general/Homepage.jsx`
 
 ---

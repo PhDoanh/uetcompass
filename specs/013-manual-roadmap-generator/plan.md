@@ -1,7 +1,7 @@
 # Implementation Plan: Manual Roadmap Generator
 
-**Branch**: `001-manual-roadmap-generator` | **Date**: 2026-04-14 | **Spec**: `specs/001-manual-roadmap-generator/spec.md`
-**Input**: Feature specification from `specs/001-manual-roadmap-generator/spec.md`
+**Branch**: `013-manual-roadmap-generator` | **Date**: 2026-04-14 | **Spec**: `specs/013-manual-roadmap-generator/spec.md`
+**Input**: Feature specification from `specs/013-manual-roadmap-generator/spec.md`
 
 ## Summary
 
@@ -36,7 +36,7 @@ This feature will reuse the existing `roadmaps` backend module and MongoDB schem
 ### Documentation (this feature)
 
 ```text
-specs/001-manual-roadmap-generator/
+specs/013-manual-roadmap-generator/
 ├── plan.md
 ├── research.md
 ├── data-model.md

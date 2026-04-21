@@ -8,6 +8,7 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
+import { useNotification } from '../general/NotificationContainer';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -103,7 +104,7 @@ function findNodeLine(yamlText, nodeId) {
 function normalizeYamlForPersistence(yamlText) {
   const parsed = load(yamlText);
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('YAML must be an object before saving.');
+    throw new Error('YAML phải là một đối tượng trước khi lưu.');
   }
 
   const next = { ...parsed };
@@ -138,6 +139,7 @@ function normalizeYamlForPersistence(yamlText) {
 
 export default function ManualRoadmapPage() {
   const { accessToken } = useAuth();
+  const { addNotification } = useNotification();
   const roadmapId = parseQueryParam('id');
   const [selectedSampleKey, setSelectedSampleKey] = useState(SAMPLE_ROADMAPS[0].key);
   const [yamlCode, setYamlCode] = useState(() => SAMPLE_ROADMAPS[0].yaml);
@@ -236,6 +238,22 @@ export default function ManualRoadmapPage() {
     }
   }, [yamlCode]);
 
+  useEffect(() => {
+    if (!apiError) {
+      return;
+    }
+    addNotification(apiError, 'error');
+    setApiError('');
+  }, [apiError, addNotification]);
+
+  useEffect(() => {
+    if (!successMessage) {
+      return;
+    }
+    addNotification(successMessage, 'success');
+    setSuccessMessage('');
+  }, [successMessage, addNotification]);
+
   /**
    * Compute ELK.js layout whenever nodes/edges change
    */
@@ -263,7 +281,7 @@ export default function ManualRoadmapPage() {
       } catch (err) {
         console.error('Layout computation error:', err);
         if (isMounted) {
-          setValidationError(`Layout computation failed: ${err.message}`);
+          setValidationError(`Không thể tính toán bố cục: ${err.message}`);
         }
       } finally {
         if (isMounted) {
@@ -315,7 +333,9 @@ export default function ManualRoadmapPage() {
         return;
       }
 
-      const delta = (resizeDragRef.current.startX - clientX) / currentLayoutWidth;
+      const resizableWidth = Math.max(1, currentLayoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH);
+
+      const delta = (resizeDragRef.current.startX - clientX) / resizableWidth;
       const nextRatio = clamp(
         resizeDragRef.current.startRatio + delta,
         MANUAL_ROADMAP_SPLIT_MIN_RATIO,
@@ -389,8 +409,9 @@ export default function ManualRoadmapPage() {
     }
 
     const step = event.shiftKey ? 48 : 24;
+    const resizableWidth = Math.max(1, layoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH);
     setEditorRatio((currentRatio) => clamp(
-      currentRatio + (event.key === 'ArrowLeft' ? -step : step) / layoutWidth,
+      currentRatio + (event.key === 'ArrowLeft' ? -step : step) / resizableWidth,
       MANUAL_ROADMAP_SPLIT_MIN_RATIO,
       MANUAL_ROADMAP_SPLIT_MAX_RATIO,
     ));
@@ -410,7 +431,7 @@ export default function ManualRoadmapPage() {
         setDescription(roadmap.description || '');
       } catch (err) {
         if (!isMounted) return;
-        setApiError(err.message || 'Unable to load manual roadmap.');
+        setApiError(err.message || 'Không thể tải roadmap thủ công.');
       }
     })();
 
@@ -461,7 +482,7 @@ export default function ManualRoadmapPage() {
     try {
       const parsed = load(yamlCode);
       if (!parsed || typeof parsed !== 'object') {
-        setApiError('YAML must be an object before editing resources.');
+        setApiError('YAML phải là một đối tượng trước khi chỉnh sửa học liệu.');
         return;
       }
 
@@ -470,7 +491,7 @@ export default function ManualRoadmapPage() {
       setYamlCode(nextYaml);
       setApiError('');
     } catch (err) {
-      setApiError(err.message || 'Unable to update resources in YAML.');
+      setApiError(err.message || 'Không thể cập nhật học liệu trong YAML.');
     }
   };
 
@@ -480,11 +501,11 @@ export default function ManualRoadmapPage() {
     const url = String(resourceUrl || '').trim();
 
     if (!nodeId) {
-      setApiError('Please select a node before adding a resource.');
+      setApiError('Vui lòng chọn một node trước khi thêm học liệu.');
       return;
     }
     if (!title || !url) {
-      setApiError('Resource title and URL are required.');
+      setApiError('Vui lòng nhập tiêu đề và URL cho học liệu.');
       return;
     }
 
@@ -493,7 +514,7 @@ export default function ManualRoadmapPage() {
       const targetNode = nodes.find((node) => String(node.nodeId || node.id || '').trim() === nodeId);
 
       if (!targetNode) {
-        throw new Error('Selected node was not found in YAML.');
+        throw new Error('Không tìm thấy node đã chọn trong YAML.');
       }
 
       if (!Array.isArray(targetNode.resources)) {
@@ -522,7 +543,7 @@ export default function ManualRoadmapPage() {
       const targetNode = nodes.find((node) => String(node.nodeId || node.id || '').trim() === nodeId);
 
       if (!targetNode || !Array.isArray(targetNode.resources)) {
-        throw new Error('No resource list found for selected node.');
+        throw new Error('Không tìm thấy danh sách học liệu cho node đã chọn.');
       }
 
       targetNode.resources = targetNode.resources.filter((_, resourceIndex) => resourceIndex !== index);
@@ -540,7 +561,7 @@ export default function ManualRoadmapPage() {
     }
 
     if (validationError) {
-      setApiError('Please fix validation errors before saving.');
+      setApiError('Vui lòng sửa các lỗi xác thực trước khi lưu.');
       return;
     }
 
@@ -548,7 +569,7 @@ export default function ManualRoadmapPage() {
     try {
       persistableYamlCode = normalizeYamlForPersistence(yamlCode);
     } catch (err) {
-      setApiError(err.message || 'Unable to normalize YAML for saving.');
+      setApiError(err.message || 'Không thể chuẩn hóa YAML để lưu.');
       return;
     }
 
@@ -558,12 +579,12 @@ export default function ManualRoadmapPage() {
         ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
         : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
 
-      setSuccessMessage(`Roadmap ${roadmapId ? 'updated' : 'created'} successfully.`);
+      setSuccessMessage(`Đã ${roadmapId ? 'cập nhật' : 'tạo'} roadmap thành công.`);
     } catch (err) {
       if (err?.status === 401) {
         setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi lưu lại roadmap.');
       } else {
-        setApiError(err.message || 'Unable to save roadmap.');
+        setApiError(err.message || 'Không thể lưu roadmap.');
       }
     } finally {
       setIsSaving(false);
@@ -608,8 +629,9 @@ export default function ManualRoadmapPage() {
         ? 'Chưa có node hợp lệ để preview.'
         : 'Preview đã sẵn sàng.';
 
-  const editorPaneWidth = layoutWidth > 0 ? Math.round(layoutWidth * editorRatio) : 0;
-  const previewPaneWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - editorPaneWidth - MANUAL_ROADMAP_RESIZER_WIDTH) : 0;
+  const resizableWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - MANUAL_ROADMAP_RESIZER_WIDTH) : 0;
+  const editorPaneWidth = layoutWidth > 0 ? Math.round(resizableWidth * editorRatio) : 0;
+  const previewPaneWidth = layoutWidth > 0 ? Math.max(0, resizableWidth - editorPaneWidth) : 0;
 
   return (
     <div className="skill-tree-page manual-roadmap-page">
@@ -815,17 +837,6 @@ export default function ManualRoadmapPage() {
           </div>
         </aside>
       </div>
-
-      {apiError && (
-        <div className="manual-roadmap-toast manual-roadmap-toast--error">
-          {apiError}
-        </div>
-      )}
-      {successMessage && (
-        <div className="manual-roadmap-toast manual-roadmap-toast--success">
-          {successMessage}
-        </div>
-      )}
 
       <YamlGuideOverlay isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>

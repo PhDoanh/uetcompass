@@ -63,6 +63,14 @@ const MANUAL_ROADMAP_SPLIT_MAX_RATIO = 0.8;
 const MANUAL_ROADMAP_RESIZER_WIDTH = 14;
 const MANUAL_ROADMAP_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
 
+function resolveMonacoTheme() {
+  if (typeof document === 'undefined') {
+    return 'vs-light';
+  }
+
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'vs-dark' : 'vs-light';
+}
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
@@ -153,11 +161,40 @@ export default function ManualRoadmapPage() {
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [isResizingLayout, setIsResizingLayout] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [editorTheme, setEditorTheme] = useState(resolveMonacoTheme);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const layoutRef = useRef(null);
   const resizeDragRef = useRef({ startX: 0, startRatio: MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO });
   const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const syncTheme = () => {
+      setEditorTheme(resolveMonacoTheme());
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          syncTheme();
+          break;
+        }
+      }
+    });
+
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -714,6 +751,7 @@ export default function ManualRoadmapPage() {
                 <Editor
                   height="100%"
                   defaultLanguage="yaml"
+                  theme={editorTheme}
                   value={yamlCode}
                   onChange={(value) => {
                     setSelectedSampleKey('custom');
@@ -723,7 +761,7 @@ export default function ManualRoadmapPage() {
                     editorRef.current = editor;
                     monacoRef.current = monaco;
                   }}
-                  options={{ minimap: { enabled: false }, fontSize: 14, wordWrap: 'on', theme: 'vs-light' }}
+                  options={{ minimap: { enabled: false }, fontSize: 14, wordWrap: 'on' }}
                 />
               </div>
               {validationError && <div className="manual-roadmap-alert manual-roadmap-alert--error">{validationError}</div>}

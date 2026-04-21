@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+	AlertTriangle,
 	Camera,
 	CheckCircle2,
 	Eye,
@@ -19,6 +20,7 @@ import './account-settings-page.css';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
+const ACCOUNT_DELETE_CONFIRM_TEXT = 'DELETE';
 
 function estimateDataUrlBytes(dataUrl) {
 	const base64 = String(dataUrl || '').split(',')[1] || '';
@@ -99,6 +101,7 @@ export default function AccountSettingsPage() {
 	const [pageError, setPageError] = useState('');
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
+	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
 
 	const canSubmitPassword = useMemo(() => {
 		return Boolean(currentPassword.trim()) && isPasswordPolicyValid(newPassword);
@@ -125,6 +128,10 @@ export default function AccountSettingsPage() {
 		}
 		return { label: 'Strong', color: 'strong', score: 3 };
 	}, [newPassword]);
+
+	const canDeleteAccount = useMemo(() => {
+		return accountDeleteConfirm.trim().toUpperCase() === ACCOUNT_DELETE_CONFIRM_TEXT;
+	}, [accountDeleteConfirm]);
 
 	useEffect(() => {
 		async function loadProfile() {
@@ -271,6 +278,38 @@ export default function AccountSettingsPage() {
 			setNewPassword('');
 		} catch (err) {
 			const message = err?.message || 'Failed to change password';
+			addNotification(message, 'error');
+			setError(message);
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	async function onHardDeleteAccount(event) {
+		event.preventDefault();
+		resetStatus();
+		setPageError('');
+
+		if (!canDeleteAccount) {
+			addNotification(`Type ${ACCOUNT_DELETE_CONFIRM_TEXT} to confirm account deletion.`, 'error');
+			return;
+		}
+
+		const shouldContinue =
+			typeof window === 'undefined'
+				? true
+				: window.confirm('This action permanently deletes your account and cannot be undone. Continue?');
+		if (!shouldContinue) {
+			return;
+		}
+
+		setLoading(true);
+		try {
+			const result = await accountApi.deleteAccount(accessToken);
+			addNotification(result?.message || 'Account deleted permanently.', 'success');
+			await logoutAndRedirect();
+		} catch (err) {
+			const message = err?.message || 'Failed to delete account';
 			addNotification(message, 'error');
 			setError(message);
 		} finally {
@@ -497,6 +536,40 @@ export default function AccountSettingsPage() {
 								Save Privacy Preference
 							</button>
 						</div>
+					</section>
+
+					<section className="danger-zone-card">
+						<div className="card-title-row danger-title-row">
+							<AlertTriangle size={18} />
+							<h2>Danger Zone</h2>
+						</div>
+						<p>
+							Hard delete will permanently remove this account and all related data in the
+							database.
+						</p>
+						<form onSubmit={onHardDeleteAccount}>
+							<div className="field">
+								<label htmlFor="accountDeleteConfirm">
+									Type {ACCOUNT_DELETE_CONFIRM_TEXT} to confirm
+								</label>
+								<input
+									id="accountDeleteConfirm"
+									value={accountDeleteConfirm}
+									onChange={(event) => setAccountDeleteConfirm(event.target.value)}
+									placeholder={ACCOUNT_DELETE_CONFIRM_TEXT}
+									disabled={loading}
+								/>
+							</div>
+							<div className="danger-actions">
+								<button
+									type="submit"
+									className="btn danger solid"
+									disabled={loading || !canDeleteAccount}
+								>
+									Delete Account Permanently
+								</button>
+							</div>
+						</form>
 					</section>
 				</main>
 

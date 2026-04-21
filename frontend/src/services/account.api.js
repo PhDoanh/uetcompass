@@ -56,8 +56,15 @@ export function changePassword(token, payload) {
   });
 }
 
+export function deleteAccount(token) {
+  return requestAuthed('/account/hard-delete', token, {
+    method: 'DELETE',
+  });
+}
+
 export default {
   getProfile,
   updateProfile,
   changePassword,
+  deleteAccount,
 };

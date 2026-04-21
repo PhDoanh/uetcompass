@@ -1,6 +1,14 @@
 const bcrypt = require('bcryptjs');
 const { User } = require('../auth/user.model');
+const { RefreshToken } = require('../auth/refreshToken.model');
+const { DeletedEmail } = require('../auth/deletedEmail.model');
+const { SecurityAudit } = require('../auth/securityAudit.model');
+const { Notification } = require('../notifications/notification.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
+const { Roadmap } = require('../roadmap/roadmap.model');
+const { RoadmapProgress } = require('../roadmap/roadmapProgress.model');
+const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
+const { AccountAuditEvent } = require('./account.model');
 const accountAuditService = require('./accountAudit.service');
 const { resolveEffectiveDisplayName } = require('./identity.policy');
 
@@ -254,9 +262,44 @@ async function changePassword(userId, payload = {}) {
   };
 }
 
+async function hardDeleteAccount(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw buildError(404, 'NOT_FOUND', 'User not found.');
+  }
+
+  await Promise.all([
+    StudentProfile.deleteMany({ userId }),
+    RefreshToken.deleteMany({ userId }),
+    Notification.deleteMany({ userId }),
+    SecurityAudit.deleteMany({ userId }),
+    AccountAuditEvent.deleteMany({ userId }),
+    RoadmapProgress.deleteMany({ userId }),
+    Roadmap.deleteMany({ userId }),
+    ManualRoadmap.deleteMany({ userId }),
+  ]);
+
+  await User.deleteOne({ _id: userId });
+  await DeletedEmail.updateOne(
+    { email: user.email },
+    {
+      $set: {
+        deletedAt: new Date(),
+      },
+    },
+    { upsert: true }
+  );
+
+  return {
+    code: 'ACCOUNT_DELETED',
+    message: 'Account deleted permanently.',
+  };
+}
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  hardDeleteAccount,
   validatePasswordPolicy,
 };

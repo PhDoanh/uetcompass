@@ -11,12 +11,12 @@ import YamlGuideOverlay from './YamlGuideOverlay';
 import { useNotification } from '../general/NotificationContainer';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
-import webDevelopmentSample from '../../../../specs/001-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
-import dataAnalyticsSample from '../../../../specs/001-manual-roadmap-generator/sample-data-analytics-roadmap.yaml?raw';
-import cloudDevopsSample from '../../../../specs/001-manual-roadmap-generator/sample-cloud-devops-roadmap.yaml?raw';
-import cybersecuritySample from '../../../../specs/001-manual-roadmap-generator/sample-cybersecurity-roadmap.yaml?raw';
-import fullstackExtendedSample from '../../../../specs/001-manual-roadmap-generator/sample-fullstack-engineering-extended-roadmap.yaml?raw';
-import renderShowcaseSample from '../../../../specs/001-manual-roadmap-generator/sample-render-showcase-roadmap.yaml?raw';
+import webDevelopmentSample from '../../../../specs/013-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
+import dataAnalyticsSample from '../../../../specs/013-manual-roadmap-generator/sample-data-analytics-roadmap.yaml?raw';
+import cloudDevopsSample from '../../../../specs/013-manual-roadmap-generator/sample-cloud-devops-roadmap.yaml?raw';
+import cybersecuritySample from '../../../../specs/013-manual-roadmap-generator/sample-cybersecurity-roadmap.yaml?raw';
+import fullstackExtendedSample from '../../../../specs/013-manual-roadmap-generator/sample-fullstack-engineering-extended-roadmap.yaml?raw';
+import renderShowcaseSample from '../../../../specs/013-manual-roadmap-generator/sample-render-showcase-roadmap.yaml?raw';
 
 const SAMPLE_ROADMAPS = [
   {

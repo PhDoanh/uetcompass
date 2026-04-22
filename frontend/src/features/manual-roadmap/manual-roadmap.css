@@ -649,3 +649,184 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+html[data-theme='dark'] .manual-roadmap-page {
+    background: #0d1a2d;
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card {
+    border-color: rgba(95, 145, 210, 0.45);
+    border-left-color: #3d8ee6;
+    background: linear-gradient(110deg, #14263e 0%, #112236 100%);
+    box-shadow: 0 14px 28px rgba(2, 9, 20, 0.46);
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card__title,
+html[data-theme='dark'] .manual-roadmap-summary-card__meta,
+html[data-theme='dark'] .manual-roadmap-summary-card__stats {
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card__status--info {
+    background: rgba(36, 71, 110, 0.8);
+    color: #bee3ff;
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card__status--info::before {
+    background: #72beff;
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card__status--error {
+    background: rgba(104, 29, 29, 0.65);
+    color: #ffd2d2;
+}
+
+html[data-theme='dark'] .manual-roadmap-summary-card__status--error::before {
+    background: #ff8d8d;
+}
+
+html[data-theme='dark'] .manual-roadmap-panel {
+    background: #10253f;
+    border-left-color: rgba(95, 145, 210, 0.35);
+}
+
+html[data-theme='dark'] .manual-roadmap-panel__header {
+    background: #16314f;
+    border-bottom-color: rgba(95, 145, 210, 0.35);
+}
+
+html[data-theme='dark'] .manual-roadmap-panel__label,
+html[data-theme='dark'] .manual-roadmap-section,
+html[data-theme='dark'] .manual-roadmap-field__label,
+html[data-theme='dark'] .manual-roadmap-resources__title,
+html[data-theme='dark'] .manual-roadmap-resource-item__title {
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .manual-roadmap-panel__icon,
+html[data-theme='dark'] .manual-roadmap-panel__meta,
+html[data-theme='dark'] .manual-roadmap-resources__empty,
+html[data-theme='dark'] .manual-roadmap-preview__sample-note,
+html[data-theme='dark'] .manual-roadmap-resource-item__url,
+html[data-theme='dark'] .manual-roadmap-resource-item__meta,
+html[data-theme='dark'] .manual-roadmap-preview__empty {
+    color: #a9c0df;
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider {
+    border-left-color: rgba(95, 145, 210, 0.35);
+    border-right-color: rgba(95, 145, 210, 0.35);
+    background: linear-gradient(180deg, rgba(95, 145, 210, 0.2) 0%, rgba(95, 145, 210, 0.06) 100%);
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider:focus-visible {
+    background: linear-gradient(180deg, rgba(117, 169, 239, 0.28) 0%, rgba(117, 169, 239, 0.12) 100%);
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider-handle {
+    border-color: rgba(95, 145, 210, 0.55);
+    background: linear-gradient(180deg, #1a304d 0%, #132740 100%);
+    box-shadow: 0 14px 26px rgba(2, 9, 20, 0.52);
+    color: #9fd0ff;
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider-grip {
+    background: rgba(159, 191, 232, 0.45);
+}
+
+html[data-theme='dark'] .manual-roadmap-preview-stage {
+    border-color: rgba(95, 145, 210, 0.4);
+    background: #0f1d31;
+}
+
+html[data-theme='dark'] .manual-roadmap-alert--error {
+    background: rgba(104, 29, 29, 0.62);
+    color: #ffd2d2;
+}
+
+html[data-theme='dark'] .manual-roadmap-alert--info {
+    background: rgba(36, 71, 110, 0.72);
+    color: #bee3ff;
+}
+
+html[data-theme='dark'] .manual-roadmap-input {
+    border-color: rgba(95, 145, 210, 0.45);
+    background: #1a304d;
+    color: #e6effd;
+}
+
+html[data-theme='dark'] .manual-roadmap-input:focus {
+    border-color: #66a8ff;
+    box-shadow: 0 0 0 3px rgba(74, 151, 245, 0.22);
+}
+
+html[data-theme='dark'] .manual-roadmap-button--secondary {
+    background: #243e61;
+    color: #dceafd;
+    border-color: rgba(95, 145, 210, 0.45);
+    box-shadow: 0 8px 18px rgba(2, 9, 20, 0.42);
+}
+
+html[data-theme='dark'] .manual-roadmap-button--danger {
+    background: rgba(104, 29, 29, 0.62);
+    color: #ffd2d2;
+    border-color: rgba(246, 126, 126, 0.45);
+}
+
+html[data-theme='dark'] .manual-roadmap-resource-item {
+    border-color: rgba(95, 145, 210, 0.35);
+    background: linear-gradient(180deg, #1a304d 0%, #142741 100%);
+}
+
+html[data-theme='dark'] .manual-roadmap-help-button {
+    background-color: #203a5d;
+    color: #9fd0ff;
+}
+
+html[data-theme='dark'] .manual-roadmap-help-button:hover {
+    background-color: #27476f;
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .manual-roadmap-help-button:active {
+    background-color: #1d3554;
+}
+
+html[data-theme='dark'] .roadmap-node--parent.node-color-done,
+html[data-theme='dark'] .roadmap-node--child.node-color-done {
+    border-color: #2ecf92 !important;
+    background: #11372d !important;
+}
+
+html[data-theme='dark'] .roadmap-node--parent.node-color-progress,
+html[data-theme='dark'] .roadmap-node--child.node-color-progress {
+    border-color: #f3be52 !important;
+    background: #4a3a12 !important;
+}
+
+html[data-theme='dark'] .roadmap-node--parent.node-color-skip,
+html[data-theme='dark'] .roadmap-node--parent.node-color-locked,
+html[data-theme='dark'] .roadmap-node--child.node-color-skip,
+html[data-theme='dark'] .roadmap-node--child.node-color-locked {
+    border-color: rgba(136, 164, 198, 0.48) !important;
+    background: #27374a !important;
+}
+
+html[data-theme='dark'] .roadmap-node--parent.node-color-neutral,
+html[data-theme='dark'] .roadmap-node--child.node-color-neutral {
+    border-color: #6baef8 !important;
+    background: #1f3553 !important;
+}
+
+html[data-theme='dark'] .manual-roadmap-preview .skill-tree-roadmap-v2__row-connector-down,
+html[data-theme='dark'] .manual-roadmap-preview .skill-tree-roadmap-v2__row-connector-out,
+html[data-theme='dark'] .manual-roadmap-preview .skill-tree-roadmap-v2__row-connector-in {
+    background: #63a8f6 !important;
+}
+
+@media (max-width: 1100px) {
+    html[data-theme='dark'] .manual-roadmap-panel {
+        border-top-color: rgba(95, 145, 210, 0.35);
+    }
+}

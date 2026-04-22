@@ -40,12 +40,28 @@ describe('forgot-password request policy', () => {
     expect(sendResetOtpEmail).toHaveBeenCalled();
   });
 
-  test('returns same generic response for unknown email', async () => {
+  test('throws EMAIL_NOT_FOUND for unknown email', async () => {
     User.findOne.mockResolvedValueOnce(null);
 
-    const result = await passwordService.requestPasswordReset({ email: 'unknown@vnu.edu.vn' });
+    await expect(passwordService.requestPasswordReset({ email: 'unknown@vnu.edu.vn' })).rejects.toMatchObject({
+      status: 404,
+      code: 'EMAIL_NOT_FOUND',
+    });
+    expect(User.updateOne).not.toHaveBeenCalled();
+    expect(sendResetOtpEmail).not.toHaveBeenCalled();
+  });
 
-    expect(result.code).toBe('FORGOT_PASSWORD_REQUEST_ACCEPTED');
+  test('throws EMAIL_NOT_FOUND for soft-deleted account email', async () => {
+    User.findOne.mockResolvedValueOnce({
+      _id: 'u2',
+      email: 'deleted@vnu.edu.vn',
+      status: 'soft-deleted',
+    });
+
+    await expect(passwordService.requestPasswordReset({ email: 'deleted@vnu.edu.vn' })).rejects.toMatchObject({
+      status: 404,
+      code: 'EMAIL_NOT_FOUND',
+    });
     expect(User.updateOne).not.toHaveBeenCalled();
     expect(sendResetOtpEmail).not.toHaveBeenCalled();
   });

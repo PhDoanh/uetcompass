@@ -72,11 +72,11 @@ function notifyPreviewReady(sseToken) {
 	});
 }
 
-function notifyGenerationFailed(sseToken) {
+function notifyGenerationFailed(sseToken, message) {
 	notifyClientByToken(sseToken, 'roadmap:notification', {
 		status: 'failed',
 		type: 'error',
-		message: 'Roadmap generation failed.',
+		message: message || 'Roadmap generation failed. Please try again later.',
 		retryable: true,
 	});
 }

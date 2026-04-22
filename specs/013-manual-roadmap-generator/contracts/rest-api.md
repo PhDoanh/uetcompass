@@ -1,6 +1,6 @@
 # REST API Contract: Manual Roadmap Module
 
-**Feature**: `001-manual-roadmap-generator`
+**Feature**: `013-manual-roadmap-generator`
 **Date**: 2026-04-09
 **Base path**: `/api/roadmaps`
 **Authentication**: All endpoints require a valid JWT in `Authorization: Bearer <token>`.

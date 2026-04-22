@@ -149,7 +149,7 @@ export default function LoginPage() {
     >
       <div className="auth-google-block">
         {hasGoogleClientId ? (
-          <div className="auth-google-button-wrap">
+          <div className="auth-google-button-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
@@ -218,10 +218,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="auth-links">
-        <a href="/register">Tạo tài khoản</a>
-        <a href="/forgot-password">Quên mật khẩu</a>
-      </div>
     </AuthShell>
   );
 

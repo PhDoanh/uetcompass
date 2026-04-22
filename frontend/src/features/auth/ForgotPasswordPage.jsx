@@ -66,12 +66,15 @@ export default function ForgotPasswordPage() {
 
     try {
       const result = await authApi.forgotPassword({ email });
-      setMessage(result.message || 'Nếu tài khoản tồn tại, mã khôi phục đã được gửi.');
-      addNotification(result.message || 'Nếu tài khoản tồn tại, mã khôi phục đã được gửi.', 'success');
+      setMessage(result.message || 'Mã khôi phục đã được gửi.');
+      addNotification(result.message || 'Mã khôi phục đã được gửi.', 'success');
       setStep('verifyOtp');
     } catch (err) {
-      setError(err.message || 'Không thể gửi mã khôi phục.');
-      addNotification(err.message || 'Không thể gửi mã khôi phục.', 'error');
+      const nextError = err?.code === 'EMAIL_NOT_FOUND'
+        ? 'Email không tồn tại trong hệ thống.'
+        : (err.message || 'Không thể gửi mã khôi phục.');
+      setError(nextError);
+      addNotification(nextError, 'error');
     }
   }
 
@@ -139,8 +142,11 @@ export default function ForgotPasswordPage() {
       setMessage(result.message || 'Mã khôi phục mới đã được gửi.');
       addNotification(result.message || 'Mã khôi phục mới đã được gửi.', 'success');
     } catch (err) {
-      setError(err.message || 'Không thể gửi lại mã khôi phục.');
-      addNotification(err.message || 'Không thể gửi lại mã khôi phục.', 'error');
+      const nextError = err?.code === 'EMAIL_NOT_FOUND'
+        ? 'Email không tồn tại trong hệ thống.'
+        : (err.message || 'Không thể gửi lại mã khôi phục.');
+      setError(nextError);
+      addNotification(nextError, 'error');
     }
   }
 

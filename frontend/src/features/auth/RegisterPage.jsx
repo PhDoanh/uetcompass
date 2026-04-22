@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
+import { AlertTriangle, Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
@@ -72,7 +72,7 @@ export default function RegisterPage() {
     }
     return PASSWORD_POLICY_REGEX.test(String(form.password || ''))
       ? ''
-      : 'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.';
+      : 'Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';
   }, [form.password]);
 
   async function submitRegister(event) {
@@ -195,7 +195,7 @@ export default function RegisterPage() {
       title="UETCompass"
       description={
         step === 'register'
-          ? 'Đăng ký tài khoản bằng email @vnu.edu.vn.'
+          ? ''
           : 'Nhập mã OTP 4 số được gửi đến email của bạn.'
       }
       error={error || emailError || passwordError}
@@ -269,8 +269,8 @@ export default function RegisterPage() {
             </div>
 
             <p className={passwordError ? 'auth-helper-text error' : 'auth-helper-text'}>
-              <Info size={12} style={{ verticalAlign: 'text-top', marginRight: 4 }} />
-              Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.
+              <AlertTriangle size={12} className="auth-helper-icon" />
+              Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt
             </p>
 
             <div className="auth-strength">
@@ -322,10 +322,6 @@ export default function RegisterPage() {
           </button>
         </form>
       )}
-
-      <div className="auth-links">
-        <a href="/login">Quay lại đăng nhập</a>
-      </div>
     </AuthShell>
   );
 }

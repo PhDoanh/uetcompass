@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.1.3](https://github.com/PhDoanh/uetcompass/compare/uetcompass-v0.1.2...uetcompass-v0.1.3) (2026-04-22)
+
+
+### ✨ New Features
+
+* **004-skill-tree:** Render for sample roadmap, display dark/light theme, and show full cards in community section ([ffcbb94](https://github.com/PhDoanh/uetcompass/commit/ffcbb94c7fe2847394cdbd7def373159044c7874))
+* **account:** add hard-delete account flow with cascade cleanup ([05a68ea](https://github.com/PhDoanh/uetcompass/commit/05a68eac979b8dcd913732a84f2dfaf927d3a0f6))
+* **account:** add hard-delete account flow with cascade cleanup ([b376924](https://github.com/PhDoanh/uetcompass/commit/b376924c412d156cb5bb46801ffe7365d3cb6909))
+* add edit sample button in skill tree page ([0362a57](https://github.com/PhDoanh/uetcompass/commit/0362a576e6153b711ad0cd4c3f3711f71a068e96))
+* **auth,homepage:** improve account recovery UX and remove roadmap preview limits ([474c2b5](https://github.com/PhDoanh/uetcompass/commit/474c2b5bf592e651891ad486b3d431ce4b4a1d5d))
+* **auth,homepage:** improve account recovery UX and remove roadmap preview limits ([397e9a9](https://github.com/PhDoanh/uetcompass/commit/397e9a9a9cb72c60fcaa9b5584ba1a5806883906))
+* **auth,ui:** enforce password policy, switch to notification UX, and create accounts only after OTP verification ([8da7776](https://github.com/PhDoanh/uetcompass/commit/8da7776b493605458aede61d2224b61782260248))
+* **auth:** Notification for Login Register Forgot password ([63d406a](https://github.com/PhDoanh/uetcompass/commit/63d406a03d9087f2aaed3c7e23bab4b4e01343cb))
+* **frontend:** refine homepage roadmap UX and add blue compass favicon ([11416c7](https://github.com/PhDoanh/uetcompass/commit/11416c7840d0b19f8e35e39f18152ed01d28a9ba))
+* **frontend:** refine homepage roadmap UX and add blue compass favicon ([e8bdd12](https://github.com/PhDoanh/uetcompass/commit/e8bdd122c1f76cc7d9267d0a9d154f11e8e61de4))
+* **graph:** support selected node and state styling hooks ([baf2fc0](https://github.com/PhDoanh/uetcompass/commit/baf2fc0fceb2cc65d5f1e423a9010460be85e294))
+* **graph:** support selected node and state styling hooks ([d01896e](https://github.com/PhDoanh/uetcompass/commit/d01896ed5e7c5ed585a0295c6b283c5209d53a90))
+* **homepage:** add roadmap card navigation and pagination controls ([be86bc3](https://github.com/PhDoanh/uetcompass/commit/be86bc3b733861c75b8bd4e5038e03f96dc872b7))
+* **homepage:** add roadmap card navigation and pagination controls ([23e32ed](https://github.com/PhDoanh/uetcompass/commit/23e32ed75799da5f6a52626032969fc42e4f2e0a))
+* **homepage:** paginate my roadmap section and flatten roadmap sections ([3c2d6cd](https://github.com/PhDoanh/uetcompass/commit/3c2d6cddf5f0a3a91da15dff873e2617e9378940))
+* layouted roadmap engine implementation ([8bd89e1](https://github.com/PhDoanh/uetcompass/commit/8bd89e1b96b389c1364473fa8c2fc736d6410ecb))
+* **manual-roadmap:** support public roadmap search and preview by id ([7b6d4d3](https://github.com/PhDoanh/uetcompass/commit/7b6d4d3fae9f9233173c226d0f9b86740280d380))
+* **manual-roadmap:** support public roadmap search and preview by id ([777ef97](https://github.com/PhDoanh/uetcompass/commit/777ef9716e0487cf74e8f9fbd17caebba62b9091))
+* **manual-roadmap:** sync monaco theme with dark mode ([a6d3d9a](https://github.com/PhDoanh/uetcompass/commit/a6d3d9ad4b7be22edbbadba05a9179ca76cfa630))
+* **navbar:** add persistent light-dark theme toggle ([d4827d4](https://github.com/PhDoanh/uetcompass/commit/d4827d42559332bd8caa7175edf64d1f42ce8dff))
+* **navbar:** add persistent light-dark theme toggle ([93ff04d](https://github.com/PhDoanh/uetcompass/commit/93ff04d70ee6110d51e1c91152e8c88e6f2c55bd))
+* new YAMLguide overlay over manual roadmap ([6030b3d](https://github.com/PhDoanh/uetcompass/commit/6030b3db589d0ce5cf089fbadbaa55d0911b1636))
+* **roadmap-search:** open selected roadmap in public skill-tree ([10d82ca](https://github.com/PhDoanh/uetcompass/commit/10d82ca66005fc29d2996d6d51684388796c3ef3))
+* **roadmap-search:** open selected roadmap in public skill-tree ([91e0713](https://github.com/PhDoanh/uetcompass/commit/91e0713ae9dbf9db71e5b00ddf426883333862cf))
+* **routing:** add public skill-tree route by roadmap id ([97b1374](https://github.com/PhDoanh/uetcompass/commit/97b137495b9c6902544bbb0de047c5ce938beb3a))
+* **routing:** add public skill-tree route by roadmap id ([d82973a](https://github.com/PhDoanh/uetcompass/commit/d82973a0f01ee03049e864eb5df878b60a2699f0))
+* **skill-tree:** add public roadmap node detail panel ([f212e6a](https://github.com/PhDoanh/uetcompass/commit/f212e6aa3b8efda5df112ec96a529b94c9e797c2))
+* **skill-tree:** add public roadmap node detail panel ([c925556](https://github.com/PhDoanh/uetcompass/commit/c925556c104d0a10743f377327c7bba48912345f))
+* **skill-tree:** add public roadmap skill-tree page ([6dca52d](https://github.com/PhDoanh/uetcompass/commit/6dca52d61c6589cc08dbcd9114f74446adf3ee7c))
+* **skill-tree:** add public roadmap skill-tree page ([88c7dba](https://github.com/PhDoanh/uetcompass/commit/88c7dba112ce8ebde820366dea1b4797fc2963c9))
+
+
+### 🐛 Bug Fixes
+
+* **009-automated-roadmap:** temporary solution for high demand ai api ([cc7e771](https://github.com/PhDoanh/uetcompass/commit/cc7e77167a88ad4f3cafaf539d0bf1f45e765824))
+* **auto-generated-roadmap:** resolve edge case for no career role ([4d376bb](https://github.com/PhDoanh/uetcompass/commit/4d376bbbb5f1e2b6c5ad92e9fbd5910438d50fb5))
+* **auto-generated-roadmap:** resolve edge case for no career role ([e26c50d](https://github.com/PhDoanh/uetcompass/commit/e26c50dad56fea40858bdf877c2d8f0781afabe0))
+* **automated-roadmap-generator:** resolve edge case for onboarding input ([82a0f02](https://github.com/PhDoanh/uetcompass/commit/82a0f02eeb348b48fc0b478096c0713bc2fb72e9))
+* **automated-roadmap-generator:** temporary solution for high demand api usage ([50c304f](https://github.com/PhDoanh/uetcompass/commit/50c304f746375d7e8ee07c3c8634fa4593436c0e))
+* **cd:** Vercel resolve api base url wrong ([e43ea48](https://github.com/PhDoanh/uetcompass/commit/e43ea481a82d0017c2e3e83ec5a0de8e20be8a6e))
+* enhaced searchpage ui and preview rendering ([84383c4](https://github.com/PhDoanh/uetcompass/commit/84383c4c35300575835cf9fe1f51ad8bd34fa3e3))
+* minor adjustment about roadmap rendering in manual roadmap ([08e7147](https://github.com/PhDoanh/uetcompass/commit/08e71470be7491582d85259ef8692f6c5c5cb160))
+* minor fix on roadmap visibility ([2442e4b](https://github.com/PhDoanh/uetcompass/commit/2442e4bc4bf10067fb5274944534581a709e1af3))
+* new frontend optimized ui/ux for manual roadmap page ([37dcad7](https://github.com/PhDoanh/uetcompass/commit/37dcad7f3ad208570d601e10534683e5ab563694))
+* notify and block user from editing roadmaps before login ([4f0fbbd](https://github.com/PhDoanh/uetcompass/commit/4f0fbbd605f948eaa0126b67b0736494bdf19e3a))
+* renamed node label ([76e7933](https://github.com/PhDoanh/uetcompass/commit/76e7933ea8856f61e407467468014f69b2d81f42))
+* resolve issue in saving roadmaps in manual roadmap ([5c13875](https://github.com/PhDoanh/uetcompass/commit/5c13875a3197a6fff2c1c860ee70e2a58ad4fefb))
+* roadmap datamodel and manual samples ([c20e7f5](https://github.com/PhDoanh/uetcompass/commit/c20e7f51b99d51bef70305dac0c46126eb017914))
+* script linting code does not working ([2d37eae](https://github.com/PhDoanh/uetcompass/commit/2d37eaedf36139bb99e443f15ec2af68bb1338f3))
+* small renderer adjustment ([4006e76](https://github.com/PhDoanh/uetcompass/commit/4006e76b9da274f00923b885a6362499c49243be))
+
+
+### 🔨 Refactoring (Dev)
+
+* **app:** remove standalone roadmap search route wiring ([dcfdbc3](https://github.com/PhDoanh/uetcompass/commit/dcfdbc3f4c7199ad9ec989ce39934208e9dfb7e2))
+
 ## [0.1.2](https://github.com/PhDoanh/uetcompass/compare/uetcompass-v0.1.1...uetcompass-v0.1.2) (2026-04-15)
 
 

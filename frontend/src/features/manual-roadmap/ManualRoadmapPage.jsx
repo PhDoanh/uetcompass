@@ -9,6 +9,7 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
 import { useNotification } from '../general/NotificationContainer';
+import { CircleHelp, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/013-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -706,17 +707,17 @@ export default function ManualRoadmapPage() {
                   title="View YAML format guide"
                   aria-label="Open YAML format guide"
                 >
-                  <span className="material-symbols-outlined">help</span>
+                  <CircleHelp size={18} aria-hidden="true" />
                 </button>
               </div>
 
               <div className="manual-roadmap-panel__actions">
                 <button type="button" onClick={handleRestoreSample} className="manual-roadmap-button manual-roadmap-button--secondary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">history</span>
+                  <History className="manual-roadmap-button__icon" aria-hidden="true" />
                   Phục hồi mẫu
                 </button>
                 <button type="button" onClick={handleSave} disabled={actionsDisabled} className="manual-roadmap-button manual-roadmap-button--primary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">save</span>
+                  <Save className="manual-roadmap-button__icon" aria-hidden="true" />
                   {isSaving ? 'Đang lưu...' : 'Lưu roadmap'}
                 </button>
               </div>

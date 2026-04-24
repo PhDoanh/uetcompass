@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { RefreshCw, X } from 'lucide-react';
 import '../../style/general-component.css';
 import './yaml-guide-overlay.css';
 
@@ -152,14 +153,14 @@ export default function YamlGuideOverlay({ isOpen, onClose }) {
                 <div className="yaml-guide-header">
                     <h2 className="yaml-guide-title">YAML Format Guide</h2>
                     <button className="yaml-guide-close" onClick={onClose} aria-label="Close guide">
-                        <span className="material-symbols-outlined">close</span>
+                        <X size={20} aria-hidden="true" />
                     </button>
                 </div>
 
                 <div className="yaml-guide-content">
                     {isLoading ? (
                         <div className="yaml-guide-loading">
-                            <span className="material-symbols-outlined spinning">refresh</span>
+                            <RefreshCw className="spinning" size={28} aria-hidden="true" />
                             <p>Loading guide...</p>
                         </div>
                     ) : (

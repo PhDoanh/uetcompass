@@ -470,10 +470,14 @@ html[data-theme='dark'] .roadmap-search-overlay__panel,
 html[data-theme='dark'] .roadmap-search-page,
 html[data-theme='dark'] .roadmap-preview-panel,
 html[data-theme='dark'] .roadmap-search-results,
-html[data-theme='dark'] .homepage-popup,
-html[data-theme='dark'] .auth-modal-shell {
+html[data-theme='dark'] .homepage-popup {
   background-color: #0f1d30;
   color: #e6eefb;
+}
+
+html[data-theme='dark'] .auth-modal-shell {
+  background-color: transparent;
+  color: inherit;
 }
 
 html[data-theme='dark'] .homepage-roadmap-card,
@@ -1730,13 +1734,24 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   font-weight: 700;
 }
 .roadmap-search-overlay__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  line-height: 0;
   border: 1px solid #cbd5e1;
   background: #fff;
   color: #334155;
   border-radius: 8px;
-  padding: 4px 10px;
   cursor: pointer;
   font-weight: 700;
+}
+
+.roadmap-search-overlay__close svg {
+  width: 16px;
+  height: 16px;
 }
 .roadmap-search-overlay__close:hover {
   background: #f1f5f9;

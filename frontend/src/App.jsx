@@ -15,6 +15,7 @@ import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
 import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 
 function normalizePathname(pathname) {
 	if (!pathname || pathname === '/') {
@@ -254,7 +255,7 @@ function AppContent() {
 								}}
 								aria-label="Close authentication popup"
 							>
-								x
+								<X size={16} aria-hidden="true" />
 							</button>
 							{authPopupContent}
 						</div>
@@ -281,7 +282,7 @@ function AppContent() {
 									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
 									aria-label="Close roadmap search"
 								>
-									x
+									<X size={16} aria-hidden="true" />
 								</button>
 							</div>
 							<RoadmapSearchPage />

@@ -94,7 +94,7 @@ function buildCandidateSkills(availableCourseUnits) {
  * related courses, ensuring all prerequisites are satisfied before the node.
  * Each skill becomes one node (type: topic); duplicate skill names are deduplicated.
  *
- * @param {Array<{ skillName: string, reason: string }>} approvedSkills
+ * @param {Array<string>} approvedSkills - AI-approved skill names
  * @param {Map<string, { skillName, relatedCourses }>} candidateSkillsMap
  * @param {Array} allCourseUnits - Full DAG used for ordering
  * @returns {Array} RoadmapNode[]
@@ -109,14 +109,13 @@ function buildNodesTopologically(approvedSkills, candidateSkillsMap, allCourseUn
 	}
 
 	// Collect approved skills with their rank = max topological position of related courses
-	const approvedSet = new Set(approvedSkills.map((s) => s.skillName));
 	const skillEntries = [];
 
-	for (const { skillName, reason } of approvedSkills) {
+	for (const skillName of approvedSkills) {
 		const candidate = candidateSkillsMap.get(skillName);
 		if (!candidate) continue;
 		const rank = Math.max(...candidate.relatedCourses.map((rc) => coursePos.get(rc.courseCode) ?? 0));
-		skillEntries.push({ skillName, reason, candidate, rank });
+		skillEntries.push({ skillName, reason: '', candidate, rank });
 	}
 
 	// Sort by rank (latest prerequisite position) to ensure valid topological placement

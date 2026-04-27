@@ -1,14 +1,12 @@
-﻿'use strict';
+'use strict';
 
 const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
-const { acceptRoadmap } = require('./roadmapAcceptance.service');
-const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
-const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
+const { evaluateOffTemplateSkills } = require('./roadmap.ai.service');
+const { notifyUser, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const {
 	toKebabCase,
@@ -35,28 +33,16 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		}
 		studentProfileId = profile._id;
 
-		if (profile.careerGoal?.role || profile.major) {
-			// If either role or companyType is present, set personalisationLevel to 'full'
-			   if (!profile.careerGoal?.role) {
-				   // Notify client via SSE and exit early
-				   notifyGenerationFailed(sseToken, profile.major ? "You have to choose a major" : "You have to choose a role to get personalized roadmap");
-				   return;
-			   }
-			}
 		personalisationLevel =
 			profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
 
-		console.log('personalisationLevel:', personalisationLevel);
-
 		const roadmapName = profile.careerGoal?.role || `${profile.major} Curriculum`;
-
-		console.log('roadmap:', roadmapName);
 
 		const completedCourseCodes = new Set(
 			(profile.completedCourses ?? []).map((c) => c.courseCode)
 		);
 
-		const courseUnits = await CourseUnit.find({ programId: profile.programId }).lean();
+		const courseUnits = await CourseUnit.find({ major: profile.major ?? '' }).lean();
 
 		let nodes;
 
@@ -64,12 +50,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			(cu) => !completedCourseCodes.has(cu.code)
 		);
 		const candidateSkills = buildCandidateSkills(availableCourseUnits);
-
-		console.log('candidateSkills:', candidateSkills == null ? 'null' : candidateSkills.length)
-
 		const candidateSkillsMap = new Map(candidateSkills.map((c) => [c.skillName, c]));
-
-		console.log('candidateSkillsMap size:', candidateSkillsMap.size);
 
 		// Check if a pre-built template matches the roadmapName
 		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
@@ -99,16 +80,12 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
 
 				// AI evaluates relevance of off-template skills to the career goal
-				const approvedExtras = []; //await evaluateOffTemplateSkills(offTemplateSkills, profile);
-				
-				await sleep(10000);
-				
-				console.log('approvedExtras:', approvedExtras == null ? 'null' : approvedExtras.length)
+				const approvedExtras = await evaluateOffTemplateSkills(offTemplateSkills, profile);
 
 				// Off-template nodes are always subtopic, attached to the nearest template topic
 				// that shares a relatedCourse. Exclude if no parent topic found.
 				const extraNodes = [];
-				for (const { skillName, reason } of approvedExtras) {
+				for (const skillName of approvedExtras) {
 					const candidate = candidateSkillsMap.get(skillName);
 					if (!candidate) continue;
 
@@ -132,7 +109,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 						skillName,
 						parentNodeId: parentNode.nodeId,
 						relatedCourses: candidate.relatedCourses,
-						reason,
+						reason: '',
 						resources: [],
 					});
 				}
@@ -160,37 +137,26 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			// Low personalisation: sort relatedCourses for each skill by topological order
 			nodes = buildNodesTopologically(candidateSkills, candidateSkillsMap, courseUnits);
 		}
-		//roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
+		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
-		// previewStore.storePendingPreview(userId, {
-		// 	nodes,
-		// 	roadmapName,
-		// 	personalisationLevel,
-		// 	triggerReason,
-		// 	studentProfileId,
-		// });
-
-		// notifyUser(userId, 'roadmap_preview_ready', {
-		// 	type: 'roadmap_preview_ready',
-		// 	roadmapName,
-		// 	personalisationLevel,
-		// 	lowPersonalisationNotice:
-		// 		personalisationLevel === 'low'
-		// 			? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
-		// 			: null,
-		// 	preview: { nodes },
-		// });
-		await acceptRoadmap(userId, {
-			studentProfileId,
+		previewStore.storePendingPreview(userId, {
+			nodes,
 			roadmapName,
 			personalisationLevel,
-			isPrimary: true,
-			nodes,
+			triggerReason,
+			studentProfileId,
 		});
 
-		notifyPreviewReady(sseToken);
-
-		
+		notifyUser(userId, 'roadmap_preview_ready', {
+			type: 'roadmap_preview_ready',
+			roadmapName,
+			personalisationLevel,
+			lowPersonalisationNotice:
+				personalisationLevel === 'low'
+					? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
+					: null,
+			preview: { nodes },
+		});
 	} catch (err) {
 		console.error('[generation] roadmap generation failed:', err);
 		if (studentProfileId) {

@@ -1,0 +1,214 @@
+{
+  "generatedAt": "2026-04-12T00:00:00.000Z",
+  "recordCount": 16,
+  "careerTrack": "Backend Engineer",
+  "items": [
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT1008",
+      "name": "Nhập môn lập trình",
+      "skills": [
+        "version-control-systems",
+        "git-vcs",
+        "gitlab-vcs",
+        "cpp-backend"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "AI Data Engineer",
+        "Systems Infrastructure",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT2204",
+      "name": "Lập trình hướng đối tượng",
+      "skills": [
+        "object-oriented-programming"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT2215",
+      "name": "Lập trình nâng cao",
+      "skills": [
+        "cicd-pipeline",
+        "github-actions",
+        "gitlab-ci",
+        "cpp-backend"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "Systems Infrastructure",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT2211",
+      "name": "Cơ sở dữ liệu",
+      "skills": [
+        "mysql-db",
+        "relational-databases"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "AI Data Engineer",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT2213",
+      "name": "Mạng máy tính",
+      "skills": [
+        "internet-fundamentals",
+        "http-protocol",
+        "dns-fundamentals",
+        "domain-name",
+        "browsers-how-work",
+        "page-hosting-services",
+        "shared-hosting"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "Systems Infrastructure"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT3110",
+      "name": "Phân tích và thiết kế hướng đối tượng",
+      "skills": [
+        "software-architecture",
+        "architectural-patterns",
+        "microservices-arch"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT3105",
+      "name": "Kiến trúc phần mềm",
+      "skills": [
+        "software-architecture",
+        "architectural-patterns",
+        "monolithic-apps",
+        "microservices-arch"
+      ],
+      "careerTracks": [
+        "Software Engineer General",
+        "Backend Engineer",
+        "Full Stack Web Developer",
+        "Mobile App Developer",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT3306",
+      "name": "Phát triển ứng dụng Web (*)",
+      "skills": [
+        "server-side",
+        "client-side",
+        "javascript-nodejs",
+        "web-frameworks",
+        "containerization",
+        "docker-basics",
+         "api-design",
+        "rest-apis",
+        "json-apis"
+      ],
+      "careerTracks": [
+        "Full Stack Web Developer",
+        "Backend Engineer",
+        "Software Engineer General",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT3320",
+      "name": "Thực hành phát triển ứng dụng Web (*)",
+      "skills": [
+        "server-side",
+        "client-side",
+        "javascript-nodejs",
+        "web-frameworks",
+        "containerization",
+        "docker-basics",
+         "api-design",
+        "rest-apis",
+        "json-apis"
+      ],
+      "careerTracks": [
+        "Full Stack Web Developer",
+        "Backend Engineer",
+        "Software Engineer General",
+        "Software Engineer Japan"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    },
+    {
+      "programId": "IT-JAPAN",
+      "code": "INT3307",
+      "name": "An toàn và an ninh mạng",
+      "skills": [
+        "web-security",
+        "https-protocol",
+        "server-security",
+        "dnssec",
+        "csp-headers"
+      ],
+      "careerTracks": [
+        "Systems Infrastructure",
+        "Backend Engineer"
+      ],
+      "validatedBy": null,
+      "validationNote": null
+    }
+  ]
+}

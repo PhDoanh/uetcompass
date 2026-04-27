@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="UETCompass favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a5cab"/>
+      <stop offset="100%" stop-color="#003e79"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="18" fill="none" stroke="#d6ecff" stroke-width="3"/>
+  <path d="M32 14 L43 32 L32 50 L21 32 Z" fill="#e9f4ff"/>
+  <path d="M32 18 L39 32 L32 46 L25 32 Z" fill="#58b4ff"/>
+  <circle cx="32" cy="32" r="3.2" fill="#ffffff"/>
+</svg>

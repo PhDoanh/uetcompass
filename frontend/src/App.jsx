@@ -2,15 +2,20 @@ import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import SkillTreePage from './features/skill-tree/SkillTreePage';
+import PublicSkillTreePage from './features/skill-tree/PublicSkillTreePage';
 import AccountSettingsPage from './features/account/AccountSettingsPage';
 import Homepage from './features/general/Homepage';
 import OnboardingPanel from './features/onboarding/OnboardingPanel';
 import LearningProfilePage from './features/onboarding/LearningProfilePage';
+import ManualRoadmapPage from './features/manual-roadmap/ManualRoadmapPage';
+import RoadmapSearchPage from './features/roadmap-search/RoadmapSearchPage';
 import NavBar from './features/general/NavBar';
 import { NotificationProvider } from './features/general/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
+import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 
 function normalizePathname(pathname) {
 	if (!pathname || pathname === '/') {
@@ -21,11 +26,92 @@ function normalizePathname(pathname) {
 
 function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
+	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
+	const roadmapSearchPanelRef = useRef(null);
 	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
+	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
+	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
+		Boolean(publicSkillTreeRoadmapId) ||
 		pathname.startsWith('/roadmaps/public/');
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const handleOpenOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(true);
+		};
+
+		const handleCloseOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(false);
+		};
+
+		const handleEscClose = (event) => {
+			if (event.key === 'Escape') {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+		window.addEventListener('keydown', handleEscClose);
+
+		return () => {
+			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+			window.removeEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+			window.removeEventListener('keydown', handleEscClose);
+		};
+	}, [pathname]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
+			return undefined;
+		}
+
+		const isOutsideOverlayPanel = (target) => {
+			const panel = roadmapSearchPanelRef.current;
+			if (!panel || !(target instanceof Node)) {
+				return false;
+			}
+
+			if (typeof target.composedPath === 'function') {
+				return !target.composedPath().includes(panel);
+			}
+
+			return !panel.contains(target);
+		};
+
+		const handleOutsideInteraction = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		const handleOutsideWheel = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				event.preventDefault();
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleOutsideInteraction, true);
+		document.addEventListener('touchstart', handleOutsideInteraction, true);
+		document.addEventListener('click', handleOutsideInteraction, true);
+		window.addEventListener('wheel', handleOutsideWheel, { capture: true, passive: false });
+		window.addEventListener('touchmove', handleOutsideWheel, { capture: true, passive: false });
+
+		return () => {
+			document.removeEventListener('mousedown', handleOutsideInteraction, true);
+			document.removeEventListener('touchstart', handleOutsideInteraction, true);
+			document.removeEventListener('click', handleOutsideInteraction, true);
+			window.removeEventListener('wheel', handleOutsideWheel, true);
+			window.removeEventListener('touchmove', handleOutsideWheel, true);
+		};
+	}, [isRoadmapSearchOverlayOpen]);
 
 	if (isAuthenticated && isAuthPopupPath) {
 		if (typeof window !== 'undefined') {
@@ -85,8 +171,54 @@ function AppContent() {
 		);
 	}
 
-	// Route to Skill Tree if pathname includes /skill-tree
-	if (!content && pathname.includes('/skill-tree')) {
+	if (!content && pathname === '/manual-roadmap') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<ManualRoadmapPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/system-improvement') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)', padding: '32px 20px' }}>
+				<section
+					style={{
+						maxWidth: '920px',
+						margin: '0 auto',
+						border: '1px solid #dbe3ef',
+						borderRadius: '18px',
+						background: '#f8fbff',
+						padding: '24px',
+						boxShadow: '0 16px 30px rgba(15, 23, 42, 0.08)',
+					}}
+				>
+					<h1 style={{ margin: 0, color: '#0055a2' }}>Cải tiến hệ thống</h1>
+					<p style={{ marginTop: '10px', marginBottom: 0, lineHeight: 1.6, color: '#475569' }}>
+						Đây là trang mô phỏng để tiếp nhận đề xuất cải tiến hệ thống. Chức năng gửi đề xuất chính thức sẽ được triển khai trong phiên bản tiếp theo.
+					</p>
+					<ul style={{ margin: '16px 0 0', color: '#334155', lineHeight: 1.8 }}>
+						<li>Đề xuất cải tiến giao diện và trải nghiệm học tập.</li>
+						<li>Đề xuất cải tiến chất lượng roadmap và gợi ý kỹ năng.</li>
+						<li>Đề xuất tính năng mới phục vụ cộng đồng UET.</li>
+					</ul>
+				</section>
+			</main>
+		);
+	}
+
+	if (!content && publicSkillTreeRoadmapId) {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<PublicSkillTreePage roadmapId={publicSkillTreeRoadmapId} />
+			</main>
+		);
+	}
+
+	// Route to Skill Tree for personalized roadmap
+	if (!content && pathname === '/skill-tree') {
 		content = (
 			<OnboardingGuard>
 				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
@@ -151,9 +283,37 @@ function AppContent() {
 								}}
 								aria-label="Close authentication popup"
 							>
-								x
+								<X size={16} aria-hidden="true" />
 							</button>
 							{authPopupContent}
+						</div>
+					</div>
+				) : null}
+				{isRoadmapSearchOverlayOpen ? (
+					<div
+						className="roadmap-search-overlay"
+						role="dialog"
+						aria-modal="true"
+						onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+					>
+						<div className="roadmap-search-overlay__backdrop" />
+						<div
+							ref={roadmapSearchPanelRef}
+							className="roadmap-search-overlay__panel"
+							onClick={(event) => event.stopPropagation()}
+						>
+							<div className="roadmap-search-overlay__header">
+								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
+								<button
+									type="button"
+									className="roadmap-search-overlay__close"
+									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+									aria-label="Close roadmap search"
+								>
+									<X size={16} aria-hidden="true" />
+								</button>
+							</div>
+							<RoadmapSearchPage />
 						</div>
 					</div>
 				) : null}

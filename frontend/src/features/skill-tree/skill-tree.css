@@ -25,6 +25,11 @@
   font-family: 'Inter', sans-serif;
 }
 
+html[data-theme='dark'] .skill-tree-page {
+  background: #0d1a2d;
+  color: #dce9fd;
+}
+
 .skill-tree-page__topbar {
   height: 56px;
   background: var(--st-topbar);
@@ -94,6 +99,10 @@
   overflow: auto;
 }
 
+html[data-theme='dark'] .skill-tree-layout__canvas {
+  background-color: #0f1e32;
+}
+
 .skill-tree-zoom-layer {
   transform-origin: top center;
   transition: transform 180ms ease;
@@ -110,12 +119,88 @@
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
 }
 
+html[data-theme='dark'] .skill-tree-summary-card {
+  border: 1px solid rgba(90, 146, 218, 0.45);
+  border-left: 5px solid #3d8ee6;
+  background: linear-gradient(110deg, #14263e 0%, #112236 100%);
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
 .skill-tree-summary-card__title {
   margin: 0;
   font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
+}
+
+html[data-theme='dark'] .skill-tree-summary-card__title,
+html[data-theme='dark'] .skill-tree-summary-card__meta {
+  color: #dce9fd;
+}
+
+.skill-tree-summary-card__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.skill-tree-summary-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-tree-edit-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skill-tree-edit-button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button {
+  background: #2b6fd0;
+  border-color: #4b8ef0;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button:hover {
+  background: #2059ad;
+  border-color: #3977d2;
+}
+
+.skill-tree-back-button {
+  border: 1px solid #93c5fd;
+  background: #ffffff;
+  color: #1e3a8a;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-theme='dark'] .skill-tree-back-button {
+  border: 1px solid rgba(90, 146, 218, 0.6);
+  background: rgba(26, 50, 80, 0.85);
+  color: #d2e7ff;
+}
+
+html[data-theme='dark'] .skill-tree-back-button:hover {
+  background: rgba(50, 96, 150, 0.45);
+}
+
+.skill-tree-back-button:hover {
+  background: #eff6ff;
 }
 
 .skill-tree-summary-card__meta {
@@ -132,6 +217,15 @@
     linear-gradient(to right, rgba(120, 138, 164, 0.2) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(120, 138, 164, 0.2) 1px, transparent 1px);
   background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+}
+
+html[data-theme='dark'] .skill-canvas {
+  background-color: #0f1d31;
+  background-image:
+    linear-gradient(to right, rgba(105, 139, 182, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(105, 139, 182, 0.16) 1px, transparent 1px),
+    linear-gradient(to right, rgba(105, 139, 182, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(105, 139, 182, 0.22) 1px, transparent 1px);
 }
 
 .skill-tree-canvas {
@@ -415,6 +509,65 @@
   background: #f8fafc;
 }
 
+html[data-theme='dark'] .roadmap-node {
+  border-color: rgba(136, 164, 198, 0.52);
+  background: #1a304d;
+  box-shadow: 0 8px 18px rgba(2, 9, 20, 0.45);
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .roadmap-node:hover {
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.55);
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-neutral {
+  border-color: #2ecf92;
+  background: #11372d;
+  color: #d6ffe8;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-progress {
+  border-color: #f3be52;
+  background: #4a3a12;
+  color: #ffe7b2;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-done {
+  border-color: #6baef8;
+  background: #1f3553;
+  color: #dcecff;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-skip {
+  border-color: rgba(136, 164, 198, 0.6);
+  background: #27374a;
+  color: #d1deed;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-neutral {
+  border-color: #f3be52;
+  background: #4a3414;
+  color: #ffe8bd;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-progress {
+  border-color: #f3be52;
+  background: #4a3a12;
+  color: #ffe7b2;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-done {
+  border-color: #6baef8;
+  background: #1f3553;
+  color: #dcecff;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-skip {
+  border-color: rgba(136, 164, 198, 0.58);
+  background: #24384f;
+  color: #d1deed;
+}
+
 .course-node {
   width: 100%;
 }
@@ -453,6 +606,24 @@
   color: #334155;
 }
 
+html[data-theme='dark'] .course-node__name-en,
+html[data-theme='dark'] .course-node__credits,
+html[data-theme='dark'] .course-node__prerequisites {
+  color: inherit;
+}
+
+html[data-theme='dark'] .roadmap-node-main .course-node__code,
+html[data-theme='dark'] .roadmap-node-sub .course-node__code,
+html[data-theme='dark'] .roadmap-node-main .course-node__credits,
+html[data-theme='dark'] .roadmap-node-sub .course-node__credits,
+html[data-theme='dark'] .roadmap-node-main .course-node__name-en,
+html[data-theme='dark'] .roadmap-node-sub .course-node__name-en,
+html[data-theme='dark'] .roadmap-node-main .course-node__prerequisites,
+html[data-theme='dark'] .roadmap-node-sub .course-node__prerequisites {
+  color: #1f2937;
+  text-shadow: none;
+}
+
 .roadmap-node-main .course-node__credits {
   display: block;
   margin-top: 8px;
@@ -476,6 +647,21 @@
   display: flex;
   flex-direction: column;
   animation: panelIn 220ms ease;
+}
+
+html[data-theme='dark'] .skill-tree-panel {
+  background: rgba(12, 24, 40, 0.9);
+  border-left: 1px solid rgba(90, 146, 218, 0.4);
+  box-shadow: 0 20px 38px rgba(2, 9, 20, 0.56);
+}
+
+.public-roadmap-panel {
+  position: fixed;
+  top: var(--st-panel-top);
+  right: 0;
+  width: min(380px, 92vw);
+  height: calc(100vh - var(--st-panel-top));
+  z-index: 45;
 }
 
 @keyframes panelIn {
@@ -618,6 +804,11 @@
   padding: 12px;
 }
 
+html[data-theme='dark'] .resources-tab__section {
+  border: 1px solid rgba(90, 146, 218, 0.35);
+  background: #14253e;
+}
+
 .resources-tab__heading {
   margin: 0 0 8px;
   font-size: 0.82rem;
@@ -648,6 +839,62 @@
   font-size: 0.74rem;
 }
 
+.sample-resource-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.sample-resource-list__item {
+  border: 1px solid #d8e3f6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8fbff;
+}
+
+.sample-resource-list__title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sample-resource-list__link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: #1d4ed8;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.sample-resource-list__link:hover {
+  text-decoration: underline;
+}
+
+.sample-resource-list__open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.sample-resource-list__open:hover {
+  background: #eff6ff;
+}
+
 .why-tab__content {
   margin: 0;
   color: #334155;
@@ -659,6 +906,47 @@
   margin: 0;
   color: #5d6470;
   font-size: 0.82rem;
+}
+
+html[data-theme='dark'] .skill-tree-muted-text,
+html[data-theme='dark'] .why-tab__content,
+html[data-theme='dark'] .resources-tab__heading,
+html[data-theme='dark'] .sample-resource-list__title,
+html[data-theme='dark'] .sample-resource-list__link {
+  color: #cfe2ff;
+}
+
+html[data-theme='dark'] .skill-tree-canvas-controls__btn {
+  border: 1px solid rgba(95, 146, 214, 0.45);
+  background: rgba(20, 39, 62, 0.9);
+  color: #d5e7ff;
+  box-shadow: 0 8px 16px rgba(2, 9, 20, 0.42);
+}
+
+html[data-theme='dark'] .skill-tree-canvas-controls__btn:hover:not(:disabled) {
+  background: rgba(36, 65, 102, 0.95);
+}
+
+html[data-theme='dark'] .skill-tree-page__footer {
+  border-top: 1px solid rgba(95, 146, 214, 0.32);
+  background: #102036;
+  color: #9fb8d9;
+}
+
+html[data-theme='dark'] .skill-tree-empty-state,
+html[data-theme='dark'] .skill-tree-loading-state,
+html[data-theme='dark'] .skill-tree-loading-state__inner,
+html[data-theme='dark'] .skill-tree-error-message {
+  color: #b8cce8;
+}
+
+html[data-theme='dark'] .skill-tree-status-select,
+html[data-theme='dark'] .skill-tree-icon-button,
+html[data-theme='dark'] .sample-resource-list__item,
+html[data-theme='dark'] .sample-resource-list__open {
+  border-color: rgba(95, 146, 214, 0.38);
+  background: #1a304d;
+  color: #d8e8ff;
 }
 
 .skill-tree-json-preview {
@@ -915,6 +1203,16 @@
     height: min(62vh, 460px);
     border-left: none;
     border-top: 1px solid rgba(114, 119, 130, 0.24);
+  }
+
+  .public-roadmap-panel {
+    top: var(--st-panel-top);
+    right: 0;
+    bottom: auto;
+    width: min(360px, 92vw);
+    height: calc(100vh - var(--st-panel-top));
+    border-left: 1px solid rgba(114, 119, 130, 0.24);
+    border-top: none;
   }
 
   .skill-tree-canvas-controls {

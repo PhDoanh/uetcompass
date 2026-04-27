@@ -1,4 +1,5 @@
 const accountService = require('./account.service');
+const { getRefreshCookieOptions } = require('../auth/token.service');
 
 function sendError(res, err) {
   const status = err?.status || 500;
@@ -36,6 +37,16 @@ const accountController = {
   async changePassword(req, res) {
     try {
       const result = await accountService.changePassword(req.user.userId, req.body || {});
+      return res.status(200).json(result);
+    } catch (err) {
+      return sendError(res, err);
+    }
+  },
+
+  async hardDeleteAccount(req, res) {
+    try {
+      const result = await accountService.hardDeleteAccount(req.user.userId);
+      res.clearCookie('rt', getRefreshCookieOptions());
       return res.status(200).json(result);
     } catch (err) {
       return sendError(res, err);

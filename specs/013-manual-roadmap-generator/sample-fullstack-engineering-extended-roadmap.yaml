@@ -1,0 +1,182 @@
+title: Fullstack Engineering Extended Roadmap
+description: Balanced roadmap with around 20 nodes, including multiple parent tracks and distributed child nodes.
+nodes:
+  - nodeId: FRONTEND_CORE
+    type: main_topic
+    label: Frontend Core
+    description: Build robust UIs with HTML, CSS, JavaScript, and component patterns.
+    parentNodeId: null
+    skillName: html-css-js
+    resources:
+      - title: Frontend Developer Roadmap
+        url: https://roadmap.sh/frontend
+        type: link
+
+  - nodeId: BACKEND_CORE
+    type: main_topic
+    label: Backend Core
+    description: Build APIs, business logic, middleware, and service boundaries.
+    parentNodeId: null
+    skillName: rest-api
+    resources:
+      - title: Node.js Learn
+        url: https://nodejs.org/en/learn
+        type: docs
+
+  - nodeId: DATA_MODELING
+    type: main_topic
+    label: Data Modeling
+    description: Design schemas, relationships, constraints, and migrations.
+    parentNodeId: null
+    skillName: sql-schema-design
+    resources:
+      - title: PostgreSQL Tutorial
+        url: https://www.postgresqltutorial.com/
+        type: docs
+
+  - nodeId: TESTING_QA
+    type: main_topic
+    label: Testing & QA
+    description: Add unit, integration, and end-to-end tests into delivery flow.
+    parentNodeId: null
+    skillName: unit-testing
+    resources:
+      - title: Testing JavaScript
+        url: https://testingjavascript.com/
+        type: course
+
+  - nodeId: SECURITY_BASELINE
+    type: main_topic
+    label: Security Baseline
+    description: Protect authentication, authorization, and sensitive data paths.
+    parentNodeId: null
+    skillName: auth-security
+    resources:
+      - title: OWASP Cheat Sheet Series
+        url: https://cheatsheetseries.owasp.org/
+        type: docs
+
+  - nodeId: DEVOPS_CORE
+    type: main_topic
+    label: DevOps Core
+    description: Automate build, containerization, CI/CD, and runtime operations.
+    parentNodeId: null
+    skillName: cicd
+    resources:
+      - title: Docker Get Started
+        url: https://docs.docker.com/get-started/
+        type: docs
+
+  - nodeId: SYSTEM_DESIGN
+    type: main_topic
+    label: System Design
+    description: Design scalable architecture, caching strategy, and async workflows.
+    parentNodeId: null
+    skillName: scalability
+    resources:
+      - title: System Design Primer
+        url: https://github.com/donnemartin/system-design-primer
+        type: docs
+
+  - nodeId: FE_COMPONENT_ARCH
+    type: sub_topic
+    label: Component Architecture
+    description: Structure components, feature modules, and reusable UI patterns.
+    parentNodeId: FRONTEND_CORE
+    skillName: component-design
+
+  - nodeId: FE_STATE_MANAGEMENT
+    type: sub_topic
+    label: State Management
+    description: Handle shared client state and async data in complex screens.
+    parentNodeId: FRONTEND_CORE
+    skillName: state-management
+    resources:
+      - title: Zustand Docs
+        url: https://zustand-demo.pmnd.rs/
+        type: docs
+
+  - nodeId: FE_ACCESSIBILITY
+    type: sub_topic
+    label: Accessibility
+    description: Build keyboard-friendly, semantic, and inclusive interfaces.
+    parentNodeId: FRONTEND_CORE
+    skillName: accessibility
+
+  - nodeId: BE_API_DESIGN
+    type: sub_topic
+    label: API Design
+    description: Define API contracts, validation, pagination, and versioning.
+    parentNodeId: BACKEND_CORE
+    skillName: api-contracts
+
+  - nodeId: BE_CACHE_QUEUE
+    type: sub_topic
+    label: Cache & Queue
+    description: Use cache and asynchronous jobs to improve throughput.
+    parentNodeId: BACKEND_CORE
+    skillName: caching
+
+  - nodeId: BE_DATA_ACCESS
+    type: sub_topic
+    label: Data Access Layer
+    description: Implement repositories, transaction boundaries, and query tuning.
+    parentNodeId: DATA_MODELING
+    skillName: repository-pattern
+
+  - nodeId: QA_API_AUTOMATION
+    type: sub_topic
+    label: API Automation
+    description: Automate endpoint tests for contracts, edge cases, and regressions.
+    parentNodeId: TESTING_QA
+    skillName: api-automation
+
+  - nodeId: SEC_AUTHZ_POLICIES
+    type: sub_topic
+    label: Authorization Policies
+    description: Build role and permission models with least-privilege rules.
+    parentNodeId: SECURITY_BASELINE
+    skillName: rbac
+
+  - nodeId: DEVOPS_RELEASE_PIPELINE
+    type: sub_topic
+    label: Release Pipeline
+    description: Create safe rollout strategies with staged and canary deployment.
+    parentNodeId: DEVOPS_CORE
+    skillName: release-management
+
+  - nodeId: DEVOPS_INFRA_AS_CODE
+    type: sub_topic
+    label: Infrastructure as Code
+    description: Manage infrastructure with repeatable, versioned definitions.
+    parentNodeId: DEVOPS_CORE
+    skillName: terraform
+
+  - nodeId: OBSERVABILITY_CORE
+    type: sub_topic
+    label: Observability Core
+    description: Monitor logs, metrics, traces, and production incidents.
+    parentNodeId: SYSTEM_DESIGN
+    skillName: monitoring
+    resources:
+      - title: OpenTelemetry Docs
+        url: https://opentelemetry.io/docs/
+        type: docs
+
+  - nodeId: DESIGN_SCALABILITY_PATTERN
+    type: sub_topic
+    label: Scalability Patterns
+    description: Apply caching, partitioning, and queue-driven architecture patterns.
+    parentNodeId: SYSTEM_DESIGN
+    skillName: caching-patterns
+
+  - nodeId: CAPSTONE_FULLSTACK_PRODUCT
+    type: sub_topic
+    label: Fullstack Product Capstone
+    description: Deliver a production-grade fullstack product with full lifecycle coverage.
+    parentNodeId: SYSTEM_DESIGN
+    skillName: fullstack-delivery
+    resources:
+      - title: The Odin Project Full Stack JavaScript
+        url: https://www.theodinproject.com/paths/full-stack-javascript
+        type: course

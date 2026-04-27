@@ -1,19 +1,45 @@
-import React, { useMemo, useState } from 'react';
-import { Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import authApi from '../../services/auth.api';
+import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 
 function isVnuEmail(value) {
   return /@vnu\.edu\.vn$/i.test(String(value || '').trim());
 }
 
+const BUTTON_DELAY_MS = 5000;
+const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 export default function RegisterPage() {
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [step, setStep] = useState('register');
   const [form, setForm] = useState({ fullName: '', email: '', password: '', otp: '' });
   const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
+
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
 
   const passwordStrength = useMemo(() => {
     const value = String(form.password || '');
@@ -22,7 +48,7 @@ export default function RegisterPage() {
     if (/[A-Z]/.test(value)) score += 1;
     if (/[a-z]/.test(value)) score += 1;
     if (/\d/.test(value)) score += 1;
-    if (/[^A-Za-z0-9]/.test(value)) score += 1;
+    if (/[@$!%*?&]/.test(value)) score += 1;
 
     if (score <= 2) {
       return { level: 'Yếu', className: 'weak', activeBars: 1 };
@@ -40,13 +66,34 @@ export default function RegisterPage() {
     return isVnuEmail(form.email) ? '' : 'Email phải có đuôi @vnu.edu.vn';
   }, [form.email]);
 
+  const passwordError = useMemo(() => {
+    if (!form.password) {
+      return '';
+    }
+    return PASSWORD_POLICY_REGEX.test(String(form.password || ''))
+      ? ''
+      : 'Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt';
+  }, [form.password]);
+
   async function submitRegister(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
     if (emailError) {
       setError(emailError);
+      addNotification(emailError, 'warning');
+      return;
+    }
+
+    if (passwordError) {
+      setError(passwordError);
+      addNotification(passwordError, 'warning');
       return;
     }
 
@@ -57,14 +104,21 @@ export default function RegisterPage() {
         password: form.password,
       });
       setInfo(result.message || 'Đã gửi mã OTP');
+      addNotification(result.message || 'Đã gửi mã OTP', 'success');
       setStep('verify');
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại');
+      addNotification(err.message || 'Đăng ký thất bại', 'error');
     }
   }
 
   async function submitVerify(event) {
     event.preventDefault();
+    if (isButtonCoolingDown) {
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
@@ -73,24 +127,39 @@ export default function RegisterPage() {
         email: form.email,
         otp: form.otp,
       });
-      setInfo(result.message || 'Xác thực email thành công');
+      const successMessage = result.message || 'Đăng ký thành công. Bạn có thể đăng nhập ngay.';
+      setInfo(successMessage);
+      addNotification(successMessage, 'success');
       if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(REGISTER_SUCCESS_NOTICE_KEY, successMessage);
         window.location.assign('/login');
       }
     } catch (err) {
       setError(err.message || 'Xác thực thất bại');
+      addNotification(err.message || 'Xác thực thất bại', 'error');
     }
   }
 
   async function handleResend() {
+    if (isButtonCoolingDown) {
+      addNotification('Vui lòng đợi vài giây trước khi gửi lại mã.', 'warning');
+      return;
+    }
+    triggerButtonDelay();
+
     setError('');
     setInfo('');
 
     try {
       const result = await authApi.resendOtp({ email: form.email });
       setInfo(result.message || 'Đã gửi lại OTP');
+      addNotification(result.message || 'Đã gửi lại OTP', 'success');
     } catch (err) {
-      setError(err.message || 'Gửi lại OTP thất bại');
+      const nextMessage = err?.code === 'NO_PENDING_VERIFICATION'
+        ? 'Không tìm thấy phiên xác thực đang chờ. Vui lòng đăng ký lại để nhận OTP mới.'
+        : (err.message || 'Gửi lại OTP thất bại');
+      setError(nextMessage);
+      addNotification(nextMessage, 'error');
     }
   }
 
@@ -126,10 +195,10 @@ export default function RegisterPage() {
       title="UETCompass"
       description={
         step === 'register'
-          ? 'Đăng ký tài khoản bằng email @vnu.edu.vn.'
+          ? ''
           : 'Nhập mã OTP 4 số được gửi đến email của bạn.'
       }
-      error={error || emailError}
+      error={error || emailError || passwordError}
       success={info}
       icon={<Compass size={24} />}
       tabs={[
@@ -199,6 +268,11 @@ export default function RegisterPage() {
               </button>
             </div>
 
+            <p className={passwordError ? 'auth-helper-text error' : 'auth-helper-text'}>
+              <AlertTriangle size={12} className="auth-helper-icon" />
+              Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt
+            </p>
+
             <div className="auth-strength">
               <div className="auth-strength-head">
                 <span>Độ mạnh mật khẩu</span>
@@ -214,8 +288,8 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={Boolean(emailError)}
-            className={`auth-button primary ${emailError ? 'disabled' : ''}`}
+            disabled={Boolean(emailError) || Boolean(passwordError) || isButtonCoolingDown}
+            className={`auth-button primary ${emailError || passwordError || isButtonCoolingDown ? 'disabled' : ''}`}
           >
             Tạo tài khoản
           </button>
@@ -240,18 +314,14 @@ export default function RegisterPage() {
           <p className="auth-otp-hint">
             Không nhận được mã?
             {' '}
-            <button type="button" onClick={handleResend}>Gửi lại mã</button>
+            <button type="button" onClick={handleResend} disabled={isButtonCoolingDown}>Gửi lại mã</button>
           </p>
 
-          <button type="submit" className="auth-button primary" disabled={form.otp.length !== 4}>
+          <button type="submit" className="auth-button primary" disabled={form.otp.length !== 4 || isButtonCoolingDown}>
             Xác thực
           </button>
         </form>
       )}
-
-      <div className="auth-links">
-        <a href="/login">Quay lại đăng nhập</a>
-      </div>
     </AuthShell>
   );
 }

@@ -10,7 +10,7 @@ Feature 011 introduces a strict two-role access model (`guest`, `uet_student`) w
 ## Technical Context
 
 **Language/Version**: JavaScript (Node.js backend, React frontend)
-**Primary Dependencies**: Express, Mongoose, jsonwebtoken, bcryptjs, nodemailer, google-auth-library, React, React Router, Axios/Zustand
+**Primary Dependencies**: Express, Mongoose, jsonwebtoken, bcryptjs, nodemailer, google-auth-library, React, React Router, Fetch API/Zustand
 **Storage**: MongoDB (accounts, otp challenge state, sessions, audit events)
 **Testing**: Jest (unit-focused), with service/controller guard behavior validated via mocked dependencies
 **Target Platform**: Web application (backend API + frontend SPA)

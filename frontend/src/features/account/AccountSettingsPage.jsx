@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+	AlertTriangle,
 	Camera,
 	CheckCircle2,
 	Eye,
@@ -13,11 +14,13 @@ import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import useAccountSettingsStore from '../../stores/accountSettings.store';
 import SiteFooter from '../general/SiteFooter';
+import { useNotification } from '../general/NotificationContainer';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 import './account-settings-page.css';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
+const ACCOUNT_DELETE_CONFIRM_TEXT = 'DELETE';
 
 function estimateDataUrlBytes(dataUrl) {
 	const base64 = String(dataUrl || '').split(',')[1] || '';
@@ -76,6 +79,7 @@ async function compressAvatarFile(file) {
 
 export default function AccountSettingsPage() {
 	const { accessToken, logoutAndRedirect } = useAuth();
+	const { addNotification } = useNotification();
 	const {
 		loading,
 		setLoading,
@@ -95,10 +99,10 @@ export default function AccountSettingsPage() {
 	const [newPassword, setNewPassword] = useState('');
 	const [imageError, setImageError] = useState('');
 	const [pageError, setPageError] = useState('');
-	const [profileStatus, setProfileStatus] = useState({ error: '', success: '' });
-	const [passwordStatus, setPasswordStatus] = useState({ error: '', success: '' });
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
+	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
 	const canSubmitPassword = useMemo(() => {
 		return Boolean(currentPassword.trim()) && isPasswordPolicyValid(newPassword);
@@ -115,7 +119,7 @@ export default function AccountSettingsPage() {
 		if (/[A-Z]/.test(value)) score += 1;
 		if (/[a-z]/.test(value)) score += 1;
 		if (/\d/.test(value)) score += 1;
-		if (/[^A-Za-z0-9]/.test(value)) score += 1;
+		if (/[@$!%*?&]/.test(value)) score += 1;
 
 		if (score <= 2) {
 			return { label: 'Weak', color: 'weak', score: 1 };
@@ -125,6 +129,10 @@ export default function AccountSettingsPage() {
 		}
 		return { label: 'Strong', color: 'strong', score: 3 };
 	}, [newPassword]);
+
+	const canDeleteAccount = useMemo(() => {
+		return accountDeleteConfirm.trim().toUpperCase() === ACCOUNT_DELETE_CONFIRM_TEXT;
+	}, [accountDeleteConfirm]);
 
 	useEffect(() => {
 		async function loadProfile() {
@@ -167,7 +175,6 @@ export default function AccountSettingsPage() {
 		resetStatus();
 		setImageError('');
 		setPageError('');
-		setProfileStatus({ error: '', success: '' });
 
 		const payload = {
 			displayName: identity.displayName,
@@ -178,7 +185,7 @@ export default function AccountSettingsPage() {
 
 		const validation = validateProfilePayload(payload);
 		if (!validation.ok) {
-			setProfileStatus({ error: Object.values(validation.errors)[0], success: '' });
+			addNotification(Object.values(validation.errors)[0], 'error');
 			return;
 		}
 
@@ -210,10 +217,10 @@ export default function AccountSettingsPage() {
 					})
 				);
 			}
-			setProfileStatus({ error: '', success: result?.message || 'Profile updated' });
+			addNotification(result?.message || 'Profile updated', 'success');
 		} catch (err) {
 			const message = err?.message || 'Failed to update profile';
-			setProfileStatus({ error: message, success: '' });
+			addNotification(message, 'error');
 			setError(message);
 		} finally {
 			setLoading(false);
@@ -255,13 +262,9 @@ export default function AccountSettingsPage() {
 		event.preventDefault();
 		resetStatus();
 		setPageError('');
-		setPasswordStatus({ error: '', success: '' });
 
 		if (!canSubmitPassword) {
-			setPasswordStatus({
-				error: 'Mật khẩu mới phải có ít nhất 8 ký tự gồm chữ, số và ký tự đặc biệt',
-				success: '',
-			});
+			addNotification('Mật khẩu mới phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.', 'error');
 			return;
 		}
 
@@ -271,12 +274,49 @@ export default function AccountSettingsPage() {
 				currentPassword,
 				newPassword,
 			});
-			setPasswordStatus({ error: '', success: result?.message || 'Password changed successfully' });
+			addNotification(result?.message || 'Password changed successfully', 'success');
 			setCurrentPassword('');
 			setNewPassword('');
 		} catch (err) {
 			const message = err?.message || 'Failed to change password';
-			setPasswordStatus({ error: message, success: '' });
+			addNotification(message, 'error');
+			setError(message);
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	async function onHardDeleteAccount(event) {
+		event.preventDefault();
+		resetStatus();
+		setPageError('');
+
+		if (!canDeleteAccount) {
+			addNotification(`Type ${ACCOUNT_DELETE_CONFIRM_TEXT} to confirm account deletion.`, 'error');
+			return;
+		}
+
+		setIsDeleteModalOpen(true);
+	}
+
+	function closeDeleteModal() {
+		if (loading) {
+			return;
+		}
+		setIsDeleteModalOpen(false);
+	}
+
+	async function confirmHardDeleteAccount() {
+		setIsDeleteModalOpen(false);
+
+		setLoading(true);
+		try {
+			const result = await accountApi.deleteAccount(accessToken);
+			addNotification(result?.message || 'Account deleted permanently.', 'success');
+			await logoutAndRedirect();
+		} catch (err) {
+			const message = err?.message || 'Failed to delete account';
+			addNotification(message, 'error');
 			setError(message);
 		} finally {
 			setLoading(false);
@@ -377,8 +417,6 @@ export default function AccountSettingsPage() {
 										Save Changes
 									</button>
 								</div>
-								{profileStatus.error ? <p className="message error">{profileStatus.error}</p> : null}
-								{profileStatus.success ? <p className="message success">{profileStatus.success}</p> : null}
 							</form>
 						</div>
 					</section>
@@ -402,7 +440,6 @@ export default function AccountSettingsPage() {
 											type={showCurrentPassword ? 'text' : 'password'}
 											value={currentPassword}
 											onChange={(e) => setCurrentPassword(e.target.value)}
-											placeholder="••••••••••••"
 										/>
 										<button
 											type="button"
@@ -439,7 +476,7 @@ export default function AccountSettingsPage() {
 										</div>
 										<div className="strength-meta">
 											<span>Password: {passwordStrength.label}</span>
-											<span>{canSubmitPassword ? 'Policy valid' : 'At least 8 chars + letters + number + symbol'}</span>
+											<span>{canSubmitPassword ? 'Policy valid' : 'At least 8 chars + upper + lower + number + @$!%*?&'}</span>
 										</div>
 									</div>
 								</div>
@@ -450,8 +487,6 @@ export default function AccountSettingsPage() {
 										Update Password
 									</button>
 								</div>
-								{passwordStatus.error ? <p className="message error">{passwordStatus.error}</p> : null}
-								{passwordStatus.success ? <p className="message success">{passwordStatus.success}</p> : null}
 							</form>
 						</div>
 
@@ -508,10 +543,72 @@ export default function AccountSettingsPage() {
 							</button>
 						</div>
 					</section>
+
+					<section className="danger-zone-card">
+						<div className="card-title-row danger-title-row">
+							<AlertTriangle size={18} />
+							<h2>Danger Zone</h2>
+						</div>
+						<p>
+							Hard delete will permanently remove this account and all related data in the
+							database.
+						</p>
+						<form onSubmit={onHardDeleteAccount}>
+							<div className="field">
+								<label htmlFor="accountDeleteConfirm">
+									Type {ACCOUNT_DELETE_CONFIRM_TEXT} to confirm
+								</label>
+								<input
+									id="accountDeleteConfirm"
+									value={accountDeleteConfirm}
+									onChange={(event) => setAccountDeleteConfirm(event.target.value)}
+									placeholder={ACCOUNT_DELETE_CONFIRM_TEXT}
+									disabled={loading}
+								/>
+							</div>
+							<div className="danger-actions">
+								<button
+									type="submit"
+									className="btn danger solid"
+									disabled={loading || !canDeleteAccount}
+								>
+									Delete Account Permanently
+								</button>
+							</div>
+						</form>
+					</section>
 				</main>
 
 				<SiteFooter />
 			</div>
+
+			{isDeleteModalOpen ? (
+				<div
+					className="account-delete-modal-overlay"
+					onClick={closeDeleteModal}
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="account-delete-modal-title"
+				>
+					<div className="account-delete-modal" onClick={(event) => event.stopPropagation()}>
+						<div className="account-delete-modal__title-row">
+							<AlertTriangle size={18} />
+							<h3 id="account-delete-modal-title">Xác nhận xóa tài khoản</h3>
+						</div>
+						<p>
+							Hành động này sẽ xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan. Bạn có chắc chắn muốn tiếp tục?
+						</p>
+						<div className="account-delete-modal__actions">
+							<button type="button" className="btn subtle" onClick={closeDeleteModal} disabled={loading}>
+								Hủy
+							</button>
+							<button type="button" className="btn danger solid" onClick={confirmHardDeleteAccount} disabled={loading}>
+								Xóa vĩnh viễn
+							</button>
+						</div>
+					</div>
+				</div>
+			) : null}
 		</div>
 	);
 }

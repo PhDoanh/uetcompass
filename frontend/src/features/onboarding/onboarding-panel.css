@@ -1032,3 +1032,172 @@
     min-height: 44px;
   }
 }
+
+/* Dark theme - Learning Profile */
+html[data-theme='dark'] .learning-profile-page--modern {
+  background: radial-gradient(circle at 15% 8%, #173154 0%, #0f2138 42%, #0a1628 100%);
+}
+
+html[data-theme='dark'] .learning-profile-content--modern,
+html[data-theme='dark'] .learning-profile-header h1,
+html[data-theme='dark'] .learning-section__head h2 {
+  color: #dceafd;
+}
+
+html[data-theme='dark'] .learning-profile-badge {
+  border: 1px solid rgba(101, 152, 220, 0.46);
+  color: #b6d7ff;
+  background: rgba(26, 49, 79, 0.82);
+}
+
+html[data-theme='dark'] .learning-profile-header p,
+html[data-theme='dark'] .learning-label,
+html[data-theme='dark'] .learning-course-item p,
+html[data-theme='dark'] .learning-section__empty,
+html[data-theme='dark'] .learning-section__empty a,
+html[data-theme='dark'] .learning-profile-success {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .learning-section__card {
+  background: #142741;
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  box-shadow: 0 10px 22px rgba(2, 9, 20, 0.42);
+}
+
+html[data-theme='dark'] .learning-input,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input {
+  border: 1px solid rgba(93, 143, 210, 0.42);
+  background: #1a304d;
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .learning-input::placeholder,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input::placeholder {
+  color: #95aed0;
+}
+
+html[data-theme='dark'] .learning-input:focus,
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-input:focus {
+  border-color: #66a8ff;
+  box-shadow: 0 0 0 3px rgba(74, 151, 245, 0.2);
+}
+
+html[data-theme='dark'] .learning-profile-page--modern .onboarding-label,
+html[data-theme='dark'] .learning-label {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .learning-course-item {
+  background: #1a304d;
+  border: 1px solid rgba(93, 143, 210, 0.35);
+}
+
+html[data-theme='dark'] .learning-course-item:hover {
+  background: #233c5f;
+  border-color: rgba(120, 170, 232, 0.52);
+}
+
+html[data-theme='dark'] .learning-expand-btn,
+html[data-theme='dark'] .secondary-btn {
+  background: #243e61;
+  color: #cfe4ff;
+}
+
+html[data-theme='dark'] .learning-profile-actions {
+  border-top: 1px solid rgba(94, 145, 214, 0.3);
+}
+
+html[data-theme='dark'] .onboarding-panel-shell {
+  border-color: rgba(94, 145, 214, 0.36);
+  background: #0f2138;
+  color: #dceafd;
+  box-shadow: 0 34px 64px rgba(2, 9, 20, 0.54);
+}
+
+html[data-theme='dark'] .onboarding-panel-aside {
+  background: #142741;
+  border-right-color: rgba(94, 145, 214, 0.3);
+}
+
+html[data-theme='dark'] .onboarding-panel-brand-name,
+html[data-theme='dark'] .onboarding-panel-aside-title,
+html[data-theme='dark'] .onboarding-panel-benefits strong,
+html[data-theme='dark'] .onboarding-panel-form-head h3,
+html[data-theme='dark'] .onboarding-modern-field select,
+html[data-theme='dark'] .onboarding-modern-field input[type='month'],
+html[data-theme='dark'] .onboarding-modern-course-search input,
+html[data-theme='dark'] .onboarding-modern-course-item span,
+html[data-theme='dark'] .onboarding-modern-link {
+  color: #dceafd;
+}
+
+html[data-theme='dark'] .onboarding-panel-aside-description,
+html[data-theme='dark'] .onboarding-panel-benefits p,
+html[data-theme='dark'] .onboarding-panel-form-head p,
+html[data-theme='dark'] .onboarding-modern-field label,
+html[data-theme='dark'] .onboarding-modern-course-search,
+html[data-theme='dark'] .onboarding-panel-note {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .onboarding-panel-benefits li > span {
+  background: rgba(44, 78, 121, 0.8);
+  color: #9fd0ff;
+}
+
+html[data-theme='dark'] .onboarding-panel-form-wrap {
+  background: #10253f;
+}
+
+html[data-theme='dark'] .onboarding-modern-field select,
+html[data-theme='dark'] .onboarding-modern-field input[type='month'],
+html[data-theme='dark'] .onboarding-modern-course-box {
+  background: #1a304d;
+}
+
+html[data-theme='dark'] .onboarding-modern-field select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, #8faed2 50%),
+    linear-gradient(135deg, #8faed2 50%, transparent 50%);
+}
+
+html[data-theme='dark'] .onboarding-modern-field select:focus,
+html[data-theme='dark'] .onboarding-modern-field input[type='month']:focus,
+html[data-theme='dark'] .onboarding-modern-course-search input:focus {
+  box-shadow: 0 0 0 2px rgba(74, 151, 245, 0.22);
+}
+
+html[data-theme='dark'] .onboarding-modern-field-head button,
+html[data-theme='dark'] .onboarding-modern-link,
+html[data-theme='dark'] .onboarding-panel-warning a {
+  color: #9fd0ff;
+}
+
+html[data-theme='dark'] .onboarding-modern-course-search {
+  border-bottom-color: rgba(94, 145, 214, 0.32);
+}
+
+html[data-theme='dark'] .onboarding-modern-course-item:hover {
+  background: #233c5f;
+}
+
+html[data-theme='dark'] .onboarding-panel-error {
+  color: #ffb4ab;
+}
+
+html[data-theme='dark'] .onboarding-panel-warning {
+  border-color: rgba(243, 201, 109, 0.48);
+  background: rgba(120, 89, 0, 0.34);
+  color: #ffe6a9;
+}
+
+html[data-theme='dark'] .primary-btn {
+  background: linear-gradient(135deg, #2368bf 0%, #3d86de 100%);
+  box-shadow: 0 12px 24px rgba(8, 23, 44, 0.45);
+}
+
+html[data-theme='dark'] .secondary-btn {
+  background: #243e61;
+  color: #cfe4ff;
+}

@@ -192,6 +192,30 @@
   gap: 1.2rem;
 }
 
+.danger-zone-card {
+  margin-top: 1.2rem;
+  border: 1px solid #efc8c8;
+  background: #fff9f9;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(91, 26, 26, 0.07);
+  padding: 1.5rem;
+}
+
+.danger-title-row {
+  color: #b03030;
+}
+
+.danger-zone-card > p {
+  margin: 0 0 1rem;
+  color: #7d3d3d;
+}
+
+.danger-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .card-head-between {
   display: flex;
   justify-content: space-between;
@@ -374,6 +398,12 @@
   color: #b03030;
 }
 
+.btn.danger.solid {
+  border-color: #b03030;
+  background: linear-gradient(135deg, #c53939 0%, #9f1e1e 100%);
+  color: #ffffff;
+}
+
 .btn.full {
   width: 100%;
   margin-top: 1.1rem;
@@ -390,6 +420,52 @@
 
 .message.success {
   color: #146f3a;
+}
+
+.account-delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(4px);
+}
+
+.account-delete-modal {
+  width: min(460px, calc(100vw - 24px));
+  border-radius: 14px;
+  border: 1px solid #f1c8c8;
+  background: #ffffff;
+  box-shadow: 0 24px 42px rgba(62, 16, 16, 0.18);
+  padding: 1.2rem;
+}
+
+.account-delete-modal__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #b03030;
+}
+
+.account-delete-modal__title-row h3 {
+  margin: 0;
+  color: #7f1d1d;
+}
+
+.account-delete-modal p {
+  margin: 0.85rem 0 0;
+  color: #7d3d3d;
+  line-height: 1.45;
+}
+
+.account-delete-modal__actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 .account-footer {
@@ -457,4 +533,240 @@
   .secondary-grid {
     grid-template-columns: 7fr 5fr;
   }
+}
+
+/* Dark theme - Account Settings */
+html[data-theme='dark'] .account-settings-page {
+  background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-header h1,
+html[data-theme='dark'] .card-title-row h2,
+html[data-theme='dark'] .profile-avatar-card h3 {
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-header p,
+html[data-theme='dark'] .profile-avatar-card p,
+html[data-theme='dark'] .privacy-card > p,
+html[data-theme='dark'] .card-divider-top p,
+html[data-theme='dark'] .strength-meta,
+html[data-theme='dark'] .privacy-content span {
+  color: #a8bfde;
+}
+
+html[data-theme='dark'] .profile-avatar-card,
+html[data-theme='dark'] .profile-form-card,
+html[data-theme='dark'] .security-card,
+html[data-theme='dark'] .privacy-card {
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  background: #142741;
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+html[data-theme='dark'] .danger-zone-card {
+  border: 1px solid rgba(239, 131, 131, 0.4);
+  background: rgba(83, 30, 30, 0.28);
+  box-shadow: 0 12px 24px rgba(22, 6, 6, 0.45);
+}
+
+html[data-theme='dark'] .danger-title-row {
+  color: #ff9a9a;
+}
+
+html[data-theme='dark'] .danger-zone-card > p {
+  color: #f8bfbf;
+}
+
+html[data-theme='dark'] .avatar-image,
+html[data-theme='dark'] .avatar-fallback {
+  border: 4px solid #1f3d63;
+}
+
+html[data-theme='dark'] .field label {
+  color: #adc5e4;
+}
+
+html[data-theme='dark'] .field input,
+html[data-theme='dark'] .field select {
+  border: 1px solid rgba(95, 146, 214, 0.4);
+  background: #1a304d;
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .field input:focus,
+html[data-theme='dark'] .field select:focus {
+  border-color: #67abff;
+  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+}
+
+html[data-theme='dark'] .field input:disabled {
+  background: #243e61;
+  color: #9ab4d6;
+}
+
+html[data-theme='dark'] .security-chip {
+  background: rgba(34, 197, 94, 0.16);
+  color: #76e3a2;
+}
+
+html[data-theme='dark'] .bar {
+  background: #2d4467;
+}
+
+html[data-theme='dark'] .card-divider-top {
+  border-top: 1px solid rgba(95, 146, 214, 0.3);
+}
+
+html[data-theme='dark'] .privacy-option {
+  border: 2px solid rgba(95, 146, 214, 0.28);
+  background: #1a304d;
+}
+
+html[data-theme='dark'] .privacy-option.selected {
+  border-color: #63aaff;
+  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+}
+
+html[data-theme='dark'] .privacy-content {
+  color: #cfe4ff;
+}
+
+html[data-theme='dark'] .btn.ghost,
+html[data-theme='dark'] .btn.subtle {
+  border-color: rgba(95, 146, 214, 0.45);
+  background: #223b5d;
+  color: #d2e6ff;
+}
+
+html[data-theme='dark'] .btn.danger {
+  border-color: rgba(244, 114, 114, 0.45);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fecaca;
+}
+
+html[data-theme='dark'] .account-delete-modal-overlay {
+  background: rgba(2, 9, 20, 0.62);
+}
+
+html[data-theme='dark'] .account-delete-modal {
+  border-color: rgba(239, 131, 131, 0.48);
+  background: #1c2e48;
+  box-shadow: 0 28px 46px rgba(3, 8, 17, 0.72);
+}
+
+html[data-theme='dark'] .account-delete-modal__title-row {
+  color: #ff9a9a;
+}
+
+html[data-theme='dark'] .account-delete-modal__title-row h3 {
+  color: #ffd4d4;
+}
+
+html[data-theme='dark'] .account-delete-modal p {
+  color: #f3c0c0;
+}
+
+html[data-theme='dark'] .btn.danger.solid {
+  border-color: rgba(248, 113, 113, 0.75);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #ffffff;
+}
+
+/* Dark theme - Account Settings */
+html[data-theme='dark'] .account-settings-page {
+  background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-header h1,
+html[data-theme='dark'] .card-title-row h2,
+html[data-theme='dark'] .profile-avatar-card h3 {
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-header p,
+html[data-theme='dark'] .profile-avatar-card p,
+html[data-theme='dark'] .privacy-card > p,
+html[data-theme='dark'] .card-divider-top p,
+html[data-theme='dark'] .strength-meta,
+html[data-theme='dark'] .privacy-content span {
+  color: #a8bfde;
+}
+
+html[data-theme='dark'] .profile-avatar-card,
+html[data-theme='dark'] .profile-form-card,
+html[data-theme='dark'] .security-card,
+html[data-theme='dark'] .privacy-card {
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  background: #142741;
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+html[data-theme='dark'] .avatar-image,
+html[data-theme='dark'] .avatar-fallback {
+  border: 4px solid #1f3d63;
+}
+
+html[data-theme='dark'] .field label {
+  color: #adc5e4;
+}
+
+html[data-theme='dark'] .field input,
+html[data-theme='dark'] .field select {
+  border: 1px solid rgba(95, 146, 214, 0.4);
+  background: #1a304d;
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .field input:focus,
+html[data-theme='dark'] .field select:focus {
+  border-color: #67abff;
+  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+}
+
+html[data-theme='dark'] .field input:disabled {
+  background: #243e61;
+  color: #9ab4d6;
+}
+
+html[data-theme='dark'] .security-chip {
+  background: rgba(34, 197, 94, 0.16);
+  color: #76e3a2;
+}
+
+html[data-theme='dark'] .bar {
+  background: #2d4467;
+}
+
+html[data-theme='dark'] .card-divider-top {
+  border-top: 1px solid rgba(95, 146, 214, 0.3);
+}
+
+html[data-theme='dark'] .privacy-option {
+  border: 2px solid rgba(95, 146, 214, 0.28);
+  background: #1a304d;
+}
+
+html[data-theme='dark'] .privacy-option.selected {
+  border-color: #63aaff;
+  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+}
+
+html[data-theme='dark'] .privacy-content {
+  color: #cfe4ff;
+}
+
+html[data-theme='dark'] .btn.ghost,
+html[data-theme='dark'] .btn.subtle {
+  border-color: rgba(95, 146, 214, 0.45);
+  background: #223b5d;
+  color: #d2e6ff;
+}
+
+html[data-theme='dark'] .btn.danger {
+  border-color: rgba(244, 114, 114, 0.45);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fecaca;
 }

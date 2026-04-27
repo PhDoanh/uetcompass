@@ -1,10 +1,8 @@
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 export function isPasswordPolicyValid(value) {
   const password = String(value || '');
-  const meetsLength = password.length >= 8;
-  const hasLetter = /[A-Za-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecial = /[^A-Za-z\d]/.test(password);
-  return meetsLength && hasLetter && hasNumber && hasSpecial;
+  return PASSWORD_POLICY_REGEX.test(password);
 }
 
 export function validateProfilePayload(payload = {}) {

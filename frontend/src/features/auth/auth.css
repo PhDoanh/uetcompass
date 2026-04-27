@@ -23,9 +23,9 @@
 .auth-card {
   width: min(440px, calc(100vw - 24px));
   border-radius: 16px;
-  border: 1px solid rgba(34, 72, 117, 0.12);
+  border: none;
   background: var(--auth-surface);
-  box-shadow: 0 32px 48px -4px rgba(0, 62, 121, 0.12);
+  box-shadow: 0 24px 46px -26px rgba(0, 62, 121, 0.32);
   overflow: hidden;
   position: relative;
 }
@@ -317,6 +317,11 @@
   justify-content: center;
 }
 
+.auth-google-button-center {
+  display: flex;
+  justify-content: center;
+}
+
 .auth-status.helper.tight {
   margin: 0;
 }
@@ -344,6 +349,13 @@
   color: #346099;
   font-size: 0.68rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.auth-helper-icon {
+  flex-shrink: 0;
 }
 
 .auth-helper-text.error {
@@ -506,8 +518,13 @@
   top: 10px;
   right: 12px;
   z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
+  padding: 0;
+  line-height: 0;
   border-radius: 999px;
   border: 1px solid rgba(62, 82, 111, 0.2);
   background: rgba(255, 255, 255, 0.85);
@@ -515,7 +532,139 @@
   cursor: pointer;
 }
 
+.auth-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
 .auth-modal-close:hover {
   color: #1f2f4a;
   background: #ffffff;
+}
+
+html[data-theme='dark'] .auth-card {
+  border: none;
+  background: #132740;
+  box-shadow: 0 24px 46px -24px rgba(2, 9, 20, 0.9);
+}
+
+html[data-theme='dark'] .auth-back-link,
+html[data-theme='dark'] .auth-description,
+html[data-theme='dark'] .auth-google-divider,
+html[data-theme='dark'] .auth-otp-hint,
+html[data-theme='dark'] .auth-strength-head,
+html[data-theme='dark'] .auth-footer-note,
+html[data-theme='dark'] .auth-footer-links a {
+  color: #a9c0df;
+}
+
+html[data-theme='dark'] .auth-title,
+html[data-theme='dark'] .auth-label,
+html[data-theme='dark'] .auth-status.helper,
+html[data-theme='dark'] .auth-links a {
+  color: #dceafd;
+}
+
+html[data-theme='dark'] .auth-brand-icon {
+  background: rgba(39, 77, 124, 0.55);
+  color: #8cc7ff;
+}
+
+html[data-theme='dark'] .auth-tabs,
+html[data-theme='dark'] .auth-footer {
+  border-color: rgba(96, 146, 214, 0.28);
+  background: rgba(19, 39, 64, 0.75);
+}
+
+html[data-theme='dark'] .auth-tab {
+  color: #9fb7d7;
+}
+
+html[data-theme='dark'] .auth-tab.active {
+  color: #8fc8ff;
+  border-bottom-color: #66a8ff;
+}
+
+html[data-theme='dark'] .auth-inline-link,
+html[data-theme='dark'] .auth-helper-text {
+  color: #8fc8ff;
+}
+
+html[data-theme='dark'] .auth-leading-icon,
+html[data-theme='dark'] .auth-password-toggle {
+  color: #a0b7d8;
+}
+
+html[data-theme='dark'] .auth-password-toggle:hover {
+  color: #dceafd;
+  background: rgba(46, 79, 121, 0.6);
+}
+
+html[data-theme='dark'] .auth-input,
+html[data-theme='dark'] .auth-otp-grid input {
+  border-color: rgba(96, 146, 214, 0.38);
+  background: #1a304d;
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .auth-input:focus,
+html[data-theme='dark'] .auth-otp-grid input:focus {
+  border-color: #66a8ff;
+  box-shadow: 0 0 0 3px rgba(74, 151, 245, 0.22);
+}
+
+html[data-theme='dark'] .auth-input::placeholder {
+  color: #8fa8c9;
+}
+
+html[data-theme='dark'] .auth-button.secondary {
+  border-color: rgba(96, 146, 214, 0.45);
+  background: #243f62;
+  color: #dceafd;
+}
+
+html[data-theme='dark'] .auth-status.helper {
+  border-color: rgba(96, 146, 214, 0.4);
+  background: #203a5b;
+}
+
+html[data-theme='dark'] .auth-status.error {
+  border-color: rgba(245, 110, 110, 0.45);
+  background: rgba(99, 26, 26, 0.55);
+  color: #ffd7d7;
+}
+
+html[data-theme='dark'] .auth-status.success {
+  border-color: rgba(66, 193, 123, 0.42);
+  background: rgba(22, 92, 51, 0.52);
+  color: #caf7dd;
+}
+
+html[data-theme='dark'] .auth-google-divider::before,
+html[data-theme='dark'] .auth-google-divider::after {
+  background: rgba(125, 162, 207, 0.32);
+}
+
+html[data-theme='dark'] .auth-google-button-wrap {
+  border-color: rgba(96, 146, 214, 0.38);
+  background: #162d49;
+}
+
+html[data-theme='dark'] .auth-strength-bars span {
+  background: rgba(110, 145, 190, 0.36);
+}
+
+html[data-theme='dark'] .auth-modal-overlay {
+  background: rgba(3, 8, 17, 0.58);
+}
+
+html[data-theme='dark'] .auth-modal-close {
+  border-color: rgba(105, 150, 213, 0.4);
+  background: rgba(20, 42, 68, 0.9);
+  color: #bfd8f7;
+}
+
+html[data-theme='dark'] .auth-modal-close:hover {
+  color: #e6f1ff;
+  background: #203d61;
 }

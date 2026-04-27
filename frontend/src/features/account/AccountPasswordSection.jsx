@@ -14,7 +14,7 @@ export default function AccountPasswordSection({ token }) {
     setError('');
 
     if (!isPasswordPolicyValid(newPassword)) {
-      setError('New password is invalid');
+      setError('New password must be 8+ chars with upper, lower, number and one of @$!%*?&');
       return;
     }
 

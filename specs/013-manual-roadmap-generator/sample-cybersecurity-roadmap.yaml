@@ -1,0 +1,79 @@
+title: Cybersecurity Roadmap
+description: A beginner-friendly roadmap for security fundamentals, threat modeling, and defensive practices.
+nodes:
+  - nodeId: SECURITY_FOUNDATIONS
+    type: main_topic
+    label: Security Foundations
+    description: Learn core security ideas such as confidentiality, integrity, and availability.
+    parentNodeId: null
+    skillName: cia-triad
+    resources:
+      - title: OWASP Top 10
+        url: https://owasp.org/www-project-top-ten/
+        type: link
+
+  - nodeId: NETWORKING
+    type: sub_topic
+    label: Networking Basics
+    description: Understand ports, protocols, and how traffic moves between systems.
+    parentNodeId: SECURITY_FOUNDATIONS
+    skillName: tcp-ip
+    resources:
+      - title: Cisco networking basics
+        url: https://www.netacad.com/courses/networking-basics
+        type: link
+
+  - nodeId: LINUX_SECURITY
+    type: sub_topic
+    label: Linux Security
+    description: Harden Linux systems and manage users, permissions, and services.
+    parentNodeId: SECURITY_FOUNDATIONS
+    skillName: permissions
+    resources:
+      - title: Linux security guide
+        url: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/security_hardening/index
+        type: link
+
+  - nodeId: WEB_SECURITY
+    type: sub_topic
+    label: Web Security
+    description: Protect web apps from injection, auth bugs, and XSS.
+    parentNodeId: SECURITY_FOUNDATIONS
+    skillName: xss
+    resources:
+      - title: OWASP WebGoat
+        url: https://owasp.org/www-project-webgoat/
+        type: link
+
+  - nodeId: THREAT_MODELING
+    type: main_topic
+    label: Threat Modeling
+    description: Identify assets, attack paths, and mitigations early.
+    parentNodeId: null
+    skillName: threat-modeling
+    resources:
+      - title: Threat modeling guide
+        url: https://learn.microsoft.com/security/engineering/threat-modeling
+        type: link
+
+  - nodeId: AUTHENTICATION
+    type: main_topic
+    label: Authentication & Authorization
+    description: Secure identity flows and access control.
+    parentNodeId: null
+    skillName: auth
+    resources:
+      - title: Auth0 learning resources
+        url: https://auth0.com/learn
+        type: link
+
+  - nodeId: INCIDENT_RESPONSE
+    type: main_topic
+    label: Incident Response
+    description: Prepare for detection, triage, containment, and recovery.
+    parentNodeId: null
+    skillName: incident-response
+    resources:
+      - title: NIST incident response guide
+        url: https://csrc.nist.gov/publications/detail/sp/800-61/rev-2/final
+        type: link

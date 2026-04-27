@@ -1,6 +1,6 @@
 # Data Model: Manual Roadmap Generator
 
-**Feature**: `001-manual-roadmap-generator`
+**Feature**: `013-manual-roadmap-generator`
 **Date**: 2026-04-09
 **Alignment**: Data model is intentionally similar to Feature 009's canonical roadmap schema and adopts Feature 004's skill-tree node semantics.
 

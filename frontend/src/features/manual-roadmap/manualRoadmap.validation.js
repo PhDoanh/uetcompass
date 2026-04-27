@@ -1,5 +1,31 @@
 import { load } from 'js-yaml';
 
+function localizeYamlParserMessage(rawMessage) {
+    const message = String(rawMessage || '').toLowerCase();
+
+    if (message.includes('incomplete explicit mapping pair')) {
+        return 'Loi cu phap YAML: thieu cap khoa-gia tri sau dau ":".';
+    }
+
+    if (message.includes('a key node is missed')) {
+        return 'Loi cu phap YAML: thieu khoa (key) trong mapping.';
+    }
+
+    if (message.includes('colon is missed')) {
+        return 'Loi cu phap YAML: thieu dau ":" sau khoa.';
+    }
+
+    if (message.includes('bad indentation')) {
+        return 'Loi cu phap YAML: sai thut le (indentation).';
+    }
+
+    if (message.includes('can not read') || message.includes('cannot read')) {
+        return 'Loi cu phap YAML: khong the doc noi dung, vui long kiem tra cau truc.';
+    }
+
+    return 'Loi cu phap YAML, vui long kiem tra lai dinh dang.';
+}
+
 /**
  * Parse YAML string → JavaScript Object
  * Hỗ trợ cấu trúc đồ thị: nodes + edges
@@ -8,53 +34,56 @@ import { load } from 'js-yaml';
  */
 export function parseManualRoadmapYaml(yamlCode) {
     if (typeof yamlCode !== 'string') {
-        throw new Error('YAML input must be a string.');
+        throw new Error('Đầu vào YAML phai la chuoi ky tu.');
     }
 
     if (yamlCode.trim().length === 0) {
-        throw new Error('Enter roadmap YAML to preview.');
+        throw new Error('Vui long nhap YAML roadmap de xem truoc.');
     }
 
     if (yamlCode.length > 10240) {
-        throw new Error('YAML content exceeds the 10KB limit.');
+        throw new Error('Noi dung YAML vuot qua gioi han 10KB.');
     }
 
     let parsed;
     try {
         parsed = load(yamlCode);
     } catch (err) {
-        throw new Error(`YAML syntax error at line ${err.mark?.line + 1}: ${err.message}`);
+        const line = Number.isInteger(err?.mark?.line) ? err.mark.line + 1 : null;
+        const column = Number.isInteger(err?.mark?.column) ? err.mark.column + 1 : null;
+        const position = line ? ` (dong ${line}${column ? `, cot ${column}` : ''})` : '';
+        throw new Error(`${localizeYamlParserMessage(err?.message)}${position}`);
     }
 
     if (!parsed || typeof parsed !== 'object') {
-        throw new Error('Parsed YAML must be an object with title and nodes.');
+        throw new Error('YAML sau khi parse phai la object co title va nodes.');
     }
 
     const title = String(parsed.title || '').trim();
     if (!title) {
-        throw new Error('Roadmap title is required.');
+        throw new Error('Roadmap bat buoc phai co tieu de.');
     }
 
     const description = String(parsed.description || '').trim();
     const rawNodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
     if (rawNodes.length === 0) {
-        throw new Error('At least one node is required.');
+        throw new Error('Roadmap bat buoc phai co it nhat mot node.');
     }
 
     // Parse nodes
     const nodes = rawNodes.map((node, idx) => {
         if (!node || typeof node !== 'object') {
-            throw new Error(`Each roadmap node must be an object (error at node ${idx}).`);
+            throw new Error(`Moi node roadmap phai la object (loi tai node ${idx}).`);
         }
 
         const nodeId = String(node.nodeId || node.id || '').trim();
         if (!nodeId) {
-            throw new Error(`Node at index ${idx}: must have "nodeId" or "id" field.`);
+            throw new Error(`Node tai vi tri ${idx} phai co truong "nodeId" hoac "id".`);
         }
 
         const label = String(node.label || '').trim();
         if (!label) {
-            throw new Error(`Node "${nodeId}": must have "label" field.`);
+            throw new Error(`Node "${nodeId}" bat buoc phai co truong "label".`);
         }
 
         const legacySkills = Array.isArray(node.skills)
@@ -102,7 +131,7 @@ export function parseManualRoadmapYaml(yamlCode) {
     if (Array.isArray(parsed.edges)) {
         edges = parsed.edges.map((edge, idx) => {
             if (!edge.id || !edge.source || !edge.target) {
-                throw new Error(`Edge at index ${idx}: must have "id", "source", and "target" fields.`);
+                throw new Error(`Edge tai vi tri ${idx} phai co day du "id", "source", va "target".`);
             }
             return {
                 edgeId: String(edge.id).trim(),

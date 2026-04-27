@@ -192,6 +192,30 @@
   gap: 1.2rem;
 }
 
+.danger-zone-card {
+  margin-top: 1.2rem;
+  border: 1px solid #efc8c8;
+  background: #fff9f9;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(91, 26, 26, 0.07);
+  padding: 1.5rem;
+}
+
+.danger-title-row {
+  color: #b03030;
+}
+
+.danger-zone-card > p {
+  margin: 0 0 1rem;
+  color: #7d3d3d;
+}
+
+.danger-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .card-head-between {
   display: flex;
   justify-content: space-between;
@@ -374,6 +398,12 @@
   color: #b03030;
 }
 
+.btn.danger.solid {
+  border-color: #b03030;
+  background: linear-gradient(135deg, #c53939 0%, #9f1e1e 100%);
+  color: #ffffff;
+}
+
 .btn.full {
   width: 100%;
   margin-top: 1.1rem;
@@ -489,6 +519,20 @@ html[data-theme='dark'] .privacy-card {
   box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
 }
 
+html[data-theme='dark'] .danger-zone-card {
+  border: 1px solid rgba(239, 131, 131, 0.4);
+  background: rgba(83, 30, 30, 0.28);
+  box-shadow: 0 12px 24px rgba(22, 6, 6, 0.45);
+}
+
+html[data-theme='dark'] .danger-title-row {
+  color: #ff9a9a;
+}
+
+html[data-theme='dark'] .danger-zone-card > p {
+  color: #f8bfbf;
+}
+
 html[data-theme='dark'] .avatar-image,
 html[data-theme='dark'] .avatar-fallback {
   border: 4px solid #1f3d63;
@@ -554,6 +598,12 @@ html[data-theme='dark'] .btn.danger {
   border-color: rgba(244, 114, 114, 0.45);
   background: rgba(127, 29, 29, 0.2);
   color: #fecaca;
+}
+
+html[data-theme='dark'] .btn.danger.solid {
+  border-color: rgba(248, 113, 113, 0.75);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #ffffff;
 }
 
 /* Dark theme - Account Settings */

@@ -273,4 +273,84 @@
     .yaml-guide-table-cell:last-child {
         border-bottom: none;
     }
+
+}
+
+html[data-theme='dark'] .yaml-guide-overlay {
+    background-color: rgba(2, 9, 20, 0.72);
+}
+
+html[data-theme='dark'] .yaml-guide-modal {
+    background-color: #10253f;
+    box-shadow: 0 18px 44px rgba(2, 9, 20, 0.62);
+}
+
+html[data-theme='dark'] .yaml-guide-header {
+    border-bottom-color: rgba(95, 145, 210, 0.35);
+    background-color: #16314f;
+}
+
+html[data-theme='dark'] .yaml-guide-title {
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .yaml-guide-close {
+    color: #b8cde8;
+}
+
+html[data-theme='dark'] .yaml-guide-close:hover {
+    background-color: #27476f;
+    color: #e6f1ff;
+}
+
+html[data-theme='dark'] .yaml-guide-content {
+    background-color: #10253f;
+}
+
+html[data-theme='dark'] .yaml-guide-loading {
+    color: #a9c0df;
+}
+
+html[data-theme='dark'] .yaml-guide-markdown,
+html[data-theme='dark'] .yaml-guide-h2,
+html[data-theme='dark'] .yaml-guide-h3,
+html[data-theme='dark'] .yaml-guide-table-cell {
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .yaml-guide-h1 {
+    color: #e6f1ff;
+    border-bottom-color: rgba(95, 145, 210, 0.55);
+}
+
+html[data-theme='dark'] .yaml-guide-p,
+html[data-theme='dark'] .yaml-guide-li {
+    color: #b3c8e3;
+}
+
+html[data-theme='dark'] .yaml-guide-inline-code {
+    background-color: #1a304d;
+    border-color: rgba(95, 145, 210, 0.42);
+    color: #ffb4ab;
+}
+
+html[data-theme='dark'] .yaml-guide-code-block,
+html[data-theme='dark'] .yaml-guide-code-block code {
+    background-color: #0a1628;
+    color: #dceafd;
+}
+
+html[data-theme='dark'] .yaml-guide-table-row {
+    border-color: rgba(95, 145, 210, 0.4);
+    background-color: #1a304d;
+}
+
+html[data-theme='dark'] .yaml-guide-table-cell {
+    border-right-color: rgba(95, 145, 210, 0.35);
+}
+
+@media (max-width: 768px) {
+    html[data-theme='dark'] .yaml-guide-table-cell {
+        border-bottom-color: rgba(95, 145, 210, 0.35);
+    }
 }

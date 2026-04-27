@@ -11,7 +11,9 @@ import '../../style/general-component.css';
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
-const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 3;
+const MY_ROADMAPS_PER_PAGE = 5;
+const MANUAL_ROADMAP_FETCH_LIMIT = 100;
+const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -79,6 +81,7 @@ export default function Homepage() {
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
   const [roadmapPage, setRoadmapPage] = useState(0);
+  const [myRoadmapPage, setMyRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
   const userId = useMemo(() => resolveUserId(accessToken), [accessToken]);
 
@@ -176,11 +179,28 @@ export default function Homepage() {
       }
 
       try {
-        const result = await manualRoadmapApi.listManualRoadmaps(accessToken, {
-          page: 1,
-          limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
-        });
-        const items = Array.isArray(result?.items) ? result.items : [];
+        const items = [];
+        let page = 1;
+        let totalPages = 1;
+
+        while (page <= totalPages && page <= MAX_MANUAL_ROADMAP_FETCH_PAGES) {
+          const result = await manualRoadmapApi.listManualRoadmaps(accessToken, {
+            page,
+            limit: MANUAL_ROADMAP_FETCH_LIMIT,
+          });
+
+          const pageItems = Array.isArray(result?.items) ? result.items : [];
+          items.push(...pageItems);
+
+          const total = Number(result?.pagination?.total || items.length);
+          totalPages = Math.max(1, Math.ceil(total / MANUAL_ROADMAP_FETCH_LIMIT));
+
+          if (pageItems.length === 0) {
+            break;
+          }
+
+          page += 1;
+        }
 
         if (isMounted) {
           setMyManualRoadmaps(items);
@@ -192,11 +212,31 @@ export default function Homepage() {
         }
 
         try {
-          const fallback = await manualRoadmapApi.listPublicManualRoadmaps({ page: 1, limit: 100 });
-          const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
-          const ownRoadmaps = fallbackItems
-            .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
-            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
+          const normalizedUserId = String(userId || '').trim();
+          const ownRoadmaps = [];
+          let page = 1;
+          let totalPages = 1;
+
+          while (page <= totalPages && page <= MAX_MANUAL_ROADMAP_FETCH_PAGES) {
+            const fallback = await manualRoadmapApi.listPublicManualRoadmaps({
+              page,
+              limit: MANUAL_ROADMAP_FETCH_LIMIT,
+            });
+            const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
+
+            ownRoadmaps.push(
+              ...fallbackItems.filter((roadmap) => String(roadmap?.userId || '').trim() === normalizedUserId)
+            );
+
+            const total = Number(fallback?.pagination?.total || ownRoadmaps.length);
+            totalPages = Math.max(1, Math.ceil(total / MANUAL_ROADMAP_FETCH_LIMIT));
+
+            if (fallbackItems.length === 0) {
+              break;
+            }
+
+            page += 1;
+          }
 
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
@@ -392,6 +432,17 @@ export default function Homepage() {
   const myManualRoadmapCards = Array.isArray(myManualRoadmaps)
     ? myManualRoadmaps.filter((roadmap) => String(roadmap?._id || '').trim())
     : [];
+  const myRoadmapCards = [
+    ...(hasPersonalizedRoadmap ? [{ kind: 'personalized', id: 'personalized' }] : []),
+    ...myManualRoadmapCards.map((roadmap) => ({ kind: 'manual', id: String(roadmap?._id || '').trim(), roadmap })),
+  ];
+  const totalMyRoadmapPages = Math.max(1, Math.ceil(myRoadmapCards.length / MY_ROADMAPS_PER_PAGE));
+  const canGoPrevMyRoadmapPage = myRoadmapPage > 0;
+  const canGoNextMyRoadmapPage = myRoadmapPage < totalMyRoadmapPages - 1;
+  const visibleMyRoadmapCards = myRoadmapCards.slice(
+    myRoadmapPage * MY_ROADMAPS_PER_PAGE,
+    (myRoadmapPage + 1) * MY_ROADMAPS_PER_PAGE
+  );
   const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
 
   const handlePrevRoadmapPage = () => {
@@ -401,6 +452,18 @@ export default function Homepage() {
   const handleNextRoadmapPage = () => {
     setRoadmapPage((prev) => Math.min(totalRoadmapPages - 1, prev + 1));
   };
+
+  const handlePrevMyRoadmapPage = () => {
+    setMyRoadmapPage((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNextMyRoadmapPage = () => {
+    setMyRoadmapPage((prev) => Math.min(totalMyRoadmapPages - 1, prev + 1));
+  };
+
+  useEffect(() => {
+    setMyRoadmapPage((prev) => Math.min(prev, totalMyRoadmapPages - 1));
+  }, [totalMyRoadmapPages]);
 
   return (
     <div className="homepage homepage--modern">
@@ -454,52 +517,73 @@ export default function Homepage() {
         </section>
 
         {shouldShowMyRoadmapsSection ? (
-          <section className="homepage-section homepage-section--blank" aria-label="My roadmap gallery">
+          <section className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
             <div className="homepage-roadmap-head">
               <div>
                 <h2>Roadmap của tôi</h2>
                 <p>Không gian roadmap dành riêng cho tài khoản của bạn.</p>
               </div>
+              <div className="homepage-roadmap-controls">
+                <button
+                  type="button"
+                  aria-label="Trước"
+                  onClick={handlePrevMyRoadmapPage}
+                  disabled={!canGoPrevMyRoadmapPage}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  aria-label="Sau"
+                  onClick={handleNextMyRoadmapPage}
+                  disabled={!canGoNextMyRoadmapPage}
+                >
+                  ›
+                </button>
+              </div>
             </div>
 
             <div className="homepage-roadmap-grid">
-              {hasPersonalizedRoadmap ? (
-                <article className="homepage-roadmap-card homepage-roadmap-card--featured">
-                  <div className="homepage-roadmap-card__image-wrap">
-                    <img src="/images/uetstone.jpg" alt="Roadmap cá nhân hóa" className="homepage-roadmap-card__image" />
-                    <div className="homepage-roadmap-card__chips">
-                      <span className="homepage-chip homepage-chip--neutral">Sẵn sàng</span>
-                      <span className="homepage-chip homepage-chip--indigo">Skill Tree</span>
-                    </div>
-                  </div>
-                  <div className="homepage-roadmap-card__body">
-                    <h3 className="homepage-roadmap-card__title">
-                      Roadmap cá nhân hóa
-                      <span className="homepage-feature-pill">Nổi bật</span>
-                    </h3>
-                    <p className="homepage-roadmap-card__description">
-                      Đã hoàn tất onboarding, bạn có thể học theo skill tree cá nhân hóa.
-                    </p>
-                    <div className="homepage-roadmap-card__meta">
-                      <small>Sẵn sàng học tập</small>
-                      <button
-                        type="button"
-                        className="homepage-card-action"
-                        onClick={() => {
-                          if (typeof window !== 'undefined') {
-                            window.location.assign('/skill-tree');
-                          }
-                        }}
-                      >
-                        Mở skill tree
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ) : null}
+              {visibleMyRoadmapCards.map((card) => {
+                if (card.kind === 'personalized') {
+                  return (
+                    <article key={card.id} className="homepage-roadmap-card homepage-roadmap-card--featured">
+                      <div className="homepage-roadmap-card__image-wrap">
+                        <img src="/images/uetstone.jpg" alt="Roadmap cá nhân hóa" className="homepage-roadmap-card__image" />
+                        <div className="homepage-roadmap-card__chips">
+                          <span className="homepage-chip homepage-chip--neutral">Sẵn sàng</span>
+                          <span className="homepage-chip homepage-chip--indigo">Skill Tree</span>
+                        </div>
+                      </div>
+                      <div className="homepage-roadmap-card__body">
+                        <h3 className="homepage-roadmap-card__title">
+                          Roadmap cá nhân hóa
+                          <span className="homepage-feature-pill">Nổi bật</span>
+                        </h3>
+                        <p className="homepage-roadmap-card__description">
+                          Đã hoàn tất onboarding, bạn có thể học theo skill tree cá nhân hóa.
+                        </p>
+                        <div className="homepage-roadmap-card__meta">
+                          <small>Sẵn sàng học tập</small>
+                          <button
+                            type="button"
+                            className="homepage-card-action"
+                            onClick={() => {
+                              if (typeof window !== 'undefined') {
+                                window.location.assign('/skill-tree');
+                              }
+                            }}
+                          >
+                            Mở skill tree
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                }
 
-              {myManualRoadmapCards.map((roadmap) => {
-                const roadmapId = String(roadmap?._id || '').trim();
+                const roadmap = card.roadmap;
+                const roadmapId = card.id;
                 const roadmapTitle = String(roadmap?.title || '').trim() || 'Roadmap tạo thủ công';
                 const roadmapDescription = String(roadmap?.description || '').trim() || 'Roadmap thủ công do bạn tạo.';
                 const roadmapMeta = formatRoadmapDate(roadmap?.updatedAt || roadmap?.createdAt || null);
@@ -542,7 +626,7 @@ export default function Homepage() {
           </section>
         ) : null}
 
-        <section id="roadmap-community" className="homepage-section homepage-section--blank" aria-label="Roadmap gallery">
+        <section id="roadmap-community" className="homepage-section homepage-section--plain" aria-label="Roadmap gallery">
           <div className="homepage-roadmap-head">
             <div>
               <h2>Roadmap cộng đồng</h2>

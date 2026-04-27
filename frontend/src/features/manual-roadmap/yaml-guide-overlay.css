@@ -83,8 +83,9 @@
     color: #1f2937;
 }
 
-.yaml-guide-close .material-symbols-outlined {
-    font-size: 24px;
+.yaml-guide-close svg {
+    width: 24px;
+    height: 24px;
 }
 
 .yaml-guide-content {
@@ -106,7 +107,8 @@
 
 .yaml-guide-loading .spinning {
     animation: spin 1s linear infinite;
-    font-size: 32px;
+    width: 32px;
+    height: 32px;
 }
 
 @keyframes spin {

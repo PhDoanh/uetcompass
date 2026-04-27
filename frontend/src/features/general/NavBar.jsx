@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
+import { useNotification } from './NotificationContainer';
 import accountApi from '../../services/account.api';
 import '../../style/general-component.css';
 
@@ -55,15 +56,56 @@ function dispatchOpenRoadmapSearchOverlay() {
   window.dispatchEvent(new CustomEvent('roadmap-search-overlay-open'));
 }
 
+function navigateToPath(path) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.location.assign(path);
+}
+
+function navigateToHomeSection(sectionId) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const pathname = window.location.pathname;
+  if (pathname !== '/') {
+    window.location.assign(`/#${sectionId}`);
+    return;
+  }
+
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.history.replaceState(null, '', `/#${sectionId}`);
+  }
+}
+
+function scrollToMyRoadmapsSection() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const target = document.getElementById('my-roadmaps');
+  if (!target) {
+    return false;
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.history.replaceState(null, '', '/#my-roadmaps');
+  return true;
+}
+
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [searchText, setSearchText] = useState('');
-  const [displayName, setDisplayName] = useState('Người dùng');
   const [theme, setTheme] = useState(resolveInitialTheme);
   const avatarRef = useRef(null);
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated, accessToken, onboardingState } = useAuth();
+  const { addNotification } = useNotification();
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -115,6 +157,29 @@ export default function NavBar() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  const goMyRoadmaps = () => {
+    const onboardingDone = onboardingState === 'COMPLETED';
+
+    if (!onboardingDone) {
+      addNotification('Bạn cần hoàn tất onboarding để mở Lộ trình của tôi.', 'warning');
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.location.pathname !== '/') {
+      window.location.assign('/#my-roadmaps');
+      return;
+    }
+
+    const hasMyRoadmapsSection = scrollToMyRoadmapsSection();
+    if (!hasMyRoadmapsSection) {
+      addNotification('Bạn cần hoàn tất onboarding để mở Lộ trình của tôi.', 'warning');
+    }
+  };
+
   // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -138,7 +203,6 @@ export default function NavBar() {
     if (!isAuthenticated || !accessToken) {
       setAvatarUrl('');
       setAvatarFallback('U');
-      setDisplayName('Người dùng');
       return () => {
         isMounted = false;
       };
@@ -151,13 +215,11 @@ export default function NavBar() {
         if (isMounted) {
           setAvatarUrl(next.avatarUrl);
           setAvatarFallback(next.avatarFallback);
-          setDisplayName(next.displayName);
         }
       } catch (_) {
         if (isMounted) {
           setAvatarUrl('');
           setAvatarFallback('U');
-          setDisplayName('Người dùng');
         }
       }
     }
@@ -166,7 +228,6 @@ export default function NavBar() {
       const next = getAvatarState(event?.detail?.profile || {});
       setAvatarUrl(next.avatarUrl);
       setAvatarFallback(next.avatarFallback);
-      setDisplayName(next.displayName);
     }
 
     loadProfile();
@@ -191,6 +252,49 @@ export default function NavBar() {
     }
   }, []);
 
+  const navigationItems = isAuthenticated
+    ? [
+      {
+        key: 'my-roadmap',
+        label: 'Lộ trình của tôi',
+        onClick: goMyRoadmaps,
+      },
+      {
+        key: 'community-roadmap',
+        label: 'Lộ trình cộng đồng',
+        onClick: () => navigateToHomeSection('roadmap-community'),
+      },
+      {
+        key: 'system-improvement',
+        label: 'Cải tiến hệ thống',
+        onClick: () => navigateToPath('/system-improvement'),
+      },
+    ]
+    : [
+      {
+        key: 'features',
+        label: 'Tính năng',
+        onClick: () => navigateToHomeSection('featured-features'),
+      },
+      {
+        key: 'roadmap',
+        label: 'Lộ trình',
+        onClick: () => navigateToHomeSection('roadmap-community'),
+      },
+      {
+        key: 'how-it-works',
+        label: 'Cách hoạt động',
+        onClick: () => navigateToHomeSection('how-it-works'),
+      },
+      {
+        key: 'system-improvement',
+        label: 'Cải tiến hệ thống',
+        onClick: () => navigateToPath('/system-improvement'),
+      },
+    ];
+
+  const isHomepage = typeof window !== 'undefined' ? window.location.pathname === '/' : true;
+
   return (
     <nav className="navbar">
       <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
@@ -212,6 +316,20 @@ export default function NavBar() {
           }}
         />
       </div>
+      {isHomepage ? (
+        <div className="navbar__links" aria-label="Điều hướng chính">
+          {navigationItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className="navbar__link"
+              onClick={item.onClick}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="navbar__actions">
         <button
           type="button"
@@ -229,9 +347,9 @@ export default function NavBar() {
               type="button"
               className="navbar__auth-btn navbar__profile-trigger"
               title="Tài khoản"
+              aria-label="Mở menu tài khoản"
               onClick={() => setMenuOpen((open) => !open)}
             >
-              <span className="navbar__profile-name">{displayName}</span>
               <div className="navbar__avatar">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />

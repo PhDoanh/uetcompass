@@ -5,6 +5,7 @@ import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
 import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
+import { navigateTo } from '../../shared/navigation';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
@@ -96,7 +97,7 @@ export default function LoginPage() {
       if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
         window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
       }
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
@@ -118,7 +119,7 @@ export default function LoginPage() {
       if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
         window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
       }
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
         setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');

@@ -3,6 +3,7 @@ import { ArrowLeft, Compass, Eye, EyeOff, Lock, LockKeyhole, Mail, Send } from '
 import authApi from '../../services/auth.api';
 import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
+import { navigateTo } from '../../shared/navigation';
 
 const BUTTON_DELAY_MS = 5000;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -328,17 +329,21 @@ export default function ForgotPasswordPage() {
           </button>
 
           <div className="auth-links" style={{ marginTop: 2 }}>
-            <a href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <button
+              type="button"
+              onClick={() => navigateTo('/login')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
+            >
               <ArrowLeft size={14} />
               Quay lại đăng nhập
-            </a>
+            </button>
           </div>
         </form>
       ) : null}
 
       {step === 'done' ? (
         <div className="auth-links">
-          <a href="/login">Quay lại đăng nhập</a>
+          <button type="button" onClick={() => navigateTo('/login')} className="auth-inline-link">Quay lại đăng nhập</button>
         </div>
       ) : null}
     </AuthShell>

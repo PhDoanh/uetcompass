@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
+import { navigateTo } from '../../shared/navigation';
 
 function normalizePreviewNodes(nodes = []) {
     const mappedNodes = nodes
@@ -106,7 +107,7 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
                 throw new Error('Roadmap not found');
             }
 
-            window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+            navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
         } catch {
             // Keep panel interaction non-blocking; fail silently like homepage card flow.
         } finally {

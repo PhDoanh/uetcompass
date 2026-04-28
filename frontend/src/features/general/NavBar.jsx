@@ -3,6 +3,7 @@ import { Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
+import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
 
 const THEME_STORAGE_KEY = 'uetcompass-theme';
@@ -91,15 +92,15 @@ export default function NavBar() {
   }, []);
 
   const goHome = () => {
-    window.location.assign('/');
+    navigateTo('/');
   };
 
   const goLogin = () => {
-    window.location.assign('/login');
+    navigateTo('/login');
   };
 
   const goRegister = () => {
-    window.location.assign('/register');
+    navigateTo('/register');
   };
 
   const goRoadmapSearch = () => {

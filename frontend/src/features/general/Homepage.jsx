@@ -6,6 +6,7 @@ import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from './NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import SiteFooter from './SiteFooter';
+import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
@@ -303,7 +304,7 @@ export default function Homepage() {
         throw new Error('Không tìm thấy roadmap công khai phù hợp.');
       }
 
-      window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
     } catch (_) {
       setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
     } finally {
@@ -570,7 +571,7 @@ export default function Homepage() {
                             className="homepage-card-action"
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                window.location.assign('/skill-tree');
+                                navigateTo('/skill-tree');
                               }
                             }}
                           >
@@ -611,7 +612,7 @@ export default function Homepage() {
                           className="homepage-card-action"
                           onClick={() => {
                             if (typeof window !== 'undefined') {
-                              window.location.assign(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
+                              navigateTo(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
                             }
                           }}
                         >

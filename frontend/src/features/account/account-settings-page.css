@@ -20,6 +20,7 @@
   font-size: clamp(2rem, 4vw, 3rem);
   color: #003e79;
   line-height: 1.1;
+  font-weight: 700;
 }
 
 .account-settings-header p {
@@ -31,6 +32,50 @@
 .account-settings-effective-name {
   font-size: 0.95rem;
 }
+
+.account-settings-identity {
+  margin: 2rem auto 0;
+  max-width: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #d9e3f3;
+  box-shadow: 0 10px 28px rgba(18, 44, 77, 0.06);
+}
+
+.account-settings-identity .learning-profile-avatar-ring {
+  background: linear-gradient(135deg, #0055a2 0%, #003e79 100%);
+  box-shadow: 0 12px 24px rgba(0, 85, 162, 0.18);
+}
+
+.account-settings-identity .learning-profile-avatar {
+  border: 4px solid #ebf2ff;
+}
+
+.account-settings-identity .learning-profile-avatar--fallback {
+  background: linear-gradient(135deg, #0055a2 0%, #003e79 100%);
+  color: #ffffff;
+}
+
+.account-settings-identity-info h2 {
+  margin: 0.35rem 0 0;
+  font-size: 1.35rem;
+  color: #003e79;
+  font-weight: 700;
+}
+
+.account-settings-email {
+  margin: 0.3rem 0 0.75rem;
+  color: #2b5f9e;
+  font-weight: 600;
+}
+
 
 .profile-grid {
   margin-top: 2rem;
@@ -677,6 +722,20 @@ html[data-theme='dark'] .btn.danger.solid {
 /* Dark theme - Account Settings */
 html[data-theme='dark'] .account-settings-page {
   background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-identity {
+  background: #142741;
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+html[data-theme='dark'] .account-settings-identity-info h2 {
+  color: #dce9fc; 
+}
+
+html[data-theme='dark'] .account-settings-email {
   color: #dce9fc;
 }
 

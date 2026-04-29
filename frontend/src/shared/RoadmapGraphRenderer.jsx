@@ -33,9 +33,19 @@ export function RoadmapGraphRenderer({
     const viewportRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
+    const zoomRef = useRef(1);
+    const panRef = useRef({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const [showClusters, setShowClusters] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+    useEffect(() => {
+        zoomRef.current = zoom;
+    }, [zoom]);
+
+    useEffect(() => {
+        panRef.current = pan;
+    }, [pan]);
 
     const renderedNodes = useMemo(() => {
         return nodes.map((node) => {
@@ -351,20 +361,29 @@ export function RoadmapGraphRenderer({
         return { width: right, height: bottom };
     }, [planeBounds]);
 
-    const centerRoadmap = useCallback((nextZoom = 1) => {
+    const clampZoom = useCallback((value) => {
+        return Math.min(2.4, Math.max(0.35, value));
+    }, []);
+
+    const fitRoadmapToView = useCallback(() => {
         const viewport = viewportRef.current;
         if (!viewport || planeNodes.length === 0) return;
 
-        const viewportWidth = viewport.clientWidth;
-        const viewportHeight = viewport.clientHeight;
+        const padding = 90;
+        const availableWidth = Math.max(240, viewport.clientWidth - padding);
+        const availableHeight = Math.max(240, viewport.clientHeight - padding);
+        const fitScaleX = planeBounds.width > 0 ? availableWidth / planeBounds.width : 1;
+        const fitScaleY = planeBounds.height > 0 ? availableHeight / planeBounds.height : 1;
+        const fitScale = clampZoom(Math.min(1.1, Math.max(0.45, Math.min(fitScaleX, fitScaleY))));
         const contentCenterX = planeBounds.minX + planeBounds.width / 2;
         const contentCenterY = planeBounds.minY + planeBounds.height / 2;
 
+        setZoom(fitScale);
         setPan({
-            x: Math.round(viewportWidth / 2 - contentCenterX * nextZoom),
-            y: Math.round(viewportHeight / 2 - contentCenterY * nextZoom),
+            x: Math.round(viewport.clientWidth / 2 - contentCenterX * fitScale),
+            y: Math.round(viewport.clientHeight / 2 - contentCenterY * fitScale),
         });
-    }, [planeBounds, planeNodes.length]);
+    }, [clampZoom, planeBounds, planeNodes.length]);
 
     useEffect(() => {
         if (planeNodes.length === 0) return;
@@ -372,34 +391,59 @@ export function RoadmapGraphRenderer({
         const viewport = viewportRef.current;
         if (!viewport) return;
 
-        const padding = 90;
-        const availableWidth = Math.max(240, viewport.clientWidth - padding);
-        const availableHeight = Math.max(240, viewport.clientHeight - padding);
-        const fitScaleX = planeBounds.width > 0 ? availableWidth / planeBounds.width : 1;
-        const fitScaleY = planeBounds.height > 0 ? availableHeight / planeBounds.height : 1;
-        const fitScale = Math.min(1.1, Math.max(0.45, Math.min(fitScaleX, fitScaleY)));
+        fitRoadmapToView();
+    }, [planeNodes, planeBounds, fitRoadmapToView]);
 
-        setZoom(fitScale);
-        centerRoadmap(fitScale);
-    }, [planeNodes, planeBounds, centerRoadmap]);
+    const zoomBy = useCallback((delta, focalPoint) => {
+        const viewport = viewportRef.current;
+        if (!viewport || planeNodes.length === 0) return;
 
-    const clampZoom = useCallback((value) => {
-        return Math.min(2.4, Math.max(0.35, value));
-    }, []);
+        const anchor = focalPoint || {
+            x: viewport.clientWidth / 2,
+            y: viewport.clientHeight / 2,
+        };
 
-    const zoomBy = useCallback((delta) => {
-        setZoom((current) => {
-            const next = clampZoom(current + delta);
-            if (next === current) return current;
-            centerRoadmap(next);
-            return next;
-        });
-    }, [centerRoadmap, clampZoom]);
+        const currentZoom = zoomRef.current;
+        const currentPan = panRef.current;
+        const nextZoom = clampZoom(currentZoom + delta);
+        if (nextZoom === currentZoom) return;
+
+        const worldX = (anchor.x - currentPan.x) / currentZoom;
+        const worldY = (anchor.y - currentPan.y) / currentZoom;
+        const nextPan = {
+            x: Math.round(anchor.x - worldX * nextZoom),
+            y: Math.round(anchor.y - worldY * nextZoom),
+        };
+
+        zoomRef.current = nextZoom;
+        panRef.current = nextPan;
+        setZoom(nextZoom);
+        setPan(nextPan);
+    }, [clampZoom, planeNodes.length]);
 
     const handleWheel = useCallback((event) => {
         event.preventDefault();
-        const delta = event.deltaY < 0 ? 0.1 : -0.1;
-        zoomBy(delta);
+        event.stopPropagation();
+
+        const nativeEvent = event.nativeEvent;
+        if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
+            nativeEvent.stopImmediatePropagation();
+        }
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const computedStyle = typeof window !== 'undefined' ? window.getComputedStyle(event.currentTarget) : null;
+        const paddingLeft = computedStyle ? Number.parseFloat(computedStyle.paddingLeft || '0') || 0 : 0;
+        const paddingTop = computedStyle ? Number.parseFloat(computedStyle.paddingTop || '0') || 0 : 0;
+        const focalPoint = {
+            x: event.clientX - rect.left - paddingLeft,
+            y: event.clientY - rect.top - paddingTop,
+        };
+
+        const deltaScale = event.deltaMode === 1 ? 0.16 : event.deltaMode === 2 ? 0.36 : 0.005;
+        const nextDelta = Math.max(-0.36, Math.min(0.36, -event.deltaY * deltaScale));
+        if (nextDelta === 0) return;
+
+        zoomBy(nextDelta, focalPoint);
     }, [zoomBy]);
 
     const handlePointerDown = useCallback((event) => {
@@ -428,11 +472,22 @@ export function RoadmapGraphRenderer({
         setIsPanning(false);
     }, []);
 
+    const centerRoadmap = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (!viewport || planeNodes.length === 0) return;
+
+        const contentCenterX = planeBounds.minX + planeBounds.width / 2;
+        const contentCenterY = planeBounds.minY + planeBounds.height / 2;
+
+        setPan({
+            x: Math.round(viewport.clientWidth / 2 - contentCenterX * zoom),
+            y: Math.round(viewport.clientHeight / 2 - contentCenterY * zoom),
+        });
+    }, [planeBounds, planeNodes.length, zoom]);
+
     const resetView = useCallback(() => {
-        const baseZoom = 1;
-        setZoom(baseZoom);
-        centerRoadmap(baseZoom);
-    }, [centerRoadmap]);
+        fitRoadmapToView();
+    }, [fitRoadmapToView]);
 
     return (
         <div className="roadmap-graph-renderer" style={{ width: '100%', height: '100%', minHeight: 420 }}>
@@ -454,8 +509,8 @@ export function RoadmapGraphRenderer({
                         <div className="roadmap-graph-renderer__controls">
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(0.1)}>+</button>
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(-0.1)}>-</button>
-                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={resetView}>1:1</button>
-                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => centerRoadmap(zoom)}>Center</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={resetView}>Overview</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={centerRoadmap}>Center</button>
                             <button
                                 type="button"
                                 className={`roadmap-graph-renderer__control-btn ${showClusters ? 'is-active' : ''}`}
@@ -469,7 +524,7 @@ export function RoadmapGraphRenderer({
                     <div
                         ref={viewportRef}
                         className="roadmap-graph-renderer__fallback-canvas"
-                        onWheel={handleWheel}
+                        onWheelCapture={handleWheel}
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={stopPanning}

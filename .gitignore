@@ -17,6 +17,7 @@ __pycache__/
 Thumbs.db
 *.tmp
 *.swp
-.vscode/
+.vscode/**
+!.vscode/mcp.json
 .idea/
 

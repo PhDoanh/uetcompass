@@ -1830,6 +1830,7 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   color: #0f172a;
   font-weight: 700;
 }
+
 .roadmap-search-overlay__close {
   display: inline-flex;
   align-items: center;
@@ -1850,6 +1851,7 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   width: 16px;
   height: 16px;
 }
+
 .roadmap-search-overlay__close:hover {
   background: #f1f5f9;
 }
@@ -2033,6 +2035,7 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   min-height: 460px;
   border-radius: 14px;
   overflow: hidden;
+  overscroll-behavior: contain;
   border: 1px solid #dbe3ef;
   background: #ffffff;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);

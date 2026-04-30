@@ -81,6 +81,25 @@ export function getPublicManualRoadmapPreviewById(roadmapId) {
     return request(`/roadmaps/manual-roadmaps/public/${roadmapId}`, 'GET', null, undefined, { requireAuth: false });
 }
 
+export function listPublicManualRoadmapComments(roadmapId, limit = 20) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments?limit=${encodeURIComponent(limit)}`,
+        'GET',
+        null,
+        undefined,
+        { requireAuth: false }
+    );
+}
+
+export function createManualRoadmapComment(authToken, roadmapId, { content, rating }) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments`,
+        'POST',
+        authToken,
+        { content, rating }
+    );
+}
+
 const manualRoadmapApi = {
     listManualRoadmaps,
     getManualRoadmap,
@@ -89,6 +108,8 @@ const manualRoadmapApi = {
     shareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
+    listPublicManualRoadmapComments,
+    createManualRoadmapComment,
 };
 
 export default manualRoadmapApi;

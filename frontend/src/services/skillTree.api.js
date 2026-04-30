@@ -73,6 +73,13 @@ export async function getRoadmapProgress(authToken, roadmapId) {
   });
 }
 
+export async function getRoadmapHistory(authToken, roadmapId, limit = 50) {
+  return request(`/skill-tree/roadmaps/${roadmapId}/history?limit=${encodeURIComponent(limit)}`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
+}
+
 export async function getResources(authToken, courseCode) {
   return request(`/skill-tree/nodes/${courseCode}/resources`, {
     method: 'GET',
@@ -124,6 +131,7 @@ const skillTreeApi = {
   getTree,
   patchNodeStatus,
   getRoadmapProgress,
+  getRoadmapHistory,
   getResources,
   getWhyCourse,
   getMarketSkills,

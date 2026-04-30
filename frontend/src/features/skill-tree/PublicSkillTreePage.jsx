@@ -100,6 +100,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     () => nodesForRender.find((node) => node.nodeId === activeNodeId) || null,
     [activeNodeId, nodesForRender]
   );
+  const normalizedRoadmapId = useMemo(() => String(roadmapId || '').trim(), [roadmapId]);
 
   const handleBack = () => {
     if (typeof window === 'undefined') {
@@ -141,7 +142,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   };
 
   useEffect(() => {
-    const normalizedRoadmapId = String(roadmapId || '').trim();
     if (!normalizedRoadmapId) {
       setPreviewStatus('error');
       setErrorMessage('Roadmap ID is missing.');
@@ -295,6 +295,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
         {activeNode ? (
           <PublicRoadmapNodePanel
             node={activeNode}
+            roadmapId={normalizedRoadmapId}
             onClosePanel={() => setActiveNodeId('')}
             onTransition={async (_, toState) => {
               setNodeStates((prev) => ({

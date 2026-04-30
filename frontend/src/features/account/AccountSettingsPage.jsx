@@ -102,6 +102,7 @@ export default function AccountSettingsPage() {
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
 	const canSubmitPassword = useMemo(() => {
 		return Boolean(currentPassword.trim()) && isPasswordPolicyValid(newPassword);
@@ -295,13 +296,18 @@ export default function AccountSettingsPage() {
 			return;
 		}
 
-		const shouldContinue =
-			typeof window === 'undefined'
-				? true
-				: window.confirm('This action permanently deletes your account and cannot be undone. Continue?');
-		if (!shouldContinue) {
+		setIsDeleteModalOpen(true);
+	}
+
+	function closeDeleteModal() {
+		if (loading) {
 			return;
 		}
+		setIsDeleteModalOpen(false);
+	}
+
+	async function confirmHardDeleteAccount() {
+		setIsDeleteModalOpen(false);
 
 		setLoading(true);
 		try {
@@ -575,6 +581,34 @@ export default function AccountSettingsPage() {
 
 				<SiteFooter />
 			</div>
+
+			{isDeleteModalOpen ? (
+				<div
+					className="account-delete-modal-overlay"
+					onClick={closeDeleteModal}
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="account-delete-modal-title"
+				>
+					<div className="account-delete-modal" onClick={(event) => event.stopPropagation()}>
+						<div className="account-delete-modal__title-row">
+							<AlertTriangle size={18} />
+							<h3 id="account-delete-modal-title">Xác nhận xóa tài khoản</h3>
+						</div>
+						<p>
+							Hành động này sẽ xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan. Bạn có chắc chắn muốn tiếp tục?
+						</p>
+						<div className="account-delete-modal__actions">
+							<button type="button" className="btn subtle" onClick={closeDeleteModal} disabled={loading}>
+								Hủy
+							</button>
+							<button type="button" className="btn danger solid" onClick={confirmHardDeleteAccount} disabled={loading}>
+								Xóa vĩnh viễn
+							</button>
+						</div>
+					</div>
+				</div>
+			) : null}
 		</div>
 	);
 }

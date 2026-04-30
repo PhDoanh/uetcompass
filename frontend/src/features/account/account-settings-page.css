@@ -422,6 +422,52 @@
   color: #146f3a;
 }
 
+.account-delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(4px);
+}
+
+.account-delete-modal {
+  width: min(460px, calc(100vw - 24px));
+  border-radius: 14px;
+  border: 1px solid #f1c8c8;
+  background: #ffffff;
+  box-shadow: 0 24px 42px rgba(62, 16, 16, 0.18);
+  padding: 1.2rem;
+}
+
+.account-delete-modal__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #b03030;
+}
+
+.account-delete-modal__title-row h3 {
+  margin: 0;
+  color: #7f1d1d;
+}
+
+.account-delete-modal p {
+  margin: 0.85rem 0 0;
+  color: #7d3d3d;
+  line-height: 1.45;
+}
+
+.account-delete-modal__actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
 .account-footer {
   margin-top: 2.5rem;
   background: linear-gradient(135deg, #0055a2 0%, #003e79 40%, #ff8c00 100%);
@@ -598,6 +644,28 @@ html[data-theme='dark'] .btn.danger {
   border-color: rgba(244, 114, 114, 0.45);
   background: rgba(127, 29, 29, 0.2);
   color: #fecaca;
+}
+
+html[data-theme='dark'] .account-delete-modal-overlay {
+  background: rgba(2, 9, 20, 0.62);
+}
+
+html[data-theme='dark'] .account-delete-modal {
+  border-color: rgba(239, 131, 131, 0.48);
+  background: #1c2e48;
+  box-shadow: 0 28px 46px rgba(3, 8, 17, 0.72);
+}
+
+html[data-theme='dark'] .account-delete-modal__title-row {
+  color: #ff9a9a;
+}
+
+html[data-theme='dark'] .account-delete-modal__title-row h3 {
+  color: #ffd4d4;
+}
+
+html[data-theme='dark'] .account-delete-modal p {
+  color: #f3c0c0;
 }
 
 html[data-theme='dark'] .btn.danger.solid {

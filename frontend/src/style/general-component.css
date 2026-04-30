@@ -112,12 +112,60 @@ html[data-theme='dark'] .navbar__icon {
   flex-shrink: 0;
 }
 
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.35rem;
+  max-width: min(48vw, 760px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navbar__links::-webkit-scrollbar {
+  display: none;
+}
+
+.navbar__link {
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.38rem 0.58rem;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.navbar__link:hover {
+  background: #eef4fb;
+  color: #0055a2;
+}
+
+.navbar__link:focus-visible {
+  outline: 2px solid rgba(0, 85, 162, 0.58);
+  outline-offset: 2px;
+}
+
+html[data-theme='dark'] .navbar__link {
+  color: #c8ddfb;
+}
+
+html[data-theme='dark'] .navbar__link:hover {
+  background: rgba(78, 136, 211, 0.2);
+  color: #e8f2ff;
+}
+
 .navbar__search {
   position: relative;
   max-width: 46rem;
   cursor: text;
   flex: 0 1 22rem;
   width: min(100%, 22rem);
+  margin-left: 0.45rem;
 }
 
 .navbar__search-icon {
@@ -257,7 +305,7 @@ html[data-theme='dark'] .navbar__auth-btn--primary {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.35rem 0.55rem 0.35rem 0.8rem;
+  padding: 0.3rem 0.4rem;
   border-color: #d5deed;
   background: #f3f6fb;
   box-shadow: none;
@@ -317,6 +365,14 @@ html[data-theme='dark'] .navbar__profile-trigger {
   border-radius: 50%;
 }
 
+.navbar.scrolled .navbar__link {
+  color: #ffffff;
+}
+
+.navbar.scrolled .navbar__link:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .navbar.scrolled {
   background-color: #0055a2;
   border-color: rgba(255, 255, 255, 0.1);
@@ -352,6 +408,47 @@ html[data-theme='dark'] .navbar__profile-trigger {
   background: #ffffff;
   color: #0055a2;
   border-color: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .navbar__search {
+    display: none;
+  }
+
+  .navbar__links {
+    max-width: calc(100vw - 255px);
+  }
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .navbar__links {
+    max-width: calc(100vw - 150px);
+    margin-left: 0.15rem;
+    gap: 0.1rem;
+  }
+
+  .navbar__link {
+    font-size: 0.78rem;
+    padding: 0.32rem 0.44rem;
+  }
+
+  .navbar__actions {
+    gap: 0.4rem;
+  }
+
+  .navbar__auth-actions {
+    gap: 0.35rem;
+  }
+
+  .navbar__auth-btn {
+    min-height: 32px;
+    padding: 0.28rem 0.62rem;
+    font-size: 0.78rem;
+  }
 }
 
 /* Menubar styles */
@@ -470,10 +567,14 @@ html[data-theme='dark'] .roadmap-search-overlay__panel,
 html[data-theme='dark'] .roadmap-search-page,
 html[data-theme='dark'] .roadmap-preview-panel,
 html[data-theme='dark'] .roadmap-search-results,
-html[data-theme='dark'] .homepage-popup,
-html[data-theme='dark'] .auth-modal-shell {
+html[data-theme='dark'] .homepage-popup {
   background-color: #0f1d30;
   color: #e6eefb;
+}
+
+html[data-theme='dark'] .auth-modal-shell {
+  background-color: transparent;
+  color: inherit;
 }
 
 html[data-theme='dark'] .homepage-roadmap-card,
@@ -1729,15 +1830,28 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   color: #0f172a;
   font-weight: 700;
 }
+
 .roadmap-search-overlay__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  line-height: 0;
   border: 1px solid #cbd5e1;
   background: #fff;
   color: #334155;
   border-radius: 8px;
-  padding: 4px 10px;
   cursor: pointer;
   font-weight: 700;
 }
+
+.roadmap-search-overlay__close svg {
+  width: 16px;
+  height: 16px;
+}
+
 .roadmap-search-overlay__close:hover {
   background: #f1f5f9;
 }
@@ -1921,6 +2035,7 @@ html[data-theme='dark'] .homepage-wire-btn--manual {
   min-height: 460px;
   border-radius: 14px;
   overflow: hidden;
+  overscroll-behavior: contain;
   border: 1px solid #dbe3ef;
   background: #ffffff;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);

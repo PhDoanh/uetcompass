@@ -227,8 +227,8 @@
 }
 
 .manual-roadmap-layout__divider-arrow {
-    font-size: 1rem;
-    line-height: 1;
+    width: 16px;
+    height: 16px;
 }
 
 .manual-roadmap-layout__divider-grip {
@@ -361,7 +361,8 @@
 }
 
 .manual-roadmap-button__icon {
-    font-size: 1rem;
+    width: 16px;
+    height: 16px;
 }
 
 .manual-roadmap-button--primary {
@@ -641,8 +642,9 @@
     transform: scale(0.95);
 }
 
-.manual-roadmap-help-button .material-symbols-outlined {
-    font-size: 20px;
+.manual-roadmap-help-button svg {
+    width: 20px;
+    height: 20px;
 }
 
 .manual-roadmap-help-button:disabled {

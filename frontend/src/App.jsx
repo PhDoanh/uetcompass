@@ -19,6 +19,7 @@ import {
 	toRouteKey,
 } from './shared/navigation';
 import './style/navigation-orchestration.css';
+import { X } from 'lucide-react';
 
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
@@ -89,7 +90,7 @@ function AppContent() {
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
 		pathname.startsWith('/roadmaps/public/');
 
@@ -217,6 +218,11 @@ function AppContent() {
 			if (isOutsideOverlayPanel(event.target)) {
 				event.preventDefault();
 				setIsRoadmapSearchOverlayOpen(false);
+				return;
+			}
+
+			if (event.ctrlKey || event.metaKey) {
+				event.preventDefault();
 			}
 		};
 
@@ -288,6 +294,34 @@ function AppContent() {
 					<ManualRoadmapPage />
 				</main>
 			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/system-improvement') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)', padding: '32px 20px' }}>
+				<section
+					style={{
+						maxWidth: '920px',
+						margin: '0 auto',
+						border: '1px solid #dbe3ef',
+						borderRadius: '18px',
+						background: '#f8fbff',
+						padding: '24px',
+						boxShadow: '0 16px 30px rgba(15, 23, 42, 0.08)',
+					}}
+				>
+					<h1 style={{ margin: 0, color: '#0055a2' }}>Cải tiến hệ thống</h1>
+					<p style={{ marginTop: '10px', marginBottom: 0, lineHeight: 1.6, color: '#475569' }}>
+						Đây là trang mô phỏng để tiếp nhận đề xuất cải tiến hệ thống. Chức năng gửi đề xuất chính thức sẽ được triển khai trong phiên bản tiếp theo.
+					</p>
+					<ul style={{ margin: '16px 0 0', color: '#334155', lineHeight: 1.8 }}>
+						<li>Đề xuất cải tiến giao diện và trải nghiệm học tập.</li>
+						<li>Đề xuất cải tiến chất lượng roadmap và gợi ý kỹ năng.</li>
+						<li>Đề xuất tính năng mới phục vụ cộng đồng UET.</li>
+					</ul>
+				</section>
+			</main>
 		);
 	}
 
@@ -366,7 +400,7 @@ function AppContent() {
 								onClick={() => navigateTo('/')}
 								aria-label="Close authentication popup"
 							>
-								x
+								<X size={16} aria-hidden="true" />
 							</button>
 							{authPopupContent}
 						</div>
@@ -394,7 +428,7 @@ function AppContent() {
 									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
 									aria-label="Close roadmap search"
 								>
-									x
+									<X size={16} aria-hidden="true" />
 								</button>
 							</div>
 							<Suspense fallback={<PageSkeleton label="Dang tai bo loc roadmap..." />}>

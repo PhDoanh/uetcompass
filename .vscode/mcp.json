@@ -6,7 +6,8 @@
 			"args": [
 				"-y",
 				"@playwright/mcp@latest",
-				"--caps=vision"
+				"--caps=vision",
+				"--browser=msedge"
 			],
 			"gallery": "https://api.mcp.github.com",
 			"version": "0.0.1-seed"

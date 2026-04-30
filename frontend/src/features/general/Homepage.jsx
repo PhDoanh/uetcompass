@@ -6,6 +6,7 @@ import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from './NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import SiteFooter from './SiteFooter';
+import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
@@ -303,7 +304,7 @@ export default function Homepage() {
         throw new Error('Không tìm thấy roadmap công khai phù hợp.');
       }
 
-      window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
     } catch (_) {
       setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
     } finally {
@@ -468,7 +469,7 @@ export default function Homepage() {
   return (
     <div className="homepage homepage--modern">
       <main className="homepage-content homepage-content--modern">
-        <section className="homepage-hero-modern">
+        <section id="featured-features" className="homepage-hero-modern">
           <div className="homepage-hero-modern__content">
             <span className="homepage-status homepage-status--badge">
               {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
@@ -517,7 +518,7 @@ export default function Homepage() {
         </section>
 
         {shouldShowMyRoadmapsSection ? (
-          <section className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
+          <section id="my-roadmaps" className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
             <div className="homepage-roadmap-head">
               <div>
                 <h2>Roadmap của tôi</h2>
@@ -570,7 +571,7 @@ export default function Homepage() {
                             className="homepage-card-action"
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                window.location.assign('/skill-tree');
+                                navigateTo('/skill-tree');
                               }
                             }}
                           >
@@ -611,7 +612,7 @@ export default function Homepage() {
                           className="homepage-card-action"
                           onClick={() => {
                             if (typeof window !== 'undefined') {
-                              window.location.assign(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
+                              navigateTo(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
                             }
                           }}
                         >
@@ -682,7 +683,7 @@ export default function Homepage() {
           </div>
         </section>
 
-        <section className="homepage-bento">
+        <section id="how-it-works" className="homepage-bento">
           <div className="homepage-bento__main">
             <h2>Bạn là tân sinh viên?</h2>
             <p>

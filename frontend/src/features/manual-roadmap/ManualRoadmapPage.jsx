@@ -9,6 +9,7 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
 import { useNotification } from '../general/NotificationContainer';
+import { CircleHelp, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/013-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -165,8 +166,31 @@ export default function ManualRoadmapPage() {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const layoutRef = useRef(null);
+  const previewStageRef = useRef(null);
   const resizeDragRef = useRef({ startX: 0, startRatio: MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO });
   const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handlePreviewWheel = (event) => {
+      if (!previewStageRef.current || !previewStageRef.current.contains(event.target)) {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('wheel', handlePreviewWheel, { passive: false, capture: true });
+
+    return () => {
+      window.removeEventListener('wheel', handlePreviewWheel, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -658,7 +682,10 @@ export default function ManualRoadmapPage() {
             </div>
           </section>
 
-          <div className="manual-roadmap-preview-stage">
+          <div
+            className="manual-roadmap-preview-stage"
+            ref={previewStageRef}
+          >
             <RoadmapGraphRenderer
               nodes={displayNodes}
               edges={preview.edges || []}
@@ -706,17 +733,17 @@ export default function ManualRoadmapPage() {
                   title="View YAML format guide"
                   aria-label="Open YAML format guide"
                 >
-                  <span className="material-symbols-outlined">help</span>
+                  <CircleHelp size={18} aria-hidden="true" />
                 </button>
               </div>
 
               <div className="manual-roadmap-panel__actions">
                 <button type="button" onClick={handleRestoreSample} className="manual-roadmap-button manual-roadmap-button--secondary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">history</span>
+                  <History className="manual-roadmap-button__icon" aria-hidden="true" />
                   Phục hồi mẫu
                 </button>
                 <button type="button" onClick={handleSave} disabled={actionsDisabled} className="manual-roadmap-button manual-roadmap-button--primary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">save</span>
+                  <Save className="manual-roadmap-button__icon" aria-hidden="true" />
                   {isSaving ? 'Đang lưu...' : 'Lưu roadmap'}
                 </button>
               </div>

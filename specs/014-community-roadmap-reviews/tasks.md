@@ -14,9 +14,9 @@
 
 **Purpose**: Initialize the review feature boundary and shared frontend entry points
 
-- [ ] T001 Create the review module and component folders in backend/src/modules/review/ and frontend/src/features/{skill-tree,general}/
-- [ ] T002 [P] Scaffold the review API client and request helper files in frontend/src/services/review.api.js and frontend/src/services/http.js
-- [ ] T003 [P] Add review surface style anchors in frontend/src/features/skill-tree/skill-tree.css and frontend/src/style/general-component.css
+- [X] T001 Create the review module and component folders in backend/src/modules/review/ and frontend/src/features/{skill-tree,general}/
+- [X] T002 [P] Scaffold the review API client and request helper files in frontend/src/services/review.api.js and frontend/src/services/http.js
+- [X] T003 [P] Add review surface style anchors in frontend/src/features/skill-tree/skill-tree.css and frontend/src/style/general-component.css
 
 ---
 
@@ -26,11 +26,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create the Review mongoose schema with the unique { roadmapId, studentId } index in backend/src/modules/review/review.model.js
-- [ ] T005 [P] Add averageRating fields to backend/src/modules/roadmap/roadmap.model.js and backend/src/modules/roadmap/manualRoadmap.model.js
-- [ ] T006 [P] Add roadmap validation and average-rating update helpers in backend/src/modules/roadmap/roadmap.service.js
-- [ ] T007 [P] Scaffold the review moderation, SSE, and notification helper modules in backend/src/modules/review/review.moderation.service.js, backend/src/modules/review/review.sse.js, and backend/src/modules/review/review.notifications.js
-- [ ] T008 Register the review router and SSE endpoint in backend/src/app.js and backend/src/modules/review/review.routes.js
+- [X] T004 Create the Review mongoose schema with the unique { roadmapId, studentId } index in backend/src/modules/review/review.model.js
+- [X] T005 [P] Add averageRating fields to backend/src/modules/roadmap/roadmap.model.js and backend/src/modules/roadmap/manualRoadmap.model.js
+- [X] T006 [P] Add roadmap validation and average-rating update helpers in backend/src/modules/roadmap/roadmap.service.js
+- [X] T007 [P] Scaffold the review moderation, SSE, and notification helper modules in backend/src/modules/review/review.moderation.service.js, backend/src/modules/review/review.sse.js, and backend/src/modules/review/review.notifications.js
+- [X] T008 Register the review router and SSE endpoint in backend/src/app.js and backend/src/modules/review/review.routes.js
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -48,10 +48,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement POST /api/reviews validation and upsert flow in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
-- [ ] T011 [P] [US1] Add review submit and edit API helpers in frontend/src/services/review.api.js
-- [ ] T012 [US1] Mount the shared ReviewTab in the authenticated detail panel from frontend/src/features/skill-tree/SkillTreePage.jsx and frontend/src/features/skill-tree/CourseDetailPanel.jsx
-- [ ] T013 [US1] Build the authenticated comment box, 1-to-5 star selector, and edit affordance in frontend/src/features/skill-tree/ReviewTab.jsx
+- [X] T010 [US1] Implement POST /api/reviews validation and upsert flow in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
+- [X] T011 [P] [US1] Add review submit and edit API helpers in frontend/src/services/review.api.js
+- [X] T012 [US1] Mount the shared ReviewTab in the authenticated detail panel from frontend/src/features/skill-tree/SkillTreePage.jsx and frontend/src/features/skill-tree/CourseDetailPanel.jsx
+- [X] T013 [US1] Build the authenticated comment box, 1-to-5 star selector, and edit affordance in frontend/src/features/skill-tree/ReviewTab.jsx
 
 **Checkpoint**: User Story 1 should be fully functional and independently testable
 
@@ -70,10 +70,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Implement sync blacklist rejection and async moderation orchestration in backend/src/modules/review/review.moderation.service.js
-- [ ] T017 [US2] Persist moderation status changes and hide flagged reviews in backend/src/modules/review/review.service.js
-- [ ] T018 [US2] Send internal toast notifications and external email alerts for flagged reviews in backend/src/modules/review/review.notifications.js and backend/src/modules/review/review.service.js
-- [ ] T019 [US2] Recalculate roadmap averageRating after approval or flagging and broadcast moderation events from backend/src/modules/review/review.sse.js and backend/src/modules/review/review.service.js
+- [X] T016 [US2] Implement sync blacklist rejection and async moderation orchestration in backend/src/modules/review/review.moderation.service.js
+- [X] T017 [US2] Persist moderation status changes and hide flagged reviews in backend/src/modules/review/review.service.js
+- [X] T018 [US2] Send internal toast notifications and external email alerts for flagged reviews in backend/src/modules/review/review.notifications.js and backend/src/modules/review/review.service.js
+- [X] T019 [US2] Recalculate roadmap averageRating after approval or flagging and broadcast moderation events from backend/src/modules/review/review.sse.js and backend/src/modules/review/review.service.js
 
 **Checkpoint**: User Stories 1 and 2 should now work independently
 
@@ -91,9 +91,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implement GET /api/reviews approved-only newest-first pagination and summary payloads in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
-- [ ] T022 [US3] Mount the shared ReviewTab in the guest roadmap panel and show the login prompt instead of the editor in frontend/src/features/skill-tree/PublicRoadmapNodePanel.jsx and frontend/src/features/skill-tree/ReviewTab.jsx
-- [ ] T023 [US3] Surface the roadmap average rating and load-more review pagination in frontend/src/features/skill-tree/ReviewTab.jsx and frontend/src/features/skill-tree/CourseDetailPanel.jsx
+- [X] T021 [US3] Implement GET /api/reviews approved-only newest-first pagination and summary payloads in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
+- [X] T022 [US3] Mount the shared ReviewTab in the guest roadmap panel and show the login prompt instead of the editor in frontend/src/features/skill-tree/PublicRoadmapNodePanel.jsx and frontend/src/features/skill-tree/ReviewTab.jsx
+- [X] T023 [US3] Surface the roadmap average rating and load-more review pagination in frontend/src/features/skill-tree/ReviewTab.jsx and frontend/src/features/skill-tree/CourseDetailPanel.jsx
 
 **Checkpoint**: User Stories 1, 2, and 3 should now be independently functional
 
@@ -112,9 +112,9 @@
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Implement GET /api/reviews/carousel with weighted rating-recency sorting in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
-- [ ] T027 [P] [US4] Build the CSS-only dual-track carousel animation, hover pause, and reduced-motion behavior in frontend/src/features/general/ReviewCarousel.jsx and frontend/src/style/general-component.css
-- [ ] T028 [US4] Render the guest-only carousel in frontend/src/features/general/Homepage.jsx and keep it hidden for signed-in users
+- [X] T026 [US4] Implement GET /api/reviews/carousel with weighted rating-recency sorting in backend/src/modules/review/review.controller.js and backend/src/modules/review/review.service.js
+- [X] T027 [P] [US4] Build the CSS-only dual-track carousel animation, hover pause, and reduced-motion behavior in frontend/src/features/general/ReviewCarousel.jsx and frontend/src/style/general-component.css
+- [X] T028 [US4] Render the guest-only carousel in frontend/src/features/general/Homepage.jsx and keep it hidden for signed-in users
 
 **Checkpoint**: All user stories should now be independently functional
 

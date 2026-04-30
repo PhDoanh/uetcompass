@@ -90,6 +90,25 @@ async function getRoadmapProgress(req, res) {
   }
 }
 
+async function getRoadmapHistory(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { roadmapId } = req.params;
+    const limit = Number(req.query?.limit || 50);
+
+    const history = await skillTreeService.getRoadmapHistory(userId, roadmapId, { limit });
+    if (!history) {
+      return res.status(404).json({
+        error: { code: 'ROADMAP_NOT_FOUND', message: 'Roadmap or history not found.' },
+      });
+    }
+
+    return res.json(history);
+  } catch (err) {
+    handleError(err, res);
+  }
+}
+
 async function getNodeResources(req, res, next) {
   try {
     const { courseCode } = req.params;
@@ -187,6 +206,7 @@ module.exports = {
   getTree,
   patchNodeStatus,
   getRoadmapProgress,
+  getRoadmapHistory,
   getNodeResources,
   getNodeWhy,
   getNodeMarketSkills,

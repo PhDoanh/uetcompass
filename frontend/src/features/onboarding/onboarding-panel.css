@@ -1153,13 +1153,18 @@ html[data-theme='dark'] .onboarding-panel-form-wrap {
 html[data-theme='dark'] .onboarding-modern-field select,
 html[data-theme='dark'] .onboarding-modern-field input[type='month'],
 html[data-theme='dark'] .onboarding-modern-course-box {
-  background: #1a304d;
+  background-color: #1a304d;
 }
 
 html[data-theme='dark'] .onboarding-modern-field select {
   background-image:
     linear-gradient(45deg, transparent 50%, #8faed2 50%),
     linear-gradient(135deg, #8faed2 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }
 
 html[data-theme='dark'] .onboarding-modern-field select:focus,

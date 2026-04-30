@@ -1,12 +1,13 @@
 import React from 'react';
 import '../../style/general-component.css';
 import { useAuth } from '../../providers/AuthProvider';
+import { navigateTo } from '../../shared/navigation';
 
 export default function MenuBar({ onClose }) {
   const { logoutAndRedirect } = useAuth();
 
-  const navigateTo = (path) => {
-    window.location.assign(path);
+  const navigateToPath = (path) => {
+    navigateTo(path);
     onClose();
   };
 
@@ -17,10 +18,10 @@ export default function MenuBar({ onClose }) {
 
   return (
     <div className="menubar">
-      <button className="menubar__item" onClick={() => navigateTo('/learning-profile')}>Trang cá nhân</button>
-      <button className="menubar__item" onClick={() => navigateTo('/skill-tree')}>Lộ trình học tập</button>
-      <button className="menubar__item" onClick={() => navigateTo('/manual-roadmap')}>Tạo roadmap thủ công</button>
-      <button className="menubar__item" onClick={() => navigateTo('/settings')}>Cài đặt</button>
+      <button className="menubar__item" onClick={() => navigateToPath('/learning-profile')}>Trang cá nhân</button>
+      <button className="menubar__item" onClick={() => navigateToPath('/skill-tree')}>Lộ trình học tập</button>
+      <button className="menubar__item" onClick={() => navigateToPath('/manual-roadmap')}>Tạo roadmap thủ công</button>
+      <button className="menubar__item" onClick={() => navigateToPath('/settings')}>Cài đặt</button>
       <div className="menubar__divider" />
       <button className="menubar__item menubar__item--danger" onClick={handleLogout}>Đăng xuất</button>
     </div>

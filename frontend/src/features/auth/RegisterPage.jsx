@@ -3,6 +3,7 @@ import { AlertTriangle, Compass, Eye, EyeOff, Info, Lock, Mail, User } from 'luc
 import authApi from '../../services/auth.api';
 import { useNotification } from '../general/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
+import { navigateTo } from '../../shared/navigation';
 
 function isVnuEmail(value) {
   return /@vnu\.edu\.vn$/i.test(String(value || '').trim());
@@ -132,7 +133,7 @@ export default function RegisterPage() {
       addNotification(successMessage, 'success');
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(REGISTER_SUCCESS_NOTICE_KEY, successMessage);
-        window.location.assign('/login');
+        navigateTo('/login');
       }
     } catch (err) {
       setError(err.message || 'Xác thực thất bại');

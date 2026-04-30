@@ -5,6 +5,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../general/NotificationContainer';
+import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
@@ -110,7 +111,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       return;
     }
 
-    window.location.assign('/');
+    navigateTo('/');
   };
 
   const handleOpenInEditor = () => {
@@ -136,7 +137,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       return;
     }
 
-    window.location.assign('/manual-roadmap');
+    navigateTo('/manual-roadmap');
   };
 
   useEffect(() => {

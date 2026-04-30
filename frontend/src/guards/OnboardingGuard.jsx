@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import authApi from '../services/auth.api';
 import { useAuth } from '../providers/AuthProvider';
+import { navigateTo } from '../shared/navigation';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 
@@ -29,9 +30,7 @@ export default function OnboardingGuard({ children }) {
 
 		const resolveFromProfile = async () => {
 			if (!accessToken) {
-				if (typeof window !== 'undefined') {
-					window.location.replace('/');
-				}
+				navigateTo('/', { replace: true });
 				return;
 			}
 
@@ -61,7 +60,7 @@ export default function OnboardingGuard({ children }) {
 					ONBOARDING_REDIRECT_NOTICE_KEY,
 					'Cần hoàn thành Onboarding để vào tính năng này'
 				);
-				window.location.replace('/');
+				navigateTo('/', { replace: true });
 			} catch (error) {
 				if (!isMounted) {
 					return;
@@ -76,7 +75,7 @@ export default function OnboardingGuard({ children }) {
 					ONBOARDING_REDIRECT_NOTICE_KEY,
 					'Cần hoàn thành Onboarding để vào tính năng này'
 				);
-				window.location.replace('/');
+				navigateTo('/', { replace: true });
 			}
 		};
 

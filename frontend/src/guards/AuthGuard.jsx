@@ -1,4 +1,5 @@
 import { decidePostLoginRoute, useAuth } from '../providers/AuthProvider';
+import { navigateTo } from '../shared/navigation';
 
 const PUBLIC_PATHS = ['/login', '/register', '/forgot-password'];
 
@@ -15,16 +16,12 @@ export default function AuthGuard({ children }) {
   const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
   if (!isAuthenticated && !isPublicPath) {
-    if (typeof window !== 'undefined') {
-      window.location.replace('/');
-    }
+    navigateTo('/', { replace: true });
     return null;
   }
 
   if (isAuthenticated && isPublicPath) {
-    if (typeof window !== 'undefined') {
-      window.location.replace(decidePostLoginRoute(onboardingState));
-    }
+    navigateTo(decidePostLoginRoute(onboardingState), { replace: true });
     return null;
   }
 

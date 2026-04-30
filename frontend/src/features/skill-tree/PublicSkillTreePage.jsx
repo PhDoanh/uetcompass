@@ -1,10 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
+import SkillTreeDetailPanel, {
+  SkillTreeNodeDetailTab,
+  SkillTreeOverviewTab,
+  SkillTreeReviewTab,
+  buildFixedMilestones,
+  calculateProgress,
+} from './SkillTreeDetailPanel';
 import { useNotification } from '../general/NotificationContainer';
+import { useSplitLayout } from './useSplitLayout';
 import './skill-tree.css';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
@@ -76,7 +84,7 @@ function normalizePreviewNodes(nodes = []) {
 }
 
 export default function PublicSkillTreePage({ roadmapId = '' }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, accessToken } = useAuth();
   const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);
@@ -85,6 +93,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [isComputingLayout, setIsComputingLayout] = useState(false);
   const [activeNodeId, setActiveNodeId] = useState('');
   const [nodeStates, setNodeStates] = useState({});
+  const [activeTab, setActiveTab] = useState('overview');
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -100,7 +109,123 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [activeNodeId, nodesForRender]
   );
 
-  const handleBack = () => {
+  useEffect(() => {
+    if (activeNode) {
+      setActiveTab('node');
+      return;
+    }
+
+    setActiveTab('overview');
+  }, [activeNode]);
+
+  const {
+    layoutRef,
+    ratio,
+    isCompactLayout,
+    minRatio,
+    maxRatio,
+    handleResizePointerDown,
+    handleResizeKeyDown,
+  } = useSplitLayout();
+
+  const progressSummary = useMemo(
+    () => calculateProgress(nodesForRender, (node) => node.status),
+    [nodesForRender]
+  );
+
+  const milestones = useMemo(() => buildFixedMilestones(), []);
+
+  const sharedAtLabel = previewData?.sharedAt
+    ? new Date(previewData.sharedAt).toLocaleString()
+    : 'Chưa có';
+
+  const overviewMetaItems = useMemo(() => ([
+    { label: 'Ngày chia sẻ', value: sharedAtLabel },
+    { label: 'Số node', value: nodesForRender.length ? `${nodesForRender.length}` : '0' },
+  ]), [sharedAtLabel, nodesForRender.length]);
+
+  const overviewActions = (
+    <>
+      <button
+        type="button"
+        className="skill-tree-edit-button"
+        onClick={handleOpenInEditor}
+      >
+        Chỉnh sửa Roadmap
+      </button>
+      <button
+        type="button"
+        className="skill-tree-back-button"
+        onClick={handleBack}
+      >
+        Quay lại
+      </button>
+    </>
+  );
+
+  const detailTabs = useMemo(() => ([
+    {
+      id: 'overview',
+      label: 'Tổng quan',
+      content: (
+        <SkillTreeOverviewTab
+          title={previewData?.title || 'Roadmap'}
+          description={previewData?.description || 'Chưa có mô tả.'}
+          metaItems={overviewMetaItems}
+          progress={progressSummary}
+          milestones={milestones}
+          progressVariant="fixed"
+          actions={overviewActions}
+        />
+      ),
+    },
+    {
+      id: 'node',
+      label: 'Chi tiết nút',
+      disabled: !activeNode,
+      content: (
+        <SkillTreeNodeDetailTab
+          mode="public"
+          node={activeNode}
+          onClearSelection={() => setActiveNodeId('')}
+          onTransition={activeNode
+            ? (_, toState) => {
+              setNodeStates((prev) => ({
+                ...prev,
+                [activeNode.nodeId]: toState,
+              }));
+            }
+            : undefined}
+        />
+      ),
+    },
+    {
+      id: 'reviews',
+      label: 'Nhận xét',
+      content: (
+        <SkillTreeReviewTab
+          roadmapId={roadmapId}
+          authToken={accessToken || ''}
+          initialReviews={Array.isArray(previewData?.reviews) ? previewData.reviews : []}
+        />
+      ),
+    },
+  ]), [activeNode, milestones, overviewActions, overviewMetaItems, previewData, progressSummary]);
+
+  const handleRightClickToggle = useCallback((nodeId) => {
+    setNodeStates((prev) => {
+      const current = prev[nodeId]
+        || normalizeNodeState(nodesForRender.find((node) => node.nodeId === nodeId)?.status)
+        || 'pending';
+      const next = current === 'completed' ? 'pending' : 'completed';
+      return {
+        ...prev,
+        [nodeId]: next,
+      };
+    });
+  }, [nodesForRender]);
+
+  function handleBack() {
     if (typeof window === 'undefined') {
       return;
     }
@@ -111,9 +236,9 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     }
 
     window.location.assign('/');
-  };
+  }
 
-  const handleOpenInEditor = () => {
+  function handleOpenInEditor() {
     if (!isAuthenticated) {
       addNotification('Vui lòng đăng nhập để chỉnh sửa roadmap.', 'warning');
       return;
@@ -137,7 +262,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     }
 
     window.location.assign('/manual-roadmap');
-  };
+  }
 
   useEffect(() => {
     const normalizedRoadmapId = String(roadmapId || '').trim();
@@ -253,56 +378,57 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
 
   return (
     <div className="skill-tree-page">
-      <div className="skill-tree-layout">
-        <main className="skill-tree-layout__canvas" aria-label="Public skill tree canvas">
-          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
-            <div className="skill-tree-summary-card__top-row">
-              <h2 className="skill-tree-summary-card__title">{previewData?.title || 'Roadmap'}</h2>
-              <div className="skill-tree-summary-card__actions">
-                <button
-                  type="button"
-                  className="skill-tree-edit-button"
-                  onClick={handleOpenInEditor}
-                >
-                  Chỉnh sửa Roadmap
-                </button>
-                <button type="button" className="skill-tree-back-button" onClick={handleBack}>Quay lại</button>
-              </div>
-            </div>
-            <p className="skill-tree-summary-card__meta">{previewData?.description || 'No description available.'}</p>
-          </section>
-
-          {normalizedNodes.length > 0 ? (
-            <div style={{ height: 'calc(100vh - 220px)' }}>
+      <div
+        className="skill-tree-layout skill-tree-layout--split"
+        ref={layoutRef}
+        style={{ '--st-panel-ratio': ratio }}
+      >
+        <main
+          className="skill-tree-layout__canvas skill-tree-layout__canvas--split"
+          aria-label="Public skill tree canvas"
+        >
+          <div className="skill-tree-canvas-stage skill-tree-graph-shell">
+            {normalizedNodes.length > 0 ? (
               <RoadmapGraphRenderer
                 nodes={nodesForRender}
                 edges={previewEdges}
                 positions={layoutPositions}
                 onNodeSelect={setActiveNodeId}
+                onNodeToggleStatus={handleRightClickToggle}
                 selectedNodeId={activeNodeId}
                 loading={isComputingLayout}
                 controlsVisible
               />
-            </div>
-          ) : (
-            <div className="skill-tree-empty-state">
-              <p>No nodes to preview yet.</p>
-            </div>
-          )}
+            ) : (
+              <div className="skill-tree-empty-state">
+                <p>No nodes to preview yet.</p>
+              </div>
+            )}
+          </div>
         </main>
 
-        {activeNode ? (
-          <PublicRoadmapNodePanel
-            node={activeNode}
-            onClosePanel={() => setActiveNodeId('')}
-            onTransition={async (_, toState) => {
-              setNodeStates((prev) => ({
-                ...prev,
-                [activeNode.nodeId]: toState,
-              }));
-            }}
-          />
-        ) : null}
+        <div
+          className="skill-tree-layout__divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize roadmap canvas and detail panel"
+          aria-valuemin={Math.round(minRatio * 100)}
+          aria-valuemax={Math.round(maxRatio * 100)}
+          aria-valuenow={Math.round(ratio * 100)}
+          tabIndex={0}
+          onPointerDown={handleResizePointerDown}
+          onKeyDown={handleResizeKeyDown}
+        >
+          <ManualRoadmapDividerHandle />
+        </div>
+
+        <SkillTreeDetailPanel
+          title="Chi tiết roadmap"
+          subtitle={previewData?.title || 'Roadmap'}
+          tabs={detailTabs}
+          activeTabId={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
     </div>
   );

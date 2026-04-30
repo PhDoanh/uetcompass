@@ -244,16 +244,22 @@
 
 .roadmap-graph-renderer__fallback-node--state-inProgress {
     border-color: #d97706;
+    background: #fef9c3;
+    color: #7c2d12;
     box-shadow: 0 10px 18px rgba(217, 119, 6, 0.24);
 }
 
 .roadmap-graph-renderer__fallback-node--state-completed {
-    border-color: #2563eb;
-    box-shadow: 0 10px 18px rgba(37, 99, 235, 0.24);
+    border-color: #22c55e;
+    background: #ecfdf3;
+    color: #166534;
+    box-shadow: 0 10px 18px rgba(34, 197, 94, 0.22);
 }
 
 .roadmap-graph-renderer__fallback-node--state-skip {
     border-color: #475569;
+    background: #f1f5f9;
+    color: #334155;
     opacity: 0.9;
 }
 
@@ -407,16 +413,19 @@ html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-pending {
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-inProgress {
     background: linear-gradient(135deg, #5d451a 0%, #4a3614 100%);
     border-color: #e9a43a;
+    color: #ffe7b2;
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-completed {
-    background: linear-gradient(135deg, #1f4a81 0%, #193c68 100%);
-    border-color: #6db3ff;
+    background: linear-gradient(135deg, #1f4d37 0%, #173b2a 100%);
+    border-color: #4ade80;
+    color: #dcfce7;
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-skip {
     background: linear-gradient(135deg, #3b4657 0%, #323c4b 100%);
     border-color: #94a3b8;
+    color: #e2e8f0;
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node-title,
@@ -733,16 +742,22 @@ html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--default {
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-inProgress {
     border-color: #f3be52;
+    background: linear-gradient(135deg, #5d451a 0%, #4a3614 100%);
+    color: #ffe7b2;
     box-shadow: 0 10px 20px rgba(118, 89, 12, 0.42);
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-completed {
-    border-color: #72b1f5;
-    box-shadow: 0 10px 20px rgba(35, 81, 136, 0.4);
+    border-color: #4ade80;
+    background: linear-gradient(135deg, #1f4d37 0%, #173b2a 100%);
+    color: #dcfce7;
+    box-shadow: 0 10px 20px rgba(22, 101, 52, 0.36);
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--state-skip {
-    border-color: rgba(136, 164, 198, 0.56);
+    border-color: #94a3b8;
+    background: linear-gradient(135deg, #3b4657 0%, #323c4b 100%);
+    color: #e2e8f0;
 }
 
 html[data-theme='dark'] .roadmap-graph-renderer__fallback-node--selected {

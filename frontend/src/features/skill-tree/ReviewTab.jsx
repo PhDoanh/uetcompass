@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import { useNotification } from '../general/NotificationContainer';
 import reviewApi from '../../services/review.api';
+import { navigateTo } from '../../shared/navigation';
+import { Star } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -19,7 +21,7 @@ function StarRow({ rating = 0, onChange = null, disabled = false }) {
 						onClick={onChange ? () => onChange(value) : undefined}
 						disabled={disabled || !onChange}
 					>
-						★
+						<Star />
 					</button>
 				);
 			})}
@@ -114,7 +116,7 @@ export default function ReviewTab({ roadmapId }) {
 		<section className="review-tab" aria-label="Roadmap reviews">
 			<div className="review-tab__summary">
 				<div>
-					<h4 className="review-tab__heading">Reviews</h4>
+					<h4 className="review-tab__heading">Đánh giá</h4>
 					<p className="review-tab__meta">
 						{summary.averageRating == null ? 'Chưa có đánh giá' : `Average ${summary.averageRating.toFixed(1)} / 5`}
 					</p>
@@ -125,41 +127,43 @@ export default function ReviewTab({ roadmapId }) {
 			{isAuthenticated ? (
 				<form className="review-tab__form" onSubmit={handleSubmit}>
 					<label className="review-tab__label">
-						Your rating
+						Đánh giá sao của bạn
 						<StarRow rating={rating} onChange={setRating} disabled={saving} />
 					</label>
 					<label className="review-tab__label">
-						Your comment
+						Nhận xét của bạn
 						<textarea
 							className="review-tab__textarea"
 							value={content}
 							onChange={(event) => setContent(event.target.value)}
 							rows={4}
-							placeholder="Share what worked well for you..."
+							placeholder="Chia sẻ cảm nghĩ của bạn về lộ trình này..."
 						/>
 					</label>
 					<button type="submit" className="review-tab__submit" disabled={saving}>
-						{saving ? 'Submitting...' : 'Submit review'}
+						{saving ? 'Đang gửi...' : 'Gửi đánh giá'}
 					</button>
 				</form>
 			) : (
 				<div className="review-tab__login-prompt">
-					<p>Đăng nhập để viết đánh giá cho roadmap này.</p>
-					<a href="/login" className="review-tab__login-link">Đăng nhập</a>
+					<p>Đăng nhập để viết đánh giá cho lộ trình này.</p>
+					<button className="review-tab__login-link" onClick={() => navigateTo('/login')}>
+						Đăng nhập
+					</button>
 				</div>
 			)}
 
 			<div className="review-tab__list">
 				{loading ? (
-					<p className="review-tab__empty">Loading reviews...</p>
+					<p className="review-tab__empty">Đang tải đánh giá...</p>
 				) : reviews.length === 0 ? (
-					<p className="review-tab__empty">Chưa có review nào.</p>
+					<p className="review-tab__empty">Chưa có đánh giá nào.</p>
 				) : (
 					reviews.map((item) => (
 						<article key={item._id} className="review-card">
 							<div className="review-card__header">
 								<div>
-									<strong>{item.studentDisplayName || 'UET Student'}</strong>
+									<strong>{item.studentDisplayName || 'Sinh viên UET'}</strong>
 									<div className="review-card__date">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}</div>
 								</div>
 								<StarRow rating={item.rating || 0} disabled />
@@ -171,7 +175,7 @@ export default function ReviewTab({ roadmapId }) {
 			</div>
 
 			{hasMore ? (
-				<button type="button" className="review-tab__more">Load more</button>
+				<button type="button" className="review-tab__more">Tải thêm</button>
 			) : null}
 		</section>
 	);

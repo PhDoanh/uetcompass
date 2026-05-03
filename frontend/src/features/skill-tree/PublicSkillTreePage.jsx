@@ -108,6 +108,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     () => nodesForRender.find((node) => node.nodeId === activeNodeId) || null,
     [activeNodeId, nodesForRender]
   );
+  const normalizedRoadmapId = useMemo(() => String(roadmapId || '').trim(), [roadmapId]);
 
   useEffect(() => {
     if (activeNode) {
@@ -265,7 +266,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   }
 
   useEffect(() => {
-    const normalizedRoadmapId = String(roadmapId || '').trim();
     if (!normalizedRoadmapId) {
       setPreviewStatus('error');
       setErrorMessage('Roadmap ID is missing.');

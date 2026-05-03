@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { getNextTransitionOptions } from './skillTree.types';
+import ReviewTab from './ReviewTab';
 
 function toLabel(state) {
   if (state === 'inProgress') return 'In Progress';
@@ -45,6 +46,7 @@ function normalizeResources(resources = []) {
 
 export default function PublicRoadmapNodePanel({
   node,
+  roadmapId = '',
   onClosePanel = () => {},
   onTransition = () => {},
 }) {
@@ -160,6 +162,8 @@ export default function PublicRoadmapNodePanel({
             </ul>
           )}
         </section>
+
+        <ReviewTab roadmapId={roadmapId} />
       </div>
     </aside>
   );

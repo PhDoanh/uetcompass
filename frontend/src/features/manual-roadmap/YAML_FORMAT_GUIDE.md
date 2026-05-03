@@ -2,7 +2,7 @@
 
 ## Tổng Quan
 
-Manual Roadmap dùng YAML để mô tả một lộ trình học dưới dạng đồ thị gồm `nodes` và `edges`.
+Manual Roadmap dùng YAML để mô tả một lộ trình học dưới dạng đồ thị gồm nodes và edges.
 
 Quy trình xử lý:
 
@@ -45,39 +45,39 @@ edges:
 ### Top-level fields
 
 | Trường | Bắt buộc | Mô tả |
-|---|---|---|
-| `title` | Có | Tiêu đề của roadmap |
-| `description` | Không | Mô tả ngắn cho roadmap |
-| `nodes` | Có | Danh sách các node |
-| `edges` | Không | Danh sách cạnh; có thể để hệ thống tự sinh |
+| --- | --- | --- |
+| title | Có | Tiêu đề của roadmap |
+| description | Không | Mô tả ngắn cho roadmap |
+| nodes | Có | Danh sách các node |
+| edges | Không | Danh sách cạnh; có thể để hệ thống tự sinh |
 
 ### Node fields
 
 | Trường | Bắt buộc | Mô tả |
-|---|---|---|
-| `nodeId` | Có | ID duy nhất của node |
-| `label` | Có | Tên hiển thị trên đồ thị |
-| `type` | Không | `main_topic`, `sub_topic`, `group_container`, `choice_item` |
-| `description` | Không | Mô tả chi tiết cho node |
-| `parentNodeId` | Không | ID node cha để tạo phân cấp |
-| `skillName` | Không | Tên kỹ năng dùng cho logic tiến trình |
-| `prerequisites` | Không | Danh sách node phải học trước |
-| `resources` | Không | Tài nguyên học tập |
-| `elkOptions` | Không | Tùy chỉnh bố cục cho ELK.js |
+| --- | --- | --- |
+| nodeId | Có | ID duy nhất của node |
+| label | Có | Tên hiển thị trên đồ thị |
+| type | Không | main_topic, sub_topic, group_container, choice_item |
+| description | Không | Mô tả chi tiết cho node |
+| parentNodeId | Không | ID node cha để tạo phân cấp |
+| skillName | Không | Tên kỹ năng dùng cho logic tiến trình |
+| prerequisites | Không | Danh sách node phải học trước |
+| resources | Không | Tài nguyên học tập |
+| elkOptions | Không | Tùy chỉnh bố cục cho ELK.js |
 
 ### Resource fields
 
 | Trường | Bắt buộc | Mô tả |
-|---|---|---|
-| `title` | Có | Tên tài nguyên |
-| `url` | Có | Đường dẫn tài nguyên |
-| `type` | Không | Loại tài nguyên như `link`, `docs`, `course`, `video`, `book` |
+| --- | --- | --- |
+| title | Có | Tên tài nguyên |
+| url | Có | Đường dẫn tài nguyên |
+| type | Không | Loại tài nguyên như link, docs, course, video, book |
 
 ---
 
 ## Các Loại Node
 
-### `main_topic`
+### main_topic
 Node cấp cao nhất, thường đại diện cho một mảng kiến thức lớn.
 
 ```yaml
@@ -87,8 +87,8 @@ Node cấp cao nhất, thường đại diện cho một mảng kiến thức l�
   parentNodeId: null
 ```
 
-### `sub_topic`
-Node con nằm dưới một `main_topic`.
+### sub_topic
+Node con nằm dưới một main_topic.
 
 ```yaml
 - nodeId: html-basics
@@ -97,7 +97,7 @@ Node con nằm dưới một `main_topic`.
   parentNodeId: frontend-core
 ```
 
-### `group_container`
+### group_container
 Node dùng để gom nhóm các node liên quan.
 
 ```yaml
@@ -106,7 +106,7 @@ Node dùng để gom nhóm các node liên quan.
   type: group_container
 ```
 
-### `choice_item`
+### choice_item
 Node đại diện cho một lựa chọn thay thế.
 
 ```yaml
@@ -196,18 +196,20 @@ edges:
 
 ## Quy Tắc Viết YAML
 
-1. **Luôn dùng `label` cho tên hiển thị của node**.
-2. **`nodeId` phải duy nhất** trong toàn bộ roadmap.
-3. **`parentNodeId` phải trỏ tới một node có thật** nếu bạn muốn tạo phân cấp.
-4. **`prerequisites` phải là danh sách `nodeId` hợp lệ**.
-5. **Tránh vòng lặp phụ thuộc** giữa các node.
-6. **Giữ YAML dưới 10KB** cho mỗi roadmap.
+Các điểm quan trọng:
+
+- Luôn dùng label cho tên hiển thị của node
+- nodeId phải duy nhất trong toàn bộ roadmap
+- parentNodeId phải trỏ tới một node có thật nếu tạo phân cấp
+- prerequisites phải là danh sách nodeId hợp lệ
+- Tránh vòng lặp phụ thuộc giữa các node
+- Giữ YAML dưới 10KB cho mỗi roadmap
 
 ---
 
 ## Ví Dụ Tốt / Chưa Tốt
 
-### Tốt
+Tốt:
 
 ```yaml
 - nodeId: react-hooks
@@ -216,7 +218,7 @@ edges:
   parentNodeId: frontend-core
 ```
 
-### Chưa tốt
+Chưa tốt:
 
 ```yaml
 - nodeId: React Hooks
@@ -224,43 +226,45 @@ edges:
   type: sub_topic
 ```
 
-Lý do: `nodeId` không nên chứa khoảng trắng.
+Lý do: nodeId không nên chứa khoảng trắng hay ký tự đặc biệt.
 
 ---
 
 ## Thông Báo Lỗi Thường Gặp
 
 | Lỗi | Cách sửa |
-|---|---|
-| Thiếu `title` | Thêm tiêu đề ở đầu file YAML |
-| Thiếu `nodes` | Thêm danh sách node |
-| Thiếu `nodeId` | Thêm `nodeId` cho từng node |
-| Thiếu `label` | Thêm tên hiển thị cho node |
-| `nodeId` bị trùng | Đổi sang ID khác |
-| `parentNodeId` không tồn tại | Kiểm tra lại ID node cha |
-| YAML sai cú pháp | Kiểm tra thụt lề, dấu `:` và danh sách `-` |
+| --- | --- |
+| Thiếu title | Thêm tiêu đề ở đầu file YAML |
+| Thiếu nodes | Thêm danh sách node |
+| Thiếu nodeId | Thêm nodeId cho từng node |
+| Thiếu label | Thêm tên hiển thị cho node |
+| nodeId bị trùng | Đổi sang ID khác |
+| parentNodeId không tồn tại | Kiểm tra lại ID node cha |
+| YAML sai cú pháp | Kiểm tra thụt lề, dấu : và danh sách - |
 
 ---
 
 ## Mẹo Thực Tế
 
-- Dùng thụt lề 2 spaces cho dễ đọc.
-- Viết `label` ngắn, rõ nghĩa.
-- Tách roadmap lớn thành nhiều `main_topic`.
-- Thêm `resources` nếu muốn roadmap hữu ích hơn.
-- Dùng `prerequisites` để thể hiện thứ tự học.
+- Dùng thụt lề 2 spaces cho dễ đọc
+- Viết label ngắn, rõ nghĩa và hấp dẫn
+- Tách roadmap lớn thành nhiều main_topic
+- Thêm resources nếu muốn roadmap hữu ích hơn
+- Dùng prerequisites để thể hiện thứ tự học
+- Nhóm các node liên quan bằng group_container
+- Sử dụng choice_item cho các lựa chọn thay thế
 
 ---
 
 ## Ghi Chú Về Lưu Trữ
 
-Sau khi lưu, roadmap sẽ có:
+Sau khi lưu, roadmap sẽ lưu trữ:
 
-- `yamlCode`: YAML gốc để chỉnh sửa lại
-- `nodes`: dữ liệu node đã chuẩn hóa
-- `edges`: cạnh đã được tính sẵn
-- `positions`: vị trí bố cục cho graph
+- yamlCode: YAML gốc để chỉnh sửa lại sau này
+- nodes: dữ liệu node đã chuẩn hóa và xác thực
+- edges: cạnh đã được tính sẵn
+- positions: vị trí bố cục cho graph renderer
 
 ---
 
-**Mẹo nhanh:** Nếu bạn chỉ cần xem cách viết, hãy mở dropdown mẫu roadmap và sao chép cấu trúc gần giống nhất với nhu cầu của bạn.
+Mẹo nhanh: Nếu bạn chỉ cần xem cách viết, hãy mở dropdown mẫu roadmap và sao chép cấu trúc gần giống nhất với nhu cầu của bạn.

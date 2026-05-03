@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import authApi from '../services/auth.api';
+import { navigateTo } from '../shared/navigation';
 
 const AuthContext = createContext(null);
 const AUTH_STORAGE_KEY = 'authState';
@@ -131,9 +132,7 @@ export function AuthProvider({ children }) {
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
-        if (typeof window !== 'undefined') {
-          window.location.assign('/');
-        }
+        navigateTo('/');
       },
 
       logoutAndRedirect: async () => {
@@ -147,9 +146,7 @@ export function AuthProvider({ children }) {
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
-        if (typeof window !== 'undefined') {
-          window.location.assign('/');
-        }
+        navigateTo('/');
       },
     }),
     [accessToken, onboardingDraft, onboardingState]

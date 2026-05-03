@@ -288,6 +288,11 @@
   color: #f1f5f9;
 }
 
+.learning-profile-content .profile-grid {
+  gap: 1.6rem;
+  margin-bottom: 1.6rem;
+}
+
 .learning-profile-actions {
   display: flex;
   gap: 10px;

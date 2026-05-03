@@ -5,8 +5,11 @@ import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from './NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
+import ReviewCarousel from './ReviewCarousel';
 import SiteFooter from './SiteFooter';
+import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
@@ -265,7 +268,7 @@ export default function Homepage() {
         throw new Error('Không tìm thấy roadmap công khai phù hợp.');
       }
 
-      window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
     } catch (_) {
       setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
     } finally {
@@ -532,7 +535,7 @@ export default function Homepage() {
                             className="homepage-card-action"
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                window.location.assign('/skill-tree');
+                                navigateTo('/skill-tree');
                               }
                             }}
                           >
@@ -573,7 +576,7 @@ export default function Homepage() {
                           className="homepage-card-action"
                           onClick={() => {
                             if (typeof window !== 'undefined') {
-                              window.location.assign(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
+                              navigateTo(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
                             }
                           }}
                         >
@@ -601,7 +604,7 @@ export default function Homepage() {
                 onClick={handlePrevRoadmapPage}
                 disabled={!canGoPrevRoadmapPage}
               >
-                ‹
+                <ChevronLeft />
               </button>
               <button
                 type="button"
@@ -609,7 +612,7 @@ export default function Homepage() {
                 onClick={handleNextRoadmapPage}
                 disabled={!canGoNextRoadmapPage}
               >
-                ›
+                <ChevronRight />
               </button>
             </div>
           </div>
@@ -663,6 +666,7 @@ export default function Homepage() {
           </div>
         </section>
 
+        {!accessToken ? <ReviewCarousel visible /> : null}
         <SiteFooter />
       </main>
 

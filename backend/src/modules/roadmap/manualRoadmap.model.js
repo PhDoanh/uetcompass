@@ -124,6 +124,10 @@ const ManualRoadmapSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.Mixed,
             default: {},
         },
+        averageRating: {
+            type: Number,
+            default: null,
+        },
         shared: {
             type: Boolean,
             required: true,

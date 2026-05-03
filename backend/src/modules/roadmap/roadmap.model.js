@@ -55,6 +55,10 @@ const RoadmapSchema = new mongoose.Schema(
 			type: [RoadmapNodeSchema],
 			default: [],
 		},
+		averageRating: {
+			type: Number,
+			default: null,
+		},
 		acceptedAt: {
 			type: Date,
 			default: null,

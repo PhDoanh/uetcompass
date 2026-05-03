@@ -10,7 +10,7 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ['ROADMAP_READY', 'ROADMAP_FAILED', 'REPERSONALIZE'],
+      enum: ['ROADMAP_READY', 'ROADMAP_FAILED', 'REPERSONALIZE', 'REVIEW_FLAGGED'],
     },
     message: {
       type: String,

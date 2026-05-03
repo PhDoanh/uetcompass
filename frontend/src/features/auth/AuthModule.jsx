@@ -53,6 +53,8 @@ export function AuthShell({
   icon,
   tabs,
   footerNote,
+  footerSecondary,
+  footerTertiary,
   footerLinks,
   backLink,
 }) {
@@ -76,15 +78,12 @@ export function AuthShell({
 
         <AuthTabs items={tabs} />
 
-        <div className="auth-content">
-          {isLoading ? <p className="auth-status helper">Processing...</p> : null}
-          {error ? <p className="auth-status error">{error}</p> : null}
-          {success ? <p className="auth-status success">{success}</p> : null}
-          {children}
-        </div>
+        <div className="auth-content">{children}</div>
 
         <footer className="auth-footer">
-          {footerNote ? <p className="auth-footer-note">{footerNote}</p> : null}
+          {footerNote ? <p className="auth-footer-line">{footerNote}</p> : null}
+          {footerSecondary ? <p className="auth-footer-line">{footerSecondary}</p> : null}
+          {footerTertiary ? <p className="auth-footer-line">{footerTertiary}</p> : null}
           {normalizedFooterLinks.length > 0 ? (
             <div className="auth-footer-links">
               {normalizedFooterLinks.map((link) => (

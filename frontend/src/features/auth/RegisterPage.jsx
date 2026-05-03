@@ -42,24 +42,6 @@ export default function RegisterPage() {
     }
   }, []);
 
-  const passwordStrength = useMemo(() => {
-    const value = String(form.password || '');
-    let score = 0;
-    if (value.length >= 8) score += 1;
-    if (/[A-Z]/.test(value)) score += 1;
-    if (/[a-z]/.test(value)) score += 1;
-    if (/\d/.test(value)) score += 1;
-    if (/[@$!%*?&]/.test(value)) score += 1;
-
-    if (score <= 2) {
-      return { level: 'Yếu', className: 'weak', activeBars: 1 };
-    }
-    if (score <= 4) {
-      return { level: 'Trung bình', className: 'medium', activeBars: 2 };
-    }
-    return { level: 'Mạnh', className: 'strong', activeBars: 3 };
-  }, [form.password]);
-
   const emailError = useMemo(() => {
     if (!form.email.trim()) {
       return '';
@@ -207,10 +189,8 @@ export default function RegisterPage() {
         { href: '/register', label: 'Đăng ký', active: true },
       ]}
       footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
-      footerLinks={[
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'Chính sách & Điều khoản' },
-      ]}
+      footerSecondary="Chính sách bảo mật / Điều khoản sử dụng"
+      footerTertiary="© 2026 UETCompass • Phát triển bởi sinh viên UET"
     >
       {step === 'register' ? (
         <form onSubmit={submitRegister} className="auth-form">
@@ -274,17 +254,6 @@ export default function RegisterPage() {
               Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt
             </p>
 
-            <div className="auth-strength">
-              <div className="auth-strength-head">
-                <span>Độ mạnh mật khẩu</span>
-                <b className={passwordStrength.className}>{passwordStrength.level}</b>
-              </div>
-              <div className="auth-strength-bars">
-                <span className={passwordStrength.activeBars >= 1 ? `on ${passwordStrength.className}` : ''} />
-                <span className={passwordStrength.activeBars >= 2 ? `on ${passwordStrength.className}` : ''} />
-                <span className={passwordStrength.activeBars >= 3 ? `on ${passwordStrength.className}` : ''} />
-              </div>
-            </div>
           </AuthField>
 
           <button

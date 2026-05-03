@@ -143,10 +143,8 @@ export default function LoginPage() {
         { href: '/register', label: 'Đăng ký', active: false },
       ]}
       footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
-      footerLinks={[
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'Chính sách & Điều khoản' },
-      ]}
+      footerSecondary="Chính sách bảo mật / Điều khoản sử dụng"
+      footerTertiary="© 2026 UETCompass • Phát triển bởi sinh viên UET"
     >
       <div className="auth-google-block">
         {hasGoogleClientId ? (

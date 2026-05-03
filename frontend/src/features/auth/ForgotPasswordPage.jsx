@@ -41,20 +41,6 @@ export default function ForgotPasswordPage() {
     }
   }, []);
 
-  const passwordStrength = (() => {
-    const value = String(newPassword || '');
-    let score = 0;
-    if (value.length >= 8) score += 1;
-    if (/[A-Z]/.test(value)) score += 1;
-    if (/[a-z]/.test(value)) score += 1;
-    if (/\d/.test(value)) score += 1;
-    if (/[@$!%*?&]/.test(value)) score += 1;
-
-    if (score <= 2) return { level: 'Yếu', className: 'weak', activeBars: 1 };
-    if (score <= 4) return { level: 'Trung bình', className: 'medium', activeBars: 2 };
-    return { level: 'Mạnh', className: 'strong', activeBars: 3 };
-  })();
-
   async function submitRequest(event) {
     event.preventDefault();
     if (isButtonCoolingDown) {
@@ -122,7 +108,7 @@ export default function ForgotPasswordPage() {
       const result = await authApi.resetPassword({ resetToken, newPassword });
       setMessage(result.message || 'Đặt lại mật khẩu thành công.');
       addNotification(result.message || 'Đặt lại mật khẩu thành công.', 'success');
-      setStep('done');
+      navigateTo('/login');
     } catch (err) {
       setError(err.message || 'Không thể đặt lại mật khẩu.');
       addNotification(err.message || 'Không thể đặt lại mật khẩu.', 'error');
@@ -184,38 +170,21 @@ export default function ForgotPasswordPage() {
       description: 'Quên mật khẩu? Nhập email VNU để nhận mã khôi phục.',
       icon: <LockKeyhole size={24} />,
       backLink: { href: '/login', label: 'Quay lại' },
-      footerNote: 'Gặp sự cố khi nhận mã? Hãy liên hệ hỗ trợ kỹ thuật.',
-      footerLinks: [
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'Chính sách & Điều khoản' },
-      ],
     },
     verifyOtp: {
       title: 'UETCompass',
       description: 'Nhập mã xác thực 4 số đã gửi tới email của bạn.',
       icon: <Compass size={24} />,
-      footerNote: 'Bằng cách tiếp tục, bạn đồng ý với chính sách và điều khoản UETCompass.',
-      footerLinks: [
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'Chính sách & Điều khoản' },
-      ],
     },
     resetPassword: {
       title: 'UETCompass',
       description: 'Thiết lập mật khẩu mới cho tài khoản của bạn.',
       icon: <Compass size={24} />,
-      footerNote: '© 2024 UET-VNU University of Engineering and Technology',
-      footerLinks: [
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'An ninh' },
-      ],
     },
     done: {
       title: 'UETCompass',
       description: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.',
       icon: <Compass size={24} />,
-      footerNote: 'Bạn có thể quay lại trang đăng nhập để tiếp tục.',
-      footerLinks: [{ href: '/login', label: 'Quay lại đăng nhập' }],
     },
   };
 
@@ -229,8 +198,9 @@ export default function ForgotPasswordPage() {
       success={step === 'done' ? 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.' : message}
       icon={meta.icon}
       backLink={meta.backLink}
-      footerNote={meta.footerNote}
-      footerLinks={meta.footerLinks}
+      footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
+      footerSecondary="Chính sách bảo mật / Điều khoản sử dụng"
+      footerTertiary="© 2026 UETCompass • Phát triển bởi sinh viên UET"
     >
       {step === 'request' ? (
         <form onSubmit={submitRequest} className="auth-form">
@@ -304,21 +274,9 @@ export default function ForgotPasswordPage() {
                 {showNewPassword ? <EyeOff className="auth-eye-icon" /> : <Eye className="auth-eye-icon" />}
               </button>
             </div>
-
-            <div className="auth-strength">
-              <div className="auth-strength-head">
-                <span>Độ mạnh mật khẩu</span>
-                <b className={passwordStrength.className}>{passwordStrength.level}</b>
-              </div>
-              <div className="auth-strength-bars">
-                <span className={passwordStrength.activeBars >= 1 ? `on ${passwordStrength.className}` : ''} />
-                <span className={passwordStrength.activeBars >= 2 ? `on ${passwordStrength.className}` : ''} />
-                <span className={passwordStrength.activeBars >= 3 ? `on ${passwordStrength.className}` : ''} />
-              </div>
-              <p className="auth-helper-text" style={{ marginTop: 8 }}>
-                Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.
-              </p>
-            </div>
+            <p className="auth-helper-text">
+              Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @$!%*?&.
+            </p>
           </AuthField>
           <button
             type="submit"

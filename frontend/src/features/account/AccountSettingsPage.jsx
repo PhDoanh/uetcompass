@@ -17,6 +17,7 @@ import SiteFooter from '../general/SiteFooter';
 import { useNotification } from '../general/NotificationContainer';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 import './account-settings-page.css';
+import '../onboarding/onboarding-panel.css';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
@@ -99,6 +100,7 @@ export default function AccountSettingsPage() {
 	const [newPassword, setNewPassword] = useState('');
 	const [imageError, setImageError] = useState('');
 	const [pageError, setPageError] = useState('');
+	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
@@ -146,6 +148,7 @@ export default function AccountSettingsPage() {
 			try {
 				const result = await accountApi.getProfile(accessToken);
 				const nextIdentity = result?.identity || {};
+				setAvatarBroken(false);
 				setIdentity({
 					email: nextIdentity.email || '',
 					displayName: nextIdentity.displayName || '',
@@ -336,88 +339,31 @@ export default function AccountSettingsPage() {
 						<p>
 							Manage your academic profile, security preferences, and interface customization.
 						</p>
-						<p className="account-settings-effective-name">
-							Effective display name: <strong>{identity.effectiveDisplayName}</strong>
-						</p>
 					</header>
 
 					{pageError ? <p className="message error">{pageError}</p> : null}
 
-					<section className="profile-grid">
-						<div className="profile-avatar-card">
-							<div className="avatar-wrap">
-								{identity.avatarUrl ? (
-									<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
+					<section className="account-settings-identity">
+						<div className="learning-profile-avatar-wrap">
+							<div className="learning-profile-avatar-ring">
+								{identity.avatarUrl && !avatarBroken ? (
+									<img
+										src={identity.avatarUrl}
+										alt={displayName}
+										className="learning-profile-avatar"
+										onError={() => setAvatarBroken(true)}
+									/>
 								) : (
-									<div className="avatar-fallback">{avatarFallback}</div>
+									<div className="learning-profile-avatar learning-profile-avatar--fallback">
+										{displayName.charAt(0).toUpperCase() || 'U'}
+									</div>
 								)}
-								<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
-									<Camera size={14} />
-								</label>
 							</div>
-							<h3>{displayName}</h3>
-							<p>{identity.email || 'student@vnu.edu.vn'}</p>
-							<div className="avatar-actions">
-								<input
-									id="avatarImport"
-									type="file"
-									accept="image/*"
-									onChange={onImportImage}
-									hidden
-								/>
-								<label htmlFor="avatarImport" className="btn ghost">
-									Import avatar
-								</label>
-								<button
-									type="button"
-									className="btn danger"
-									onClick={onDeleteImage}
-									disabled={loading || !identity.avatarUrl}
-								>
-									Delete image
-								</button>
-							</div>
-							{imageError ? <p className="message error">{imageError}</p> : null}
 						</div>
-
-						<div className="profile-form-card">
-							<div className="card-title-row">
-								<User size={18} />
-								<h2>Identity Details</h2>
-							</div>
-							<form onSubmit={onSaveProfile}>
-								<div className="form-grid">
-									<div className="field">
-										<label htmlFor="fullName">Full Name</label>
-										<input
-											id="fullName"
-											value={identity.fullName}
-											onChange={(e) =>
-												setIdentity((prev) => ({ ...prev, fullName: e.target.value }))
-											}
-										/>
-									</div>
-									<div className="field">
-										<label htmlFor="displayName">Display Name</label>
-										<input
-											id="displayName"
-											value={identity.displayName}
-											onChange={(e) =>
-												setIdentity((prev) => ({ ...prev, displayName: e.target.value }))
-											}
-										/>
-									</div>
-									<div className="field field-wide">
-										<label htmlFor="email">Email Address</label>
-										<input id="email" value={identity.email} disabled readOnly />
-									</div>
-								</div>
-								<div className="card-actions">
-									<button type="submit" className="btn primary" disabled={loading}>
-										Save Changes
-									</button>
-								</div>
-							</form>
+						<div className="account-settings-identity-info">
+							<h2>{displayName}</h2>
+							<p className="account-settings-email">{identity.email || 'student@vnu.edu.vn'}</p>
+							{/* External notifications toggle removed */}
 						</div>
 					</section>
 

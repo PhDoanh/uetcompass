@@ -5,9 +5,11 @@ import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
+import ReviewCarousel from './ReviewCarousel';
 import SiteFooter from './SiteFooter';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
@@ -640,7 +642,7 @@ export default function Homepage() {
                 onClick={handlePrevRoadmapPage}
                 disabled={!canGoPrevRoadmapPage}
               >
-                ‹
+                <ChevronLeft />
               </button>
               <button
                 type="button"
@@ -648,7 +650,7 @@ export default function Homepage() {
                 onClick={handleNextRoadmapPage}
                 disabled={!canGoNextRoadmapPage}
               >
-                ›
+                <ChevronRight />
               </button>
             </div>
           </div>
@@ -702,6 +704,7 @@ export default function Homepage() {
           </div>
         </section>
 
+        {!accessToken ? <ReviewCarousel visible /> : null}
         <SiteFooter />
       </main>
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const { Roadmap } = require('./roadmap.model');
+const { ManualRoadmap } = require('./manualRoadmap.model');
 
 async function getPrimaryByUser(userId) {
 	return Roadmap.findOne({ userId, isPrimary: true }).lean();
@@ -32,6 +33,48 @@ async function listByUser(userId, { page = 1, limit = 20 } = {}) {
 
 async function getByIdForUser(roadmapId, userId) {
 	return Roadmap.findOne({ _id: roadmapId, userId }).lean();
+}
+
+async function getByIdForReview(roadmapId) {
+	const roadmap = await Roadmap.findById(roadmapId).lean();
+	if (roadmap) {
+		return { roadmap, model: 'Roadmap' };
+	}
+
+	const manualRoadmap = await ManualRoadmap.findById(roadmapId).lean();
+	if (manualRoadmap) {
+		return { roadmap: manualRoadmap, model: 'ManualRoadmap' };
+	}
+
+	return null;
+}
+
+async function updateAverageRating(roadmapId, averageRating) {
+	const nextAverage = typeof averageRating === 'number' && Number.isFinite(averageRating) ? averageRating : null;
+	const roadmapResult = await Roadmap.findByIdAndUpdate(
+		roadmapId,
+		{ $set: { averageRating: nextAverage } },
+		{ new: true }
+	);
+
+	if (roadmapResult) {
+		return roadmapResult;
+	}
+
+	const manualRoadmapResult = await ManualRoadmap.findByIdAndUpdate(
+		roadmapId,
+		{ $set: { averageRating: nextAverage } },
+		{ new: true }
+	);
+
+	if (manualRoadmapResult) {
+		return manualRoadmapResult;
+	}
+
+	const err = new Error('Roadmap not found.');
+	err.code = 'ROADMAP_NOT_FOUND';
+	err.status = 404;
+	throw err;
 }
 
 async function upsertFailed(userId, message) {
@@ -127,6 +170,8 @@ module.exports = {
 	getRetryableByUser,
 	listByUser,
 	getByIdForUser,
+	getByIdForReview,
+	updateAverageRating,
 	upsertFailed,
 	upsertFailedWithProfile,
 	commitAccepted,

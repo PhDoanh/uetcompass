@@ -11,6 +11,7 @@ const { academicRouter, trendsRouter, resourcesRouter } = require('./modules/scr
 const { authRouter } = require('./modules/auth/auth.routes');
 const { accountRouter } = require('./modules/account/account.routes');
 const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
+const { reviewRouter } = require('./modules/review/review.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
@@ -69,6 +70,7 @@ app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/roadmaps', roadmapRouter);
+app.use('/api/reviews', reviewRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/resources', academicRouter);
 app.use('/api/market', trendsRouter);

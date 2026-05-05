@@ -18,6 +18,7 @@ import SiteFooter from '../general/SiteFooter';
 import { useNotification } from '../notification/NotificationContainer';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 import './account-settings-page.css';
+import '../onboarding/onboarding-panel.css';
 
 const ACCOUNT_DELETE_CONFIRM_TEXT = 'Delete';
 
@@ -42,6 +43,7 @@ export default function AccountSettingsPage() {
 	const [currentPassword, setCurrentPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');
 	const [pageError, setPageError] = useState('');
+	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
@@ -89,6 +91,7 @@ export default function AccountSettingsPage() {
 			try {
 				const result = await accountApi.getProfile(accessToken);
 				const nextIdentity = result?.identity || {};
+				setAvatarBroken(false);
 				setIdentity({
 					email: nextIdentity.email || '',
 					displayName: nextIdentity.displayName || '',

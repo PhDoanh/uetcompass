@@ -214,6 +214,166 @@ html[data-theme='dark'] .navbar__input::placeholder {
   color: #86a2c9;
 }
 
+/* Review surfaces */
+.review-tab {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.review-tab__summary,
+.review-card,
+.review-carousel__card {
+  border: 1px solid var(--border-glow);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+html[data-theme='dark'] .review-tab__summary,
+html[data-theme='dark'] .review-card,
+html[data-theme='dark'] .review-carousel__card {
+  background: rgba(8, 18, 33, 0.76);
+}
+
+.review-tab__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.review-tab__heading,
+.review-carousel__header h2 {
+  margin: 0;
+}
+
+.review-tab__meta,
+.review-card__date,
+.review-carousel__header p,
+.review-carousel__author-name {
+  color: var(--text-muted);
+}
+
+.review-tab__form,
+.review-tab__login-prompt,
+.review-tab__list,
+.review-carousel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.review-tab__label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.review-tab__textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid var(--border-glow);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 0.85rem 1rem;
+}
+
+.review-tab__submit,
+.review-tab__more,
+.review-tab__login-link {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: var(--primary-blue);
+  color: #fff;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.review-stars {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.review-star {
+  border: none;
+  background: transparent;
+  color: #9aa8bb;
+  font-size: 1.1rem;
+  padding: 0;
+}
+
+.review-star--active {
+  color: #f2b01e;
+}
+
+.review-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.review-card__content,
+.review-carousel__content {
+  margin: 0.75rem 0 0;
+}
+
+.review-carousel {
+  padding: 1.25rem 0;
+}
+
+.review-carousel__viewport {
+  display: grid;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.review-carousel__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, 1fr);
+  gap: 0.75rem;
+  min-width: max-content;
+}
+
+.review-carousel__track--forward {
+  animation: review-carousel-forward 32s linear infinite;
+}
+
+.review-carousel__track--reverse {
+  animation: review-carousel-reverse 32s linear infinite;
+}
+
+.review-carousel:hover .review-carousel__track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-carousel__track {
+    animation: none;
+  }
+}
+
+@keyframes review-carousel-forward {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes review-carousel-reverse {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
 .navbar__avatar-wrapper {
   position: relative;
   flex-shrink: 0;

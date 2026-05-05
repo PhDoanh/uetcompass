@@ -190,6 +190,7 @@ export default function SkillTreePage() {
         {activeNode && (
           <CourseDetailPanel
             node={activeNode}
+            roadmapId={roadmapId}
             onClosePanel={closeNode}
             onTransition={(fromState, toState) => transitionNode(activeNode.nodeId, fromState, toState)}
           />

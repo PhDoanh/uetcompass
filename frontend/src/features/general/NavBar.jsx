@@ -344,18 +344,6 @@ export default function NavBar() {
           </button>
         ))}
       </div>
-      <div className="navbar__links" aria-label="Điều hướng chính">
-        {navigationItems.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className="navbar__link"
-            onClick={item.onClick}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
       <div className="navbar__actions">
         <div className="navbar__notification" ref={notificationRef}>
           <button

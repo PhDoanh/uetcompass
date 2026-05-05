@@ -662,6 +662,52 @@
   color: #111c2a;
 }
 
+.learning-profile-page--modern .learning-profile-card {
+  background: #ffffff;
+  border: 1px solid #dbe4f4;
+  border-radius: 0.95rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 24px rgba(17, 28, 42, 0.08);
+}
+
+.learning-profile-card__layout {
+  display: grid;
+  gap: 100px;
+  align-items: start;
+}
+
+.learning-profile-card__avatar {
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
+  height: 100%;
+}
+
+.learning-profile-page--modern .learning-profile-card .avatar-wrap {
+  width: 240px;
+  height: 240px;
+}
+
+.learning-profile-card__details {
+  display: grid;
+  gap: 1rem;
+  max-width: 100%;
+}
+
+.learning-profile-card__form {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 100%;
+}
+
+.learning-profile-page--modern .learning-profile-card .avatar-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: auto;
+}
+
 .learning-profile-page--modern > .homepage-footer {
   width: calc(100% + 48px);
   margin: 2.2rem -24px 0;
@@ -1016,6 +1062,10 @@
   .learning-grid-two {
     grid-template-columns: 1fr 1fr;
   }
+
+  .learning-profile-card__layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
@@ -1035,6 +1085,11 @@
 
   .learning-input {
     min-height: 44px;
+  }
+
+  .learning-profile-page--modern .learning-profile-card .avatar-wrap {
+    width: 208px;
+    height: 208px;
   }
 }
 
@@ -1062,6 +1117,19 @@ html[data-theme='dark'] .learning-section__empty,
 html[data-theme='dark'] .learning-section__empty a,
 html[data-theme='dark'] .learning-profile-success {
   color: #a9c0df;
+}
+
+html[data-theme='dark'] .learning-profile-page--modern .learning-profile-card {
+  background: #142741;
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+html[data-theme='dark'] .learning-profile-page--modern .learning-profile-card .btn.primary {
+  background: linear-gradient(135deg, #2368bf 0%, #3d86de 100%);
+  border-color: rgba(88, 150, 232, 0.75);
+  box-shadow: 0 12px 24px rgba(8, 23, 44, 0.45);
+  color: #ffffff;
 }
 
 html[data-theme='dark'] .learning-section__card {

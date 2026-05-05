@@ -8,7 +8,7 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { CircleHelp, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';

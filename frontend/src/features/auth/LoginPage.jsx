@@ -3,7 +3,7 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
 import { navigateTo } from '../../shared/navigation';
 

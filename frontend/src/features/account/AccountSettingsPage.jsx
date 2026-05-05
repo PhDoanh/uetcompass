@@ -15,7 +15,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import useAccountSettingsStore from '../../stores/accountSettings.store';
 import SiteFooter from '../general/SiteFooter';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { isPasswordPolicyValid, validateProfilePayload } from './accountSettings.validation';
 import './account-settings-page.css';
 

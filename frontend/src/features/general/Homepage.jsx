@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
-import { useNotification } from './NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import SiteFooter from './SiteFooter';
 import { navigateTo } from '../../shared/navigation';

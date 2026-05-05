@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Moon, Search, Sun } from "lucide-react";
+import { Bell, Check, Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
-import { useNotification } from './NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import accountApi from '../../services/account.api';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
@@ -104,9 +104,16 @@ export default function NavBar() {
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [searchText, setSearchText] = useState('');
   const [theme, setTheme] = useState(resolveInitialTheme);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const avatarRef = useRef(null);
+  const notificationRef = useRef(null);
   const { isAuthenticated, accessToken, onboardingState } = useAuth();
-  const { addNotification } = useNotification();
+  const {
+    addNotification,
+    savedNotifications,
+    removeSavedNotification,
+    clearSavedNotifications,
+  } = useNotification();
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -199,6 +206,24 @@ export default function NavBar() {
   }, [menuOpen]);
 
   useEffect(() => {
+    function handleNotificationClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
+      }
+    }
+
+    if (notificationOpen) {
+      document.addEventListener('mousedown', handleNotificationClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    };
+  }, [notificationOpen]);
+
+  useEffect(() => {
     let isMounted = true;
 
     if (!isAuthenticated || !accessToken) {
@@ -265,11 +290,6 @@ export default function NavBar() {
         label: 'Lộ trình cộng đồng',
         onClick: () => navigateToHomeSection('roadmap-community'),
       },
-      {
-        key: 'system-improvement',
-        label: 'Cải tiến hệ thống',
-        onClick: () => navigateToPath('/system-improvement'),
-      },
     ]
     : [
       {
@@ -287,14 +307,9 @@ export default function NavBar() {
         label: 'Cách hoạt động',
         onClick: () => navigateToHomeSection('how-it-works'),
       },
-      {
-        key: 'system-improvement',
-        label: 'Cải tiến hệ thống',
-        onClick: () => navigateToPath('/system-improvement'),
-      },
     ];
 
-  const isHomepage = typeof window !== 'undefined' ? window.location.pathname === '/' : true;
+  const hasSavedNotifications = savedNotifications.length > 0;
 
   return (
     <nav className="navbar">
@@ -317,21 +332,68 @@ export default function NavBar() {
           }}
         />
       </div>
-      {isHomepage ? (
-        <div className="navbar__links" aria-label="Điều hướng chính">
-          {navigationItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className="navbar__link"
-              onClick={item.onClick}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="navbar__links" aria-label="Điều hướng chính">
+        {navigationItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className="navbar__link"
+            onClick={item.onClick}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
       <div className="navbar__actions">
+        <div className="navbar__notification" ref={notificationRef}>
+          <button
+            type="button"
+            className="navbar__icon-btn navbar__notification-btn"
+            aria-label="Thông báo"
+            aria-expanded={notificationOpen}
+            onClick={() => setNotificationOpen((open) => !open)}
+          >
+            <Bell size={18} />
+            {hasSavedNotifications ? <span className="navbar__notification-dot" /> : null}
+          </button>
+          {notificationOpen ? (
+            <div className="navbar__notification-panel" role="dialog" aria-label="Thông báo">
+              <div className="navbar__notification-header">
+                <span>Thông báo</span>
+                <button
+                  type="button"
+                  className="navbar__notification-clear"
+                  onClick={clearSavedNotifications}
+                  disabled={!hasSavedNotifications}
+                >
+                  Đã đọc tất cả
+                </button>
+              </div>
+              {hasSavedNotifications ? (
+                <div className="navbar__notification-list">
+                  {savedNotifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`navbar__notification-item navbar__notification-item--${notif.type}`}
+                    >
+                      <span className="navbar__notification-message">{notif.message}</span>
+                      <button
+                        type="button"
+                        className="navbar__notification-read"
+                        onClick={() => removeSavedNotification(notif.id)}
+                        aria-label="Đánh dấu đã đọc"
+                      >
+                        <Check size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="navbar__notification-empty">Chưa có thông báo.</div>
+              )}
+            </div>
+          ) : null}
+        </div>
         <button
           type="button"
           className="navbar__icon-btn"

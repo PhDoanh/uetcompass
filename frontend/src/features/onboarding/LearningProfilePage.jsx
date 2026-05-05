@@ -4,7 +4,7 @@ import authApi from '../../services/auth.api';
 import { retryRoadmapGeneration } from '../../services/roadmap.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { getCourseCatalog } from '../../services/onboarding.api';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import './onboarding-panel.css';
 

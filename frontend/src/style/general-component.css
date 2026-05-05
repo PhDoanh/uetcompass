@@ -305,20 +305,20 @@ html[data-theme='dark'] .navbar__auth-btn--primary {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.3rem 0.4rem;
-  border-color: #d5deed;
-  background: #f3f6fb;
+  padding: 0;
+  border: none;
+  background: transparent;
   box-shadow: none;
 }
 
 html[data-theme='dark'] .navbar__profile-trigger {
-  border-color: rgba(95, 145, 210, 0.5);
-  background: rgba(15, 29, 47, 0.9);
+  border: none;
+  background: transparent;
 }
 
 .navbar__profile-trigger:hover {
-  border-color: rgba(0, 85, 162, 0.45);
-  box-shadow: 0 6px 14px rgba(0, 85, 162, 0.14);
+  border: none;
+  box-shadow: none;
 }
 
 .navbar__profile-trigger:focus-visible {
@@ -363,6 +363,176 @@ html[data-theme='dark'] .navbar__profile-trigger {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.navbar__notification {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navbar__notification-btn {
+  position: relative;
+}
+
+.navbar__notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+html[data-theme='dark'] .navbar__notification-dot {
+  box-shadow: 0 0 0 2px rgba(15, 31, 52, 0.92);
+}
+
+.navbar__notification-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(320px, 80vw);
+  max-height: 360px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+  padding: 0.65rem 0.6rem 0.75rem;
+  z-index: 1400;
+}
+
+html[data-theme='dark'] .navbar__notification-panel {
+  border-color: rgba(97, 149, 221, 0.35);
+  background: rgba(14, 28, 47, 0.96);
+  box-shadow: 0 18px 38px rgba(3, 8, 16, 0.7);
+}
+
+.navbar__notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e293b;
+  padding: 0.2rem 0.35rem 0.55rem;
+}
+
+html[data-theme='dark'] .navbar__notification-header {
+  color: #e6eefb;
+}
+
+.navbar__notification-list {
+  display: grid;
+  gap: 0.4rem;
+  height: calc(3 * 62px);
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.navbar__notification-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: #f4f7fb;
+  color: #334155;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  height: 62px;
+}
+
+html[data-theme='dark'] .navbar__notification-item {
+  background: rgba(40, 62, 92, 0.55);
+  color: #dbe7ff;
+}
+
+.navbar__notification-item--success {
+  border-left: 3px solid #22c55e;
+}
+
+.navbar__notification-item--error {
+  border-left: 3px solid #ef4444;
+}
+
+.navbar__notification-item--warning {
+  border-left: 3px solid #f59e0b;
+}
+
+.navbar__notification-item--info {
+  border-left: 3px solid #3b82f6;
+}
+
+.navbar__notification-empty {
+  padding: 0.6rem 0.5rem 0.4rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.navbar__notification-message {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.navbar__notification-read,
+.navbar__notification-clear {
+  border: none;
+  background: transparent;
+  color: #0055a2;
+  font-weight: 700;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.navbar__notification-read {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+}
+
+.navbar__notification-read:hover,
+.navbar__notification-clear:hover {
+  color: #003e79;
+}
+
+.navbar__notification-read:hover {
+  background: rgba(0, 85, 162, 0.08);
+}
+
+.navbar__notification-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+html[data-theme='dark'] .navbar__notification-read,
+html[data-theme='dark'] .navbar__notification-clear {
+  color: #93c5fd;
+}
+
+html[data-theme='dark'] .navbar__notification-read:hover,
+html[data-theme='dark'] .navbar__notification-clear:hover {
+  color: #e0f2fe;
+}
+
+html[data-theme='dark'] .navbar__notification-read:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+html[data-theme='dark'] .navbar__notification-empty {
+  color: #9fb7db;
 }
 
 .navbar.scrolled .navbar__link {

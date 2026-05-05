@@ -21,6 +21,7 @@
   font-weight: 800;
   color: #003e79;
   line-height: 1.1;
+  font-weight: 700;
 }
 
 .account-settings-header p {
@@ -730,6 +731,20 @@ html[data-theme='dark'] .btn.danger.solid {
 /* Dark theme - Account Settings */
 html[data-theme='dark'] .account-settings-page {
   background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .account-settings-identity {
+  background: #142741;
+  border: 1px solid rgba(94, 145, 214, 0.35);
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+html[data-theme='dark'] .account-settings-identity-info h2 {
+  color: #dce9fc; 
+}
+
+html[data-theme='dark'] .account-settings-email {
   color: #dce9fc;
 }
 

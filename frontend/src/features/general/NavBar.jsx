@@ -265,11 +265,6 @@ export default function NavBar() {
         label: 'Lộ trình cộng đồng',
         onClick: () => navigateToHomeSection('roadmap-community'),
       },
-      {
-        key: 'system-improvement',
-        label: 'Cải tiến hệ thống',
-        onClick: () => navigateToPath('/system-improvement'),
-      },
     ]
     : [
       {
@@ -287,14 +282,7 @@ export default function NavBar() {
         label: 'Cách hoạt động',
         onClick: () => navigateToHomeSection('how-it-works'),
       },
-      {
-        key: 'system-improvement',
-        label: 'Cải tiến hệ thống',
-        onClick: () => navigateToPath('/system-improvement'),
-      },
     ];
-
-  const isHomepage = typeof window !== 'undefined' ? window.location.pathname === '/' : true;
 
   return (
     <nav className="navbar">
@@ -317,20 +305,18 @@ export default function NavBar() {
           }}
         />
       </div>
-      {isHomepage ? (
-        <div className="navbar__links" aria-label="Điều hướng chính">
-          {navigationItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className="navbar__link"
-              onClick={item.onClick}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="navbar__links" aria-label="Điều hướng chính">
+        {navigationItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className="navbar__link"
+            onClick={item.onClick}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
       <div className="navbar__actions">
         <button
           type="button"

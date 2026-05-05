@@ -7,10 +7,10 @@ import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHa
 import SkillTreeDetailPanel, {
   SkillTreeNodeDetailTab,
   SkillTreeOverviewTab,
-  SkillTreeReviewTab,
   buildFixedMilestones,
   calculateProgress,
 } from './SkillTreeDetailPanel';
+import ReviewTab from './ReviewTab';
 import { useNotification } from '../general/NotificationContainer';
 import { useSplitLayout } from './useSplitLayout';
 import './skill-tree.css';
@@ -204,14 +204,10 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       id: 'reviews',
       label: 'Nhận xét',
       content: (
-        <SkillTreeReviewTab
-          roadmapId={roadmapId}
-          authToken={accessToken || ''}
-          initialReviews={Array.isArray(previewData?.reviews) ? previewData.reviews : []}
-        />
+        <ReviewTab roadmapId={roadmapId} />
       ),
     },
-  ]), [activeNode, milestones, overviewActions, overviewMetaItems, previewData, progressSummary]);
+  ]), [activeNode, milestones, overviewActions, overviewMetaItems, previewData, progressSummary, roadmapId]);
 
   const handleRightClickToggle = useCallback((nodeId) => {
     setNodeStates((prev) => {

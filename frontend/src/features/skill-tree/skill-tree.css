@@ -16,7 +16,8 @@
 .skill-tree-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--st-shell-header-h));
+  height: 100vh;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
@@ -810,6 +811,81 @@
   color: #64748b;
 }
 
+/* ============================================================
+   Review tab – skill-tree panel context overrides
+   (CSS variables từ general-component.css + điều chỉnh cho panel)
+   ============================================================ */
+
+/* Khi review-tab render bên trong skill-tree-panel__content thì bỏ margin-top */
+.skill-tree-panel__content .review-tab {
+  margin-top: 0;
+}
+
+/* Caret / empty state text trong panel */
+.skill-tree-panel__content .review-tab__empty {
+  margin: 0;
+  color: #5d6470;
+  font-size: 0.82rem;
+}
+
+/* Giới hạn chiều cao list review trong panel để scroll tốt */
+.skill-tree-panel__content .review-tab__list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+/* Nút "Tải thêm" & "Đăng nhập" trong panel – full width */
+.skill-tree-panel__content .review-tab__more,
+.skill-tree-panel__content .review-tab__login-link {
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+/* Summary bar gọn hơn trong panel */
+.skill-tree-panel__content .review-tab__summary {
+  padding: 0.75rem;
+}
+
+/* Form trong panel: bỏ gap thừa */
+.skill-tree-panel__content .review-tab__form {
+  gap: 0.65rem;
+}
+
+/* Textarea override nhỏ hơn vì panel hẹp */
+.skill-tree-panel__content .review-tab__textarea {
+  min-height: 80px;
+  font-size: 0.84rem;
+}
+
+/* Dark theme overrides cho review-tab trong skill-tree panel */
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__summary,
+html[data-theme='dark'] .skill-tree-panel__content .review-card,
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__textarea {
+  background: #1a304d;
+  border-color: rgba(95, 146, 214, 0.38);
+  color: #d8e8ff;
+}
+
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__empty,
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__meta,
+html[data-theme='dark'] .skill-tree-panel__content .review-card__date {
+  color: #b8d4f6;
+}
+
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__submit,
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__more,
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__login-link {
+  background: #2b6fd0;
+  color: #eef5ff;
+}
+
+html[data-theme='dark'] .skill-tree-panel__content .review-tab__heading {
+  color: #dbeafe;
+}
+
 html[data-theme='dark'] .skill-tree-layout__divider {
   border-left-color: rgba(95, 145, 210, 0.35);
   border-right-color: rgba(95, 145, 210, 0.35);
@@ -974,11 +1050,12 @@ html[data-theme='dark'] .milestone-celebration__icon {
 
 .skill-tree-route-wrapper {
   width: 100%;
-  min-height: calc(100vh - 70px);
+  height: 100vh;
 }
 
 .skill-tree-page {
-  min-height: calc(100vh - 70px);
+  height: 100vh;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   background: #f3f5f9;

@@ -327,7 +327,7 @@ function AppContent() {
 
 	if (!content && publicSkillTreeRoadmapId) {
 		content = (
-			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+			<main style={{ width: '100%', height: '100vh' }}>
 				<PublicSkillTreePage roadmapId={publicSkillTreeRoadmapId} />
 			</main>
 		);
@@ -337,7 +337,7 @@ function AppContent() {
 	if (!content && pathname === '/skill-tree') {
 		content = (
 			<OnboardingGuard>
-				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<main style={{ width: '100%', height: '100vh' }}>
 					<SkillTreePage />
 				</main>
 			</OnboardingGuard>

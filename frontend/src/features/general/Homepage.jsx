@@ -9,7 +9,27 @@ import ReviewCarousel from './ReviewCarousel';
 import SiteFooter from './SiteFooter';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Award,
+  BarChart3,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  Route,
+  Users,
+} from 'lucide-react';
+import {
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
@@ -17,6 +37,68 @@ const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
 const MANUAL_ROADMAP_FETCH_LIMIT = 100;
 const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
+const FEATURED_FEATURES = [
+  {
+    key: 'skill-tree',
+    title: 'Skill Tree',
+    description: 'Cây kỹ năng trực quan theo từng ngành',
+    icon: Compass,
+    position: 'north',
+  },
+  {
+    key: 'personalized-roadmap',
+    title: 'Roadmap cá nhân hóa',
+    description: 'Gợi ý lộ trình dựa trên mục tiêu của bạn',
+    icon: Route,
+    position: 'east',
+  },
+  {
+    key: 'community',
+    title: 'Cộng đồng',
+    description: 'Kết nối với sinh viên cùng lộ trình',
+    icon: Users,
+    position: 'west',
+  },
+  {
+    key: 'resources',
+    title: 'Kho tài liệu',
+    description: 'Slide, đề thi, tài liệu từ các khóa trước',
+    icon: BookOpen,
+    position: 'southwest',
+  },
+  {
+    key: 'progress',
+    title: 'Theo dõi tiến độ',
+    description: 'Dashboard tổng quan tiến trình học tập',
+    icon: BarChart3,
+    position: 'southeast',
+  },
+  {
+    key: 'achievements',
+    title: 'Thành tích',
+    description: 'Huy hiệu và milestone học tập',
+    icon: Award,
+    position: 'south',
+  },
+];
+const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
+  const day = index + 1;
+  const base = Math.min(10, Math.max(0, Math.round(day / 3 + (day % 5 === 0 ? 2 : 0))));
+  const value = Math.min(10, Math.max(0, base - (day % 7 === 0 ? 2 : 0)));
+  return { day, value };
+});
+const TOPIC_DISTRIBUTION = [
+  { name: 'Web', value: 35, color: '#38BDF8' },
+  { name: 'AI/ML', value: 25, color: '#0EA5E9' },
+  { name: 'DevOps', value: 20, color: '#F97316' },
+  { name: 'Khác', value: 20, color: '#94A3B8' },
+];
+const HEATMAP_VALUES = [
+  0, 1, 2, 3, 1, 0, 2,
+  2, 3, 4, 3, 2, 1, 0,
+  1, 2, 3, 4, 2, 1, 1,
+  0, 1, 2, 3, 2, 1, 0,
+];
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -87,6 +169,10 @@ export default function Homepage() {
   const [myRoadmapPage, setMyRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
   const userId = useMemo(() => resolveUserId(accessToken), [accessToken]);
+  const currentMonthLabel = useMemo(() => {
+    const month = new Date().getMonth() + 1;
+    return `tháng ${month}`;
+  }, []);
 
   const shouldPromptOnboarding = useMemo(
     () => onboardingState !== 'COMPLETED' && Boolean(accessToken),
@@ -471,7 +557,7 @@ export default function Homepage() {
   return (
     <div className="homepage homepage--modern">
       <main className="homepage-content homepage-content--modern">
-        <section id="featured-features" className="homepage-hero-modern">
+        <section id="hero" className="homepage-hero-modern">
           <div className="homepage-hero-modern__content">
             <span className="homepage-status homepage-status--badge">
               {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
@@ -517,6 +603,119 @@ export default function Homepage() {
               <img src="/images/uetstone.jpg" alt="UET Stone Roadmap" className="hero-map-image" />
             </div>
           </div>
+        </section>
+
+        {accessToken ? (
+          <section
+            id="monthly-progress"
+            className="homepage-section homepage-progress"
+            aria-label="Tổng quan tiến độ"
+          >
+            <div className="homepage-section__head">
+              <div>
+                <h2>Tổng quan tiến độ {currentMonthLabel}</h2>
+                <p>Theo dõi nhịp học tập và phân bổ chủ đề trong tháng.</p>
+              </div>
+              <button type="button" className="homepage-outline-btn">Xem chi tiết</button>
+            </div>
+            <div className="homepage-progress__grid">
+              <div className="homepage-progress__card">
+                <div className="homepage-progress__title">Hoạt động theo ngày</div>
+                <div className="homepage-progress__chart">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={ACTIVITY_SERIES} margin={{ left: -12, right: 8, top: 10, bottom: 0 }}>
+                      <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#94A3B8" />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} stroke="#94A3B8" />
+                      <Tooltip contentStyle={{ borderRadius: 12, borderColor: '#E2E8F0' }} />
+                      <Line type="monotone" dataKey="value" stroke="#0EA5E9" strokeWidth={3} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="homepage-progress__meta">+42 nodes hoàn thành trong tháng</div>
+              </div>
+              <div className="homepage-progress__card">
+                <div className="homepage-progress__title">Phân bổ chủ đề</div>
+                <div className="homepage-progress__chart homepage-progress__chart--donut">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={TOPIC_DISTRIBUTION}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={2}
+                      >
+                        {TOPIC_DISTRIBUTION.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 12, borderColor: '#E2E8F0' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="homepage-progress__legend">
+                    {TOPIC_DISTRIBUTION.map((entry) => (
+                      <div key={entry.name} className="homepage-progress__legend-item">
+                        <span className="homepage-progress__legend-dot" style={{ background: entry.color }} />
+                        <span>{entry.name}</span>
+                        <strong>{entry.value}%</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="homepage-progress__meta">4 chủ đề đang theo dõi</div>
+              </div>
+              <div className="homepage-progress__card">
+                <div className="homepage-progress__title">Streak hoạt động</div>
+                <div className="homepage-progress__heatmap">
+                  {HEATMAP_VALUES.map((level, index) => (
+                    <span
+                      key={`${level}-${index}`}
+                      className={`homepage-progress__cell homepage-progress__cell--${level}`}
+                    />
+                  ))}
+                </div>
+                <div className="homepage-progress__meta">Chuỗi hoạt động 6 ngày liên tiếp</div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section
+          id="featured-features"
+          className="homepage-section homepage-featured"
+          aria-label="Tính năng nổi bật"
+        >
+          <div className="homepage-section__head">
+            <div>
+              <h2>Tính năng nổi bật</h2>
+              <p>Tất cả công cụ bạn cần để định hướng và phát triển sự nghiệp ngay từ ghế nhà trường.</p>
+            </div>
+          </div>
+          <div className="homepage-featured__radial">
+            <div className="homepage-featured__center">
+              <Compass size={40} />
+              <span>UETCompass</span>
+            </div>
+            {FEATURED_FEATURES.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={feature.key}
+                  className={`homepage-feature-card homepage-feature-card--${feature.position}`}
+                >
+                  <div className="homepage-feature-card__icon">
+                    <Icon size={18} />
+                  </div>
+                  <div>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="homepage-featured__note">Thiết kế mô phỏng giúp bạn hình dung hệ sinh thái học tập trên UETCompass.</p>
         </section>
 
         {shouldShowMyRoadmapsSection ? (
@@ -682,6 +881,38 @@ export default function Homepage() {
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section
+          id="system-flow"
+          className="homepage-section homepage-system"
+          aria-label="Cách hệ thống vận hành"
+        >
+          <div className="homepage-section__head homepage-section__head--center">
+            <div>
+              <h2>Cách hệ thống vận hành</h2>
+              <p>Chỉ 3 bước để bắt đầu lộ trình học tập cá nhân hóa.</p>
+            </div>
+          </div>
+          <div className="homepage-system__steps">
+            <div className="homepage-system__step">
+              <span className="homepage-system__badge">①</span>
+              <h3>Tạo tài khoản</h3>
+              <p>Đăng ký miễn phí bằng email sinh viên UET.</p>
+            </div>
+            <span className="homepage-system__arrow" aria-hidden="true">→</span>
+            <div className="homepage-system__step">
+              <span className="homepage-system__badge">②</span>
+              <h3>Hoàn thành onboarding</h3>
+              <p>Trả lời vài câu hỏi để hệ thống hiểu mục tiêu của bạn.</p>
+            </div>
+            <span className="homepage-system__arrow" aria-hidden="true">→</span>
+            <div className="homepage-system__step">
+              <span className="homepage-system__badge">③</span>
+              <h3>Bắt đầu lộ trình</h3>
+              <p>Nhận skill tree cá nhân hóa và theo dõi tiến độ theo ngày.</p>
+            </div>
           </div>
         </section>
 

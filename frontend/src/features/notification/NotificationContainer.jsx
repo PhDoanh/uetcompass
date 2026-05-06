@@ -6,6 +6,17 @@ import { useSkillTreeStore } from '../../stores/skillTreeStore';
 import '../../style/general-component.css';
 
 const NotificationContext = createContext();
+const MAX_SAVED_NOTIFICATIONS = 10;
+
+function createNotificationEntry(message, type, duration) {
+  return {
+    id: Date.now() + Math.random(),
+    message,
+    type,
+    duration,
+    createdAt: Date.now(),
+  };
+}
 
 export function useNotification() {
   return useContext(NotificationContext);
@@ -13,18 +24,31 @@ export function useNotification() {
 
 export function NotificationProvider({ children, sseToken }) {
   const [notifications, setNotifications] = useState([]);
+  const [savedNotifications, setSavedNotifications] = useState([]);
   const eventSourceRef = useRef(null);
   const acceptingPreviewRef = useRef(false);
   const requestRefetch = useSkillTreeStore((s) => s.requestRefetch);
 
-  const addNotification = useCallback((message, type = 'info', duration = 5000) => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { id, message, type, duration }]);
+  const addNotification = useCallback((message, type = 'info', duration = 5000, options = {}) => {
+    const entry = createNotificationEntry(message, type, duration);
+    setNotifications((prev) => [...prev, entry]);
+
+    if (options.persist !== false) {
+      setSavedNotifications((prev) => [entry, ...prev].slice(0, MAX_SAVED_NOTIFICATIONS));
+    }
   }, []);
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
+
+  const removeSavedNotification = useCallback((id) => {
+    setSavedNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  }, []);
+
+  const clearSavedNotifications = useCallback(() => {
+    setSavedNotifications([]);
+  }, []);
 
   // Listen for roadmap SSE notifications
   useEffect(() => {
@@ -87,7 +111,14 @@ export function NotificationProvider({ children, sseToken }) {
   }, [sseToken, requestRefetch, addNotification]);
 
   return (
-    <NotificationContext.Provider value={{ addNotification }}>
+    <NotificationContext.Provider
+      value={{
+        addNotification,
+        savedNotifications,
+        removeSavedNotification,
+        clearSavedNotifications,
+      }}
+    >
       {children}
       <div style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 9999 }}>
         {notifications.map((notif, index) => (

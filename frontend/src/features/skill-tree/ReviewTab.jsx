@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import reviewApi from '../../services/review.api';
 import { navigateTo } from '../../shared/navigation';
 import { Star } from 'lucide-react';

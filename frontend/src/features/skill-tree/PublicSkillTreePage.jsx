@@ -4,7 +4,7 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
 

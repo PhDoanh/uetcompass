@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Moon, Search, Sun } from "lucide-react";
+import { Bell, Check, Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
-import { useNotification } from './NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import accountApi from '../../services/account.api';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
@@ -104,9 +104,16 @@ export default function NavBar() {
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [searchText, setSearchText] = useState('');
   const [theme, setTheme] = useState(resolveInitialTheme);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const avatarRef = useRef(null);
+  const notificationRef = useRef(null);
   const { isAuthenticated, accessToken, onboardingState } = useAuth();
-  const { addNotification } = useNotification();
+  const {
+    addNotification,
+    savedNotifications,
+    removeSavedNotification,
+    clearSavedNotifications,
+  } = useNotification();
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -199,6 +206,24 @@ export default function NavBar() {
   }, [menuOpen]);
 
   useEffect(() => {
+    function handleNotificationClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
+      }
+    }
+
+    if (notificationOpen) {
+      document.addEventListener('mousedown', handleNotificationClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    };
+  }, [notificationOpen]);
+
+  useEffect(() => {
     let isMounted = true;
 
     if (!isAuthenticated || !accessToken) {
@@ -256,6 +281,11 @@ export default function NavBar() {
   const navigationItems = isAuthenticated
     ? [
       {
+        key: 'monthly-progress',
+        label: 'Tiến độ học tập',
+        onClick: () => navigateToHomeSection('monthly-progress'),
+      },
+      {
         key: 'my-roadmap',
         label: 'Lộ trình của tôi',
         onClick: goMyRoadmaps,
@@ -280,79 +310,134 @@ export default function NavBar() {
       {
         key: 'how-it-works',
         label: 'Cách hoạt động',
-        onClick: () => navigateToHomeSection('how-it-works'),
+        onClick: () => navigateToHomeSection('system-flow'),
       },
     ];
 
+  const hasSavedNotifications = savedNotifications.length > 0;
+
   return (
     <nav className="navbar">
-      <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
-        <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
-        UETCompass
-      </button>
-      <div className="navbar__search" onClick={goRoadmapSearch}>
-        <Search className="navbar__search-icon" size={16} />
-        <input
-          className="navbar__input"
-          type="text"
-          placeholder="Tìm kiếm roadmap..."
-          value={searchText}
-          onFocus={goRoadmapSearch}
-          onChange={(event) => {
-            const nextValue = event.target.value;
-            setSearchText(nextValue);
-            dispatchRoadmapSearchQuery(nextValue);
-          }}
-        />
-      </div>
-      <div className="navbar__links" aria-label="Điều hướng chính">
-        {navigationItems.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className="navbar__link"
-            onClick={item.onClick}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <div className="navbar__actions">
-        <button
-          type="button"
-          className="navbar__icon-btn"
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      <div className="navbar__left">
+        <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
+          <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
+          UETCompass
         </button>
-
-        {isAuthenticated ? (
-          <div className="navbar__avatar-wrapper" ref={avatarRef}>
+        <div className="navbar__links" aria-label="Điều hướng chính">
+          {navigationItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className="navbar__link"
+              onClick={item.onClick}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="navbar__right">
+        <div className="navbar__search" onClick={goRoadmapSearch}>
+          <Search className="navbar__search-icon" size={16} />
+          <input
+            className="navbar__input"
+            type="text"
+            placeholder="Tìm kiếm roadmap..."
+            value={searchText}
+            onFocus={goRoadmapSearch}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setSearchText(nextValue);
+              dispatchRoadmapSearchQuery(nextValue);
+            }}
+          />
+        </div>
+        <div className="navbar__actions">
+          <div className="navbar__notification" ref={notificationRef}>
             <button
               type="button"
-              className="navbar__auth-btn navbar__profile-trigger"
-              title="Tài khoản"
-              aria-label="Mở menu tài khoản"
-              onClick={() => setMenuOpen((open) => !open)}
+              className="navbar__icon-btn navbar__notification-btn"
+              aria-label="Thông báo"
+              aria-expanded={notificationOpen}
+              onClick={() => setNotificationOpen((open) => !open)}
             >
-              <div className="navbar__avatar">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
+              <Bell size={18} />
+              {hasSavedNotifications ? <span className="navbar__notification-dot" /> : null}
+            </button>
+            {notificationOpen ? (
+              <div className="navbar__notification-panel" role="dialog" aria-label="Thông báo">
+                <div className="navbar__notification-header">
+                  <span>Thông báo</span>
+                  <button
+                    type="button"
+                    className="navbar__notification-clear"
+                    onClick={clearSavedNotifications}
+                    disabled={!hasSavedNotifications}
+                  >
+                    Đã đọc tất cả
+                  </button>
+                </div>
+                {hasSavedNotifications ? (
+                  <div className="navbar__notification-list">
+                    {savedNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`navbar__notification-item navbar__notification-item--${notif.type}`}
+                      >
+                        <span className="navbar__notification-message">{notif.message}</span>
+                        <button
+                          type="button"
+                          className="navbar__notification-read"
+                          onClick={() => removeSavedNotification(notif.id)}
+                          aria-label="Đánh dấu đã đọc"
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <span>{avatarFallback}</span>
+                  <div className="navbar__notification-empty">Chưa có thông báo.</div>
                 )}
               </div>
-            </button>
-            {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
+            ) : null}
           </div>
-        ) : (
-          <div className="navbar__auth-actions">
-            <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
-            <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
-          </div>
-        )}
+          <button
+            type="button"
+            className="navbar__icon-btn"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {isAuthenticated ? (
+            <div className="navbar__avatar-wrapper" ref={avatarRef}>
+              <button
+                type="button"
+                className="navbar__auth-btn navbar__profile-trigger"
+                title="Tài khoản"
+                aria-label="Mở menu tài khoản"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <div className="navbar__avatar">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
+                  ) : (
+                    <span>{avatarFallback}</span>
+                  )}
+                </div>
+              </button>
+              {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
+            </div>
+          ) : (
+            <div className="navbar__auth-actions">
+              <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
+              <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

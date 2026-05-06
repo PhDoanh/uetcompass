@@ -474,6 +474,14 @@
   line-height: 1.5;
 }
 
+.auth-footer-line {
+  margin: 0;
+  text-align: center;
+  color: #737d93;
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
 .auth-footer-links {
   margin-top: 0.55rem;
   display: flex;

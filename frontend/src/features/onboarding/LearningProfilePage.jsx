@@ -5,7 +5,7 @@ import accountApi from '../../services/account.api';
 import { retryRoadmapGeneration } from '../../services/roadmap.api';
 import { useAuth } from '../../providers/AuthProvider';
 import { getCourseCatalog } from '../../services/onboarding.api';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import { validateProfilePayload } from '../account/accountSettings.validation';
 import './onboarding-panel.css';
@@ -265,6 +265,20 @@ export default function LearningProfilePage() {
 				fullName: profile.fullName || prev.fullName,
 				avatarUrl: profile.avatarUrl || prev.avatarUrl,
 			}));
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(
+					new CustomEvent('account-profile-updated', {
+						detail: {
+							profile: {
+								email: profile.email || identity.email,
+								displayName: profile.displayName || identity.displayName,
+								fullName: profile.fullName || identity.fullName,
+								avatarUrl: profile.avatarUrl || identity.avatarUrl,
+							},
+						},
+					})
+				);
+			}
 			addNotification(result?.message || 'Profile updated', 'success');
 		} catch (err) {
 			if (err?.status === 401) {
@@ -457,80 +471,88 @@ export default function LearningProfilePage() {
 					</section>
 
 					<section className="profile-grid">
-						<div className="profile-avatar-card">
-							<div className="avatar-wrap">
-								{identity.avatarUrl ? (
-									<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
-								) : (
-									<div className="avatar-fallback">{identity.displayName.charAt(0).toUpperCase() || 'U'}</div>
-								)}
-								<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
-									<Camera size={14} />
-								</label>
-							</div>
-							<h3>{identity.displayName}</h3>
-							<p>{identity.email || 'student@vnu.edu.vn'}</p>
-							<div className="avatar-actions">
-								<input
-									id="avatarImport"
-									type="file"
-									accept="image/*"
-									onChange={onImportImage}
-									hidden
-								/>
-								<label htmlFor="avatarImport" className="btn ghost">
-									Import avatar
-								</label>
-								<button
-									type="button"
-									className="btn danger"
-									onClick={onDeleteImage}
-									disabled={loading || !identity.avatarUrl}
-								>
-									Delete image
-								</button>
-							</div>
-							{imageError ? <p className="message error">{imageError}</p> : null}
-						</div>
+						<div className="profile-avatar-card learning-profile-card">
+							<div className="learning-profile-card__layout">
+								<div className="learning-profile-card__avatar">
+									<div className="avatar-wrap">
+										{identity.avatarUrl ? (
+											<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
+										) : (
+											<div className="avatar-fallback">{identity.displayName.charAt(0).toUpperCase() || 'U'}</div>
+										)}
+										<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
+											<Camera size={14} />
+										</label>
+									</div>
+									<div className="avatar-actions">
+										<input
+											id="avatarImport"
+											type="file"
+											accept="image/*"
+											onChange={onImportImage}
+											hidden
+										/>
+										<label htmlFor="avatarImport" className="btn ghost">
+											Import avatar
+										</label>
+										<button
+											type="button"
+											className="btn danger"
+											onClick={onDeleteImage}
+											disabled={loading || !identity.avatarUrl}
+										>
+											Delete image
+										</button>
+									</div>
+									{imageError ? <p className="message error">{imageError}</p> : null}
+								</div>
 
-						<div className="profile-form-card">
-							<div className="card-title-row">
-								<User size={18} />
-								<h2>Identity Details</h2>
+								<form className="learning-profile-card__details" onSubmit={onSaveProfile}>
+									<div className="card-title-row">
+										<User size={18} />
+										<h2>Thông tin cá nhân</h2>
+									</div>
+									<div className="learning-profile-card__form">
+										<div className="learning-field">
+											<label htmlFor="profileDisplayName" className="learning-label">Tên hiển thị</label>
+											<input
+												id="profileDisplayName"
+												className="learning-input"
+												value={identity.displayName}
+												onChange={(event) =>
+													setIdentity((prev) => ({ ...prev, displayName: event.target.value }))
+												}
+											/>
+										</div>
+										<div className="learning-field">
+											<label htmlFor="profileFullName" className="learning-label">Tên đầy đủ</label>
+											<input
+												id="profileFullName"
+												className="learning-input"
+												value={identity.fullName}
+												onChange={(event) =>
+													setIdentity((prev) => ({ ...prev, fullName: event.target.value }))
+												}
+											/>
+										</div>
+										<div className="learning-field">
+											<label htmlFor="profileEmail" className="learning-label">Email</label>
+											<input
+												id="profileEmail"
+												className="learning-input"
+												value={identity.email}
+												disabled
+												readOnly
+											/>
+										</div>
+									</div>
+									<div className="card-actions">
+										<button type="submit" className="btn primary" disabled={loading}>
+											Save Changes
+										</button>
+									</div>
+								</form>
 							</div>
-							<form onSubmit={onSaveProfile}>
-								<div className="form-grid">
-									<div className="field">
-										<label htmlFor="fullName">Full Name</label>
-										<input
-											id="fullName"
-											value={identity.fullName}
-											onChange={(e) =>
-												setIdentity((prev) => ({ ...prev, fullName: e.target.value }))
-											}
-										/>
-									</div>
-									<div className="field">
-										<label htmlFor="displayName">Display Name</label>
-										<input
-											id="displayName"
-											value={identity.displayName}
-											onChange={(e) =>
-												setIdentity((prev) => ({ ...prev, displayName: e.target.value }))
-											}
-										/>
-									</div>
-									<div className="field field-wide">
-										<label htmlFor="email">Email Address</label>
-										<input id="email" value={identity.email} disabled readOnly />
-									</div>
-								</div>
-								<div className="card-actions">
-									<button type="submit" className="btn primary" disabled={loading}>
-										Save Changes
-									</button>
-								</div>
-							</form>
 						</div>
 					</section>
 

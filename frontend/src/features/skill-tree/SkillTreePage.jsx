@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
 import CourseDetailPanel from './CourseDetailPanel';
+import { useNotification } from '../general/NotificationContainer';
 import './skill-tree.css';
 
 const ZOOM_MIN = 0.6;
@@ -77,6 +78,97 @@ export default function SkillTreePage() {
       viewportEl.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     });
   }, [hasNodes]);
+
+  const { addNotification } = useNotification();
+
+  const handleLocateCurrent = useCallback(() => {
+    const viewportEl = canvasViewportRef.current;
+    const contentEl = zoomContentRef.current;
+
+    if (!viewportEl || !contentEl || !hasNodes) {
+      handleFitView();
+      return;
+    }
+
+    // Find nodes that are in progress
+    const inProgressNodes = nodes.filter((n) => {
+      const status = String(n.progressState || '').toLowerCase();
+      return status === 'inprogress' || status.includes('in_progress') || status.includes('in-progress');
+    });
+
+    // If no in-progress nodes, show notification
+    if (inProgressNodes.length === 0) {
+      addNotification('Không có node nào đang trong trạng thái học', 'info');
+      return;
+    }
+
+    // Find all DOM elements of in-progress nodes
+    const targetElements = inProgressNodes
+      .map((node) => {
+        // Try to find element by data-node-id or by text content
+        return contentEl.querySelector(`[data-node-id="${node.nodeId}"]`) ||
+          Array.from(contentEl.querySelectorAll('.skill-tree-roadmap-v2__cell, .course-node'))
+            .find((el) => el.textContent?.includes(node.skillName));
+      })
+      .filter(Boolean);
+
+    if (targetElements.length === 0) {
+      handleFitView();
+      return;
+    }
+
+    // Calculate bounding box of all target elements
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (const el of targetElements) {
+      const rect = el.getBoundingClientRect();
+      const contentRect = contentEl.getBoundingClientRect();
+
+      // Transform from viewport to content coordinates (accounting for zoom)
+      const relX = (rect.left - contentRect.left) / zoom;
+      const relY = (rect.top - contentRect.top) / zoom;
+      const relWidth = rect.width / zoom;
+      const relHeight = rect.height / zoom;
+
+      minX = Math.min(minX, relX);
+      minY = Math.min(minY, relY);
+      maxX = Math.max(maxX, relX + relWidth);
+      maxY = Math.max(maxY, relY + relHeight);
+    }
+
+    const targetWidth = maxX - minX;
+    const targetHeight = maxY - minY;
+    const targetCenterX = minX + targetWidth / 2;
+    const targetCenterY = minY + targetHeight / 2;
+
+    // Calculate zoom to show all in-progress nodes
+    const padding = 120;
+    const viewportWidth = viewportEl.clientWidth;
+    const viewportHeight = viewportEl.clientHeight;
+    const availableWidth = Math.max(120, viewportWidth - padding);
+    const availableHeight = Math.max(120, viewportHeight - padding);
+
+    const fitScaleX = targetWidth > 0 ? availableWidth / targetWidth : 1;
+    const fitScaleY = targetHeight > 0 ? availableHeight / targetHeight : 1;
+    const targetZoom = clampZoom(Math.min(1.6, Math.max(0.6, Math.min(fitScaleX, fitScaleY))));
+
+    setZoom(targetZoom);
+
+    // Scroll to center on in-progress nodes
+    requestAnimationFrame(() => {
+      const scrollX = (targetCenterX * targetZoom) - viewportWidth / 2;
+      const scrollY = (targetCenterY * targetZoom) - viewportHeight / 2;
+
+      viewportEl.scrollTo({
+        left: Math.max(0, scrollX),
+        top: Math.max(0, scrollY),
+        behavior: 'smooth'
+      });
+    });
+  }, [nodes, zoom, hasNodes, handleFitView, addNotification]);
 
   useEffect(() => {
     if (!hasNodes) {
@@ -184,6 +276,16 @@ export default function SkillTreePage() {
             disabled={!hasNodes}
           >
             ⤢
+          </button>
+          <button
+            type="button"
+            className="skill-tree-canvas-controls__btn"
+            onClick={handleLocateCurrent}
+            aria-label="Locate me"
+            title="Locate to current learning position"
+            disabled={!hasNodes}
+          >
+            Locate me
           </button>
         </div>
 

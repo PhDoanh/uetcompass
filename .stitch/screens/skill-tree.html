@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Skill Tree | UETCompass</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#003e79",
+                    "on-secondary-container": "#005c75",
+                    "surface-container-high": "#dee9fc",
+                    "surface-tint": "#185eac",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "outline": "#727782",
+                    "on-surface": "#111c2a",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "on-primary-fixed-variant": "#004788",
+                    "on-tertiary-container": "#bccbeb",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#263140",
+                    "outline-variant": "#c2c6d3",
+                    "inverse-primary": "#a7c8ff",
+                    "surface-container": "#e5eeff",
+                    "tertiary-fixed-dim": "#b8c7e6",
+                    "primary-container": "#0055a2",
+                    "secondary-fixed-dim": "#6bd3fc",
+                    "on-primary-container": "#aeccff",
+                    "secondary-container": "#6ed6ff",
+                    "primary-fixed": "#d5e3ff",
+                    "on-secondary-fixed": "#001f29",
+                    "tertiary-fixed": "#d6e3ff",
+                    "surface-container-highest": "#d8e3f6",
+                    "on-primary-fixed": "#001b3c",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#cfdbee",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed": "#bce9ff",
+                    "on-tertiary-fixed": "#0b1c34",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-error-container": "#93000a",
+                    "secondary": "#006783",
+                    "tertiary-container": "#475671",
+                    "surface-bright": "#f8f9ff",
+                    "surface-variant": "#d8e3f6",
+                    "on-surface-variant": "#424751",
+                    "tertiary": "#303f58",
+                    "on-tertiary-fixed-variant": "#384761",
+                    "on-background": "#111c2a",
+                    "on-secondary-fixed-variant": "#004d63",
+                    "background": "#f8f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Be Vietnam Pro"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .skill-canvas {
+            background-color: #f8f9ff;
+            background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+        .dark .skill-canvas {
+            background-color: #0f172a;
+            background-image: radial-gradient(#334155 0.5px, transparent 0.5px);
+        }
+        .glass-panel {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .node-connector-solid {
+            stroke: #3b82f6;
+            stroke-width: 2.5;
+            fill: none;
+        }
+        .node-connector-dashed {
+            stroke: #3b82f6;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 4 4;
+        }
+        .roadmap-node-main {
+            background-color: #fef08a; /* yellow-200 */
+            border: 2px solid #000000;
+            border-radius: 8px;
+            font-weight: 700;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .roadmap-node-main:hover {
+            transform: scale(1.02);
+        }
+        .roadmap-node-sub {
+            background-color: #ffedd5; /* orange-100 */
+            border: 1.5px solid #000000;
+            border-radius: 6px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .node-color-done {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4 !important;
+        }
+        .node-color-progress {
+            border-color: #f97316 !important;
+            background-color: #fff7ed !important;
+        }
+        .node-color-neutral {
+             border-color: #000000 !important;
+             background-color: #fef08a !important;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container overflow-hidden">
+<!-- TopAppBar -->
+<nav class="h-14 fixed top-0 w-full z-50 bg-[#0055A2] border-b border-white/5 flex justify-between items-center px-4 transition-all duration-300" id="top-app-bar">
+<div class="flex items-center gap-8">
+<span class="text-lg font-bold font-headline tracking-tight text-white">UETCompass</span>
+<div class="search-container hidden md:flex items-center gap-2 bg-white/5 rounded px-3 h-8 border border-white/10 transition-all duration-300">
+<span class="material-symbols-outlined text-slate-500 text-lg transition-colors duration-300 text-white/80 text-white/60">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 font-body transition-colors duration-300 p-0 text-white placeholder:text-white/60" placeholder="Tìm kiếm skill..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-4">
+<button class="p-1.5 hover:bg-white/10 rounded-full transition-colors"><span class="material-symbols-outlined text-white text-xl">dark_mode</span></button>
+<div class="flex items-center gap-4">
+<span class="text-xs text-white cursor-pointer">Đăng ký</span>
+<button class="bg-white text-[#0055A2] px-4 py-1 rounded text-xs font-bold">Đăng nhập</button>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-white/20 object-cover cursor-pointer hover:ring-2 hover:ring-white/20 transition-all ml-2" src="https://lh3.googleusercontent.com/aida/ADBb0ugLFpWsy8m1S-ZmOK37kAuegJEm3GlL_OqeV0EYZosIp9qA_vRpyEar4_z0mleLofg3xzJjcTcY8JTyvhcou85D_fELrLG8MvMoOvaqp6bDNAl-058rMocorw2qUe_cTLFvLqwNBSLS3jjz5WB698fENt7uh3BMyZFXtn4PoJRjde0FaKaFewFTgtJkStFR4wPt9-VAtbXUbvBQLFyJqBQLQQJO8NkO9v1j24FzLEk6uDeHmrikQnjaSu7FoHXy8z1kBNxm_4DZtg"/>
+</div>
+<button class="md:hidden p-2 flex items-center justify-center h-10 w-10 text-white"><span class="material-symbols-outlined">menu</span></button>
+</div>
+</div>
+</nav>
+<!-- Main Canvas Area -->
+<main class="ml-0 mt-14 h-[calc(100vh-3.5rem)] relative overflow-auto skill-canvas">
+<!-- Roadmap Container -->
+<div class="min-w-[1000px] p-20 flex flex-col items-center">
+<!-- Row 1: Root Node -->
+<div class="relative mb-12">
+<div class="roadmap-node-main node-color-done px-8 py-4 w-64 text-center shadow-md">
+                Full Stack Development
+            </div>
+<!-- Vertical Line Down -->
+<div class="absolute top-full left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+</div>
+<!-- Row 2: Secondary Level (Frontend, Backend, DevOps) -->
+<div class="relative flex gap-32 mb-12">
+<!-- Connector Line -->
+<div class="absolute -top-12 left-[128px] right-[128px] h-[2.5px] bg-[#3b82f6]"></div>
+<!-- Frontend Development (Left) -->
+<div class="relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+<div class="roadmap-node-main node-color-done px-6 py-3 w-56 text-center shadow-md">
+                    Frontend Development
+                </div>
+<!-- Vertical Line Down -->
+<div class="absolute top-full left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+<!-- Sub-topics for Frontend -->
+<div class="absolute top-full left-full ml-4 pt-4 flex flex-col gap-2">
+<svg class="absolute -left-4 top-0 w-4 h-24 pointer-events-none">
+<path class="node-connector-dashed" d="M 0 35 L 16 35"></path>
+<path class="node-connector-dashed" d="M 0 35 L 0 75 L 16 75"></path>
+</svg>
+<div class="roadmap-node-sub px-3 py-1.5 text-xs w-32">React.js</div>
+<div class="roadmap-node-sub px-3 py-1.5 text-xs w-32">Tailwind CSS</div>
+</div>
+</div>
+<!-- Backend Development (Center) -->
+<div class="relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+<div class="roadmap-node-main node-color-progress px-6 py-3 w-56 text-center shadow-lg scale-105 border-dashed border-2">
+                    Backend Development
+                </div>
+<!-- Vertical Line Down -->
+<div class="absolute top-full left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+</div>
+<!-- Mobile Development (Right) -->
+<div class="relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+<div class="roadmap-node-main node-color-neutral px-6 py-3 w-56 text-center shadow-md opacity-80">
+                    Mobile Development
+                </div>
+<!-- Vertical Line Down -->
+<div class="absolute top-full left-1/2 -translate-x-1/2 h-12 w-[2.5px] bg-[#3b82f6]"></div>
+</div>
+</div>
+<!-- Row 3: Specialized Level -->
+<div class="relative flex gap-32">
+<!-- State Management (Linked from Frontend) -->
+<div class="relative">
+<div class="roadmap-node-main node-color-progress px-6 py-3 w-56 text-center shadow-md">
+                    State Management
+                </div>
+<!-- Dashed Sub-branches -->
+<div class="absolute top-1/2 right-full mr-4 -translate-y-1/2 flex flex-col items-end gap-2">
+<svg class="absolute -right-4 top-4 w-4 h-16 pointer-events-none">
+<path class="node-connector-dashed" d="M 16 4 L 0 4"></path>
+<path class="node-connector-dashed" d="M 16 4 L 16 44 L 0 44"></path>
+</svg>
+<div class="roadmap-node-sub px-3 py-1.5 text-xs w-32 text-right">Redux Toolkit</div>
+<div class="roadmap-node-sub px-3 py-1.5 text-xs w-32 text-right">Zustand</div>
+</div>
+</div>
+<!-- API Design (Linked from Backend) -->
+<div class="relative">
+<div class="roadmap-node-main node-color-neutral px-6 py-3 w-56 text-center shadow-sm">
+                    API Design
+                </div>
+</div>
+<!-- Database Management (Linked from Mobile/Others) -->
+<div class="relative">
+<div class="roadmap-node-main node-color-neutral px-6 py-3 w-56 text-center shadow-sm">
+                    Database Management
+                </div>
+</div>
+</div>
+</div>
+<!-- Canvas Controls (Bottom Right) -->
+<div class="absolute bottom-8 right-8 flex flex-col gap-2">
+<div class="glass-panel p-1 rounded-lg border border-outline-variant/20 shadow-xl flex flex-col items-center">
+<button class="p-2 hover:bg-primary-container/10 rounded-md transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">add</span>
+</button>
+<div class="w-6 h-[1px] bg-outline-variant/20 my-1"></div>
+<button class="p-2 hover:bg-primary-container/10 rounded-md transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">remove</span>
+</button>
+</div>
+<button class="glass-panel p-2.5 rounded-lg border border-outline-variant/20 shadow-xl hover:bg-primary-container/10 transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">restart_alt</span>
+</button>
+<button class="glass-panel p-2.5 rounded-lg border border-outline-variant/20 shadow-xl hover:bg-primary-container/10 transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">fullscreen</span>
+</button>
+</div>
+</main>
+<!-- Side Panel (Skill Details) -->
+<div class="fixed top-0 right-0 h-full w-[380px] z-[60] glass-panel border-l border-outline-variant/20 shadow-2xl transform translate-x-0 transition-transform duration-500 ease-in-out" id="sidePanel">
+<div class="flex flex-col h-full">
+<!-- Header -->
+<div class="p-6 border-b border-outline-variant/10">
+<div class="flex items-center justify-between mb-4">
+<button class="p-2 -ml-2 hover:bg-error/5 text-on-surface-variant hover:text-error transition-colors rounded-full">
+<span class="material-symbols-outlined">close</span>
+</button>
+<span class="px-3 py-1 bg-[#f97316]/10 text-[#f97316] text-xs font-bold rounded-full border border-[#f97316]/20">IN PROGRESS</span>
+</div>
+<h2 class="text-2xl font-headline font-extrabold text-on-surface tracking-tight">Backend Development</h2>
+</div>
+<!-- Body -->
+<div class="flex-1 overflow-y-auto p-6 space-y-8">
+<section>
+<h3 class="text-xs font-bold uppercase text-primary mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">info</span> Why this skill?
+                </h3>
+<p class="text-sm leading-relaxed text-on-surface-variant">
+                    Mastering Backend Development allows you to build the core logic, databases, and APIs that power modern applications. This track covers server-side languages like Node.js, RESTful architectures, and security best practices.
+                </p>
+</section>
+<section>
+<h3 class="text-xs font-bold uppercase text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">library_books</span> Recommended Resources
+                </h3>
+<div class="space-y-3">
+<a class="block p-4 bg-surface-container-low rounded-xl hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">Node.js Design Patterns</h4>
+<p class="text-xs text-on-surface-variant">Advanced guide to building scalable systems.</p>
+</div>
+</div>
+</a>
+<a class="block p-4 bg-surface-container-low rounded-xl hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">play_circle</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">Backend Engineering 101</h4>
+<p class="text-xs text-on-surface-variant">Free series on system design and APIs.</p>
+</div>
+</div>
+</a>
+</div>
+</section>
+<section>
+<h3 class="text-xs font-bold uppercase text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">school</span> RELATED SKILLS
+                </h3>
+<div class="space-y-3">
+<a class="block p-4 bg-surface-container-low rounded-xl hover:bg-surface-container transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">database</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">SQL Fundamentals</h4>
+<p class="text-xs text-on-surface-variant">Relational database query optimization.</p>
+</div>
+</div>
+</a>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full bg-[#F8F9FF] dark:bg-slate-950 border-t border-slate-100 dark:border-slate-900 py-4 px-8 z-30 flex justify-between items-center text-[10px] uppercase tracking-widest text-slate-500 font-['Inter']">
+<span>© 2024 UET-VNU University of Engineering and Technology</span>
+<div class="flex gap-6">
+<a class="hover:text-[#0055A2] transition-colors" href="#">GitHub</a>
+<a class="hover:text-[#0055A2] transition-colors" href="#">Documentation</a>
+<a class="hover:text-[#0055A2] transition-colors" href="#">Privacy Policy</a>
+</div>
+</footer>
+</body></html>

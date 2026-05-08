@@ -1,173 +1,134 @@
-# Quickstart: Skill Tree – Personalized Academic Roadmap Tracker
+# Quickstart: Skill Tree
 
-**Phase 1 output** | Branch: `004-skill-tree` | Date: 2026-03-11
+**Phase output** | Branch: `004-skill-tree` | Date: 2026-04-11
 
-This guide covers how to run the Skill Tree feature locally for development and manual testing.
+This guide explains how to run and manually verify Skill Tree behavior aligned with Feature 009 contracts in [spec.md](spec.md).
 
 ---
 
 ## Prerequisites
 
-The following features must be fully set up and running before starting this feature locally:
-- **Feature 001** (Profile Onboarding) — provides `auth.middleware.js`, JWT auth flow, and a seeded `student_profiles` document with `isDraft: false`.
-- **Feature 002** (Seed CTĐT DAG) — provides the seeded `course_units` collection consumed by the personalization job that writes to `student_roadmaps`.
-
-**Required software**:
-- Node.js 20 LTS (`node --version` should show `v20.x.x`)
-- MongoDB Atlas free-tier cluster (connection URI in `.env`)
-- npm 9+
+- Backend and frontend dependencies installed
+- Development environment running for the project workspace
+- A test account with JWT access
+- Feature 009 roadmap/progress endpoints available
 
 ---
 
-## Environment Variables
+## Start the Application
 
-Add the following to `backend/.env` (do not commit this file):
-
-```env
-# Existing (from Features 001/002)
-MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/uetcompass
-JWT_SECRET=<your-jwt-secret>
-
-# New for Feature 004
-GEMINI_API_KEY=<your-gemini-api-key>
-```
-
-Frontend `frontend/.env.local` (never commit this file):
-```env
-VITE_API_BASE_URL=http://localhost:3001/api
-```
-
----
-
-## Seed Test Data
-
-Before manual testing, seed the required collections. Run these scripts from the repo root (Node.js scripts, not npm packages):
-
-### Seed student_roadmaps (simulates personalization job output)
-
-```js
-// scripts/seed-roadmap.js
-// Usage: node scripts/seed-roadmap.js <userId>
-const mongoose = require('mongoose');
-const userId = process.argv[2];
-mongoose.connect(process.env.MONGODB_URI).then(async () => {
-  await mongoose.connection.collection('student_roadmaps').updateOne(
-    { studentId: new mongoose.Types.ObjectId(userId) },
-    {
-      $set: {
-        careerGoal: 'frontend-developer',
-        nodes: [
-          { courseCode: 'IT1010', nameVi: 'Nhập môn lập trình', nameEn: 'Intro to Programming', credits: 3, prerequisites: [] },
-          { courseCode: 'IT3910E', nameVi: 'Lập trình Web', nameEn: 'Web Development', credits: 3, prerequisites: ['IT1010'] },
-          { courseCode: 'IT4409', nameVi: 'Kỹ thuật phần mềm', nameEn: 'Software Engineering', credits: 3, prerequisites: ['IT3910E'] }
-        ],
-        generatedAt: new Date('2026-01-01')  // old date — profile changes will show Re-personalize button
-      }
-    },
-    { upsert: true }
-  );
-  await mongoose.disconnect();
-});
-```
-
-### Seed course_resources
-
-```js
-// scripts/seed-course-resources.js
-await mongoose.connection.collection('course_resources').insertMany([
-  { courseCode: 'IT3910E', type: 'textbook', title: 'JavaScript: The Good Parts', url: 'https://example.com/js', description: '' },
-  { courseCode: 'IT3910E', type: 'slide', title: 'Week 1 – Intro to Web Dev', url: 'https://example.com/slides/w1', description: '' },
-  { courseCode: 'IT3910E', type: 'lab', title: 'Lab 1 – HTML/CSS Basics', url: 'https://example.com/lab1', description: '' },
-  { courseCode: 'IT3910E', type: 'assignment', title: 'Final Project – Full-stack App', url: '', description: 'End-of-semester group project' }
-]);
-```
-
-### Seed market_skills and skill_learning_resources
-
-```js
-// scripts/seed-market-skills.js
-await mongoose.connection.collection('market_skills').insertOne({
-  courseCode: 'IT3910E',
-  skills: [
-    { name: 'React.js', jobCount: 1240 },
-    { name: 'Node.js', jobCount: 980 },
-    { name: 'REST API design', jobCount: 870 }
-  ],
-  crawledAt: new Date()
-});
-await mongoose.connection.collection('skill_learning_resources').insertOne({
-  skillName: 'React.js',
-  resources: [
-    { title: 'React Docs', url: 'https://react.dev', type: 'free', platform: 'Official Docs' },
-    { title: 'React – The Complete Guide', url: 'https://udemy.com/...', type: 'paid', platform: 'Udemy' }
-  ],
-  updatedAt: new Date()
-});
-```
-
----
-
-## Start Development Servers
+Run from repository root in two terminals.
 
 ```bash
-# Terminal 1 — Backend
+# Terminal 1
 cd backend
 npm install
-npm run dev     # nodemon on port 3001
+npm run dev
 
-# Terminal 2 — Frontend  
+# Terminal 2
 cd frontend
 npm install
-npm run dev     # Vite dev server on port 5173
+npm run dev
 ```
 
-Navigate to `http://localhost:5173/skill-tree`.
+Open the frontend URL shown by Vite and navigate to Skill Tree.
 
 ---
 
-## Manual Test Scenarios
+## Manual Verification Scenarios
 
-### Scenario A — View tree (P1 user story)
-1. Log in as a student with submitted onboarding profile.
-2. Navigate to `/skill-tree`.
-3. **Expected**: Interactive graph renders. IT1010 (no prerequisites) appears unlocked. IT3910E appears unlocked only if IT1010 is `done`. IT4409 appears locked.
+### Scenario A: Primary Roadmap Contract Rendering
 
-### Scenario B — Node state transitions (P2 user story)
-1. Click IT1010 (unlocked, `pending`) → **Expected**: status changes to `in_progress` immediately (optimistic update); badge color changes.
-2. Click IT1010 again → **Expected**: status changes to `done`; IT3910E becomes unlocked.
-3. Try clicking IT4409 (locked) → **Expected**: no state change; locked indicator persists.
-4. Refresh the page → **Expected**: all states preserved.
+1. Call `GET /api/roadmaps/primary` for a test user (or inspect network call from UI).
+2. Confirm payload includes canonical fields: `personalisationLevel`, `acceptedAt`, `nodes[]` with `nodeId`, `nodeType`, `skillName`, `parentNodeId`, `relatedCourses`, `reason`, `resources`.
+3. Open Skill Tree and verify each payload node is rendered exactly once by `nodeId`.
 
-### Scenario C — Course detail panel (P3 user story)
-1. Click any node → **Expected**: side panel opens with 3 tabs (Resources, Why This Course, Market Skills).
-2. Click Resources tab → **Expected**: seeded materials grouped by type.
-3. Click "Why This Course" tab → **Expected**: loading spinner briefly, then AI-generated content.
-4. Click "Why This Course" tab again for the same course → **Expected**: content loads instantly (cache hit; `cached: true` in API response).
-5. Click Market Skills tab → **Expected**: skill list with job counts.
+Expected result:
+- No fallback to legacy node schema.
+- Graph renders without missing required node data.
 
-### Scenario D — Skill sub-panel (P4 user story)
-1. Open Market Skills tab for IT3910E.
-2. Click "React.js" → **Expected**: modal opens with Free and Paid resource sections.
-3. Click a resource link → **Expected**: opens in new tab.
+### Scenario B: Topic/Subtopic Graph Semantics
 
-### Scenario E — Re-personalize (P5 user story)
-1. In MongoDB Atlas, manually set `student_profiles.updatedAt` to `Date.now()` (newer than `student_roadmaps.generatedAt`).
-2. Navigate to `/skill-tree` or wait for the next 2500ms poll.
-3. **Expected**: "Re-personalize" button appears prominently on the page.
-4. Click it → **Expected**: button shows loading state; disappears once `repersonalizing` clears; tree re-renders with updated nodes.
+1. Verify `topic` nodes appear on the main flow.
+2. Verify `subtopic` nodes attach to parent by `parentNodeId`.
+3. Verify edge styles:
+   - main topic flow: solid
+   - topic to subtopic branch: dashed
 
-### Scenario F — AI service unavailable
-1. Set `GEMINI_API_KEY` to an invalid value (e.g., `invalid_key`).
-2. Open the "Why This Course" tab for a course without a cached AI context.
-3. **Expected**: friendly error message shown in the tab ("Content temporarily unavailable"); no crash.
+Expected result:
+- Main learning sequence is clear and branch relationships are readable.
+
+### Scenario C: Low-Personalisation and Lifecycle States
+
+1. Use a roadmap with `personalisationLevel = low` and verify low-personalisation notice is shown.
+2. Simulate `ROADMAP_NOT_FOUND` from `GET /api/roadmaps/primary` and verify empty-state guidance.
+3. Simulate a roadmap with `acceptedAt = null` and verify retryable/failed state messaging.
+
+Expected result:
+- Lifecycle and fallback states are handled via canonical 009 semantics.
+
+### Scenario D: Node Detail Panel
+
+1. Click a `topic` node.
+2. Verify detail panel sections:
+   - `skillName`
+   - `reason`
+   - `resources`
+   - `relatedCourses` (`courseCode`, `courseName`, `credits`)
+3. Repeat with a `subtopic` node.
+4. Verify empty-state rendering when `resources` or `relatedCourses` is empty.
+
+Expected result:
+- Detail panel remains stable and faithful to payload data.
+
+### Scenario E: Progress Read and Write Contract
+
+1. Call `GET /api/roadmaps/:roadmapId/progress` and verify state arrays: `pending`, `inProgress`, `completed`, `skip`.
+2. Trigger valid transitions from UI and verify request payloads:
+   - `pending -> inProgress`
+   - `pending -> skip`
+   - `inProgress -> completed`
+3. Reload page and confirm visual state matches persisted progress document.
+
+Expected result:
+- Progress is persisted and restored using 009 APIs only.
+
+### Scenario F: Invalid Transition Handling
+
+1. Trigger a stale or invalid transition to force `INVALID_TRANSITION`.
+2. Verify UI error feedback appears.
+3. Verify node state is not left in a corrupted optimistic state.
+
+Expected result:
+- Error path is visible and recoverable, with re-sync from backend.
 
 ---
 
-## Running Tests
+## Acceptance Coverage Map
+
+- Scenario A -> FR-001, FR-002, FR-003
+- Scenario B -> FR-004, FR-005, FR-006, FR-007
+- Scenario C -> FR-014, FR-015, FR-016
+- Scenario D -> FR-008, FR-009
+- Scenario E -> FR-010, FR-011, FR-012, SC-003
+- Scenario F -> FR-013, FR-016, SC-004
+
+---
+
+## Implementation Validation Snapshot
+
+Executed on 2026-04-11 after contract-alignment refactor:
 
 ```bash
-cd backend
-npm test -- --testPathPattern=skill-tree
+# Frontend compile validation
+cd frontend
+npm run build
+
+# Backend skill-tree regression validation
+cd ../backend
+npm test -- tests/unit/skill-tree --runInBand
 ```
 
-All tests run in-process with mocked MongoDB and mocked Gemini SDK. No external service required.
+Observed results:
+- Frontend build completed successfully with production bundle output.
+- Backend skill-tree suite passed (`12/12` test suites, `45/45` tests).

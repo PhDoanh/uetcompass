@@ -3,7 +3,11 @@ const courseResourceService = require('./courseResource.service');
 const marketSkillService = require('./marketSkill.service');
 const aiContextService = require('./aiContext.service');
 const primaryRoadmapService = require('./primaryRoadmap.service');
-const { validateCourseCode } = require('./skillTree.validation');
+const {
+  validateNodeId,
+  validateProgressState,
+  validateProgressTransition,
+} = require('./skillTree.validation');
 
 /**
  * T011: Create base controller with error mapping and response helpers
@@ -26,16 +30,61 @@ async function getTree(req, res, next) {
 async function patchNodeStatus(req, res, next) {
   try {
     const userId = req.user.userId;
-    const { courseCode } = req.params;
-    const { status } = req.body;
+    const { roadmapId } = req.params;
+    const { nodeId, fromState, toState } = req.body || {};
 
-    const validation = validateCourseCode(courseCode);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+    const nodeValidation = validateNodeId(nodeId);
+    if (!nodeValidation.valid) {
+      return res.status(400).json({
+        error: { code: 'INVALID_PAYLOAD', message: nodeValidation.error },
+      });
     }
 
-    const updated = await skillTreeService.updateNodeStatus(userId, courseCode, status);
-    res.json({ status: updated.status, updatedAt: updated.updatedAt });
+    const fromValidation = validateProgressState(fromState, 'fromState');
+    if (!fromValidation.valid) {
+      return res.status(400).json({
+        error: { code: 'INVALID_PAYLOAD', message: fromValidation.error },
+      });
+    }
+
+    const toValidation = validateProgressState(toState, 'toState');
+    if (!toValidation.valid) {
+      return res.status(400).json({
+        error: { code: 'INVALID_PAYLOAD', message: toValidation.error },
+      });
+    }
+
+    const transitionValidation = validateProgressTransition(fromState, toState);
+    if (!transitionValidation.valid) {
+      return res.status(422).json({
+        error: { code: 'INVALID_TRANSITION', message: transitionValidation.error },
+      });
+    }
+
+    const updated = await skillTreeService.updateNodeState(userId, roadmapId, {
+      nodeId,
+      fromState,
+      toState,
+    });
+    res.json(updated);
+  } catch (err) {
+    handleError(err, res);
+  }
+}
+
+async function getRoadmapProgress(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { roadmapId } = req.params;
+
+    const progress = await skillTreeService.getRoadmapProgress(userId, roadmapId);
+    if (!progress) {
+      return res.status(404).json({
+        error: { code: 'ROADMAP_NOT_FOUND', message: 'Roadmap or progress not found.' },
+      });
+    }
+
+    return res.json(progress);
   } catch (err) {
     handleError(err, res);
   }
@@ -44,11 +93,6 @@ async function patchNodeStatus(req, res, next) {
 async function getNodeResources(req, res, next) {
   try {
     const { courseCode } = req.params;
-
-    const validation = validateCourseCode(courseCode);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
-    }
 
     const resources = await courseResourceService.getResources(courseCode);
     res.json({ resources });
@@ -62,14 +106,20 @@ async function getNodeWhy(req, res, next) {
     const userId = req.user.userId;
     const { courseCode } = req.params;
 
-    const validation = validateCourseCode(courseCode);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
-    }
-
     // Get roadmap to find course data
     const roadmap = await primaryRoadmapService.getPrimaryRoadmap(userId);
-    const courseData = roadmap.nodes.find((n) => n.courseCode === courseCode);
+    const mappedNode = (roadmap.nodes || []).find((n) =>
+      (n.relatedCourses || []).some((c) => c.courseCode === courseCode)
+    );
+
+    const courseData = mappedNode
+      ? {
+          courseCode,
+          nameVi: (mappedNode.relatedCourses || []).find((c) => c.courseCode === courseCode)?.courseName,
+          nameEn: (mappedNode.relatedCourses || []).find((c) => c.courseCode === courseCode)?.courseName,
+          credits: (mappedNode.relatedCourses || []).find((c) => c.courseCode === courseCode)?.credits,
+        }
+      : null;
 
     if (!courseData) {
       return res.status(404).json({ error: 'COURSE_NOT_FOUND' });
@@ -77,7 +127,7 @@ async function getNodeWhy(req, res, next) {
 
     const result = await aiContextService.getOrGenerateContext(
       courseCode,
-      roadmap.careerGoal,
+      roadmap.roadmapName || 'career-track',
       courseData
     );
 
@@ -90,11 +140,6 @@ async function getNodeWhy(req, res, next) {
 async function getNodeMarketSkills(req, res, next) {
   try {
     const { courseCode } = req.params;
-
-    const validation = validateCourseCode(courseCode);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
-    }
 
     const skills = await marketSkillService.getMarketSkills(courseCode);
     res.json(skills);
@@ -121,26 +166,30 @@ async function getSkillLearningResources(req, res, next) {
 function handleError(err, res) {
   if (err.status) {
     return res.status(err.status).json({
-      error: err.code,
-      message: err.message,
-      details: err.details,
+      error: {
+        code: err.code,
+        message: err.message,
+        details: err.details,
+      },
     });
   }
 
   console.error('Unhandled error:', err);
   res.status(500).json({
-    error: 'INTERNAL_SERVER_ERROR',
-    message: err.message,
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+      message: err.message,
+    },
   });
 }
 
 module.exports = {
   getTree,
   patchNodeStatus,
+  getRoadmapProgress,
   getNodeResources,
   getNodeWhy,
   getNodeMarketSkills,
   getSkillLearningResources,
-  postRepersonalize,
   handleError,
 };

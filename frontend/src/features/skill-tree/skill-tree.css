@@ -1,0 +1,1237 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --st-bg: #f8f9ff;
+  --st-topbar: #0055a2;
+  --st-text: #111c2a;
+  --st-muted: #5d6470;
+  --st-line: #3b82f6;
+  --st-shadow: 0 20px 40px rgba(17, 28, 42, 0.14);
+  --st-shell-header-h: 70px;
+  --st-summary-top-gap: -13px;
+  --st-panel-top: calc(var(--st-shell-header-h) + var(--st-summary-top-gap));
+}
+
+.skill-tree-route-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+}
+
+.skill-tree-page {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  background: #f3f5f9;
+  color: var(--st-text);
+  font-family: 'Inter', sans-serif;
+}
+
+html[data-theme='dark'] .skill-tree-page {
+  background: #0d1a2d;
+  color: #dce9fd;
+}
+
+.skill-tree-page__topbar {
+  height: 56px;
+  background: var(--st-topbar);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 18px;
+}
+
+.skill-tree-page__brand {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.skill-tree-page__topbar-meta {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.skill-tree-page__title {
+  margin: 0;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.skill-tree-page__subtitle,
+.skill-tree-page__subtle,
+.skill-tree-page__notice,
+.skill-tree-page__warning {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.skill-tree-page__subtitle {
+  color: #d9e8ff;
+}
+
+.skill-tree-page__subtle {
+  color: #bdd8ff;
+}
+
+.skill-tree-page__notice {
+  color: #fff4ba;
+}
+
+.skill-tree-page__warning {
+  color: #ffe0e0;
+}
+
+.skill-tree-layout {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.skill-tree-layout__canvas {
+  height: 100%;
+  overflow: auto;
+}
+
+html[data-theme='dark'] .skill-tree-layout__canvas {
+  background-color: #0f1e32;
+}
+
+.skill-tree-zoom-layer {
+  transform-origin: top center;
+  transition: transform 180ms ease;
+}
+
+.skill-tree-summary-card {
+  width: min(1180px, calc(100% - 48px));
+  margin: 56px auto 0;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #eff6ff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+}
+
+html[data-theme='dark'] .skill-tree-summary-card {
+  border: 1px solid rgba(90, 146, 218, 0.45);
+  border-left: 5px solid #3d8ee6;
+  background: linear-gradient(110deg, #14263e 0%, #112236 100%);
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+}
+
+.skill-tree-summary-card__title {
+  margin: 0;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+html[data-theme='dark'] .skill-tree-summary-card__title,
+html[data-theme='dark'] .skill-tree-summary-card__meta {
+  color: #dce9fd;
+}
+
+.skill-tree-summary-card__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.skill-tree-summary-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-tree-edit-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skill-tree-edit-button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button {
+  background: #2b6fd0;
+  border-color: #4b8ef0;
+}
+
+html[data-theme='dark'] .skill-tree-edit-button:hover {
+  background: #2059ad;
+  border-color: #3977d2;
+}
+
+.skill-tree-back-button {
+  border: 1px solid #93c5fd;
+  background: #ffffff;
+  color: #1e3a8a;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-theme='dark'] .skill-tree-back-button {
+  border: 1px solid rgba(90, 146, 218, 0.6);
+  background: rgba(26, 50, 80, 0.85);
+  color: #d2e7ff;
+}
+
+html[data-theme='dark'] .skill-tree-back-button:hover {
+  background: rgba(50, 96, 150, 0.45);
+}
+
+.skill-tree-back-button:hover {
+  background: #eff6ff;
+}
+
+.skill-tree-summary-card__meta {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  color: #334155;
+}
+
+.skill-canvas {
+  background-color: #f7f8fb;
+  background-image:
+    linear-gradient(to right, rgba(120, 138, 164, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 138, 164, 0.14) 1px, transparent 1px),
+    linear-gradient(to right, rgba(120, 138, 164, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 138, 164, 0.2) 1px, transparent 1px);
+  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+}
+
+html[data-theme='dark'] .skill-canvas {
+  background-color: #0f1d31;
+  background-image:
+    linear-gradient(to right, rgba(105, 139, 182, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(105, 139, 182, 0.16) 1px, transparent 1px),
+    linear-gradient(to right, rgba(105, 139, 182, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(105, 139, 182, 0.22) 1px, transparent 1px);
+}
+
+.skill-tree-canvas {
+  min-height: 100%;
+  min-width: 980px;
+  padding: 26px 24px 90px;
+}
+
+.skill-tree-roadmap-v2 {
+  --st-row-connector-y: 41px;
+  --st-row-connector-entry-offset-y: 12px;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.skill-tree-roadmap-v2__row-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+
+.skill-tree-roadmap-v2__row-block--with-connector {
+  padding-bottom: 30px;
+}
+
+.skill-tree-roadmap-v2__row {
+  width: min(1180px, 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.skill-tree-roadmap-v2__row-connector {
+  --line-thickness: 3px;
+  --outward: 34px;
+  --join-overlap: 3px;
+  --rail-offset: calc(max(var(--current-half), var(--next-half)) + var(--outward));
+  width: min(1180px, 100%);
+  height: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) + var(--join-overlap) + 12px);
+  position: absolute;
+  left: 50%;
+  top: var(--st-row-connector-y);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.skill-tree-roadmap-v2__row-connector-out,
+.skill-tree-roadmap-v2__row-connector-down,
+.skill-tree-roadmap-v2__row-connector-in {
+  position: absolute;
+  background: var(--st-line);
+}
+
+.skill-tree-roadmap-v2__row-connector-out,
+.skill-tree-roadmap-v2__row-connector-in {
+  height: var(--line-thickness);
+}
+
+.skill-tree-roadmap-v2__row-connector-down {
+  top: 0;
+  width: var(--line-thickness);
+  height: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) + var(--join-overlap));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-out {
+  top: 0;
+  left: calc(50% + var(--current-half));
+  width: calc(var(--rail-offset) - var(--current-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-down {
+  left: calc(50% + var(--rail-offset));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-in {
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y));
+  left: calc(50% + var(--next-half));
+  width: calc(var(--rail-offset) - var(--next-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--right .skill-tree-roadmap-v2__row-connector-arrow {
+  position: absolute;
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) - 6px);
+  left: calc(50% + var(--next-half) - 10px);
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 12px solid var(--st-line);
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-out {
+  top: 0;
+  left: calc(50% - var(--rail-offset));
+  width: calc(var(--rail-offset) - var(--current-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-down {
+  left: calc(50% - var(--rail-offset));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-in {
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y));
+  left: calc(50% - var(--rail-offset));
+  width: calc(var(--rail-offset) - var(--next-half));
+}
+
+.skill-tree-roadmap-v2__row-connector--left .skill-tree-roadmap-v2__row-connector-arrow {
+  position: absolute;
+  top: calc(var(--connector-drop) + var(--st-row-connector-entry-offset-y) - 6px);
+  left: calc(50% - var(--next-half) - 2px);
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 12px solid var(--st-line);
+}
+
+.skill-tree-roadmap-v2__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  min-width: 260px;
+  z-index: 3;
+}
+
+.skill-tree-roadmap-v2__topic-link {
+  width: 104px;
+  min-height: 96px;
+  position: relative;
+}
+
+.skill-tree-roadmap-v2__topic-link-line {
+  position: absolute;
+  top: 40px;
+  height: 3px;
+  background: var(--st-line);
+}
+
+.skill-tree-roadmap-v2__topic-link-arrow {
+  position: absolute;
+  top: 34px;
+  width: 0;
+  height: 0;
+}
+
+.skill-tree-roadmap-v2__topic-link--right .skill-tree-roadmap-v2__topic-link-line {
+  left: 0;
+  right: 10px;
+}
+
+.skill-tree-roadmap-v2__topic-link--right .skill-tree-roadmap-v2__topic-link-arrow {
+  right: 1px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 12px solid var(--st-line);
+}
+
+.skill-tree-roadmap-v2__topic-link--left .skill-tree-roadmap-v2__topic-link-line {
+  left: 10px;
+  right: 0;
+}
+
+.skill-tree-roadmap-v2__topic-link--left .skill-tree-roadmap-v2__topic-link-arrow {
+  left: 1px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 12px solid var(--st-line);
+}
+
+.skill-tree-roadmap-v2__chips {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.skill-tree-roadmap-v2__chip-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.skill-tree-roadmap-v2__chip-line {
+  width: 2px;
+  height: 10px;
+  border-left: 2px dashed var(--st-line);
+}
+
+.roadmap-node {
+  border-radius: 8px;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(17, 28, 42, 0.12);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.roadmap-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(17, 28, 42, 0.2);
+}
+
+.roadmap-node-main {
+  width: 100%;
+  max-width: 260px;
+  min-height: 80px;
+  padding: 10px 12px;
+  border-color: #22c55e;
+  background: #ecfdf3;
+}
+
+.roadmap-node-sub {
+  width: 100%;
+  max-width: 170px;
+  border-width: 1.5px;
+  border-color: #f59e0b;
+  border-style: dashed;
+  background: #fffaf3;
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.roadmap-node-main.node-color-neutral {
+  border-color: #22c55e;
+  background: #ecfdf3;
+}
+
+.roadmap-node-main.node-color-progress {
+  border-color: #eab308;
+  background: #fef9c3;
+}
+
+.roadmap-node-main.node-color-done {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.roadmap-node-main.node-color-skip {
+  border-color: #64748b;
+  background: #f1f5f9;
+}
+
+.roadmap-node-sub.node-color-neutral {
+  border-color: #f59e0b;
+  background: #fffaf3;
+}
+
+.roadmap-node-sub.node-color-progress {
+  border-color: #eab308;
+  background: #fef9c3;
+}
+
+.roadmap-node-sub.node-color-done {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.roadmap-node-sub.node-color-skip {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+html[data-theme='dark'] .roadmap-node {
+  border-color: rgba(136, 164, 198, 0.52);
+  background: #1a304d;
+  box-shadow: 0 8px 18px rgba(2, 9, 20, 0.45);
+  color: #e6effd;
+}
+
+html[data-theme='dark'] .roadmap-node:hover {
+  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.55);
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-neutral {
+  border-color: #2ecf92;
+  background: #11372d;
+  color: #d6ffe8;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-progress {
+  border-color: #f3be52;
+  background: #4a3a12;
+  color: #ffe7b2;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-done {
+  border-color: #6baef8;
+  background: #1f3553;
+  color: #dcecff;
+}
+
+html[data-theme='dark'] .roadmap-node-main.node-color-skip {
+  border-color: rgba(136, 164, 198, 0.6);
+  background: #27374a;
+  color: #d1deed;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-neutral {
+  border-color: #f3be52;
+  background: #4a3414;
+  color: #ffe8bd;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-progress {
+  border-color: #f3be52;
+  background: #4a3a12;
+  color: #ffe7b2;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-done {
+  border-color: #6baef8;
+  background: #1f3553;
+  color: #dcecff;
+}
+
+html[data-theme='dark'] .roadmap-node-sub.node-color-skip {
+  border-color: rgba(136, 164, 198, 0.58);
+  background: #24384f;
+  color: #d1deed;
+}
+
+.course-node {
+  width: 100%;
+}
+
+.course-node__main {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.course-node__text {
+  min-width: 0;
+  text-align: center;
+}
+
+.course-node__code {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.course-node__name-en {
+  margin: 3px 0 0;
+  color: var(--st-muted);
+  font-size: 0.67rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course-node__credits,
+.course-node__prerequisites {
+  margin-top: 4px;
+  font-size: 0.66rem;
+  color: #334155;
+}
+
+html[data-theme='dark'] .course-node__name-en,
+html[data-theme='dark'] .course-node__credits,
+html[data-theme='dark'] .course-node__prerequisites {
+  color: inherit;
+}
+
+html[data-theme='dark'] .roadmap-node-main .course-node__code,
+html[data-theme='dark'] .roadmap-node-sub .course-node__code,
+html[data-theme='dark'] .roadmap-node-main .course-node__credits,
+html[data-theme='dark'] .roadmap-node-sub .course-node__credits,
+html[data-theme='dark'] .roadmap-node-main .course-node__name-en,
+html[data-theme='dark'] .roadmap-node-sub .course-node__name-en,
+html[data-theme='dark'] .roadmap-node-main .course-node__prerequisites,
+html[data-theme='dark'] .roadmap-node-sub .course-node__prerequisites {
+  color: #1f2937;
+  text-shadow: none;
+}
+
+.roadmap-node-main .course-node__credits {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.skill-tree-panel {
+  position: fixed;
+  top: var(--st-panel-top);
+  right: 0;
+  width: min(380px, 92vw);
+  height: calc(100vh - var(--st-panel-top));
+  background: rgba(248, 249, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-left: 1px solid rgba(114, 119, 130, 0.24);
+  box-shadow: var(--st-shadow);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  animation: panelIn 220ms ease;
+}
+
+html[data-theme='dark'] .skill-tree-panel {
+  background: rgba(12, 24, 40, 0.9);
+  border-left: 1px solid rgba(90, 146, 218, 0.4);
+  box-shadow: 0 20px 38px rgba(2, 9, 20, 0.56);
+}
+
+.public-roadmap-panel {
+  position: fixed;
+  top: var(--st-panel-top);
+  right: 0;
+  width: min(380px, 92vw);
+  height: calc(100vh - var(--st-panel-top));
+  z-index: 45;
+}
+
+@keyframes panelIn {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.skill-tree-panel__header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(114, 119, 130, 0.16);
+}
+
+.skill-tree-panel__title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.skill-tree-panel__title {
+  margin: 0;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.4rem;
+}
+
+.skill-tree-panel__subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #0055a2;
+}
+
+.skill-tree-panel__subtle {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: #5d6470;
+}
+
+.skill-tree-panel__status-row {
+  margin-top: 10px;
+}
+
+.skill-tree-status-chip {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.skill-tree-status-chip--pending {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+
+.skill-tree-status-chip--inProgress {
+  background: rgba(249, 115, 22, 0.14);
+  color: #c2410c;
+}
+
+.skill-tree-status-chip--completed {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.skill-tree-status-chip--skip {
+  background: rgba(71, 85, 105, 0.14);
+  color: #334155;
+}
+
+.skill-tree-panel__transition-block {
+  margin-top: 10px;
+}
+
+.skill-tree-select-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.skill-tree-status-select {
+  width: 100%;
+  border: 1px solid #c2c6d3;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111c2a;
+  padding: 9px 10px;
+  font-size: 0.86rem;
+}
+
+.skill-tree-status-select:focus-visible {
+  outline: 2px solid rgba(24, 94, 172, 0.3);
+  border-color: #185eac;
+}
+
+.skill-tree-status-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.skill-tree-icon-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #c2c6d3;
+  background: #ffffff;
+  border-radius: 999px;
+  color: #111c2a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.skill-tree-icon-button:hover {
+  background: #f5f8ff;
+}
+
+.skill-tree-panel__content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resources-tab__section {
+  border: 1px solid #d8e3f6;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+html[data-theme='dark'] .resources-tab__section {
+  border: 1px solid rgba(90, 146, 218, 0.35);
+  background: #14253e;
+}
+
+.resources-tab__heading {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #185eac;
+}
+
+.resources-tab__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.resources-tab__item {
+  font-size: 0.82rem;
+}
+
+.resources-tab__title {
+  font-weight: 600;
+}
+
+.resources-tab__description {
+  margin: 2px 0 0;
+  color: #5d6470;
+  font-size: 0.74rem;
+}
+
+.sample-resource-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.sample-resource-list__item {
+  border: 1px solid #d8e3f6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8fbff;
+}
+
+.sample-resource-list__title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sample-resource-list__link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: #1d4ed8;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.sample-resource-list__link:hover {
+  text-decoration: underline;
+}
+
+.sample-resource-list__open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.sample-resource-list__open:hover {
+  background: #eff6ff;
+}
+
+.why-tab__content {
+  margin: 0;
+  color: #334155;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.skill-tree-muted-text {
+  margin: 0;
+  color: #5d6470;
+  font-size: 0.82rem;
+}
+
+html[data-theme='dark'] .skill-tree-muted-text,
+html[data-theme='dark'] .why-tab__content,
+html[data-theme='dark'] .resources-tab__heading,
+html[data-theme='dark'] .sample-resource-list__title,
+html[data-theme='dark'] .sample-resource-list__link {
+  color: #cfe2ff;
+}
+
+html[data-theme='dark'] .skill-tree-canvas-controls__btn {
+  border: 1px solid rgba(95, 146, 214, 0.45);
+  background: rgba(20, 39, 62, 0.9);
+  color: #d5e7ff;
+  box-shadow: 0 8px 16px rgba(2, 9, 20, 0.42);
+}
+
+html[data-theme='dark'] .skill-tree-canvas-controls__btn:hover:not(:disabled) {
+  background: rgba(36, 65, 102, 0.95);
+}
+
+html[data-theme='dark'] .skill-tree-page__footer {
+  border-top: 1px solid rgba(95, 146, 214, 0.32);
+  background: #102036;
+  color: #9fb8d9;
+}
+
+html[data-theme='dark'] .skill-tree-empty-state,
+html[data-theme='dark'] .skill-tree-loading-state,
+html[data-theme='dark'] .skill-tree-loading-state__inner,
+html[data-theme='dark'] .skill-tree-error-message {
+  color: #b8cce8;
+}
+
+html[data-theme='dark'] .skill-tree-status-select,
+html[data-theme='dark'] .skill-tree-icon-button,
+html[data-theme='dark'] .sample-resource-list__item,
+html[data-theme='dark'] .sample-resource-list__open {
+  border-color: rgba(95, 146, 214, 0.38);
+  background: #1a304d;
+  color: #d8e8ff;
+}
+
+.skill-tree-json-preview {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.73rem;
+  color: #1e293b;
+}
+
+.skill-tree-canvas-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 78px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 30;
+}
+
+.skill-tree-canvas-controls__btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(114, 119, 130, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1f2937;
+  box-shadow: 0 8px 16px rgba(17, 28, 42, 0.14);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.skill-tree-canvas-controls__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(17, 28, 42, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.skill-tree-canvas-controls__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.skill-tree-canvas-controls__btn:last-child {
+  width: auto;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.skill-tree-page__footer {
+  height: 38px;
+  border-top: 1px solid rgba(114, 119, 130, 0.18);
+  background: #f8f9ff;
+  color: #5d6470;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.skill-tree-loading-state {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--st-bg);
+  font-family: 'Inter', sans-serif;
+}
+
+.skill-tree-loading-state__inner {
+  text-align: center;
+  color: #334155;
+}
+
+.skill-tree-spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 10px;
+  border-radius: 999px;
+  border: 3px solid rgba(148, 163, 184, 0.5);
+  border-top-color: #185eac;
+  animation: spin 700ms linear infinite;
+}
+
+.skill-tree-error-title {
+  margin: 0 0 6px;
+  color: #b91c1c;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.skill-tree-error-message {
+  margin: 0;
+  color: #334155;
+}
+
+.skill-tree-empty-state {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5d6470;
+}
+
+.skill-tree-layout__canvas::-webkit-scrollbar,
+.skill-tree-panel__content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.skill-tree-layout__canvas::-webkit-scrollbar-thumb,
+.skill-tree-panel__content::-webkit-scrollbar-thumb {
+  background: #b6c7e2;
+  border-radius: 999px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1024px) {
+  .skill-tree-page {
+    min-height: calc(100vh - 64px);
+  }
+
+  .skill-tree-canvas {
+    min-width: 860px;
+  }
+
+  .skill-tree-roadmap-v2__row {
+    gap: 8px;
+  }
+
+  .roadmap-node-main {
+    max-width: 230px;
+  }
+
+  .skill-tree-roadmap-v2__cell {
+    min-width: 230px;
+  }
+
+  .skill-tree-roadmap-v2__topic-link {
+    width: 66px;
+  }
+
+  .skill-tree-roadmap-v2__cell--left .skill-tree-roadmap-v2__chips {
+    transform: translateX(-52px);
+  }
+
+  .skill-tree-roadmap-v2__cell--right .skill-tree-roadmap-v2__chips {
+    transform: translateX(52px);
+  }
+
+  .skill-tree-panel {
+    width: min(360px, 96vw);
+  }
+}
+
+@media (max-width: 768px) {
+  .skill-tree-page {
+    min-height: calc(100vh - 60px);
+  }
+
+  .skill-tree-page__topbar {
+    height: auto;
+    min-height: 56px;
+    align-items: flex-start;
+    padding: 10px 14px;
+  }
+
+  .skill-tree-page__topbar-meta {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .skill-tree-canvas {
+    min-width: 0;
+    padding: 16px 14px 80px;
+  }
+
+  .skill-tree-roadmap-v2,
+  .skill-tree-roadmap-v2__row-block,
+  .skill-tree-roadmap-v2__row,
+  .skill-tree-roadmap-v2__cell,
+  .skill-tree-roadmap-v2__chips {
+    width: 100%;
+  }
+
+  .skill-tree-roadmap-v2__row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .skill-tree-roadmap-v2__row-connector {
+    display: none;
+  }
+
+  .skill-tree-roadmap-v2__topic-link {
+    width: 2px;
+    min-height: 20px;
+  }
+
+  .skill-tree-roadmap-v2__topic-link-line {
+    left: 0;
+    right: 0;
+    top: 0;
+    width: 2px;
+    height: 20px;
+  }
+
+  .skill-tree-roadmap-v2__topic-link-arrow {
+    display: none;
+  }
+
+  .skill-tree-roadmap-v2__cell--left .skill-tree-roadmap-v2__chips,
+  .skill-tree-roadmap-v2__cell--right .skill-tree-roadmap-v2__chips,
+  .skill-tree-roadmap-v2__cell--down .skill-tree-roadmap-v2__chips {
+    align-items: center;
+    transform: none;
+  }
+
+  .skill-tree-roadmap-v2__chip-wrap--left,
+  .skill-tree-roadmap-v2__chip-wrap--right,
+  .skill-tree-roadmap-v2__chip-wrap--down {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .skill-tree-roadmap-v2__chip-line--left,
+  .skill-tree-roadmap-v2__chip-line--right,
+  .skill-tree-roadmap-v2__chip-line--down {
+    width: 2px;
+    height: 10px;
+    border-left: 2px dashed var(--st-line);
+    border-right: none;
+    border-bottom: none;
+    transform: none;
+  }
+
+  .roadmap-node-main,
+  .roadmap-node-sub {
+    max-width: 100%;
+  }
+
+  .skill-tree-panel {
+    top: auto;
+    bottom: 38px;
+    width: 100%;
+    height: min(62vh, 460px);
+    border-left: none;
+    border-top: 1px solid rgba(114, 119, 130, 0.24);
+  }
+
+  .public-roadmap-panel {
+    top: var(--st-panel-top);
+    right: 0;
+    bottom: auto;
+    width: min(360px, 92vw);
+    height: calc(100vh - var(--st-panel-top));
+    border-left: 1px solid rgba(114, 119, 130, 0.24);
+    border-top: none;
+  }
+
+  .skill-tree-canvas-controls {
+    right: 10px;
+    bottom: 52px;
+  }
+
+  .skill-tree-page__footer {
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+    padding: 0 10px;
+  }
+}

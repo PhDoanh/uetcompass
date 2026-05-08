@@ -1,6 +1,12 @@
 const { Types } = require('mongoose');
 const { StudentProfile } = require('./onboarding.model');
-const { validateFreeText } = require('./onboarding.validation');
+const { CourseUnit } = require('../curriculum/courseUnit.model');
+const { Program } = require('../curriculum/program.model');
+const {
+	normalizeOptionalValue,
+	validateDateValue,
+	validateDropdownValue,
+} = require('./onboarding.validation');
 const { ERROR_CODES, OnboardingError } = require('./onboarding.errors');
 const { notifyUser } = require('./onboarding.sse');
 const { sendRoadmapReadyEmail, sendRoadmapFailedEmail } = require('./onboarding.email');
@@ -35,16 +41,10 @@ async function dispatchNotifications(userId, status) {
 	}
 }
 
-function normalizeNullableText(value) {
-	if (value == null) {
-		return null;
-	}
-	const trimmed = String(value).trim();
-	return trimmed.length === 0 ? null : trimmed;
-}
-
-function validateField(fieldName, value) {
-	const result = validateFreeText(value);
+function validateField(fieldName, value, options = null) {
+	const result = fieldName === 'careerGoal.role'
+		? validateDropdownValue(value, options)
+		: validateDateValue(value);
 	if (!result.valid) {
 		throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, `${fieldName}: ${result.reason}`, {
 			field: fieldName,
@@ -52,23 +52,88 @@ function validateField(fieldName, value) {
 	}
 }
 
-function canonicalizeCompletedCourses(completedCourses = []) {
+function normalizeRoleOptions(careerTracks) {
+	if (!Array.isArray(careerTracks)) {
+		return [];
+	}
+
+	const unique = new Set();
+	for (const item of careerTracks) {
+		const normalized = normalizeOptionalValue(item);
+		if (normalized) {
+			unique.add(normalized);
+		}
+	}
+
+	return [...unique];
+}
+
+async function resolveProgramByMajorName(majorName) {
+	const normalizedMajor = normalizeOptionalValue(majorName);
+	if (!normalizedMajor) {
+		return null;
+	}
+
+	return resolveMaybeLean(
+		Program.findOne(
+			{ nameEN: normalizedMajor },
+			{ _id: 0, programId: 1, nameEN: 1, careerTracks: 1 }
+		)
+	);
+}
+
+async function resolveProgramByProgramId(programId) {
+	const normalizedProgramId = normalizeOptionalValue(programId);
+	if (!normalizedProgramId) {
+		return null;
+	}
+
+	return resolveMaybeLean(
+		Program.findOne(
+			{ programId: normalizedProgramId },
+			{ _id: 0, programId: 1, nameEN: 1, careerTracks: 1 }
+		)
+	);
+}
+
+async function getElectiveCourseCodesByProgramId(programId) {
+	if (!programId) {
+		return new Set();
+	}
+
+	const rows = await resolveMaybeLean(CourseUnit.find(
+		{ programId, type: 'elective' },
+		{ _id: 0, code: 1 }
+	));
+
+	return new Set(rows.map((row) => String(row.code || '').trim()).filter(Boolean));
+}
+
+function canonicalizeCompletedCourses(completedCourses = [], selectedMajor = null, electiveCourseCodes = null) {
 	if (!Array.isArray(completedCourses)) {
 		throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'completedCourses must be an array', {
 			field: 'completedCourses',
 		});
 	}
 
+	if (!selectedMajor) {
+		return [];
+	}
+
 	const byIdentity = new Map();
 
 	for (const item of completedCourses) {
-		if (!item || !item.major || !item.courseCode) {
+		if (!item || !item.courseCode) {
 			continue;
 		}
 
-		const major = String(item.major).trim();
+		const major = normalizeOptionalValue(item.major);
 		const courseCode = String(item.courseCode).trim();
-		if (!major || !courseCode) {
+		if (!major || !courseCode || major !== selectedMajor) {
+			continue;
+		}
+
+		if (electiveCourseCodes instanceof Set && !electiveCourseCodes.has(courseCode)) {
 			continue;
 		}
 
@@ -85,30 +150,85 @@ function canonicalizeCompletedCourses(completedCourses = []) {
 	return [...byIdentity.values()];
 }
 
-function normalizePayload(payload = {}) {
+async function normalizePayload(payload = {}) {
 	const careerGoal = payload.careerGoal || {};
-	validateField('careerGoal.role', careerGoal.role);
-	validateField('careerGoal.companyType', careerGoal.companyType);
-	validateField('personalAspirations', payload.personalAspirations);
+	validateField('careerGoal.graduationTimeline', careerGoal.graduationTimeline);
+
+	const hasProgramId = Object.prototype.hasOwnProperty.call(payload, 'programId');
+	const normalizedProgramId = hasProgramId ? normalizeOptionalValue(payload.programId) : null;
+	const hasMajor = Object.prototype.hasOwnProperty.call(payload, 'major');
+	const normalizedMajor = hasMajor ? normalizeOptionalValue(payload.major) : null;
+
+	let resolvedProgram = null;
+	if (normalizedProgramId) {
+		resolvedProgram = await resolveProgramByProgramId(normalizedProgramId);
+		if (!resolvedProgram) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'programId: Invalid major selection', {
+				field: 'programId',
+			});
+		}
+
+		if (normalizedMajor && resolvedProgram.nameEN !== normalizedMajor) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'major: Mismatch between major and programId', {
+				field: 'major',
+			});
+		}
+	} else if (normalizedMajor) {
+		resolvedProgram = await resolveProgramByMajorName(normalizedMajor);
+		if (!resolvedProgram) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'major: Invalid major selection', {
+				field: 'major',
+			});
+		}
+	}
+
+	const resolvedMajor = resolvedProgram?.nameEN || normalizedMajor || null;
+	const resolvedProgramId = resolvedProgram?.programId || normalizedProgramId || null;
+
+	const normalizedRole = normalizeOptionalValue(careerGoal.role);
+	if (normalizedRole && !resolvedMajor) {
+		throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'careerGoal.role: Selected major is required', {
+			field: 'careerGoal.role',
+		});
+	}
+
+	if (normalizedRole && resolvedProgram) {
+		const roleOptions = normalizeRoleOptions(resolvedProgram.careerTracks);
+		validateField('careerGoal.role', normalizedRole, roleOptions);
+	}
+
+	const canNormalizeCourses = Object.prototype.hasOwnProperty.call(payload, 'completedCourses');
+	let canonicalCourses;
+	if (canNormalizeCourses) {
+		if (!resolvedMajor) {
+			throw new OnboardingError(400, ERROR_CODES.INVALID_INPUT, 'completedCourses require a selected major', {
+				field: 'completedCourses',
+			});
+		}
+
+		const electiveCodes = await getElectiveCourseCodesByProgramId(resolvedProgramId);
+		canonicalCourses = canonicalizeCompletedCourses(payload.completedCourses, resolvedMajor, electiveCodes);
+	}
+
+	const hasMajorSelectionField = hasMajor || hasProgramId;
 
 	return {
-		...(Object.prototype.hasOwnProperty.call(payload, 'major')
-			? { major: normalizeNullableText(payload.major) }
+		...(hasMajorSelectionField
+			? {
+				programId: resolvedProgramId,
+				major: resolvedMajor,
+			}
 			: {}),
-		...(Object.prototype.hasOwnProperty.call(payload, 'completedCourses')
-			? { completedCourses: canonicalizeCompletedCourses(payload.completedCourses) }
+		...(canNormalizeCourses
+			? { completedCourses: canonicalCourses }
 			: {}),
 		...(Object.prototype.hasOwnProperty.call(payload, 'careerGoal')
 			? {
 				careerGoal: {
-					role: normalizeNullableText(careerGoal.role),
-					companyType: normalizeNullableText(careerGoal.companyType),
-					graduationTimeline: normalizeNullableText(careerGoal.graduationTimeline),
+					role: normalizeOptionalValue(careerGoal.role),
+					graduationTimeline: normalizeOptionalValue(careerGoal.graduationTimeline),
 				},
 			}
-			: {}),
-		...(Object.prototype.hasOwnProperty.call(payload, 'personalAspirations')
-			? { personalAspirations: normalizeNullableText(payload.personalAspirations) }
 			: {}),
 	};
 }
@@ -116,11 +236,9 @@ function normalizePayload(payload = {}) {
 function isGenericProfile(payload) {
 	const completedCourses = payload.completedCourses || [];
 	const careerGoal = payload.careerGoal || {};
-	const hasRole = !!normalizeNullableText(careerGoal.role);
-	const hasCompanyType = !!normalizeNullableText(careerGoal.companyType);
-	const hasTimeline = !!normalizeNullableText(careerGoal.graduationTimeline);
-	const hasAspirations = !!normalizeNullableText(payload.personalAspirations);
-	return completedCourses.length === 0 && !hasRole && !hasCompanyType && !hasTimeline && !hasAspirations;
+	const hasRole = !!normalizeOptionalValue(careerGoal.role);
+	const hasTimeline = !!normalizeOptionalValue(careerGoal.graduationTimeline);
+	return completedCourses.length === 0 && !hasRole && !hasTimeline;
 }
 
 async function assertDraftWritable(userId) {
@@ -139,11 +257,123 @@ async function getDraft(userId) {
 	return resolveMaybeLean(StudentProfile.findOne({ userId }));
 }
 
+async function getCourseCatalog() {
+	const programs = await Program.find(
+		{},
+		{
+			_id: 0,
+			programId: 1,
+			nameEN: 1,
+			careerTracks: 1,
+		}
+	)
+		.sort({ nameEN: 1 })
+		.lean();
+
+	const majors = [];
+	const roleOptionsByProgramId = {};
+	const requiredCourseLinks = {};
+	const programById = new Map();
+
+	for (const program of programs) {
+		const majorName = normalizeOptionalValue(program.nameEN);
+		const programId = normalizeOptionalValue(program.programId);
+		if (!majorName || !programId) {
+			continue;
+		}
+
+		majors.push({
+			programId,
+			nameEN: majorName,
+		});
+		roleOptionsByProgramId[programId] = normalizeRoleOptions(program.careerTracks);
+		programById.set(programId, majorName);
+	}
+
+	const programIds = [...programById.keys()];
+	const linkRows = await CourseUnit.find(
+		{ programId: { $in: programIds } },
+		{
+			_id: 0,
+			programId: 1,
+			source: 1,
+		}
+	)
+		.sort({ programId: 1, code: 1 })
+		.lean();
+
+	const requiredLinkByProgramId = new Map();
+	for (const row of linkRows) {
+		const programId = normalizeOptionalValue(row.programId);
+		const url = normalizeOptionalValue(row?.source?.url);
+		if (!programId || !url || requiredLinkByProgramId.has(programId)) {
+			continue;
+		}
+		requiredLinkByProgramId.set(programId, url);
+	}
+
+	for (const [programId, majorName] of programById.entries()) {
+		requiredCourseLinks[programId] = requiredLinkByProgramId.get(programId) || null;
+	}
+
+	const rows = await CourseUnit.find(
+		{ programId: { $in: programIds }, type: 'elective' },
+		{
+			_id: 1,
+			programId: 1,
+			code: 1,
+			name: 1,
+		}
+	)
+		.sort({ programId: 1, code: 1 })
+		.lean();
+
+	const catalogByProgramId = new Map();
+
+	for (const row of rows) {
+		const programId = normalizeOptionalValue(row.programId);
+		const courseCode = String(row.code || '').trim();
+		const name = String(row.name || '').trim();
+		if (!programById.has(programId) || !courseCode || !name) {
+			continue;
+		}
+
+		if (!catalogByProgramId.has(programId)) {
+			catalogByProgramId.set(programId, new Map());
+		}
+
+		const byCode = catalogByProgramId.get(programId);
+		if (!byCode.has(courseCode)) {
+			byCode.set(courseCode, {
+				courseCode,
+				name,
+				courseUnitId: String(row._id),
+			});
+		}
+	}
+
+	const courseCatalog = Object.fromEntries(
+		majors.map((major) => {
+			const courses = [...(catalogByProgramId.get(major.programId)?.values() || [])].sort((a, b) =>
+				a.courseCode.localeCompare(b.courseCode, 'en')
+			);
+			return [major.programId, courses];
+		})
+	);
+
+	return {
+		majors,
+		courseCatalog,
+		roleOptionsByProgramId,
+		requiredCourseLinks,
+	};
+}
+
 async function upsertDraft(userId, payload) {
 	console.info('[onboarding:draft:upsert:start]', { userId: String(userId) });
 	await assertDraftWritable(userId);
 
-	const normalized = normalizePayload(payload);
+	const normalized = await normalizePayload(payload);
 	const now = new Date();
 
 	try {
@@ -181,7 +411,7 @@ async function upsertDraft(userId, payload) {
 
 async function submitProfile(userId, payload) {
 	console.info('[onboarding:submit:start]', { userId: String(userId) });
-	const normalized = normalizePayload(payload);
+	const normalized = await normalizePayload(payload);
 
 	if (!normalized.major) {
 		throw new OnboardingError(
@@ -240,6 +470,7 @@ async function submitProfile(userId, payload) {
 
 module.exports = {
 	canonicalizeCompletedCourses,
+	getCourseCatalog,
 	getDraft,
 	setRoadmapGenerationHandler,
 	upsertDraft,

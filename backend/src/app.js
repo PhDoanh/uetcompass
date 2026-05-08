@@ -1,20 +1,39 @@
 require('dotenv').config();
+const dns = require('node:dns');
+dns.setServers(['1.1.1.1']);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const onboardingRouter = require('./modules/onboarding/onboarding.routes');
 const skillTreeRouter = require('./modules/skill-tree/skillTree.routes');
-const { authRouter, accountRouter } = require('./modules/auth');
-const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
+const { academicRouter, trendsRouter, resourcesRouter } = require('./modules/scraping');
+const { authRouter } = require('./modules/auth/auth.routes');
 const progressRouter = require('./modules/progress/progress.routes');
+const { accountRouter } = require('./modules/account/account.routes');
+const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
+const { reviewRouter } = require('./modules/review/review.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
 const app = express();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '200kb';
+// const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '200kb';
+const LOCALHOST_ORIGIN_PATTERN = /^http:\/\/localhost:\d+$/;
+
+
+function isAllowedOrigin(origin) {
+	if (!origin) {
+		return true;
+	}
+
+	if (origin === FRONTEND_URL) {
+		return true;
+	}
+
+	return LOCALHOST_ORIGIN_PATTERN.test(origin);
+}
 
 function safeErrorMessage(err) {
 	if (!err || typeof err.message !== 'string') {
@@ -27,7 +46,7 @@ app.use(helmet());
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			if (!origin || origin === FRONTEND_URL) {
+			if (isAllowedOrigin(origin)) {
 				return callback(null, true);
 			}
 			return callback(new Error('CORS_ORIGIN_DENIED'));
@@ -36,8 +55,7 @@ app.use(
 	})
 );
 app.use(cookieParser());
-app.use(express.json({ limit: JSON_BODY_LIMIT }));
-
+app.use(express.json());
 // Database connection
 const mongoose = require('mongoose');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uetcompass';
@@ -52,9 +70,13 @@ app.get('/health', (req, res) => {
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/skill-tree', skillTreeRouter);
 app.use('/api/auth', authRouter);
-app.use('/api/account', accountRouter);
 app.use('/api/roadmaps', roadmapRouter);
 app.use('/api/progress', progressRouter);
+app.use('/api/reviews', reviewRouter);
+app.use('/api/resources', resourcesRouter);
+app.use('/api/resources', academicRouter);
+app.use('/api/market', trendsRouter);
+app.use('/api/account', accountRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

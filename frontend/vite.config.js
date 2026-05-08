@@ -12,5 +12,6 @@ export default defineConfig({
 				changeOrigin: true,
 			},
 		},
+		allowedHosts: ["uetcompass.shares.zrok.io"],
 	},
 })

@@ -3,10 +3,11 @@ dist/
 build/
 coverage/
 *.log
-backend/logs/seed-ctdt.log
+backend/logs/
 .env
 .env.*
 !*.env.example
+.playwright-mcp/
 
 # Python/cache artifacts (for mixed tooling)
 __pycache__/
@@ -17,6 +18,7 @@ __pycache__/
 Thumbs.db
 *.tmp
 *.swp
-.vscode/
+.vscode/**
+!.vscode/mcp.json
 .idea/
 

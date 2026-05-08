@@ -1,23 +1,45 @@
-const { validateFreeText } = require('../../../src/modules/onboarding/onboarding.validation');
+const {
+	validateDateValue,
+	validateDropdownValue,
+} = require('../../../src/modules/onboarding/onboarding.validation');
 
-describe('validateFreeText', () => {
+const ROLE_OPTIONS = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer'];
+
+describe('validateDropdownValue', () => {
 	test('null input is valid', () => {
-		expect(validateFreeText(null)).toEqual({ valid: true });
+		expect(validateDropdownValue(null, ROLE_OPTIONS)).toEqual({ valid: true });
 	});
 
-	test('whitespace-only is valid as omitted', () => {
-		expect(validateFreeText('   ')).toEqual({ valid: true });
+	test('empty input is valid as omitted', () => {
+		expect(validateDropdownValue('   ', ROLE_OPTIONS)).toEqual({ valid: true });
 	});
 
-	test('too short value is invalid', () => {
-		expect(validateFreeText('ok').valid).toBe(false);
+	test('role option is valid', () => {
+		expect(validateDropdownValue(ROLE_OPTIONS[0], ROLE_OPTIONS)).toEqual({ valid: true });
 	});
 
-	test('special-only value is invalid', () => {
-		expect(validateFreeText('!!!').valid).toBe(false);
+	test('role outside options is invalid', () => {
+		expect(validateDropdownValue('Data Scientist', ROLE_OPTIONS)).toEqual({
+			valid: false,
+			reason: 'Value must be selected from predefined options',
+		});
 	});
 
-	test('unicode letter value is valid', () => {
-		expect(validateFreeText('Kỹ sư backend')).toEqual({ valid: true });
+	test('valid graduation date is accepted', () => {
+		expect(validateDateValue('2027-06-30')).toEqual({ valid: true });
+	});
+
+	test('malformed graduation date is invalid', () => {
+		expect(validateDateValue('2027-06')).toEqual({
+			valid: false,
+			reason: 'Value must be a valid date in YYYY-MM-DD format',
+		});
+	});
+
+	test('non-existent calendar date is invalid', () => {
+		expect(validateDateValue('2027-02-30')).toEqual({
+			valid: false,
+			reason: 'Value must be a valid date in YYYY-MM-DD format',
+		});
 	});
 });

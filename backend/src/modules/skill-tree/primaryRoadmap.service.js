@@ -20,9 +20,13 @@ async function getPrimaryRoadmap(studentId) {
   }
 
   try {
-    // Fetch primary roadmap from Feature 009
-    const roadmap = await roadmapService.getPrimaryByUser(studentId);
-    
+    // Prefer accepted primary roadmap, then fall back to retryable roadmap
+    // so Skill Tree can render retry UI instead of onboarding-not-found.
+    let roadmap = await roadmapService.getPrimaryByUser(studentId);
+    if (!roadmap) {
+      roadmap = await roadmapService.getRetryableByUser(studentId);
+    }
+
     if (!roadmap) {
       const error = new Error('No primary roadmap found. Please complete onboarding first.');
       error.code = 'ROADMAP_NOT_FOUND';
@@ -31,26 +35,20 @@ async function getPrimaryRoadmap(studentId) {
     }
 
     // Normalize roadmap structure for Skill Tree consumption
-    // Feature 009 stores prerequisites in CourseUnit, Skill Tree will compute from DAG
     return {
       roadmapId: roadmap._id.toString(),
       userId: roadmap.userId.toString(),
       studentProfileId: roadmap.studentProfileId?.toString() || null,
       personalisationLevel: roadmap.personalisationLevel,
-      status: roadmap.status,
-      careerGoal: roadmap.careerGoal || null,
-      roadmapName: `${roadmap.personalisationLevel === 'full' ? 'Personalized' : 'Generic'} Roadmap`,
-      nodes: (roadmap.nodes || []).map(node => ({
-        courseCode: node.courseCode,
-        courseName: node.courseName,
-        credits: node.credits,
-        suggestedSemester: node.suggestedSemester,
-        gainedSkills: node.gainedSkills || [],
-        supportingSkills: node.supportingSkills || [],
+      roadmapName: roadmap.roadmapName || `${roadmap.personalisationLevel === 'full' ? 'Personalized' : 'Generic'} Roadmap`,
+      nodes: (roadmap.nodes || []).map((node) => ({
+        nodeId: node.nodeId,
+        nodeType: node.nodeType,
+        skillName: node.skillName,
+        parentNodeId: node.parentNodeId ?? null,
+        relatedCourses: node.relatedCourses || [],
         reason: node.reason,
         resources: node.resources || [],
-        // These will be populated from CourseUnit prerequisites
-        prerequisites: [],
       })),
       acceptedAt: roadmap.acceptedAt,
       isPrimary: roadmap.isPrimary,

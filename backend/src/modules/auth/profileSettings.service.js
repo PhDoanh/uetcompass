@@ -3,6 +3,7 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { resolvePublicIdentity } = require('./identity.policy');
 const passwordService = require('./password.service');
 const { SecurityAudit } = require('./securityAudit.model');
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 function buildError(status, code, message, details) {
   const err = new Error(message);
@@ -91,6 +92,11 @@ async function getProfile(userId) {
   }
 
   const profile = await StudentProfile.findOne({ userId });
+  const onboardingState = !profile
+    ? 'NEVER_STARTED'
+    : profile.isDraft === true
+      ? 'DRAFT_IN_PROGRESS'
+      : 'COMPLETED';
 
   return {
     email: user.email,
@@ -103,6 +109,7 @@ async function getProfile(userId) {
       email: user.email,
       privacySetting: user.privacySetting,
     }),
+    onboardingState,
     profile: normalizeDraftProfile({
       major: profile?.major,
       completedCourseIds: Array.isArray(profile?.completedCourses)
@@ -120,7 +127,10 @@ async function updateProfile(userId, payload = {}) {
 
   if (displayName !== undefined) {
     const value = String(displayName || '').trim();
-    nextUserFields.displayName = value.length > 0 ? value : null;
+    if (!value) {
+      throw buildError(400, 'INVALID_INPUT', 'displayName is required when provided.');
+    }
+    nextUserFields.displayName = value;
   }
   if (fullName !== undefined) {
     const value = String(fullName || '').trim();
@@ -195,16 +205,28 @@ async function changePassword(userId, { currentPassword, newPassword }) {
 
   const current = String(currentPassword || '');
   const next = String(newPassword || '');
-  if (!current || next.length < 8) {
+  const hasLocalPassword = Boolean(user.passwordHash);
+
+  if (!PASSWORD_POLICY_REGEX.test(next)) {
+    throw buildError(
+      400,
+      'INVALID_INPUT',
+      'newPassword must be at least 8 chars and include uppercase, lowercase, number, and one of @$!%*?&.'
+    );
+  }
+
+  if (hasLocalPassword && !current) {
     throw buildError(400, 'INVALID_INPUT', 'currentPassword and valid newPassword are required.');
   }
 
-  const isValidCurrent = await passwordService.verifyPassword(current, user.passwordHash);
-  if (!isValidCurrent) {
-    throw buildError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
+  if (hasLocalPassword) {
+    const isValidCurrent = await passwordService.verifyPassword(current, user.passwordHash);
+    if (!isValidCurrent) {
+      throw buildError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
+    }
   }
 
-  const nextHash = await passwordService.hashPassword(next);
+  const nextHash = await passwordService.hashPassword(newPassword);
   await User.updateOne(
     { _id: userId },
     {

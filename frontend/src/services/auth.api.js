@@ -1,13 +1,19 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+	(typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 
 async function request(path, options = {}) {
+  const headers = {
+    ...(options.headers || {}),
+  };
+
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
     ...options,
+    credentials: 'include',
+    headers,
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -116,7 +122,7 @@ function markNotificationRead(token, notificationId) {
 }
 
 function changePassword(token, body) {
-  return requestAuthed('/account/change-password', token, {
+  return requestAuthed('/account/password/change', token, {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -132,18 +138,6 @@ function linkGoogle(token, body) {
 function unlinkGoogle(token, googleId) {
   return requestAuthed(`/account/link-google/${googleId}`, token, {
     method: 'DELETE',
-  });
-}
-
-function requestDeletion(token) {
-  return requestAuthed('/account/request-deletion', token, {
-    method: 'POST',
-  });
-}
-
-function confirmDeletion(token) {
-  return requestAuthed(`/account/confirm-deletion?token=${encodeURIComponent(token)}`, null, {
-    method: 'GET',
   });
 }
 
@@ -169,8 +163,6 @@ const authApi = {
   changePassword,
   linkGoogle,
   unlinkGoogle,
-  requestDeletion,
-  confirmDeletion,
   logout,
 };
 

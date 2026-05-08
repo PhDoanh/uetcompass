@@ -29,9 +29,9 @@ export default function FreeTextField({
 	const length = (value || '').length;
 
 	return (
-		<div style={{ marginBottom: 12 }}>
-			<label htmlFor={id} style={{ display: 'block', fontWeight: 600 }}>
-				{label} <span style={{ fontWeight: 400 }}>(optional)</span>
+		<div className="onboarding-field">
+			<label htmlFor={id} className="onboarding-label">
+				{label} <span className="onboarding-label-optional">(optional)</span>
 			</label>
 			<input
 				id={id}
@@ -39,11 +39,11 @@ export default function FreeTextField({
 				maxLength={maxLength}
 				onChange={(event) => onChange(event.target.value)}
 				placeholder={placeholder}
-				style={{ width: '100%', padding: 8, marginTop: 4 }}
+				className="onboarding-input"
 			/>
-			<div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-				<span style={{ color: '#b00020' }}>{error || ''}</span>
-				<span style={{ color: '#666' }}>
+			<div className="onboarding-meta-row">
+				<span className="onboarding-error-text">{error || ''}</span>
+				<span className="onboarding-counter-text">
 					{length}/{maxLength}
 				</span>
 			</div>

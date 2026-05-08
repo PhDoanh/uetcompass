@@ -1,8 +1,8 @@
 const nodemailer = require('nodemailer');
 
 function buildTransporter() {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
+  const user = String(process.env.GMAIL_USER || '').trim();
+  const pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
 
   if (!user || !pass) {
     return null;
@@ -48,17 +48,7 @@ async function sendResetOtpEmail(email, otp) {
   });
 }
 
-async function sendDeletionConfirmationEmail(email, url) {
-  await sendMailSafe({
-    to: email,
-    subject: 'UETCompass - Confirm account deletion',
-    text: `Confirm account deletion via this link: ${url}`,
-    html: `<p>Confirm account deletion via this link:</p><p><a href="${url}">${url}</a></p>`,
-  });
-}
-
 module.exports = {
   sendRegistrationOtpEmail,
   sendResetOtpEmail,
-  sendDeletionConfirmationEmail,
 };

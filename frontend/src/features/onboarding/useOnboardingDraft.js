@@ -1,23 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDraft, putDraft } from '../../services/onboarding.api';
 
-export function useOnboardingDraft({ authToken, onUnauthorized } = {}) {
+export function useOnboardingDraft({ authToken, onUnauthorized, enabled = true } = {}) {
 	const timerRef = useRef(null);
+	const onUnauthorizedRef = useRef(onUnauthorized);
 	const [draft, setDraft] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
-	const handleError = useCallback(
-		(error) => {
-			if (error?.status === 401 && onUnauthorized) {
-				onUnauthorized();
-			}
-			throw error;
-		},
-		[onUnauthorized]
-	);
+	useEffect(() => {
+		onUnauthorizedRef.current = onUnauthorized;
+	}, [onUnauthorized]);
+
+	const handleError = useCallback((error) => {
+		if (error?.status === 401 && typeof onUnauthorizedRef.current === 'function') {
+			onUnauthorizedRef.current();
+		}
+		throw error;
+	}, []);
 
 	const loadDraft = useCallback(async () => {
+		if (!enabled) {
+			setLoading(false);
+			return null;
+		}
+
 		if (!authToken) {
 			setLoading(false);
 			return null;
@@ -33,10 +40,14 @@ export function useOnboardingDraft({ authToken, onUnauthorized } = {}) {
 		} finally {
 			setLoading(false);
 		}
-	}, [authToken, handleError]);
+	}, [authToken, enabled, handleError]);
 
 	const scheduleSave = useCallback(
 		(payload) => {
+			if (!enabled) {
+				return;
+			}
+
 			if (!authToken) {
 				return;
 			}
@@ -54,7 +65,7 @@ export function useOnboardingDraft({ authToken, onUnauthorized } = {}) {
 				}
 			}, 800);
 		},
-		[authToken, handleError]
+		[authToken, enabled, handleError]
 	);
 
 	useEffect(() => {

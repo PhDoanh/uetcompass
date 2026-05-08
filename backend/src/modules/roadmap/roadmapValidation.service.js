@@ -32,7 +32,7 @@ function detectCycles(courseUnits) {
 }
 
 /**
- * @param {Array} nodes - Ordered RoadmapNode[] from AI
+ * @param {Array} nodes - Ordered RoadmapNode[] with relatedCourses[]
  * @param {Array} courseUnits - Full CourseUnit DAG for the major
  * @param {Set<string>} [completedCourseCodes] - Courses already completed (skipped in ordering check)
  */
@@ -44,33 +44,30 @@ function validateTopologicalOrder(nodes, courseUnits, completedCourseCodes = new
 
 	detectCycles(courseUnits);
 
-	const positionMap = new Map();
+	// Map every courseCode that appears in any node's relatedCourses to that node's position
+	const courseToNodePos = new Map();
+	nodes.forEach((node, i) => {
+		for (const rc of node.relatedCourses ?? []) {
+			courseToNodePos.set(rc.courseCode, i);
+		}
+	});
+
 	for (let i = 0; i < nodes.length; i++) {
 		const node = nodes[i];
-		const prerequisites = prereqMap.get(node.courseCode) ?? [];
+		for (const rc of node.relatedCourses ?? []) {
+			const prerequisites = prereqMap.get(rc.courseCode) ?? [];
+			for (const prereq of prerequisites) {
+				if (completedCourseCodes.has(prereq)) continue;
 
-		for (const prereq of prerequisites) {
-			if (completedCourseCodes.has(prereq)) continue;
-
-			if (positionMap.has(prereq)) {
-				if (positionMap.get(prereq) >= i) {
+				if (courseToNodePos.get(prereq) >= i) {
 					const err = new Error(
-						`Ordering violation: ${node.courseCode} appears before prerequisite ${prereq}`
+						`Ordering violation: skill "${node.skillName}" (via ${rc.courseCode}) appears before its prerequisite ${prereq}`
 					);
 					err.code = 'PREREQUISITE_VIOLATION';
 					throw err;
 				}
-				continue;
 			}
-
-			const err = new Error(
-				`Prerequisite ${prereq} for ${node.courseCode} is missing from the roadmap and not in completed courses`
-			);
-			err.code = 'PREREQUISITE_VIOLATION';
-			throw err;
 		}
-
-		positionMap.set(node.courseCode, i);
 	}
 }
 

@@ -5,7 +5,22 @@ jest.mock('../../../src/modules/onboarding/onboarding.model', () => ({
 	},
 }));
 
+jest.mock('../../../src/modules/curriculum/program.model', () => ({
+	Program: {
+		findOne: jest.fn(),
+		find: jest.fn(),
+	},
+}));
+
+jest.mock('../../../src/modules/curriculum/courseUnit.model', () => ({
+	CourseUnit: {
+		find: jest.fn(),
+	},
+}));
+
 const { StudentProfile } = require('../../../src/modules/onboarding/onboarding.model');
+const { Program } = require('../../../src/modules/curriculum/program.model');
+const { CourseUnit } = require('../../../src/modules/curriculum/courseUnit.model');
 const onboardingService = require('../../../src/modules/onboarding/onboarding.service');
 
 describe('draft persistence', () => {
@@ -15,6 +30,8 @@ describe('draft persistence', () => {
 
 	test('upsertDraft writes draft with canonicalized courses', async () => {
 		StudentProfile.findOne.mockResolvedValueOnce(null);
+		Program.findOne.mockResolvedValueOnce({ programId: 'CNTT-STANDARD', nameEN: 'Computer Science' });
+		CourseUnit.find.mockResolvedValueOnce([{ code: 'INT2204' }]);
 		StudentProfile.findOneAndUpdate.mockResolvedValueOnce({ _id: 'p1' });
 
 		await onboardingService.upsertDraft('u1', {

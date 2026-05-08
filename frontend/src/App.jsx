@@ -1,69 +1,427 @@
-import OnboardingPanel from './features/onboarding/OnboardingPanel';
-import ProgressDashboard from './features/progress/ProgressDashboard';
-import SkillTreePage from './features/skill-tree/SkillTreePage';
-import AccountSettingsPage from './features/auth/AccountSettingsPage';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import NavBar from './features/general/NavBar';
+import { NotificationProvider } from './features/notification/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
-import { AuthProvider, useAuth } from './providers/AuthProvider';
+import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
+import usePrefetch from './hooks/usePrefetch';
+import NavigationProgressBar from './shared/NavigationProgressBar';
+import PageSkeleton from './shared/PageSkeleton';
+import PageTransition from './shared/PageTransition';
+import ScrollRestorationManager from './shared/ScrollRestorationManager';
+import {
+	interceptAnchorNavigation,
+	LOCATION_CHANGE_EVENT,
+	navigateTo,
+	NAVIGATION_END_EVENT,
+	NAVIGATION_START_EVENT,
+	normalizePathname,
+	toRouteKey,
+} from './shared/navigation';
+import './style/navigation-orchestration.css';
+import { X } from 'lucide-react';
+
+const LoginPage = lazy(() => import('./features/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage'));
+const SkillTreePage = lazy(() => import('./features/skill-tree/SkillTreePage'));
+const PublicSkillTreePage = lazy(() => import('./features/skill-tree/PublicSkillTreePage'));
+const AccountSettingsPage = lazy(() => import('./features/account/AccountSettingsPage'));
+const Homepage = lazy(() => import('./features/general/Homepage'));
+const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel'));
+const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
+const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
+const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
+
+function shouldUseReducedMotion() {
+	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+		return false;
+	}
+	return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function RouteReadySignal({ routeKey }) {
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.dispatchEvent(
+			new CustomEvent(NAVIGATION_END_EVENT, {
+				detail: {
+					routeKey,
+				},
+			})
+		);
+	}, [routeKey]);
+
+	return null;
+}
+
+function RouteFrame({ routeKey, children, fallbackLabel }) {
+	return (
+		<PageTransition routeKey={routeKey}>
+			<Suspense fallback={<PageSkeleton label={fallbackLabel} />}>
+				<RouteReadySignal routeKey={routeKey} />
+				{children}
+			</Suspense>
+		</PageTransition>
+	);
+}
 
 function AppContent() {
-	const { accessToken, onboardingState } = useAuth();
-	const authToken = accessToken || '';
-	const sseToken = accessToken || '';
-	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-
-	const handleUnauthorized = () => {
-		if (typeof window !== 'undefined') {
-			window.location.assign('/login');
+	const { isAuthenticated, onboardingState, accessToken } = useAuth();
+	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
+	const [routeState, setRouteState] = useState(() => {
+		if (typeof window === 'undefined') {
+			return { pathname: '/', search: '' };
 		}
-	};
 
-	// Route to Skill Tree if pathname includes /skill-tree
-	if (pathname.includes('/skill-tree')) {
-		return (
+		return {
+			pathname: normalizePathname(window.location.pathname),
+			search: String(window.location.search || ''),
+		};
+	});
+	const roadmapSearchPanelRef = useRef(null);
+	const routeKeyRef = useRef(toRouteKey(routeState));
+	const pathname = routeState.pathname;
+	const routeKey = toRouteKey(routeState);
+	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
+	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
+	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
+	const isPublicPath =
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
+		Boolean(publicSkillTreeRoadmapId) ||
+		pathname.startsWith('/roadmaps/public/');
+
+	usePrefetch();
+
+	const syncRouteState = useCallback(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const nextPathname = normalizePathname(window.location.pathname);
+		const nextSearch = String(window.location.search || '');
+		const nextRouteKey = toRouteKey({ pathname: nextPathname, search: nextSearch });
+
+		if (nextRouteKey === routeKeyRef.current) {
+			return;
+		}
+
+		const commit = () => {
+			startTransition(() => {
+				setRouteState({ pathname: nextPathname, search: nextSearch });
+			});
+		};
+
+		if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function' && !shouldUseReducedMotion()) {
+			document.startViewTransition(commit);
+			return;
+		}
+
+		commit();
+	}, []);
+
+	useEffect(() => {
+		routeKeyRef.current = routeKey;
+	}, [routeKey]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return undefined;
+		}
+
+		const handlePopState = () => {
+			const nextRouteKey = toRouteKey(window.location);
+			if (nextRouteKey !== routeKeyRef.current) {
+				window.dispatchEvent(
+					new CustomEvent(NAVIGATION_START_EVENT, {
+						detail: {
+							from: routeKeyRef.current,
+							to: nextRouteKey,
+							replace: false,
+						},
+					})
+				);
+			}
+
+			syncRouteState();
+		};
+
+		document.addEventListener('click', interceptAnchorNavigation, true);
+		window.addEventListener('popstate', handlePopState);
+		window.addEventListener(LOCATION_CHANGE_EVENT, syncRouteState);
+
+		return () => {
+			document.removeEventListener('click', interceptAnchorNavigation, true);
+			window.removeEventListener('popstate', handlePopState);
+			window.removeEventListener(LOCATION_CHANGE_EVENT, syncRouteState);
+		};
+	}, [syncRouteState]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const handleOpenOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(true);
+		};
+
+		const handleCloseOverlay = () => {
+			setIsRoadmapSearchOverlayOpen(false);
+		};
+
+		const handleEscClose = (event) => {
+			if (event.key === 'Escape') {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+		window.addEventListener('keydown', handleEscClose);
+
+		return () => {
+			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
+			window.removeEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+			window.removeEventListener('keydown', handleEscClose);
+		};
+	}, [pathname]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
+			return undefined;
+		}
+
+		const isOutsideOverlayPanel = (target) => {
+			const panel = roadmapSearchPanelRef.current;
+			if (!panel || !(target instanceof Node)) {
+				return false;
+			}
+
+			if (typeof target.composedPath === 'function') {
+				return !target.composedPath().includes(panel);
+			}
+
+			return !panel.contains(target);
+		};
+
+		const handleOutsideInteraction = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				setIsRoadmapSearchOverlayOpen(false);
+			}
+		};
+
+		const handleOutsideWheel = (event) => {
+			if (isOutsideOverlayPanel(event.target)) {
+				event.preventDefault();
+				setIsRoadmapSearchOverlayOpen(false);
+				return;
+			}
+
+			if (event.ctrlKey || event.metaKey) {
+				event.preventDefault();
+			}
+		};
+
+		document.addEventListener('mousedown', handleOutsideInteraction, true);
+		document.addEventListener('touchstart', handleOutsideInteraction, true);
+		document.addEventListener('click', handleOutsideInteraction, true);
+		window.addEventListener('wheel', handleOutsideWheel, { capture: true, passive: false });
+		window.addEventListener('touchmove', handleOutsideWheel, { capture: true, passive: false });
+
+		return () => {
+			document.removeEventListener('mousedown', handleOutsideInteraction, true);
+			document.removeEventListener('touchstart', handleOutsideInteraction, true);
+			document.removeEventListener('click', handleOutsideInteraction, true);
+			window.removeEventListener('wheel', handleOutsideWheel, true);
+			window.removeEventListener('touchmove', handleOutsideWheel, true);
+		};
+	}, [isRoadmapSearchOverlayOpen]);
+
+	if (isAuthenticated && isAuthPopupPath) {
+		navigateTo(decidePostLoginRoute(onboardingState), { replace: true });
+		return null;
+	}
+
+	if (!isAuthenticated && !isPublicPath) {
+		navigateTo('/', { replace: true });
+		return null;
+	}
+
+	let content = null;
+
+	if (pathname === '/') {
+		content = <Homepage />;
+	}
+
+	if (!content && (pathname === '/onboarding' || pathname === '/on-boarding')) {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<OnboardingPanel
+						authToken={accessToken}
+						sseToken={accessToken}
+						onClose={() => navigateTo('/')}
+						onCompleted={() => navigateTo('/skill-tree')}
+						isFullPage
+						showDismissButton={false}
+					/>
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	// Route to sample roadmap
+	if (!content && pathname === '/sample-roadmap') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<div style={{ padding: '24px' }}>
+					<h1>Sample Roadmap</h1>
+					<p>This is a sample roadmap showing typical course progression.</p>
+					<p>To create your personalized roadmap, please log in or register.</p>
+				</div>
+			</main>
+		);
+	}
+
+	if (!content && pathname === '/manual-roadmap') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<ManualRoadmapPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && publicSkillTreeRoadmapId) {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<PublicSkillTreePage roadmapId={publicSkillTreeRoadmapId} />
+			</main>
+		);
+	}
+
+	// Route to Skill Tree for personalized roadmap
+	if (!content && pathname === '/skill-tree') {
+		content = (
 			<OnboardingGuard>
-				<main style={{ maxWidth: 1400, margin: '0 auto', height: '100vh' }}>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
 					<SkillTreePage />
 				</main>
 			</OnboardingGuard>
 		);
 	}
 
-	if (pathname.includes('/settings')) {
-		return (
-			<OnboardingGuard>
-				<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+	const settingsPaths = ['/settings', '/account-settings', '/profile/settings'];
+	if (!content && settingsPaths.includes(pathname)) {
+		content = (
+			<AuthGuard>
+				<main>
 					<AccountSettingsPage />
 				</main>
-			</OnboardingGuard>
+			</AuthGuard>
 		);
 	}
 
-	if (pathname.includes('/progress')) {
+	if (!content && pathname === '/learning-profile') {
+		content = (
+			<AuthGuard>
+				<OnboardingGuard>
+					<LearningProfilePage />
+				</OnboardingGuard>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && isAuthPopupPath) {
+		content = <Homepage />;
+	}
+
+	if (content) {
+		const authPopupContent = pathname === '/login'
+			? <LoginPage />
+			: pathname === '/register'
+				? <RegisterPage />
+				: pathname === '/forgot-password'
+					? <ForgotPasswordPage />
+					: null;
+
 		return (
-			<OnboardingGuard>
-				<ProgressDashboard />
-			</OnboardingGuard>
+			<NotificationProvider sseToken={isAuthenticated ? (accessToken || '') : ''}>
+				<NavigationProgressBar />
+				<ScrollRestorationManager routeKey={routeKey} />
+				<NavBar />
+				<RouteFrame routeKey={routeKey} fallbackLabel="Dang tai du lieu trang...">
+					{content}
+				</RouteFrame>
+				{isAuthPopupPath ? (
+					<div
+						className="auth-modal-overlay"
+						role="dialog"
+						aria-modal="true"
+						aria-label="Authentication popup"
+					>
+						<div className="auth-modal-shell">
+							<button
+								type="button"
+								className="auth-modal-close"
+								onClick={() => navigateTo('/')}
+								aria-label="Close authentication popup"
+							>
+								<X size={16} aria-hidden="true" />
+							</button>
+							{authPopupContent}
+						</div>
+					</div>
+				) : null}
+				{isRoadmapSearchOverlayOpen ? (
+					<div
+						className="roadmap-search-overlay"
+						role="dialog"
+						aria-modal="true"
+						aria-label="Roadmap search overlay"
+						onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+					>
+						<div className="roadmap-search-overlay__backdrop" />
+						<div
+							ref={roadmapSearchPanelRef}
+							className="roadmap-search-overlay__panel"
+							onClick={(event) => event.stopPropagation()}
+						>
+							<div className="roadmap-search-overlay__header">
+								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
+								<button
+									type="button"
+									className="roadmap-search-overlay__close"
+									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
+									aria-label="Close roadmap search"
+								>
+									<X size={16} aria-hidden="true" />
+								</button>
+							</div>
+							<Suspense fallback={<PageSkeleton label="Dang tai bo loc roadmap..." />}>
+								<RoadmapSearchPage />
+							</Suspense>
+						</div>
+					</div>
+				) : null}
+			</NotificationProvider>
 		);
 	}
 
-	return (
-		<OnboardingGuard>
-			<main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-				{onboardingState !== 'COMPLETED' ? (
-					<OnboardingPanel authToken={authToken} sseToken={sseToken} onUnauthorized={handleUnauthorized} />
-				) : null}
-			</main>
-		</OnboardingGuard>
-	);
+	navigateTo('/', { replace: true });
+
+	return null;
 }
 
 export default function App() {
 	return (
 		<AuthProvider>
-			<AuthGuard>
-				<AppContent />
-			</AuthGuard>
+			<AppContent />
 		</AuthProvider>
 	);
 }

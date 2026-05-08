@@ -10,6 +10,19 @@ jest.mock('../../../src/modules/auth/auth.email', () => ({
   sendRegistrationOtpEmail: jest.fn(),
 }));
 
+jest.mock('../../../src/modules/auth/token.service', () => ({
+  issueAccessToken: jest.fn(() => 'test-access-token'),
+  hashRefreshToken: jest.fn(() => 'test-refresh-hash'),
+  enforceOtpResendPolicy: jest.fn().mockResolvedValue({
+    cooldownUntil: new Date(Date.now() + 60_000),
+    hourlyLimit: 10,
+  }),
+}));
+
+jest.mock('../../../src/modules/auth/audit.service', () => ({
+  emitAuthEvent: jest.fn().mockResolvedValue({ _id: 'audit-1' }),
+}));
+
 const { User } = require('../../../src/modules/auth/user.model');
 const { sendRegistrationOtpEmail } = require('../../../src/modules/auth/auth.email');
 const authService = require('../../../src/modules/auth/auth.service');
@@ -17,35 +30,41 @@ const authService = require('../../../src/modules/auth/auth.service');
 describe('email verification lifecycle', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    authService.__testOnlyClearPendingRegistrations();
   });
 
   test('register creates pending account and sends OTP', async () => {
     User.findOne.mockResolvedValueOnce(null);
-    User.create.mockResolvedValueOnce({ _id: 'u1' });
 
     const result = await authService.registerWithEmail({
       fullName: 'Test User',
       email: 'test@vnu.edu.vn',
-      password: 'secret',
+      password: 'Secret123!',
     });
 
     expect(result.code).toBe('OTP_SENT');
-    expect(User.create).toHaveBeenCalled();
+    expect(User.create).not.toHaveBeenCalled();
     expect(sendRegistrationOtpEmail).toHaveBeenCalled();
   });
 
   test('verify rejects expired OTP and locks account', async () => {
-    User.findOne.mockResolvedValueOnce({
-      _id: 'u1',
-      status: 'pending-verification',
-      emailVerification: { otp: '1111', expiresAt: new Date(Date.now() - 1000) },
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    User.findOne.mockResolvedValueOnce(null);
+
+    await authService.registerWithEmail({
+      fullName: 'Test User',
+      email: 'test@vnu.edu.vn',
+      password: 'Secret123!',
     });
+
+    nowSpy.mockReturnValue(1_000_000 + 2 * 60 * 1000 + 1);
 
     await expect(authService.verifyEmailOtp({ email: 'test@vnu.edu.vn', otp: '1111' })).rejects.toMatchObject({
       status: 423,
       code: 'ACCOUNT_LOCKED_UNVERIFIED',
     });
-    expect(User.updateOne).toHaveBeenCalled();
+
+    nowSpy.mockRestore();
   });
 
   test('resend OTP works for locked account', async () => {
@@ -56,5 +75,16 @@ describe('email verification lifecycle', () => {
     expect(result.code).toBe('OTP_RESENT');
     expect(User.updateOne).toHaveBeenCalled();
     expect(sendRegistrationOtpEmail).toHaveBeenCalled();
+  });
+
+  test('resend OTP fails when no pending verification exists', async () => {
+    User.findOne.mockResolvedValueOnce(null);
+
+    await expect(authService.resendVerificationOtp({ email: 'missing@vnu.edu.vn' })).rejects.toMatchObject({
+      status: 404,
+      code: 'NO_PENDING_VERIFICATION',
+    });
+
+    expect(sendRegistrationOtpEmail).not.toHaveBeenCalled();
   });
 });

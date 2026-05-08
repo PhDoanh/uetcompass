@@ -1,76 +1,215 @@
-'use strict';
+﻿'use strict';
 
 const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
-const { callGemini } = require('./roadmap.gemini.service');
+const { acceptRoadmap } = require('./roadmapAcceptance.service');
+const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const {
+	toKebabCase,
+	uniqueNodeId,
+	sortCourseUnitsTopologically,
+	buildCandidateSkills,
+	buildNodesTopologically,
+} = require('./generation.helpers');
+const { ROADMAP_TEMPLATES } = require('./generation.templates');
 
 const activeGenerations = new Set();
 
-// Enrich roadmap nodes with skills (Feature 003, phase 1)
-async function enrichNode(nodes, userId) {
-	// Example: Call Feature 003 for skill enrichment only
-	const axios = require('axios');
-	try {
-		const response = await axios.post(
-			process.env.FEATURE_003_ENRICH_SKILLS_URL || 'http://localhost:3001/api/skill-enrich',
-			{ nodes, userId }
-		);
-		return response.data.nodes; // Expecting { nodes: [...] }
-	} catch (err) {
-		console.error('[enrichNode] Skill enrichment failed:', err.message);
-		throw new Error('Skill enrichment failed (Feature 003)');
-	}
-}
+// ---------------------------------------------------------------------------
+// Core lifecycle
+// ---------------------------------------------------------------------------
 
-async function runGenerationLifecycle(userId, studentProfileId, triggerReason) {
-	let personalisationLevel = 'full';
+async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
+	let personalisationLevel = 'low';
+	let studentProfileId;
 	try {
-		const profile = await StudentProfile.findById(studentProfileId);
+		const profile = await StudentProfile.findOne({ userId });
 		if (!profile) {
-			throw new Error(`StudentProfile not found: ${studentProfileId}`);
+			throw new Error(`StudentProfile not found for user: ${userId}`);
 		}
+		studentProfileId = profile._id;
 
+		if (profile.careerGoal?.role || profile.major) {
+			// If either role or companyType is present, set personalisationLevel to 'full'
+			   if (!profile.careerGoal?.role) {
+				   // Notify client via SSE and exit early
+				   notifyGenerationFailed(sseToken, profile.major ? "You have to choose a major" : "You have to choose a role to get personalized roadmap");
+				   return;
+			   }
+			}
 		personalisationLevel =
 			profile.careerGoal?.role || profile.careerGoal?.companyType ? 'full' : 'low';
 
-		const courseUnits = await CourseUnit.find({ major: profile.major }).lean();
+		console.log('personalisationLevel:', personalisationLevel);
 
-		let existingRoadmap = null;
-		if (triggerReason === 'repersonalization') {
-			existingRoadmap = await roadmapService.getCompletedByUser(userId);
-		}
+		const roadmapName = profile.careerGoal?.role || `${profile.major} Curriculum`;
 
-		const nodes = await callGemini(profile, courseUnits, existingRoadmap);
-
-		const skillEnrichedNodes = await enrichNode(nodes, userId);
+		console.log('roadmap:', roadmapName);
 
 		const completedCourseCodes = new Set(
 			(profile.completedCourses ?? []).map((c) => c.courseCode)
 		);
 
-		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
+		const courseUnits = await CourseUnit.find({ programId: profile.programId }).lean();
 
-		previewStore.storePendingPreview(userId, {
-			nodes,
-			personalisationLevel,
-			triggerReason,
+		let nodes;
+
+		const availableCourseUnits = courseUnits.filter(
+			(cu) => !completedCourseCodes.has(cu.code)
+		);
+		const candidateSkills = buildCandidateSkills(availableCourseUnits);
+
+		console.log('candidateSkills:', candidateSkills == null ? 'null' : candidateSkills.length)
+
+		const candidateSkillsMap = new Map(candidateSkills.map((c) => [c.skillName, c]));
+
+		console.log('candidateSkillsMap size:', candidateSkillsMap.size);
+
+		// Check if a pre-built template matches the roadmapName
+		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
+		if (templateNodes) {
+			const seenIds = new Set();
+
+			// Enrich template nodes with relatedCourses from course skills
+			const enriched = templateNodes.map((n) => {
+				// Find candidate by matching kebab-case nodeId to kebab-case skillName
+				const candidate = candidateSkills.find((c) => toKebabCase(c.skillName) === n.nodeId);
+				return {
+					...n,
+					nodeId: n.nodeId,
+					relatedCourses: candidate?.relatedCourses ?? [],
+				};
+			});
+
+			// Build a lookup: topic nodeId -> enriched topic node (for attaching subtopics)
+			const topicNodeIds = new Map();
+			for (const n of enriched) {
+				if (n.nodeType === 'topic') topicNodeIds.set(n.nodeId, n);
+			}
+
+			if (personalisationLevel === 'full') {
+				// Identify course skills NOT already in the template (compare by nodeId)
+				const templateNodeIds = new Set(templateNodes.map((n) => n.nodeId));
+				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
+
+				// AI evaluates relevance of off-template skills to the career goal
+				const approvedExtras = []; //await evaluateOffTemplateSkills(offTemplateSkills, profile);
+				
+				await sleep(10000);
+				
+				console.log('approvedExtras:', approvedExtras == null ? 'null' : approvedExtras.length)
+
+				// Off-template nodes are always subtopic, attached to the nearest template topic
+				// that shares a relatedCourse. Exclude if no parent topic found.
+				const extraNodes = [];
+				for (const { skillName, reason } of approvedExtras) {
+					const candidate = candidateSkillsMap.get(skillName);
+					if (!candidate) continue;
+
+					// Find the template topic node sharing the MOST relatedCourses
+					const courseCodes = new Set(candidate.relatedCourses.map((rc) => rc.courseCode));
+					let parentNode = null;
+					let bestOverlap = 0;
+					for (const tpl of enriched) {
+						if (tpl.nodeType !== 'topic') continue;
+						const overlap = tpl.relatedCourses.filter((rc) => courseCodes.has(rc.courseCode)).length;
+						if (overlap > bestOverlap) {
+							bestOverlap = overlap;
+							parentNode = tpl;
+						}
+					}
+					if (!parentNode) continue; // Spec: exclude if no parent topic
+
+					extraNodes.push({
+						nodeId: uniqueNodeId(skillName, seenIds),
+						nodeType: 'subtopic',
+						skillName,
+						parentNodeId: parentNode.nodeId,
+						relatedCourses: candidate.relatedCourses,
+						reason,
+						resources: [],
+					});
+				}
+
+				// Insert each subtopic right after its parent topic in the enriched list
+				const result = [];
+				const extrasByParent = new Map();
+				for (const extra of extraNodes) {
+					if (!extrasByParent.has(extra.parentNodeId)) extrasByParent.set(extra.parentNodeId, []);
+					extrasByParent.get(extra.parentNodeId).push(extra);
+				}
+				for (const n of enriched) {
+					result.push(n);
+					const children = extrasByParent.get(n.nodeId);
+					if (children) result.push(...children);
+				}
+				nodes = result;
+			} else {
+				nodes = enriched;
+			}
+		} else if (personalisationLevel === 'full') {
+			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
+			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
+		} else {
+			// Low personalisation: sort relatedCourses for each skill by topological order
+			nodes = buildNodesTopologically(candidateSkills, candidateSkillsMap, courseUnits);
+		}
+		//roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
+
+		// previewStore.storePendingPreview(userId, {
+		// 	nodes,
+		// 	roadmapName,
+		// 	personalisationLevel,
+		// 	triggerReason,
+		// 	studentProfileId,
+		// });
+
+		// notifyUser(userId, 'roadmap_preview_ready', {
+		// 	type: 'roadmap_preview_ready',
+		// 	roadmapName,
+		// 	personalisationLevel,
+		// 	lowPersonalisationNotice:
+		// 		personalisationLevel === 'low'
+		// 			? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
+		// 			: null,
+		// 	preview: { nodes },
+		// });
+		await acceptRoadmap(userId, {
 			studentProfileId,
+			roadmapName,
+			personalisationLevel,
+			isPrimary: true,
+			nodes,
 		});
 
-		notifyPreviewReady(userId);
+		notifyPreviewReady(sseToken);
+
+		
 	} catch (err) {
-		await roadmapService.upsertFailedWithProfile(userId, studentProfileId, err.message, personalisationLevel);
-		notifyGenerationFailed(userId);
+		console.error('[generation] roadmap generation failed:', err);
+		if (studentProfileId) {
+			await roadmapService.upsertFailedWithProfile(
+				userId,
+				studentProfileId,
+				err.message,
+				personalisationLevel
+			);
+		} else {
+			await roadmapService.upsertFailed(userId, err.message);
+		}
+		notifyGenerationFailed(sseToken);
 	} finally {
 		activeGenerations.delete(userId.toString());
 	}
 }
 
-async function triggerGeneration(userId, studentProfileId, triggerReason) {
+async function triggerGeneration(userId, triggerReason, sseToken = '') {
 	const userKey = userId.toString();
 	if (activeGenerations.has(userKey)) {
 		const err = new Error('CONFLICT');
@@ -81,7 +220,7 @@ async function triggerGeneration(userId, studentProfileId, triggerReason) {
 
 	activeGenerations.add(userKey);
 
-	runGenerationLifecycle(userId, studentProfileId, triggerReason).catch((unexpectedErr) => {
+	runGenerationLifecycle(userId, triggerReason, sseToken).catch((unexpectedErr) => {
 		console.error('[generation] Unhandled lifecycle error:', unexpectedErr);
 		activeGenerations.delete(userKey);
 	});
@@ -100,12 +239,11 @@ async function __handleSigterm() {
 			await roadmapService.upsertFailedWithProfile(
 				userId,
 				profileId.toString(),
-				'Worker restart — generation preview lost'
+				'Worker restart -- generation preview lost'
 			);
 		} else {
-			await roadmapService.upsertFailed(userId, 'Worker restart — generation preview lost');
+			await roadmapService.upsertFailed(userId, 'Worker restart -- generation preview lost');
 		}
-		notifyGenerationFailed(userId);
 		previewStore.clearPendingPreview(userId);
 	}
 }
@@ -114,6 +252,4 @@ module.exports = {
 	triggerGeneration,
 	isGenerating,
 	__handleSigterm,
-	// Exported for test injection
-	_callGemini: callGemini,
 };

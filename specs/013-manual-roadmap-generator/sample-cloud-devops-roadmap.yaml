@@ -1,0 +1,79 @@
+title: Cloud DevOps Roadmap
+description: A roadmap for infrastructure basics, CI/CD, containers, observability, and deployment.
+nodes:
+  - nodeId: CLOUD_BASES
+    type: main_topic
+    label: Cloud Basics
+    description: Understand cloud service models and core concepts.
+    parentNodeId: null
+    skillName: cloud-concepts
+    resources:
+      - title: AWS Cloud Practitioner essentials
+        url: https://aws.amazon.com/certification/certified-cloud-practitioner/
+        type: link
+
+  - nodeId: LINUX_SHELL
+    type: sub_topic
+    label: Linux & Shell
+    description: Navigate servers, automate tasks, and manage files from the terminal.
+    parentNodeId: CLOUD_BASES
+    skillName: linux
+    resources:
+      - title: Linux command line tutorial
+        url: https://linuxjourney.com/
+        type: link
+
+  - nodeId: GIT_CICD
+    type: sub_topic
+    label: Git & CI/CD
+    description: Automate testing and deployment with pipelines.
+    parentNodeId: CLOUD_BASES
+    skillName: git
+    resources:
+      - title: GitHub Actions docs
+        url: https://docs.github.com/actions
+        type: link
+
+  - nodeId: CONTAINERS
+    type: sub_topic
+    label: Containers
+    description: Package services using Docker and run them consistently.
+    parentNodeId: CLOUD_BASES
+    skillName: docker
+    resources:
+      - title: Docker getting started
+        url: https://docs.docker.com/get-started/
+        type: link
+
+  - nodeId: KUBERNETES
+    type: main_topic
+    label: Kubernetes
+    description: Orchestrate containers and manage service scaling.
+    parentNodeId: null
+    skillName: kubernetes
+    resources:
+      - title: Kubernetes basics
+        url: https://kubernetes.io/docs/tutorials/kubernetes-basics/
+        type: link
+
+  - nodeId: OBSERVABILITY
+    type: main_topic
+    label: Observability
+    description: Track logs, metrics, and traces in production.
+    parentNodeId: null
+    skillName: logging
+    resources:
+      - title: OpenTelemetry docs
+        url: https://opentelemetry.io/docs/
+        type: link
+
+  - nodeId: DEPLOYMENT_STRATEGY
+    type: main_topic
+    label: Deployment Strategy
+    description: Learn blue-green, canary, and rolling deployment patterns.
+    parentNodeId: null
+    skillName: deployment
+    resources:
+      - title: Cloud deployment patterns
+        url: https://cloud.google.com/architecture/application-deployment-and-testing-strategies
+        type: link

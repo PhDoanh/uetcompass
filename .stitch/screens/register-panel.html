@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#003e79",
+                    "on-secondary-container": "#005c75",
+                    "surface-container-high": "#dee9fc",
+                    "surface-tint": "#185eac",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "outline": "#727782",
+                    "on-surface": "#111c2a",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#a7c8ff",
+                    "on-primary-fixed-variant": "#004788",
+                    "on-tertiary-container": "#bccbeb",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#263140",
+                    "outline-variant": "#c2c6d3",
+                    "inverse-primary": "#a7c8ff",
+                    "surface-container": "#e5eeff",
+                    "tertiary-fixed-dim": "#b8c7e6",
+                    "primary-container": "#0055a2",
+                    "secondary-fixed-dim": "#6bd3fc",
+                    "on-primary-container": "#aeccff",
+                    "secondary-container": "#6ed6ff",
+                    "primary-fixed": "#d5e3ff",
+                    "on-secondary-fixed": "#001f29",
+                    "tertiary-fixed": "#d6e3ff",
+                    "surface-container-highest": "#d8e3f6",
+                    "on-primary-fixed": "#001b3c",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#cfdbee",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed": "#bce9ff",
+                    "on-tertiary-fixed": "#0b1c34",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-error-container": "#93000a",
+                    "secondary": "#006783",
+                    "tertiary-container": "#475671",
+                    "surface-bright": "#f8f9ff",
+                    "surface-variant": "#d8e3f6",
+                    "on-surface-variant": "#424751",
+                    "tertiary": "#303f58",
+                    "on-tertiary-fixed-variant": "#384761",
+                    "on-background": "#111c2a",
+                    "on-secondary-fixed-variant": "#004d63",
+                    "background": "#f8f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Be Vietnam Pro"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        .academic-gradient {
+            background: linear-gradient(135deg, #003e79 0%, #0055a2 100%);
+        }
+        .ambient-shadow {
+            box-shadow: 0 32px 48px -4px rgba(0, 62, 121, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface overflow-hidden">
+<!-- Background Content (Blurred) -->
+<div class="fixed inset-0 z-0 overflow-hidden select-none pointer-events-none filter blur-md scale-105">
+<header class="h-14 flex items-center px-6 border-b border-outline-variant/10">
+<span class="text-xl font-bold text-primary font-headline" style="">UETCompass</span>
+</header>
+<main class="max-w-7xl mx-auto px-8 py-20 space-y-24">
+<div class="grid grid-cols-2 gap-12 items-center">
+<div class="space-y-6">
+<div class="h-4 bg-primary-container/20 rounded-full w-48"></div>
+<div class="h-16 bg-primary/10 rounded-xl w-full"></div>
+<div class="h-16 bg-primary/10 rounded-xl w-4/5"></div>
+<div class="h-6 bg-on-surface-variant/10 rounded-lg w-full"></div>
+<div class="flex gap-4">
+<div class="h-12 bg-primary/20 rounded-lg w-40"></div>
+<div class="h-12 bg-surface-container rounded-lg w-40"></div>
+</div>
+</div>
+<div class="h-80 bg-surface-container rounded-3xl"></div>
+</div>
+<div class="space-y-8">
+<div class="h-10 bg-primary/10 rounded-lg w-64"></div>
+<div class="grid grid-cols-3 gap-8">
+<div class="h-64 bg-surface-container-low rounded-2xl"></div>
+<div class="h-64 bg-surface-container-low rounded-2xl"></div>
+<div class="h-64 bg-surface-container-low rounded-2xl"></div>
+</div>
+</div>
+</main>
+<div class="absolute inset-0 bg-on-surface/5"></div>
+</div>
+<!-- Overlay Wrapper -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/20 backdrop-blur-sm">
+<!-- Authentication Modal -->
+<div class="w-full max-w-md bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative border border-outline-variant/10">
+<!-- Modal Header -->
+<div class="px-8 pt-10 pb-6 text-center">
+<div class="inline-flex items-center justify-center w-12 h-12 bg-surface-container-low rounded-full mb-4"><span class="material-symbols-outlined text-primary text-2xl" data-icon="explore" style="">explore</span></div>
+<h1 class="font-headline font-bold text-2xl tracking-tight text-on-surface" style="">UETCompass</h1>
+<p class="text-on-surface-variant text-sm mt-1" style="">Dẫn lỗi cho sự nghiệp tương lai của bạn </p>
+</div>
+<!-- Tabbed Navigation -->
+<div class="flex px-8 border-b border-outline-variant/10">
+<button class="flex-1 py-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors" style="">Đăng nhập</button>
+<button class="flex-1 py-3 text-sm font-semibold text-primary border-b-2 border-primary transition-colors" style="">
+                    Đăng ký</button>
+</div>
+<!-- Modal Content (Sign In View Active) -->
+<div class="px-8 py-8 space-y-6">
+<!-- Google Integration -->
+<!-- Credentials Form -->
+<form class="space-y-4" onsubmit="return false">
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-on-surface uppercase tracking-tight pl-1" style="">Họ và tên</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg" data-icon="person" style="">person</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline/60" placeholder="Nguyễn Văn A" type="text"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-on-surface uppercase tracking-tight pl-1" style="">Địa chỉ email vnu</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg" data-icon="mail" style="">mail</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline/60" placeholder="username@vnu.edu.vn" type="email"/>
+</div>
+<p class="text-[10px] text-primary-container font-medium px-1 flex items-center gap-1" style="">
+<span class="material-symbols-outlined text-[12px]" data-icon="info" style="">info</span>
+                        Chỉ chấp nhận địa chỉ email @vnu.edu.vn cho sinh viên.
+                    </p>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-on-surface uppercase tracking-tight pl-1" style="">Mật khẩu</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg" data-icon="lock" style="">lock</span>
+<input class="w-full pl-10 pr-10 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline/60" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface" style="" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="visibility" style="">visibility</span>
+</button>
+</div>
+<!-- Password Strength Indicator -->
+<div class="mt-2 px-1 space-y-1.5">
+<div class="flex gap-1.5 h-1">
+<div class="flex-1 rounded-full bg-error"></div>
+<div class="flex-1 rounded-full bg-outline-variant/20"></div>
+<div class="flex-1 rounded-full bg-outline-variant/20"></div>
+</div>
+<p class="text-[10px] font-bold text-error tracking-wider" style="">ĐỘ MẠNH MẬT KHẨU: YẾU</p>
+</div>
+</div>
+<button class="w-full py-3 academic-gradient text-on-primary font-semibold rounded-lg text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all" style="" type="submit">Tạo tài khoản</button>
+</form>
+</div>
+<!-- Modal Footer -->
+<div class="px-8 py-6 bg-surface-container-low/50 flex flex-col items-center gap-3">
+<p class="text-[10px] text-outline text-center leading-relaxed" style="">
+                    Bằng cách tiếp tục, bạn đồng ý với các chính sách về tính liêm chính học thuật và điều khoản dịch vụ của UETCompass
+                </p>
+<div class="flex gap-4">
+<a class="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors" href="#" style="">Trung tâm hỗ trợ</a>
+<a class="text-[10px] font-bold text-on-surface-variant hover:text-primary transition-colors" href="#" style="">Chính sách &amp; Điều khoản</a>
+</div>
+</div>
+</div>
+<!-- Floating Brand Attribution -->
+</div>
+<!-- Sign Up Modal (Hidden by Default/Logic illustration) -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/20 backdrop-blur-sm">
+<div class="w-full max-w-md bg-surface-container-lowest rounded-xl ambient-shadow overflow-hidden relative border border-outline-variant/10">
+<!-- Sign Up UI Structure would follow similar aesthetic -->
+<div class="px-8 pt-10 pb-6 text-center">
+<h1 class="font-headline font-bold text-2xl tracking-tight text-on-surface" style="">Create Account</h1>
+<p class="text-on-surface-variant text-sm mt-1" style="">Start your academic roadmap today.</p>
+</div>
+<div class="px-8 py-6 space-y-4">
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-on-surface uppercase tracking-tight" style="">Full Name</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Nguyen Van A" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-bold text-on-surface uppercase tracking-tight" style="">VNU Email</label>
+<input class="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/20 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="username@vnu.edu.vn" type="email"/>
+<p class="text-[10px] text-primary-container font-medium px-1 flex items-center gap-1" style="">
+<span class="material-symbols-outlined text-[12px]" data-icon="info" style="">info</span>
+                        Only @vnu.edu.vn addresses are permitted for students.
+                    </p>
+</div>
+<!-- ... other fields ... -->
+</div>
+</div>
+</div>
+</body></html>

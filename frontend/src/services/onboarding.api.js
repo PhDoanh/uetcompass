@@ -1,5 +1,4 @@
-const API_BASE_URL =
-	import.meta?.env?.VITE_API_BASE_URL ||
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
 	(typeof window !== 'undefined' ? `${window.location.origin}/api` : '/api');
 
 async function request(path, options = {}) {
@@ -39,6 +38,19 @@ export async function getDraft(authToken) {
 		headers: {
 			Authorization: `Bearer ${authToken}`,
 		},
+	});
+}
+
+export async function getCourseCatalog(authToken) {
+	const headers = authToken
+		? {
+			Authorization: `Bearer ${authToken}`,
+		}
+		: {};
+
+	return request('/onboarding/course-catalog', {
+		method: 'GET',
+		headers,
 	});
 }
 

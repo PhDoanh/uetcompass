@@ -1,53 +1,72 @@
-/**
- * T039: Market skills read service
- * Reads from market_skills and skill_learning_resources collections
- * Currently returns placeholder structure; real implementation would query MongoDB
- */
+const { Roadmap } = require('../roadmap/roadmap.model');
+const SkillTrendSnapshot = require('../scraping/models/skillTrendSnapshot.model');
+const LearningResource = require('../scraping/models/learningResource.model');
+const { RESOURCE_MAX_RESULTS } = require('../scraping/adapters/tavily.adapter');
 
-/**
- * Get market skills associated with a course
- * @param {string} courseCode - Course code
- * @returns {Promise<Object>} - Object with skills array
- */
+async function resolveCourseName(courseCode) {
+  const roadmap = await Roadmap.findOne({ isPrimary: true, status: 'completed', 'nodes.courseCode': courseCode }, { nodes: 1 }).lean();
+  if (!roadmap || !Array.isArray(roadmap.nodes)) {
+    return null;
+  }
+
+  const node = roadmap.nodes.find((item) => item.courseCode === courseCode);
+  return node?.courseName || null;
+}
+
 async function getMarketSkills(courseCode) {
-  // TODO: Implement MongoDB query to market_skills collection
-  // Expected schema:
-  // {
-  //   courseCode: String,
-  //   skill: String,           // e.g., "React.js", "Node.js"
-  //   relevance: Number,       // 0-100, higher = more relevant
-  //   jobPostingCount: Number, // How many job postings mention this skill
-  //   source: String           // "vietnamese-job-platforms"
-  // }
-  
+  const courseName = await resolveCourseName(courseCode);
+  if (!courseName) {
+    return { courseCode, skills: [] };
+  }
+
+  const snapshots = await SkillTrendSnapshot.find({ courseName }).sort({ snapshotDate: -1, jobCount: -1 }).lean();
+  const bySkill = new Map();
+
+  snapshots.forEach((snapshot) => {
+    const existing = bySkill.get(snapshot.skillName);
+    if (!existing || snapshot.jobCount > existing.jobCount) {
+      bySkill.set(snapshot.skillName, {
+        name: snapshot.skillName,
+        jobCount: snapshot.jobCount,
+      });
+    }
+  });
+
   return {
     courseCode,
-    skills: [], // [{ skill, relevance, jobPostingCount }]
+    skills: [...bySkill.values()].sort((a, b) => b.jobCount - a.jobCount),
   };
 }
 
-/**
- * Get learning resources for a specific market skill
- * @param {string} skillName - Skill name
- * @returns {Promise<Object>} - Free and paid learning resources
- */
 async function getLearningResources(skillName) {
-  // TODO: Implement MongoDB query to skill_learning_resources collection
-  // Expected schema:
-  // {
-  //   skill: String,
-  //   type: 'free' | 'paid',
-  //   title: String,
-  //   url: String,
-  //   provider: String,         // e.g., "Udemy", "Coursera", "YouTube"
-  //   description: String,
-  //   durationHours: Number
-  // }
-  
+  const resources = await LearningResource.find({ skillName, isAvailable: true })
+    .sort({ 'qualitySignal.value': -1 })
+    .limit(200)
+    .lean();
+
+  const normalized = resources.map((item) => ({
+    title: item.title,
+    url: item.url,
+    platform: item.sourcePlatform,
+    isFree: item.isFree,
+  }));
+
+  const free = normalized
+    .filter((item) => item.isFree)
+    .slice(0, RESOURCE_MAX_RESULTS)
+    .map(({ isFree, ...item }) => item);
+
+  const paid = normalized
+    .filter((item) => !item.isFree)
+    .slice(0, RESOURCE_MAX_RESULTS)
+    .map(({ isFree, ...item }) => item);
+
   return {
     skill: skillName,
-    free: [],   // [{ title, url, provider, description, durationHours }]
-    paid: [],   // [{ title, url, provider, description, durationHours }]
+    resources: {
+      free,
+      paid,
+    },
   };
 }
 

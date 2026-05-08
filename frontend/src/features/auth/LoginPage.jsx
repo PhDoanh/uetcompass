@@ -1,7 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
+import { useNotification } from '../notification/NotificationContainer';
+import { AuthField, AuthShell } from './AuthModule';
+import { navigateTo } from '../../shared/navigation';
+
+const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
+const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
+const BUTTON_DELAY_MS = 5000;
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
@@ -12,12 +20,29 @@ function formatCountdown(seconds) {
 
 export default function LoginPage() {
   const { applyLoginResult } = useAuth();
+  const notificationApi = useNotification();
+  const addNotification = notificationApi?.addNotification || (() => {});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [lockRemaining, setLockRemaining] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const buttonDelayTimerRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const hasGoogleClientId = Boolean(String(googleClientId).trim());
+
+  function triggerButtonDelay() {
+    setIsButtonCoolingDown(true);
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+    buttonDelayTimerRef.current = window.setTimeout(() => {
+      setIsButtonCoolingDown(false);
+      buttonDelayTimerRef.current = null;
+    }, BUTTON_DELAY_MS);
+  }
 
   useEffect(() => {
     if (lockRemaining <= 0) {
@@ -31,31 +56,56 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [lockRemaining]);
 
+  useEffect(() => () => {
+    if (buttonDelayTimerRef.current) {
+      window.clearTimeout(buttonDelayTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const successMessage = window.sessionStorage.getItem(REGISTER_SUCCESS_NOTICE_KEY);
+    if (!successMessage) {
+      return;
+    }
+    addNotification(successMessage, 'success');
+    window.sessionStorage.removeItem(REGISTER_SUCCESS_NOTICE_KEY);
+  }, [addNotification]);
+
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
     }
-    return `Too many failed attempts. Try again in ${formatCountdown(lockRemaining)}.`;
+    return `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${formatCountdown(lockRemaining)}.`;
   }, [lockRemaining]);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    if (lockRemaining > 0) {
+    if (lockRemaining > 0 || isButtonCoolingDown) {
       return;
     }
+
+    triggerButtonDelay();
 
     setIsSubmitting(true);
     try {
       const result = await authApi.login({ email, password });
       applyLoginResult(result);
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
         setLockRemaining(Math.max(1, seconds));
+        addNotification('Tài khoản tạm thời bị khóa do nhập sai nhiều lần.', 'warning');
       }
-      setError('Invalid email or password.');
+      setError('Email hoặc mật khẩu không đúng.');
+      addNotification('Đăng nhập thất bại. Vui lòng kiểm tra email hoặc mật khẩu.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -66,59 +116,113 @@ export default function LoginPage() {
     try {
       const result = await authApi.googleLogin({ credential: credentialResponse?.credential });
       applyLoginResult(result);
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
+      }
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
-        setError('Please use your @vnu.edu.vn Google account.');
+        setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');
+        addNotification('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.', 'warning');
         return;
       }
-      setError('Google sign-in failed. Please try again.');
+      setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+      addNotification('Đăng nhập Google thất bại. Vui lòng thử lại.', 'error');
     }
   }
 
-  return (
-    <GoogleOAuthProvider clientId={googleClientId || 'missing-google-client-id'}>
-      <main style={{ maxWidth: 420, margin: '64px auto', padding: 16 }}>
-        <h1>Email login</h1>
-        <p>Sign in with your VNU account.</p>
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="student@vnu.edu.vn"
-            required
-            style={{ width: '100%', marginBottom: 12 }}
-          />
+  const content = (
+    <AuthShell
+      title="UETCompass"
+      description="Dẫn lối cho sự nghiệp tương lai của bạn"
+      isLoading={isSubmitting}
+      error={error || lockMessage}
+      icon={<Compass size={24} />}
+      tabs={[
+        { href: '/login', label: 'Đăng nhập', active: true },
+        { href: '/register', label: 'Đăng ký', active: false },
+      ]}
+      footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
+      footerSecondary="Chính sách bảo mật / Điều khoản sử dụng"
+      footerTertiary="© 2026 UETCompass • Phát triển bởi sinh viên UET"
+    >
+      <div className="auth-google-block">
+        {hasGoogleClientId ? (
+          <div className="auth-google-button-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
+              useOneTap={false}
+              theme="outline"
+              shape="pill"
+              size="large"
+              text="continue_with"
+              width="350"
+            />
+          </div>
+        ) : (
+          <p className="auth-status helper tight">Không thể dùng đăng nhập Google: thiếu VITE_GOOGLE_CLIENT_ID.</p>
+        )}
+        <div className="auth-google-divider">Hoặc</div>
+      </div>
 
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            style={{ width: '100%', marginBottom: 12 }}
-          />
+      <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: 12 }}>
+        <AuthField id="email" label="Email">
+          <div className="auth-input-wrap">
+            <Mail size={16} className="auth-leading-icon" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="student@vnu.edu.vn"
+              required
+              className="auth-input has-leading"
+            />
+          </div>
+        </AuthField>
 
-          {error ? <p style={{ color: '#b42318' }}>{error}</p> : null}
-          {lockMessage ? <p style={{ color: '#b42318' }}>{lockMessage}</p> : null}
+        <AuthField
+          id="password"
+          label="Mật khẩu"
+          action={<a href="/forgot-password" className="auth-inline-link">Quên mật khẩu?</a>}
+        >
+          <div className="auth-password-wrapper">
+            <Lock size={16} className="auth-leading-icon" />
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              className="auth-input has-leading has-trailing"
+            />
+            <button
+              type="button"
+              className="auth-password-toggle"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {showPassword ? <EyeOff className="auth-eye-icon" /> : <Eye className="auth-eye-icon" />}
+            </button>
+          </div>
+        </AuthField>
 
-          <button type="submit" disabled={isSubmitting || lockRemaining > 0}>
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={isSubmitting || lockRemaining > 0 || isButtonCoolingDown}
+          className={`auth-button primary ${isSubmitting || lockRemaining > 0 || isButtonCoolingDown ? 'disabled' : ''}`}
+        >
+          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </button>
+      </form>
 
-        <div style={{ marginTop: 16 }}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setError('Google sign-in failed. Please try again.')}
-            useOneTap={false}
-          />
-        </div>
-      </main>
-    </GoogleOAuthProvider>
+    </AuthShell>
   );
+
+  if (!hasGoogleClientId) {
+    return content;
+  }
+
+  return <GoogleOAuthProvider clientId={googleClientId}>{content}</GoogleOAuthProvider>;
 }

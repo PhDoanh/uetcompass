@@ -14,8 +14,9 @@ router.use(requireAuth);
 // US1 — View tree
 router.get('/', controller.getTree);
 
-// US2 — Update node status
-router.patch('/nodes/:courseCode/status', controller.patchNodeStatus);
+// US2/US3 — Progress read/update by roadmap and nodeId
+router.get('/roadmaps/:roadmapId/progress', controller.getRoadmapProgress);
+router.patch('/roadmaps/:roadmapId/progress/node', controller.patchNodeStatus);
 
 // US3 — Course detail panel resources
 router.get('/nodes/:courseCode/resources', controller.getNodeResources);

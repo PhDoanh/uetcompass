@@ -11,11 +11,10 @@ function writeLine(line) {
 	fs.appendFileSync(LOG_PATH, `${line}\n`, 'utf8');
 }
 
-function logEvent(level, event, payload = {}) {
+function write(level, payload = {}) {
 	const entry = {
 		timestamp: new Date().toISOString(),
 		level,
-		event,
 		...payload,
 	};
 	const line = JSON.stringify(entry);
@@ -42,7 +41,19 @@ function logEvent(level, event, payload = {}) {
 	return entry;
 }
 
+function logEvent(level, event, payload = {}) {
+	return write(level, { event, ...payload });
+}
+
+const log = {
+	info: (payload = {}) => write('info', payload),
+	warn: (payload = {}) => write('warn', payload),
+	error: (payload = {}) => write('error', payload),
+};
+
 module.exports = {
 	LOG_PATH,
+	log,
+	write,
 	logEvent,
 };

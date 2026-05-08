@@ -1,157 +1,196 @@
 # Feature Specification: Skill Tree
 
 **Feature Branch**: `004-skill-tree`  
-**Created**: 2026-03-11  
+**Created**: 2026-04-07  
+**Updated**: 2026-04-11  
 **Status**: Draft  
-**Input**: User description: "Build the Skill Tree feature for UETCompass — a personalized academic roadmap system for UET-VNU students."
+**Input**: User description: "Skill Tree renders and tracks roadmap data produced by Feature 009."
+
+## Data Contract Alignment with Feature 009
+
+Feature 004 MUST consume the canonical Roadmap and RoadmapProgress contracts from Feature 009. This feature does not define alternate node schemas.
+
+### Canonical roadmap source (read)
+
+- `GET /api/roadmaps/primary`
+- `GET /api/roadmaps/:roadmapId`
+
+Canonical node shape from 009:
+
+```json
+{
+  "nodeId": "version-control-systems",
+  "nodeType": "topic",
+  "skillName": "Version Control Systems",
+  "parentNodeId": null,
+  "relatedCourses": [
+    { "courseCode": "INT2204", "courseName": "Object-Oriented Programming", "credits": 3 }
+  ],
+  "reason": "Foundation for collaborative software development.",
+  "resources": []
+}
+```
+
+Allowed nodeType values from 009:
+- `topic`
+- `subtopic`
+
+### Canonical progress source (read/write)
+
+- `GET /api/roadmaps/:roadmapId/progress`
+- `PATCH /api/roadmaps/:roadmapId/progress/node`
+
+Canonical progress state shape from 009:
+
+```json
+{
+  "state": {
+    "pending": [],
+    "inProgress": [],
+    "completed": [],
+    "skip": []
+  }
+}
+```
+
+Valid state transitions are enforced by 009 only:
+- `pending -> inProgress`
+- `pending -> skip`
+- `inProgress -> completed`
+
+---
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - View Personalized Skill Tree (Priority: P1)
+### User Story 1 - View the Interactive Skill Tree from 009 Primary Roadmap (Priority: P1)
 
-A student logs into UETCompass and navigates to the Skill Tree page. They see an interactive directed graph representing their personalized academic roadmap, with courses arranged top-down following prerequisite relationships based on their declared career goal. Courses from their onboarding transcript that are already completed appear as `done`; all others start as `pending`.
+A student opens Skill Tree and sees a roadmap.sh-style graph rendered from Feature 009 primary roadmap data.
 
-**Why this priority**: This is the foundational view upon which all other interactions depend. Without a correctly rendered tree, nothing else in the feature is usable.
+**Why this priority**: Rendering the canonical roadmap payload is the core value of Feature 004.
 
-**Independent Test**: A student with a completed onboarding profile can navigate to the Skill Tree page and see a correctly structured graph with course nodes in their appropriate initial states (completed courses = `done`, others = `pending`).
+**Independent Test**: Mock or fetch a valid 009 primary roadmap and verify all nodes render correctly with the expected topic/subtopic semantics.
 
 **Acceptance Scenarios**:
 
-1. **Given** a student has completed onboarding with a declared career goal, **When** they navigate to the Skill Tree page, **Then** they see an interactive directed graph of relevant courses arranged top-down by prerequisite order
-2. **Given** the student's onboarding data includes completed courses, **When** the Skill Tree loads, **Then** those courses are displayed as `done` and all other courses default to `pending`
-3. **Given** a course whose prerequisites are not all `done`, **When** the tree renders, **Then** that node appears visually locked and is non-interactable
-4. **Given** two students with different career goals, **When** each views their own Skill Tree, **Then** each sees only their own personalized course set with no cross-student data leakage
+1. **Given** a valid 009 roadmap payload, **When** Skill Tree loads, **Then** the UI renders all nodes from `roadmap.nodes[]` using `nodeId` as the unique key
+2. **Given** a node with `nodeType: topic`, **When** layout is computed, **Then** it is placed on the main learning spine
+3. **Given** a node with `nodeType: subtopic`, **When** layout is computed, **Then** it is attached to its parent by `parentNodeId`
+4. **Given** two `topic` nodes are consecutive on the main line, **When** rendered, **Then** the edge between them is solid
+5. **Given** a `subtopic` node has `parentNodeId`, **When** rendered, **Then** the edge from parent `topic` to that node is dashed
+6. **Given** `personalisationLevel` is `low`, **When** the roadmap is displayed, **Then** the UI shows a low-personalisation notice
 
 ---
 
-### User Story 2 - Track Progress by Updating Node States (Priority: P2)
+### User Story 2 - Open Canonical Node Details (Priority: P1)
 
-A student uses the Skill Tree to track their academic progress. They click a node to open its detail panel, then use a dedicated status action control to move a course from `pending` to `in_progress` and then to `done`. This unlocks dependent nodes. Locked nodes can still be opened for viewing details, but their status action control is disabled.
+A student clicks a node to view the exact detail information generated by 009.
 
-**Why this priority**: Core interaction model that turns the tree into a living progress tracker rather than a static diagram.
+**Why this priority**: Detail view is where the student consumes explanation/resources and course linkage.
 
-**Independent Test**: A student can click an unlocked `pending` node to open detail, use the status action control to transition it to `in_progress`, use the control again to move it to `done`, observe that a previously locked dependent node becomes unlocked, and confirm that the state is preserved on page refresh.
+**Independent Test**: Click topic and subtopic nodes and verify all canonical fields are displayed without schema translation loss.
 
 **Acceptance Scenarios**:
 
-1. **Given** a course node in `pending` state with all prerequisites in `done` state, **When** the student uses the dedicated status action control in the detail panel, **Then** the node transitions to `in_progress`
-2. **Given** a course node in `in_progress` state, **When** the student uses the dedicated status action control in the detail panel, **Then** the node transitions to `done`
-3. **Given** a course node that has just been marked `done` and all other prerequisites of a dependent node are also `done`, **When** the tree updates, **Then** the dependent node becomes unlocked and interactable
-4. **Given** a course node with at least one prerequisite not in `done` state (locked), **When** the student opens the detail panel, **Then** no state transition action is available and the locked state is preserved
-5. **Given** the student has manually transitioned several nodes, **When** they refresh the page or return in a later session, **Then** all previously set node states are preserved exactly as left
+1. **Given** a student clicks any node, **When** detail panel opens, **Then** it shows `skillName` as title
+2. **Given** a clicked node contains `reason`, **When** detail panel renders, **Then** the explanation section shows `reason`
+3. **Given** a clicked node contains `resources`, **When** detail panel renders, **Then** resources are shown from `resources` as-is
+4. **Given** a clicked node contains `relatedCourses`, **When** detail panel renders, **Then** each item displays `courseCode`, `courseName`, and `credits`
+5. **Given** `relatedCourses` is empty, **When** detail panel renders, **Then** the UI shows an explicit empty state and remains stable
 
 ---
 
-### User Story 3 - View Course Detail Panel (Priority: P3)
+### User Story 3 - Track Progress via 009 RoadmapProgress (Priority: P2)
 
-A student clicks on any node to open a detail side panel. The panel presents three tabs: Resources (course materials), Why This Course (AI-generated career relevance), and Market Skills (industry skills from job platforms). Each tab serves a distinct purpose in enriching the student's learning context.
+A student updates node progress in Skill Tree, and Feature 004 persists updates through 009 progress APIs.
 
-**Why this priority**: Provides actionable, contextual information that differentiates UETCompass from a plain course catalogue.
+**Why this priority**: Progress persistence is required for continuity across sessions and devices.
 
-**Independent Test**: Clicking any visible course node opens a side panel; each of the 3 tabs loads and displays relevant content for the selected course.
+**Independent Test**: Load progress, perform valid transitions, reload page, and verify state is preserved.
 
 **Acceptance Scenarios**:
 
-1. **Given** a student clicks any course node, **When** the detail panel opens, **Then** it displays the course name, current state, and three tabs: Resources, Why This Course, Market Skills
-2. **Given** the Resources tab is selected, **When** course materials exist in the database, **Then** textbooks, lecture slides, lab assignments, and major assignments are all listed separately
-3. **Given** the "Why This Course" tab is selected for the first time, **When** the request is sent, **Then** an AI-generated explanation of the course's relevance to the student's career goal is displayed within 5 seconds
-4. **Given** the Market Skills tab is selected, **When** data is available, **Then** a list of industry-relevant skills sourced from Vietnamese IT job platforms is displayed (e.g., for "Web Application Development": React.js, Node.js, REST API design)
+1. **Given** roadmap is loaded, **When** progress API returns state arrays, **Then** each node visual state is derived from membership in `pending`, `inProgress`, `completed`, or `skip`
+2. **Given** a node is in `pending`, **When** student marks "Start", **Then** frontend calls PATCH with `fromState: pending` and `toState: inProgress`
+3. **Given** a node is in `pending`, **When** student marks "Skip", **Then** frontend calls PATCH with `fromState: pending` and `toState: skip`
+4. **Given** a node is in `inProgress`, **When** student marks "Complete", **Then** frontend calls PATCH with `fromState: inProgress` and `toState: completed`
+5. **Given** backend returns `INVALID_TRANSITION`, **When** update fails, **Then** UI shows error state and does not apply optimistic state permanently
+6. **Given** any successful transition, **When** page reloads, **Then** node visual state matches the persisted progress document
 
 ---
 
-### User Story 4 - Explore Market Skills and Learning Resources (Priority: P4)
+### User Story 4 - Handle Missing or Failed Roadmap States (Priority: P3)
 
-From the Market Skills tab, a student clicks on a specific skill (e.g., "React.js") to see a sub-panel with curated learning materials — both free and paid tutorials/courses — so they can self-study that skill independently of the UET curriculum.
+Skill Tree handles roadmap lifecycle states from 009 without inventing local status fields.
 
-**Why this priority**: Creates a direct bridge from academic curriculum to industry skill-building.
+**Why this priority**: 009 owns lifecycle, and 004 must correctly reflect retryable or missing data situations.
 
-**Independent Test**: From the Market Skills tab, clicking a skill name opens a sub-panel or modal showing categorized learning resources (free and paid) for that skill.
-
-**Acceptance Scenarios**:
-
-1. **Given** the Market Skills tab is open and at least one skill is listed, **When** the student clicks a skill, **Then** a sub-panel or modal opens showing learning resources for that skill
-2. **Given** the skill sub-panel is open and resources exist, **When** the student views the panel, **Then** resources are visually organized into "Free" and "Paid" categories
-3. **Given** the skill sub-panel is open, **When** the student clicks a resource link, **Then** they are directed to the relevant external learning platform
-
----
-
-### User Story 5 - Re-personalize Skill Tree After Profile Update (Priority: P5)
-
-After updating career goal, current year, or completed courses in the Settings page, a student returns to the Skill Tree and sees a prominent "Re-personalize" button. Clicking it regenerates the tree, reflecting the updated profile — new course set, reordered prerequisites, and refreshed node states.
-
-**Why this priority**: Keeps the roadmap current and accurate as the student's profile evolves over time.
-
-**Independent Test**: After a profile update, the "Re-personalize" button appears on the Skill Tree page; clicking it fully re-renders the tree with updated content.
+**Independent Test**: Simulate no primary roadmap, failed/retryable roadmap, and loading errors.
 
 **Acceptance Scenarios**:
 
-1. **Given** a student has updated their profile (career goal, completed courses, or current year), **When** they navigate to the Skill Tree page, **Then** a prominent "Re-personalize" button is displayed
-2. **Given** the "Re-personalize" button is displayed, **When** the student clicks it, **Then** the tree is regenerated and fully re-rendered to reflect the updated profile
-3. **Given** the re-personalized tree has loaded, **When** the student views it, **Then** newly completed courses appear as `done`, removed courses are gone, and the course set matches the updated career goal
-4. **Given** the student has NOT updated their profile since the last personalization, **When** they view the Skill Tree page, **Then** the "Re-personalize" button is NOT displayed
+1. **Given** `GET /api/roadmaps/primary` returns `ROADMAP_NOT_FOUND`, **When** page opens, **Then** UI shows empty state with clear guidance
+2. **Given** primary roadmap exists but `acceptedAt` is null, **When** page opens, **Then** UI treats it as retryable/failed state and presents retry guidance via 009 flow
+3. **Given** roadmap fetch fails with server error, **When** page opens, **Then** UI shows recoverable error and retry action
 
 ---
 
 ### Edge Cases
 
-- What happens when a student's personalized roadmap has not been generated yet (onboarding incomplete or skipped)?
-- What is displayed in the "Why This Course" tab if the AI service is temporarily unavailable?
-- What is displayed in the Market Skills tab if no skills data exists for a given course?
-- What is displayed in the Resources tab if no materials have been seeded for a given course?
-- What happens when a student clicks "Re-personalize" while a previous re-personalization request is still in progress?
-- What happens when a student closes the detail panel and opens a different node — is the previously active tab retained for the new node?
+- `subtopic` has missing `parentNodeId`: node is rendered in a fallback group and warning is logged client-side
+- `parentNodeId` points to non-existent node: node still renders as orphan subtopic without crashing graph
+- Progress state does not mention a nodeId present in roadmap: UI defaults that node to `pending` visual state
+- Progress state references nodeId not found in roadmap: UI ignores unknown nodeId safely
+- Large roadmap size: pan/zoom and node selection remain usable without broken connections
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST display the authenticated student's personalized skill tree as an interactive, top-down directed acyclic graph where each node represents a UET curriculum course relevant to the student's declared career goal
-- **FR-002**: The system MUST render nodes top-down in prerequisite order, with directed edges representing prerequisite relationships between course nodes
-- **FR-003**: Each node MUST visually distinguish between its three possible states: `pending`, `in_progress`, and `done`, using distinct visual styling
-- **FR-004**: Each node MUST visually indicate whether it is locked (not all prerequisites `done`) or unlocked (all prerequisites `done`); locked nodes MUST be non-interactable for status transition actions
-- **FR-005**: On initial load, nodes corresponding to courses the student completed during onboarding MUST be pre-initialized to `done`; all remaining nodes MUST default to `pending`
-- **FR-006**: Students MUST be able to transition node states sequentially through a dedicated status action control in the course detail panel: `pending` → `in_progress` → `done`; no other transitions are permitted
-- **FR-007**: A node MUST become interactable only when ALL of its direct prerequisite nodes are in `done` state; partial prerequisite completion MUST NOT unlock a node
-- **FR-008**: All node state changes MUST be persisted server-side and survive page reloads and new sessions
-- **FR-008a**: The system MUST persist `pending` as an explicit status record in `skill_node_statuses` for every node in the student's canonical primary roadmap (no implicit `pending` from missing documents)
-- **FR-009**: When a student clicks any course node (locked or unlocked), the system MUST open a detail side panel with three tabs: Resources, Why This Course, and Market Skills
-- **FR-010**: The Resources tab MUST display course materials (textbooks, lecture slides, lab assignments, and major assignments) sourced from the application database
-- **FR-011**: The "Why This Course" tab MUST display an AI-generated explanation of why the course is relevant and necessary for the student's declared career goal, generated using course metadata and the student's goal profile
-- **FR-012**: The Market Skills tab MUST display a list of industry-relevant skills associated with the course, sourced from Vietnamese IT job platform data (e.g., TopDev, ITviec)
-- **FR-013**: Clicking any skill item in the Market Skills tab MUST open a sub-panel or modal listing free and paid learning resources (tutorials and courses) for that skill
-- **FR-014**: A "Re-personalize" button MUST appear prominently on the Skill Tree page when the student's profile has been updated since the last tree generation; the button MUST NOT appear otherwise
-- **FR-015**: Clicking the "Re-personalize" button MUST trigger re-generation of the personalized roadmap and fully re-render the skill tree with the updated node set, prerequisite ordering, and seeded states
-- **FR-016**: Each student MUST only be able to view and interact with their own skill tree; access to another student's tree MUST be prohibited
-- **FR-017**: The Skill Tree page MUST be accessible only to authenticated students; unauthenticated requests MUST be rejected
-- **FR-018**: The module MUST expose a downstream `getNodesByStatus()` contract that returns `roadmapId`, `roadmapName`, and always-present grouped arrays `done`, `inProgress`, `pending`; each item MUST include `nodeId`, `courseCode`, `courseName`, `status`, `updatedAt`
+- **FR-001**: Feature 004 MUST consume roadmap data only from Feature 009 roadmap APIs; it MUST NOT define or persist a separate roadmap schema
+- **FR-002**: Feature 004 MUST render only the canonical 009 node types: `topic` and `subtopic`
+- **FR-003**: Feature 004 MUST use `nodeId` as the node identity key and MUST NOT remap to alternate identifiers for persistence operations
+- **FR-004**: `topic` nodes MUST be rendered as the primary sequence backbone in the visual graph
+- **FR-005**: `subtopic` nodes MUST be linked to their topic parent via `parentNodeId`
+- **FR-006**: Edges between consecutive `topic` nodes on the main flow MUST use solid styling
+- **FR-007**: Edges between `topic` and `subtopic` MUST use dashed styling
+- **FR-008**: Clicking any node MUST open a detail panel showing canonical fields: `skillName`, `reason`, `resources`, `relatedCourses`
+- **FR-009**: `relatedCourses` rendering MUST use exact fields from 009: `courseCode`, `courseName`, `credits`
+- **FR-010**: Feature 004 MUST retrieve per-roadmap progress from `GET /api/roadmaps/:roadmapId/progress`
+- **FR-011**: Feature 004 MUST support and render exactly four progress states from 009: `pending`, `inProgress`, `completed`, `skip`
+- **FR-012**: Feature 004 MUST persist progress updates only through `PATCH /api/roadmaps/:roadmapId/progress/node` with 009-valid transitions
+- **FR-013**: Feature 004 MUST NOT implement independent prerequisite lock/unlock rules; transition validity is enforced by 009
+- **FR-014**: Feature 004 MUST display low-personalisation notice when roadmap `personalisationLevel` is `low`
+- **FR-015**: Feature 004 MUST treat `acceptedAt` as lifecycle indicator from 009 (`acceptedAt` present = accepted, `acceptedAt` null = failed/retryable)
+- **FR-016**: Feature 004 MUST use 009 error codes (`ROADMAP_NOT_FOUND`, `CONFLICT`, `INVALID_TRANSITION`) for user-facing handling states
+- **FR-017**: Feature 004 scope is presentation, interaction, and client-state orchestration; roadmap generation, primary-switch policy, and lifecycle ownership remain in 009
+
+### Non-Functional Requirements
+
+- **NFR-001 (Contract Fidelity)**: 004 must not lose or rename canonical 009 fields when binding data to UI components
+- **NFR-002 (Rendering Clarity)**: The tree layout must remain readable on desktop and mobile, with labels not overlapping under common zoom levels
+- **NFR-003 (Interaction Latency)**: Detail panel opening and progress visual feedback should respond within 300ms excluding network latency
+- **NFR-004 (UI Scalability)**: For large roadmaps (>= 150 nodes), pan/zoom and node interaction must remain stable and usable
 
 ### Key Entities
 
-- **Skill Tree**: The student's complete personalized academic roadmap; scoped to one student and one career goal; contains an ordered set of course nodes consumed from Feature 009 canonical primary roadmap
-- **Course Node**: A single UET course in the skill tree; carries a state (`pending`/`in_progress`/`done`), a locked/unlocked status computed from prerequisite states, and references to prerequisite nodes
-- **Course Resource**: A learning material item (textbook, slide deck, lab assignment, or major assignment) linked to a course node; pre-seeded by administrators
-- **Market Skill**: An industry skill (e.g., "React.js", "REST API design") associated with a course node; populated from Vietnamese IT job platform crawl data
-- **Learning Resource**: A tutorial or course (free or paid) linked to a market skill; sourced from crawled or curated data
+- **Roadmap (from 009)**: Primary roadmap document with `personalisationLevel`, `acceptedAt`, and ordered `nodes`
+- **RoadmapNode (from 009)**: Node shape `{ nodeId, nodeType, skillName, parentNodeId, relatedCourses, reason, resources }`
+- **RoadmapProgress (from 009)**: Progress document with `state.pending`, `state.inProgress`, `state.completed`, `state.skip`
+- **Skill Tree Node Detail Panel**: Frontend view that displays canonical node fields without changing semantics
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Students can view their fully rendered personalized skill tree within 3 seconds of navigating to the page under normal load conditions
-- **SC-002**: Node state transitions are visually reflected within 500 milliseconds of a student clicking an unlocked node
-- **SC-003**: The course detail side panel opens and displays the default tab within 1 second of a node click
-- **SC-004**: AI-generated "Why This Course" content is displayed within 5 seconds of the student selecting that tab
-- **SC-005**: Market Skills data is available and displayed for at least 80% of courses in the skill tree
-- **SC-006**: Re-personalization fully completes and the updated tree is rendered within 10 seconds of clicking the "Re-personalize" button
-- **SC-007**: At least 90% of students can navigate the tree and update at least one node state without external assistance
-- **SC-008**: Node states are preserved with 100% consistency across sessions; no state data is lost on page reload or re-login
+- **SC-001**: 100% of tested roadmaps from 009 render all nodes with correct `topic`/`subtopic` semantics
+- **SC-002**: 100% of tested detail panels display canonical 009 fields (`skillName`, `reason`, `resources`, `relatedCourses`) without missing required keys
+- **SC-003**: 100% of successful progress updates use valid 009 transitions and persist after reload
+- **SC-004**: 100% of invalid progress transitions return visible error handling without corrupting local node state
+- **SC-005**: 100% of low-personalisation roadmaps (`personalisationLevel = low`) show the expected user notice
 
 ## Assumptions
 
-- Feature 009 is the canonical owner of roadmap generation/storage; Feature 004 consumes the primary roadmap via `GET /api/primary-roadmap` (or equivalent internal service contract) and does not maintain a duplicate `student_roadmaps` store
-- Course resource data (textbooks, slides, lab and major assignments) is pre-seeded into the application database by administrators before students access the feature
-- Market skills data is populated and refreshed by a separate job market crawling service; this feature only consumes that data
-- AI content for the "Why This Course" tab is generated on-demand by an LLM service accessible to the backend
-- Node state transitions are strictly one-directional (`pending` → `in_progress` → `done`); reversal and skipping states are not supported
-- The canonical primary roadmap payload is assumed to represent a valid DAG (no circular prerequisites); this feature does not validate graph integrity
-- Students who have not completed onboarding may not have a primary roadmap in Feature 009 and will be directed to complete onboarding before accessing the Skill Tree
+- Feature 009 is the authoritative source of roadmap and progress data
+- Backend contracts documented by 009 remain stable for the fields referenced in this spec
+- Feature 004 may include adapter/service code to fetch 009 APIs, but must preserve canonical field names and meanings
+

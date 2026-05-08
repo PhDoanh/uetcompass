@@ -1,192 +1,130 @@
-# Tasks: Skill Tree – Personalized Academic Roadmap Tracker
+# Tasks: Skill Tree
 
 **Input**: Design documents from `/specs/004-skill-tree/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/rest-api.md, quickstart.md
 
-**Tests**: Jest unit tests are required for this feature (per plan + constitution). Include tests before implementation in each user story phase.
+**Tests**: No separate test-first tasks are generated because the specification does not explicitly require a TDD workflow. Validation is covered by story-level independent tests and quickstart scenarios.
 
-**Organization**: Tasks are grouped by user story so each story can be built and validated independently.
-
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: Can run in parallel (different files, no dependency on incomplete tasks)
-- **[Story]**: User story label (US1, US2, US3, US4, US5)
-- Every task includes an exact file path
+**Organization**: Tasks are grouped by user story to preserve independent implementation and validation.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Create baseline module/file scaffolding and dependency alignment.
+**Purpose**: Align feature artifacts and implementation entry points with the updated 009-first contract.
 
-- [X] T001 Create backend Skill Tree module index and exports in `backend/src/modules/skill-tree/index.js`
-- [X] T002 Create frontend Skill Tree feature entry scaffold in `frontend/src/features/skill-tree/SkillTreePage.jsx`
-- [X] T003 [P] Add Gemini SDK dependency wiring in `backend/package.json`
-- [X] T004 [P] Add graph/state UI dependencies in `frontend/package.json`
-- [X] T005 Add feature environment variable documentation for Gemini in `specs/004-skill-tree/quickstart.md`
+- [X] T001 Update skill-tree contract baseline in specs/004-skill-tree/contracts/rest-api.md
+- [X] T002 Update module usage notes in backend/src/modules/skill-tree/README.md
+- [X] T003 [P] Create canonical Skill Tree types in frontend/src/features/skill-tree/skillTree.types.js
+- [X] T004 [P] Create graph transformation utility in frontend/src/features/skill-tree/graphTransform.js
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core backend/frontend infrastructure required before any user story work.
+**Purpose**: Remove legacy schema assumptions and establish canonical 009 integration points required by all stories.
 
-**⚠️ CRITICAL**: No user story implementation starts until this phase is complete.
+**CRITICAL**: No user story implementation should begin before this phase is complete.
 
-- [X] T006 Create status persistence schema for explicit pending records in `backend/src/modules/skill-tree/skillNodeStatus.model.js`
-- [X] T007 [P] Create AI context cache schema in `backend/src/modules/skill-tree/aiContext.model.js`
-- [X] T008 [P] Create request validation helpers for status and params in `backend/src/modules/skill-tree/skillTree.validation.js`
-- [X] T009 Implement canonical roadmap adapter to Feature 009 in `backend/src/modules/skill-tree/primaryRoadmap.service.js`
-- [X] T010 Implement shared DAG utilities, unlock evaluation, and pending reconciliation helpers in `backend/src/modules/skill-tree/skillTree.service.js`
-- [X] T011 Create base controller error mapping and response helpers in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T012 Create authenticated router skeleton for all Skill Tree endpoints in `backend/src/modules/skill-tree/skillTree.routes.js`
-- [X] T013 Mount Skill Tree routes in backend application bootstrap in `backend/src/app.js`
-- [X] T014 Create frontend Skill Tree API client scaffold in `frontend/src/services/skillTree.api.js`
-- [X] T015 [P] Create Zustand store for node/panel/tab state in `frontend/src/stores/skillTreeStore.js`
-- [X] T016 [P] Create polling hook scaffold with visibility pause/resume in `frontend/src/features/skill-tree/useSkillTree.js`
-- [X] T068 [P] Add constitution-required skill-mapping regression tests in `backend/tests/unit/curriculum/skillMapping.test.js`
-- [X] T069 [P] Add constitution-required scraping pipeline regression tests in `backend/tests/unit/onboarding/scrape.pipeline.test.js`
+- [X] T005 Refactor roadmap adapter mapping to canonical 009 fields in backend/src/modules/skill-tree/primaryRoadmap.service.js
+- [X] T006 [P] Align input and transition validation with nodeId/fromState/toState in backend/src/modules/skill-tree/skillTree.validation.js
+- [X] T007 Refactor core skill-tree orchestration to consume roadmap and progress contracts in backend/src/modules/skill-tree/skillTree.service.js
+- [X] T008 Align controller response/error envelopes with 009 error codes in backend/src/modules/skill-tree/skillTree.controller.js
+- [X] T009 [P] Align route surface with updated skill-tree contract in backend/src/modules/skill-tree/skillTree.routes.js
+- [X] T010 [P] Update frontend API client schemas and request builders in frontend/src/services/skillTree.api.js
+- [X] T011 [P] Update client state model for pending/inProgress/completed/skip in frontend/src/stores/skillTreeStore.js
 
-**Checkpoint**: Shared foundations complete; user stories can proceed.
+**Checkpoint**: Foundation complete - all user stories can now be implemented independently.
 
 ---
 
-## Phase 3: User Story 1 - View Personalized Skill Tree (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - View Interactive Skill Tree from 009 Primary Roadmap (Priority: P1) MVP
 
-**Goal**: Render the authenticated student’s personalized top-down DAG with correct initial statuses and lock states.
+**Goal**: Render canonical 009 roadmap nodes as a topic/subtopic graph with correct edge semantics and low-personalisation signaling.
 
-**Independent Test**: Student opens `/skill-tree` and sees canonical roadmap nodes with `done` from onboarding-seeded status rows, explicit `pending` for remaining nodes, and lock visuals matching prerequisite completion.
-
-### Tests for User Story 1
-
-- [X] T017 [P] [US1] Add DAG unlock traversal unit tests in `backend/tests/unit/skill-tree/dagTraversal.test.js`
-- [X] T018 [P] [US1] Add explicit pending reconciliation unit tests in `backend/tests/unit/skill-tree/pendingSync.test.js`
-- [X] T019 [P] [US1] Add grouped status contract unit tests for `getNodesByStatus()` in `backend/tests/unit/skill-tree/getNodesByStatus.test.js`
+**Independent Test**: Load a valid 009 primary roadmap and verify node rendering uses nodeId identity, topic main-flow edges are solid, subtopic branch edges are dashed, and low-personalisation notice appears when personalisationLevel is low.
 
 ### Implementation for User Story 1
 
-- [X] T020 [US1] Implement `getSkillTree` read flow (roadmap + statuses + `isUnlocked`) in `backend/src/modules/skill-tree/skillTree.service.js`
-- [X] T021 [US1] Implement `GET /api/skill-tree` handler in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T022 [US1] Implement `getTree` frontend request function in `frontend/src/services/skillTree.api.js`
-- [X] T023 [P] [US1] Build React Flow canvas and edge layout mapping in `frontend/src/features/skill-tree/SkillTreeCanvas.jsx`
-- [X] T024 [P] [US1] Build custom course node UI for status badges and lock indicator in `frontend/src/features/skill-tree/CourseNode.jsx`
-- [X] T025 [US1] Implement Skill Tree page container loading canonical data into store in `frontend/src/features/skill-tree/SkillTreePage.jsx`
-- [X] T026 [US1] Register Skill Tree route in application router in `frontend/src/App.jsx`
-- [X] T027 [US1] Enforce onboarding/auth guard behavior for Skill Tree route in `frontend/src/guards/OnboardingGuard.jsx`
+- [X] T012 [US1] Implement roadmap-to-view-node transformation from roadmap.nodes in frontend/src/features/skill-tree/graphTransform.js
+- [X] T013 [P] [US1] Implement main-flow and branch edge derivation in frontend/src/features/skill-tree/graphTransform.js
+- [X] T014 [P] [US1] Update node rendering for topic/subtopic semantics in frontend/src/features/skill-tree/CourseNode.jsx
+- [X] T015 [US1] Update canvas rendering to consume canonical graph model in frontend/src/features/skill-tree/SkillTreeCanvas.jsx
+- [X] T016 [US1] Wire page loading state and low-personalisation banner in frontend/src/features/skill-tree/SkillTreePage.jsx
+- [X] T017 [P] [US1] Update visual styles for main-flow and branch semantics in frontend/src/features/skill-tree/skill-tree.css
+- [X] T018 [US1] Align hook state mapping and node identity handling in frontend/src/features/skill-tree/useSkillTree.js
 
-**Checkpoint**: US1 is fully functional and independently testable as MVP.
+**Checkpoint**: User Story 1 is independently functional and verifiable.
 
 ---
 
-## Phase 4: User Story 2 - Track Progress by Updating Node States (Priority: P2)
+## Phase 4: User Story 2 - Open Canonical Node Details (Priority: P1)
 
-**Goal**: Support valid node transitions (`pending → in_progress → done`) with persistence and locked-node rejection.
+**Goal**: Show node detail content directly from canonical fields skillName, reason, resources, and relatedCourses.
 
-**Independent Test**: Student updates an unlocked node through the valid sequence, sees dependent node unlock, and state persists after refresh.
-
-### Tests for User Story 2
-
-- [X] T028 [P] [US2] Add state guard unit tests for locked nodes and invalid transitions in `backend/tests/unit/skill-tree/stateGuard.test.js`
-- [X] T029 [P] [US2] Add controller unit tests for PATCH status validation/error mapping in `backend/tests/unit/skill-tree/statusPatchController.test.js`
-- [X] T070 [P] [US2] Add UI interaction contract tests (node click opens panel, status action control updates state, locked node action disabled) in `frontend/src/features/skill-tree/nodeInteraction.test.jsx`
+**Independent Test**: Click topic/subtopic nodes and verify detail panel renders skillName, reason, resources, and relatedCourses (courseCode, courseName, credits) with stable empty states.
 
 ### Implementation for User Story 2
 
-- [X] T030 [US2] Implement transition guard and persistence update logic in `backend/src/modules/skill-tree/skillTree.service.js`
-- [X] T031 [US2] Implement `PATCH /api/skill-tree/nodes/:courseCode/status` handler in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T032 [US2] Add `patchNodeStatus` API function in `frontend/src/services/skillTree.api.js`
-- [X] T033 [US2] Implement optimistic node status update + rollback logic in `frontend/src/features/skill-tree/useSkillTree.js`
-- [X] T034 [US2] Implement dedicated status action control in detail panel and wire sequential transitions in `frontend/src/features/skill-tree/CourseDetailPanel.jsx`
-- [X] T071 [US2] Wire node click behavior to open detail panel only (no direct state mutation) in `frontend/src/features/skill-tree/CourseNode.jsx`
+- [X] T019 [US2] Refactor detail panel bindings to canonical node fields in frontend/src/features/skill-tree/CourseDetailPanel.jsx
+- [X] T020 [P] [US2] Update resources rendering to canonical resources shape in frontend/src/features/skill-tree/ResourcesTab.jsx
+- [X] T021 [P] [US2] Align reason/explanation rendering with canonical reason field in frontend/src/features/skill-tree/WhyThisCourseTab.jsx
+- [X] T022 [US2] Implement explicit empty-state behavior for relatedCourses/resources in frontend/src/features/skill-tree/CourseDetailPanel.jsx
+- [X] T023 [US2] Remove legacy field fallbacks not present in 009 schema in frontend/src/features/skill-tree/SkillTreePage.jsx
 
-**Checkpoint**: US1 + US2 are independently usable and persisted.
+**Checkpoint**: User Story 2 is independently functional and verifiable.
 
 ---
 
-## Phase 5: User Story 3 - View Course Detail Panel (Priority: P3)
+## Phase 5: User Story 3 - Track Progress via 009 RoadmapProgress (Priority: P2)
 
-**Goal**: Open a course detail panel with Resources, Why This Course, and Market Skills tabs.
+**Goal**: Read/write progress using 009 progress API and valid transitions only.
 
-**Independent Test**: Clicking any course opens panel; each tab loads expected data with error/empty handling.
-
-### Tests for User Story 3
-
-- [X] T035 [P] [US3] Add AI cache hit/miss validation tests in `backend/tests/unit/skill-tree/aiContextCache.test.js`
-- [X] T036 [P] [US3] Add course resources grouping tests in `backend/tests/unit/skill-tree/courseResources.test.js`
-- [X] T037 [P] [US3] Add market skills sorting/empty-state tests in `backend/tests/unit/skill-tree/marketSkills.test.js`
+**Independent Test**: Load roadmap progress, perform valid transitions (pending->inProgress, pending->skip, inProgress->completed), reload, and confirm persisted visual state.
 
 ### Implementation for User Story 3
 
-- [X] T038 [P] [US3] Implement course resources read service in `backend/src/modules/skill-tree/courseResource.service.js`
-- [X] T039 [P] [US3] Implement market skills read service in `backend/src/modules/skill-tree/marketSkill.service.js`
-- [X] T040 [US3] Implement Gemini on-demand generation + cache service in `backend/src/modules/skill-tree/aiContext.service.js`
-- [X] T041 [US3] Implement resources/why/market-skills endpoint handlers in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T042 [US3] Add API client methods (`getResources`, `getWhyCourse`, `getMarketSkills`) in `frontend/src/services/skillTree.api.js`
-- [X] T043 [US3] Build side panel container with tab switching and course summary in `frontend/src/features/skill-tree/CourseDetailPanel.jsx`
-- [X] T044 [P] [US3] Implement grouped materials rendering in `frontend/src/features/skill-tree/ResourcesTab.jsx`
-- [X] T045 [P] [US3] Implement Why tab loading/cached/error states in `frontend/src/features/skill-tree/WhyThisCourseTab.jsx`
-- [X] T046 [P] [US3] Implement Market Skills tab list with job count ordering in `frontend/src/features/skill-tree/MarketSkillsTab.jsx`
-- [X] T047 [US3] Wire node selection to open/close detail panel in `frontend/src/features/skill-tree/SkillTreePage.jsx`
+- [X] T024 [US3] Implement progress fetch and mutation calls to roadmap progress endpoints in frontend/src/services/skillTree.api.js
+- [X] T025 [P] [US3] Update store reducers/selectors for four canonical progress arrays in frontend/src/stores/skillTreeStore.js
+- [X] T026 [US3] Wire node action handlers for valid transitions in frontend/src/features/skill-tree/useSkillTree.js
+- [X] T027 [P] [US3] Align controller pass-through for INVALID_TRANSITION and CONFLICT in backend/src/modules/skill-tree/skillTree.controller.js
+- [X] T028 [US3] Remove prerequisite lock enforcement from progress updates in backend/src/modules/skill-tree/skillTree.service.js
+- [X] T029 [US3] Implement optimistic-update rollback and re-sync on mutation failure in frontend/src/features/skill-tree/useSkillTree.js
 
-**Checkpoint**: US3 provides full course context panel independently.
+**Checkpoint**: User Story 3 is independently functional and verifiable.
 
 ---
 
-## Phase 6: User Story 4 - Explore Market Skills and Learning Resources (Priority: P4)
+## Phase 6: User Story 4 - Handle Missing or Failed Roadmap States (Priority: P3)
 
-**Goal**: Allow students to open a skill-specific modal showing free/paid learning resources.
+**Goal**: Present robust UI states for ROADMAP_NOT_FOUND, acceptedAt null (retryable), and recoverable fetch failures.
 
-**Independent Test**: Student clicks a market skill and sees categorized resources; links open externally.
-
-### Tests for User Story 4
-
-- [X] T048 [P] [US4] Add learning resource grouping tests (`free`/`paid` always present) in `backend/tests/unit/skill-tree/learningResources.test.js`
-- [X] T049 [P] [US4] Add learning resources endpoint 404/success tests in `backend/tests/unit/skill-tree/learningResourcesController.test.js`
+**Independent Test**: Simulate ROADMAP_NOT_FOUND, roadmap with acceptedAt null, and server fetch errors; verify correct empty/retryable/error messaging and flows.
 
 ### Implementation for User Story 4
 
-- [X] T050 [US4] Implement skill learning resource lookup and normalization in `backend/src/modules/skill-tree/marketSkill.service.js`
-- [X] T051 [US4] Implement `GET /api/skill-tree/skills/:skillName/learning-resources` handler in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T052 [US4] Add `getLearningResources` API function in `frontend/src/services/skillTree.api.js`
-- [X] T053 [US4] Build free/paid skill resource modal component in `frontend/src/features/skill-tree/SkillResourcesModal.jsx`
-- [X] T054 [US4] Wire market skill click and modal lifecycle in `frontend/src/features/skill-tree/MarketSkillsTab.jsx`
+- [X] T030 [US4] Implement ROADMAP_NOT_FOUND empty-state rendering in frontend/src/features/skill-tree/SkillTreePage.jsx
+- [X] T031 [P] [US4] Implement retryable lifecycle state rendering based on acceptedAt null in frontend/src/features/skill-tree/SkillTreePage.jsx
+- [X] T032 [P] [US4] Implement recoverable fetch error UI with retry action in frontend/src/features/skill-tree/SkillTreePage.jsx
+- [X] T033 [US4] Align repersonalize action handling with 009 regenerate/conflict semantics in frontend/src/features/skill-tree/RepersonalizeButton.jsx
+- [X] T034 [US4] Align backend lifecycle normalization with acceptedAt semantics in backend/src/modules/skill-tree/skillTree.service.js
 
-**Checkpoint**: US4 is independently testable from Market Skills tab.
-
----
-
-## Phase 7: User Story 5 - Re-personalize Skill Tree After Profile Update (Priority: P5)
-
-**Goal**: Show and execute re-personalization flow when profile freshness exceeds roadmap freshness.
-
-**Independent Test**: After profile update, button appears; click triggers regeneration; polling detects completion and tree refreshes.
-
-### Tests for User Story 5
-
-- [X] T055 [P] [US5] Add `needsRepersonalization` comparison tests (`updatedAt` vs `generatedAt`) in `backend/tests/unit/skill-tree/repersonalizeFlag.test.js`
-- [X] T056 [P] [US5] Add repersonalize endpoint tests for `403` and `409` paths in `backend/tests/unit/skill-tree/repersonalizeEndpoint.test.js`
-
-### Implementation for User Story 5
-
-- [X] T057 [US5] Implement repersonalization gating and delegation in `backend/src/modules/skill-tree/skillTree.service.js`
-- [X] T058 [US5] Implement `POST /api/skill-tree/repersonalize` handler in `backend/src/modules/skill-tree/skillTree.controller.js`
-- [X] T059 [US5] Add `repersonalize` API function in `frontend/src/services/skillTree.api.js`
-- [X] T060 [US5] Build CTA component with disabled/loading state in `frontend/src/features/skill-tree/RepersonalizeButton.jsx`
-- [X] T061 [US5] Extend polling hook for 2500ms re-personalization completion checks in `frontend/src/features/skill-tree/useSkillTree.js`
-- [X] T062 [US5] Render conditional re-personalize flow in page container in `frontend/src/features/skill-tree/SkillTreePage.jsx`
-
-**Checkpoint**: US5 closes profile-change loop and is independently testable.
+**Checkpoint**: User Story 4 is independently functional and verifiable.
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 7: Polish & Cross-Cutting Concerns
 
-**Purpose**: Final hardening across stories.
+**Purpose**: Final consistency cleanup and cross-story validation.
 
-- [X] T063 [P] Add Skill Tree module README with run/test notes in `backend/src/modules/skill-tree/README.md`
-- [X] T064 [P] Add frontend empty/loading/error polish for tree and panel in `frontend/src/features/skill-tree/SkillTreePage.jsx`
-- [X] T065 Validate auth ownership checks for all Skill Tree endpoints in `backend/src/modules/skill-tree/skillTree.service.js`
-- [X] T066 Run and stabilize Skill Tree unit test suite via `scripts/run-tests.mjs`
-- [X] T067 Update manual verification checklist outcomes in `specs/004-skill-tree/checklists/requirements.md`
-- [X] T072 Run constitution traceability suite for Feature 004 (`backend/tests/unit/skill-tree/`, `backend/tests/unit/curriculum/skillMapping.test.js`, `backend/tests/unit/onboarding/scrape.pipeline.test.js`) via `scripts/run-tests.mjs`
+- [X] T035 [P] Remove or isolate legacy persistence artifacts not used by 009 progress flow in backend/src/modules/skill-tree/skillNodeStatus.model.js
+- [X] T036 [P] Update final integration notes and API behavior in specs/004-skill-tree/research.md
+- [X] T037 [P] Refresh manual verification scenarios after implementation in specs/004-skill-tree/quickstart.md
+- [X] T038 Perform end-to-end walkthrough and document completion notes in specs/004-skill-tree/tasks.md
+
+Completion notes (T038):
+- Frontend production build succeeded via `frontend: npm run build`.
+- Backend skill-tree regression suite succeeded via `backend: npm test -- tests/unit/skill-tree --runInBand`.
+- Checklist gate verified complete (`requirements.md`: 24/24 items checked).
+- Remaining implementation is contract-aligned with Feature 009 node/progress schema and transition rules.
 
 ---
 
@@ -194,94 +132,98 @@
 
 ### Phase Dependencies
 
-- **Phase 1 (Setup)**: No dependencies.
-- **Phase 2 (Foundational)**: Depends on Phase 1; blocks all user stories.
-- **Phase 3+ (User Stories)**: Depend on Phase 2 completion.
-- **Phase 8 (Polish)**: Depends on desired user stories being complete.
+- Setup (Phase 1): No dependencies.
+- Foundational (Phase 2): Depends on Setup; blocks all user stories.
+- User Story phases (Phase 3-6): Depend on Foundational completion.
+- Polish (Phase 7): Depends on completion of targeted user stories.
 
-### User Story Dependency Graph
+### User Story Dependencies
 
-- **US1 (P1)**: Starts after Phase 2; no dependency on other user stories.
-- **US2 (P2)**: Depends on US1 read/render flow for interactive node updates.
-- **US3 (P3)**: Depends on US1 node selection/page shell; otherwise independent of US2.
-- **US4 (P4)**: Depends on US3 Market Skills tab.
-- **US5 (P5)**: Depends on US1 base tree loading and polling hook.
+- US1 (P1): Starts after Foundational; no dependency on other user stories.
+- US2 (P1): Starts after Foundational; depends only on shared canonical node shape.
+- US3 (P2): Starts after Foundational; can run parallel with US1/US2 but integrates with their node identity model.
+- US4 (P3): Starts after Foundational; can run parallel with US2/US3.
 
-Suggested completion order: **US1 → (US2, US3, US5 in parallel) → US4**.
+### Within Each User Story
+
+- Data bindings before UI interactions.
+- API/state wiring before visual refinements.
+- Story-level independent verification after implementation tasks complete.
 
 ---
 
-## Parallel Execution Examples
+## Parallel Opportunities
 
-### User Story 1
+- Setup: T003 and T004 can run in parallel.
+- Foundational: T006, T009, T010, and T011 can run in parallel after T005 begins.
+- US1: T013, T014, and T017 can run in parallel after T012.
+- US2: T020 and T021 can run in parallel after T019.
+- US3: T025 and T027 can run in parallel after T024.
+- US4: T031 and T032 can run in parallel after T030.
+- Polish: T035, T036, and T037 can run in parallel.
 
-Run in parallel after T016:
+---
 
-- T017 `backend/tests/unit/skill-tree/dagTraversal.test.js`
-- T018 `backend/tests/unit/skill-tree/pendingSync.test.js`
-- T019 `backend/tests/unit/skill-tree/getNodesByStatus.test.js`
-- T023 `frontend/src/features/skill-tree/SkillTreeCanvas.jsx`
-- T024 `frontend/src/features/skill-tree/CourseNode.jsx`
+## Parallel Example: User Story 1
 
-### User Story 2
+- Execute T013 in frontend/src/features/skill-tree/graphTransform.js
+- Execute T014 in frontend/src/features/skill-tree/CourseNode.jsx
+- Execute T017 in frontend/src/features/skill-tree/skill-tree.css
 
-Run in parallel after T031:
+---
 
-- T028 `backend/tests/unit/skill-tree/stateGuard.test.js`
-- T029 `backend/tests/unit/skill-tree/statusPatchController.test.js`
-- T032 `frontend/src/services/skillTree.api.js`
+## Parallel Example: User Story 2
 
-### User Story 3
+- Execute T020 in frontend/src/features/skill-tree/ResourcesTab.jsx
+- Execute T021 in frontend/src/features/skill-tree/WhyThisCourseTab.jsx
 
-Run in parallel after T042:
+---
 
-- T035 `backend/tests/unit/skill-tree/aiContextCache.test.js`
-- T036 `backend/tests/unit/skill-tree/courseResources.test.js`
-- T037 `backend/tests/unit/skill-tree/marketSkills.test.js`
-- T044 `frontend/src/features/skill-tree/ResourcesTab.jsx`
-- T045 `frontend/src/features/skill-tree/WhyThisCourseTab.jsx`
-- T046 `frontend/src/features/skill-tree/MarketSkillsTab.jsx`
+## Parallel Example: User Story 3
 
-### User Story 4
+- Execute T025 in frontend/src/stores/skillTreeStore.js
+- Execute T027 in backend/src/modules/skill-tree/skillTree.controller.js
 
-Run in parallel after T052:
+---
 
-- T048 `backend/tests/unit/skill-tree/learningResources.test.js`
-- T049 `backend/tests/unit/skill-tree/learningResourcesController.test.js`
-- T053 `frontend/src/features/skill-tree/SkillResourcesModal.jsx`
+## Parallel Example: User Story 4
 
-### User Story 5
-
-Run in parallel after T059:
-
-- T055 `backend/tests/unit/skill-tree/repersonalizeFlag.test.js`
-- T056 `backend/tests/unit/skill-tree/repersonalizeEndpoint.test.js`
-- T060 `frontend/src/features/skill-tree/RepersonalizeButton.jsx`
+- Execute T031 in frontend/src/features/skill-tree/SkillTreePage.jsx
+- Execute T032 in frontend/src/features/skill-tree/SkillTreePage.jsx
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (US1 Only)
+### MVP First (US1)
 
-1. Finish Phase 1 and Phase 2.
-2. Complete Phase 3 (US1).
-3. Validate US1 independent test criteria before expanding scope.
+1. Complete Phase 1 and Phase 2.
+2. Complete US1 (Phase 3).
+3. Validate independent test for US1.
+4. Demo/render baseline before proceeding.
 
 ### Incremental Delivery
 
-1. Deliver MVP (US1).
-2. Add US2 progress transitions.
-3. Add US3 detail panel.
-4. Add US5 re-personalize workflow.
-5. Add US4 market skill drill-down modal.
-6. Finish Phase 8 polish and regression pass.
+1. Deliver US1 + US2 for core visualization and details.
+2. Deliver US3 for persisted progress tracking.
+3. Deliver US4 for resilient lifecycle/error handling.
+4. Finish with Phase 7 polish.
 
 ### Parallel Team Strategy
 
-1. Team completes Phase 1 and Phase 2 together.
-2. Split after US1 foundation:
-   - Dev A: US2
-   - Dev B: US3
-   - Dev C: US5
-3. Merge and finalize US4, then polish.
+1. Team aligns on Setup + Foundational tasks.
+2. After foundation:
+   - Developer A: US1 graph rendering
+   - Developer B: US2 detail panel
+   - Developer C: US3 progress orchestration
+   - Developer D: US4 lifecycle states
+3. Merge per-story increments after independent verification.
+
+---
+
+## Notes
+
+- [P] tasks indicate no blocking dependency on unfinished work in the same phase.
+- [USx] labels map each task to a specific user story.
+- Every task includes an explicit file path for execution clarity.
+- Keep contract fidelity with Feature 009 as the primary acceptance gate.

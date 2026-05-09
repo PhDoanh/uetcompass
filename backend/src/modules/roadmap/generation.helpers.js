@@ -115,20 +115,21 @@ function buildNodesTopologically(approvedSkills, candidateSkillsMap, allCourseUn
 		const candidate = candidateSkillsMap.get(skillName);
 		if (!candidate) continue;
 		const rank = Math.max(...candidate.relatedCourses.map((rc) => coursePos.get(rc.courseCode) ?? 0));
-		skillEntries.push({ skillName, reason: '', candidate, rank });
+		skillEntries.push({ skillName, description: '', candidate, rank });
 	}
 
 	// Sort by rank (latest prerequisite position) to ensure valid topological placement
 	skillEntries.sort((a, b) => a.rank - b.rank);
 
 	const seenIds = new Set();
-	const nodes = skillEntries.map(({ skillName, reason, candidate }) => ({
+	const nodes = skillEntries.map(({ skillName, description, candidate }) => ({
 		nodeId: uniqueNodeId(skillName, seenIds),
-		nodeType: 'topic',
-		skillName,
+		nodeType: 'skill',
+		nodeName: skillName,
+		skillId: toKebabCase(skillName), // Best effort slug
 		parentNodeId: null,
 		relatedCourses: candidate.relatedCourses,
-		reason,
+		description,
 		resources: [],
 	}));
 

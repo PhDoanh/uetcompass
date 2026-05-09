@@ -6,7 +6,7 @@ const progressService = require('./roadmapProgress.service');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
 
-async function acceptRoadmap(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes }) {
+async function acceptRoadmap(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, edges = [] }) {
 	const profile = await StudentProfile.findOne({ _id: studentProfileId, userId });
 	if (!profile) {
 		const err = new Error('Student profile not found.');
@@ -20,8 +20,6 @@ async function acceptRoadmap(userId, { studentProfileId, roadmapName, personalis
 	);
 
 	// A node is filtered out if ALL its related courses are already completed.
-	// (At generation time completed courses are excluded from relatedCourses,
-	// but a student may complete additional courses between generation and acceptance.)
 	const filteredNodes = nodes.filter(
 		(n) =>
 			(n.relatedCourses ?? []).length === 0 ||
@@ -44,6 +42,7 @@ async function acceptRoadmap(userId, { studentProfileId, roadmapName, personalis
 		personalisationLevel,
 		isPrimary,
 		nodes: filteredNodes,
+		edges,
 	});
 
 	// Seed progress document — all accepted nodeIds start in `pending`

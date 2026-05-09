@@ -145,7 +145,7 @@ async function shareManualRoadmap(req, res) {
 
 async function acceptRoadmapHandler(req, res) {
 	try {
-		const { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
+		const { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, edges = [], sseToken } = req.body ?? {};
 
 		if (
 			!Array.isArray(nodes) ||
@@ -162,6 +162,7 @@ async function acceptRoadmapHandler(req, res) {
 			personalisationLevel,
 			isPrimary: !!isPrimary,
 			nodes,
+			edges,
 		});
 
 		// Notify client roadmap accepted (optional)
@@ -221,11 +222,12 @@ async function rejectRoadmap(req, res) {
 // Preview roadmap: just echo the roadmap data for preview
 async function previewRoadmapHandler(req, res) {
 	try {
-		const { studentProfileId, personalisationLevel, nodes } = req.body ?? {};
+		const { studentProfileId, personalisationLevel, nodes, edges = [] } = req.body ?? {};
 		return res.json({
 			studentProfileId,
 			personalisationLevel,
 			nodes,
+			visual: { edges },
 			preview: true,
 		});
 	} catch (err) {
@@ -259,8 +261,28 @@ async function getPublicSharedRoadmap(req, res) {
 		return res.json({
 			roadmapName: foundRoadmap.roadmapName,
 			personalisationLevel: foundRoadmap.personalisationLevel,
-			nodes: foundRoadmap.nodes || [],
+			nodes: foundRoadmap.nodes ?? foundRoadmap.content?.nodes ?? [],
+			edges: foundRoadmap.edges || [],
 		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function shareRoadmapHandler(req, res) {
+	try {
+		const roadmap = await roadmapService.shareRoadmap(req.params.roadmapId, req.user.userId);
+		return res.json({ message: 'Roadmap is now public.', roadmapId: roadmap._id, sharedAt: roadmap.sharedAt });
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getSharedRoadmapById(req, res) {
+	try {
+		const roadmap = await roadmapService.getPublishedById(req.params.roadmapId);
+		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Shared roadmap not found or not published.');
+		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -297,6 +319,7 @@ async function updateNodeStateHandler(req, res) {
 
 module.exports = {
 	getPublicSharedRoadmap,
+	getSharedRoadmapById,
 	getPrimaryRoadmap,
 	listRoadmaps,
 	getRoadmapById,
@@ -308,6 +331,7 @@ module.exports = {
 	shareManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,
+	shareRoadmapHandler,
 	retryGeneration,
 	rejectRoadmap,
 	previewRoadmapHandler,

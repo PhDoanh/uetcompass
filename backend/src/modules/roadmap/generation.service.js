@@ -1,9 +1,9 @@
-'use strict';
+﻿'use strict';
 
 const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
-const { evaluateOffTemplateSkills } = require('./roadmap.ai.service');
+const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyUser, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
@@ -63,7 +63,9 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				const candidate = candidateSkills.find((c) => toKebabCase(c.skillName) === n.nodeId);
 				return {
 					...n,
-					nodeId: n.nodeId,
+					nodeName: n.nodeName || n.skillName, // Fallback for old templates
+					nodeType: n.nodeType === 'topic' ? 'milestone' : (n.nodeType === 'subtopic' ? 'skill' : n.nodeType),
+					skillId: n.nodeType === 'subtopic' ? n.nodeId : null,
 					relatedCourses: candidate?.relatedCourses ?? [],
 				};
 			});
@@ -71,7 +73,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			// Build a lookup: topic nodeId -> enriched topic node (for attaching subtopics)
 			const topicNodeIds = new Map();
 			for (const n of enriched) {
-				if (n.nodeType === 'topic') topicNodeIds.set(n.nodeId, n);
+				if (n.nodeType === 'milestone' || n.nodeType === 'topic') topicNodeIds.set(n.nodeId, n);
 			}
 
 			if (personalisationLevel === 'full') {
@@ -80,7 +82,8 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
 
 				// AI evaluates relevance of off-template skills to the career goal
-				const approvedExtras = await evaluateOffTemplateSkills(offTemplateSkills, profile);
+				notifyUser(userId, 'ai_evaluation_started', { roadmapName });
+				const approvedExtras = [] //await evaluateOffTemplateSkills(offTemplateSkills, profile);
 
 				// Off-template nodes are always subtopic, attached to the nearest template topic
 				// that shares a relatedCourse. Exclude if no parent topic found.
@@ -94,7 +97,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 					let parentNode = null;
 					let bestOverlap = 0;
 					for (const tpl of enriched) {
-						if (tpl.nodeType !== 'topic') continue;
+						if (tpl.nodeType !== 'milestone' && tpl.nodeType !== 'topic') continue;
 						const overlap = tpl.relatedCourses.filter((rc) => courseCodes.has(rc.courseCode)).length;
 						if (overlap > bestOverlap) {
 							bestOverlap = overlap;
@@ -105,11 +108,12 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 					extraNodes.push({
 						nodeId: uniqueNodeId(skillName, seenIds),
-						nodeType: 'subtopic',
-						skillName,
+						nodeType: 'skill',
+						nodeName: skillName,
+						skillId: toKebabCase(skillName),
 						parentNodeId: parentNode.nodeId,
 						relatedCourses: candidate.relatedCourses,
-						reason: '',
+						description: '',
 						resources: [],
 					});
 				}
@@ -130,32 +134,21 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 			} else {
 				nodes = enriched;
 			}
-		} else if (personalisationLevel === 'full') {
-			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
-			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
 		} else {
-			// Low personalisation: sort relatedCourses for each skill by topological order
-			nodes = buildNodesTopologically(candidateSkills, candidateSkillsMap, courseUnits);
+			throw new Error(`No roadmap template found for: ${roadmapName}`);
 		}
+
 		roadmapValidation.validateTopologicalOrder(nodes, courseUnits, completedCourseCodes);
 
-		previewStore.storePendingPreview(userId, {
-			nodes,
-			roadmapName,
-			personalisationLevel,
-			triggerReason,
-			studentProfileId,
-		});
-
-		notifyUser(userId, 'roadmap_preview_ready', {
-			type: 'roadmap_preview_ready',
+		notifyUser(userId, 'roadmap_generation_ready', {
+			type: 'roadmap_generation_ready',
 			roadmapName,
 			personalisationLevel,
 			lowPersonalisationNotice:
 				personalisationLevel === 'low'
 					? 'Your roadmap was generated without career goal data. Update your profile for a personalised roadmap.'
 					: null,
-			preview: { nodes },
+			preview: { nodes, visual: { edges: [] } },
 		});
 	} catch (err) {
 		console.error('[generation] roadmap generation failed:', err);

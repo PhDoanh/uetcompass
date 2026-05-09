@@ -61,7 +61,7 @@ function validateTopologicalOrder(nodes, courseUnits, completedCourseCodes = new
 
 				if (courseToNodePos.get(prereq) >= i) {
 					const err = new Error(
-						`Ordering violation: skill "${node.skillName}" (via ${rc.courseCode}) appears before its prerequisite ${prereq}`
+						`Ordering violation: skill "${node.nodeName}" (via ${rc.courseCode}) appears before its prerequisite ${prereq}`
 					);
 					err.code = 'PREREQUISITE_VIOLATION';
 					throw err;

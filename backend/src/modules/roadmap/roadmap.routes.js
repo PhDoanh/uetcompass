@@ -13,6 +13,7 @@ const roadmapRouter = express.Router();
 
 // Public endpoints - no auth required
 roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
+roadmapRouter.get('/shared/:roadmapId', controller.getSharedRoadmapById);
 roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
 
@@ -82,6 +83,7 @@ roadmapRouter.post('/manual-roadmaps/:roadmapId/share', controller.shareManualRo
 // roadmapRouter.get('/', controller.listRoadmaps); // Deprecated compatibility alias, now removed
 roadmapRouter.get('/:roadmapId', controller.getRoadmapById);
 roadmapRouter.patch('/:roadmapId/primary', controller.switchPrimaryHandler);
+roadmapRouter.post('/:roadmapId/share', controller.shareRoadmapHandler);
 roadmapRouter.get('/:roadmapId/progress', controller.getProgressHandler);
 roadmapRouter.patch('/:roadmapId/progress/node', controller.updateNodeStateHandler);
 

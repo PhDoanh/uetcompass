@@ -19,7 +19,7 @@ async function listByUser(userId, { page = 1, limit = 20 } = {}) {
 	const filter = { userId };
 
 	const [items, total] = await Promise.all([
-		Roadmap.find(filter, { nodes: 0 })
+		Roadmap.find(filter, { nodes: 0, edges: 0 })
 			.sort({ updatedAt: -1 })
 			.skip((page - 1) * limit)
 			.limit(limit)
@@ -37,13 +37,15 @@ async function getByIdForUser(roadmapId, userId) {
 async function upsertFailed(userId, message) {
 	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return Roadmap.findOneAndUpdate(
-		{ userId, acceptedAt: null },
+		{ userId, acceptedAt: null, source: 'ai' },
 		{
 			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
+				source: 'ai',
 				isPrimary: false,
 				nodes: [],
+				visual: { edges: [] },
 				acceptedAt: null,
 			},
 		},
@@ -54,15 +56,17 @@ async function upsertFailed(userId, message) {
 async function upsertFailedWithProfile(userId, studentProfileId, message, personalisationLevel = 'full') {
 	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return Roadmap.findOneAndUpdate(
-		{ userId, acceptedAt: null },
+		{ userId, acceptedAt: null, source: 'ai' },
 		{
 			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
+				source: 'ai',
 				isPrimary: false,
 				studentProfileId,
 				personalisationLevel,
 				nodes: [],
+				visual: { edges: [] },
 				acceptedAt: null,
 			},
 		},
@@ -70,7 +74,7 @@ async function upsertFailedWithProfile(userId, studentProfileId, message, person
 	);
 }
 
-async function commitAccepted(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes }) {
+async function commitAccepted(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, edges = [] }) {
 	if (isPrimary) {
 		await Roadmap.updateMany(
 			{ userId, isPrimary: true },
@@ -80,13 +84,34 @@ async function commitAccepted(userId, { studentProfileId, roadmapName, personali
 
 	return Roadmap.create({
 		userId,
-		isPrimary: !!isPrimary,
 		studentProfileId,
+		source: 'ai',
 		roadmapName,
 		personalisationLevel,
+		isPrimary: !!isPrimary,
 		nodes,
+		visual: { edges },
 		acceptedAt: new Date(),
 	});
+}
+
+async function shareRoadmap(roadmapId, userId) {
+	const roadmap = await Roadmap.findOneAndUpdate(
+		{ _id: roadmapId, userId },
+		{ $set: { status: 'published', isPublic: true, sharedAt: new Date() } },
+		{ new: true, runValidators: true }
+	);
+	if (!roadmap) {
+		const err = new Error('Roadmap not found.');
+		err.code = 'ROADMAP_NOT_FOUND';
+		err.status = 404;
+		throw err;
+	}
+	return roadmap;
+}
+
+async function getPublishedById(roadmapId) {
+	return Roadmap.findOne({ _id: roadmapId, status: 'published', isPublic: true }, { positions: 0, zoom: 0, elkOptions: 0 }).lean();
 }
 
 async function switchPrimary(roadmapId, userId) {
@@ -130,5 +155,7 @@ module.exports = {
 	upsertFailed,
 	upsertFailedWithProfile,
 	commitAccepted,
+	shareRoadmap,
+	getPublishedById,
 	switchPrimary,
 };

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
+import { getRoadmapNodes, getSummaries } from '../../services/progress.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
@@ -81,24 +82,6 @@ const FEATURED_FEATURES = [
     position: 'south',
   },
 ];
-const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
-  const day = index + 1;
-  const base = Math.min(10, Math.max(0, Math.round(day / 3 + (day % 5 === 0 ? 2 : 0))));
-  const value = Math.min(10, Math.max(0, base - (day % 7 === 0 ? 2 : 0)));
-  return { day, value };
-});
-const TOPIC_DISTRIBUTION = [
-  { name: 'Web', value: 35, color: '#38BDF8' },
-  { name: 'AI/ML', value: 25, color: '#0EA5E9' },
-  { name: 'DevOps', value: 20, color: '#F97316' },
-  { name: 'Khác', value: 20, color: '#94A3B8' },
-];
-const HEATMAP_VALUES = [
-  0, 1, 2, 3, 1, 0, 2,
-  2, 3, 4, 3, 2, 1, 0,
-  1, 2, 3, 4, 2, 1, 1,
-  0, 1, 2, 3, 2, 1, 0,
-];
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -156,6 +139,74 @@ function formatRoadmapDate(value) {
   }
 }
 
+
+  function toDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function buildActivitySeries(nodesByStatus, days = 30) {
+    const done = nodesByStatus?.done || [];
+    const inProgress = nodesByStatus?.inProgress || [];
+    const pending = nodesByStatus?.pending || [];
+    const nodes = [...done, ...inProgress, ...pending];
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - (days - 1));
+
+    const counts = new Map();
+    nodes.forEach((node) => {
+      if (!node?.updatedAt) {
+        return;
+      }
+      const updated = new Date(node.updatedAt);
+      if (Number.isNaN(updated.getTime()) || updated < startDate || updated > today) {
+        return;
+      }
+      const key = toDateKey(updated);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    return Array.from({ length: days }, (_, index) => {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + index);
+      const key = toDateKey(date);
+      return {
+        day: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+        value: counts.get(key) || 0,
+      };
+    });
+  }
+
+  function buildHeatmapValues(activitySeries, size = 28) {
+    const values = activitySeries.map((item) => item.value);
+    const trimmed = values.slice(-size);
+    const padded = trimmed.length < size
+      ? Array.from({ length: size - trimmed.length }, () => 0).concat(trimmed)
+      : trimmed;
+
+    return padded.map((count) => {
+      if (count <= 0) return 0;
+      if (count <= 1) return 1;
+      if (count <= 2) return 2;
+      if (count <= 3) return 3;
+      return 4;
+    });
+  }
+
+  function computeActivityStreak(activitySeries) {
+    let streak = 0;
+    for (let index = activitySeries.length - 1; index >= 0; index -= 1) {
+      if (activitySeries[index].value > 0) {
+        streak += 1;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const { addNotification } = useNotification();
@@ -165,6 +216,10 @@ export default function Homepage() {
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
+  const [progressSummaries, setProgressSummaries] = useState([]);
+  const [progressDetail, setProgressDetail] = useState(null);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [progressError, setProgressError] = useState(null);
   const [roadmapPage, setRoadmapPage] = useState(0);
   const [myRoadmapPage, setMyRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
@@ -351,6 +406,67 @@ export default function Homepage() {
     };
   }, [accessToken, logoutAndRedirect, userId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProgress() {
+      if (!accessToken) {
+        if (isMounted) {
+          setProgressSummaries([]);
+          setProgressDetail(null);
+          setProgressError(null);
+          setIsLoadingProgress(false);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsLoadingProgress(true);
+        setProgressError(null);
+      }
+
+      try {
+        const summaries = await getSummaries(accessToken);
+        if (!isMounted) {
+          return;
+        }
+
+        setProgressSummaries(summaries);
+        const primary = summaries.find((item) => item?.isPrimary) || summaries[0] || null;
+
+        if (primary?.roadmapId) {
+          const detail = await getRoadmapNodes(accessToken, primary.roadmapId);
+          if (isMounted) {
+            setProgressDetail(detail);
+          }
+        } else if (isMounted) {
+          setProgressDetail(null);
+        }
+      } catch (err) {
+        if (err?.status === 401) {
+          await logoutAndRedirect();
+          return;
+        }
+
+        if (isMounted) {
+          setProgressError(err);
+          setProgressDetail(null);
+          setProgressSummaries([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingProgress(false);
+        }
+      }
+    }
+
+    loadProgress();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, logoutAndRedirect]);
+
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
 
@@ -533,6 +649,81 @@ export default function Homepage() {
     (myRoadmapPage + 1) * MY_ROADMAPS_PER_PAGE
   );
   const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
+  const primaryProgressRoadmap = useMemo(() => {
+    const list = Array.isArray(progressSummaries) ? progressSummaries : [];
+    return list.find((item) => item?.isPrimary) || list[0] || null;
+  }, [progressSummaries]);
+  const progressTotals = useMemo(() => {
+    const list = Array.isArray(progressSummaries) ? progressSummaries : [];
+    return list.reduce(
+      (acc, roadmap) => {
+        acc.totalNodes += roadmap?.totalNodes || 0;
+        acc.doneNodes += roadmap?.doneNodes || 0;
+        acc.inProgressNodes += roadmap?.inProgressNodes || 0;
+        acc.pendingNodes += roadmap?.pendingNodes || 0;
+        return acc;
+      },
+      { totalNodes: 0, doneNodes: 0, inProgressNodes: 0, pendingNodes: 0 }
+    );
+  }, [progressSummaries]);
+  const progressDistribution = useMemo(() => {
+    const total = progressTotals.totalNodes || 0;
+    const toPercent = (value) => (total > 0 ? Math.round((value / total) * 100) : 0);
+
+    return [
+      { name: 'Hoàn thành', value: toPercent(progressTotals.doneNodes), color: '#22C55E' },
+      { name: 'Đang học', value: toPercent(progressTotals.inProgressNodes), color: '#0EA5E9' },
+      { name: 'Chưa bắt đầu', value: toPercent(progressTotals.pendingNodes), color: '#94A3B8' },
+    ];
+  }, [progressTotals]);
+  const activitySeries = useMemo(
+    () => buildActivitySeries(progressDetail?.nodes),
+    [progressDetail]
+  );
+  const heatmapValues = useMemo(
+    () => buildHeatmapValues(activitySeries),
+    [activitySeries]
+  );
+  const activityStreak = useMemo(
+    () => computeActivityStreak(activitySeries),
+    [activitySeries]
+  );
+  const activityTotal = useMemo(
+    () => activitySeries.reduce((sum, item) => sum + item.value, 0),
+    [activitySeries]
+  );
+  const activityMeta = useMemo(() => {
+    if (progressError) {
+      return 'Không thể tải dữ liệu tiến độ.';
+    }
+    if (isLoadingProgress) {
+      return 'Đang tải dữ liệu tiến độ...';
+    }
+    if (!progressDetail) {
+      return 'Chưa có dữ liệu hoạt động gần đây.';
+    }
+    const roadmapLabel = primaryProgressRoadmap?.roadmapName
+      ? ` - ${primaryProgressRoadmap.roadmapName}`
+      : '';
+    return `${activityTotal} lần cập nhật trong 30 ngày${roadmapLabel}`;
+  }, [activityTotal, isLoadingProgress, primaryProgressRoadmap, progressDetail, progressError]);
+  const distributionMeta = useMemo(() => {
+    if (progressError) {
+      return 'Không thể tải dữ liệu tiến độ.';
+    }
+    if (isLoadingProgress) {
+      return 'Đang tải dữ liệu tiến độ...';
+    }
+    if (progressTotals.totalNodes === 0) {
+      return 'Chưa có node đang theo dõi.';
+    }
+    return `${progressTotals.totalNodes} node đang theo dõi`;
+  }, [isLoadingProgress, progressError, progressTotals]);
+  const streakMeta = useMemo(() => (
+    activityStreak > 0
+      ? `Chuỗi hoạt động ${activityStreak} ngày liên tiếp`
+      : 'Chưa có streak hoạt động'
+  ), [activityStreak]);
 
   const handlePrevRoadmapPage = () => {
     setRoadmapPage((prev) => Math.max(0, prev - 1));
@@ -614,39 +805,49 @@ export default function Homepage() {
             <div className="homepage-section__head">
               <div>
                 <h2>Tổng quan tiến độ {currentMonthLabel}</h2>
-                <p>Theo dõi nhịp học tập và phân bổ chủ đề trong tháng.</p>
+                <p>Theo dõi nhịp học tập và phân bổ trạng thái trong tháng.</p>
               </div>
-              <button type="button" className="homepage-outline-btn">Xem chi tiết</button>
+              <button
+                type="button"
+                className="homepage-outline-btn"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    navigateTo('/progress');
+                  }
+                }}
+              >
+                Xem chi tiết
+              </button>
             </div>
             <div className="homepage-progress__grid">
               <div className="homepage-progress__card">
                 <div className="homepage-progress__title">Hoạt động theo ngày</div>
                 <div className="homepage-progress__chart">
                   <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={ACTIVITY_SERIES} margin={{ left: -12, right: 8, top: 10, bottom: 0 }}>
+                    <LineChart data={activitySeries} margin={{ left: -12, right: 8, top: 10, bottom: 0 }}>
                       <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#94A3B8" />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} stroke="#94A3B8" />
+                      <YAxis domain={[0, 'dataMax']} tick={{ fontSize: 11 }} stroke="#94A3B8" />
                       <Tooltip contentStyle={{ borderRadius: 12, borderColor: '#E2E8F0' }} />
                       <Line type="monotone" dataKey="value" stroke="#0EA5E9" strokeWidth={3} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="homepage-progress__meta">+42 nodes hoàn thành trong tháng</div>
+                <div className="homepage-progress__meta">{activityMeta}</div>
               </div>
               <div className="homepage-progress__card">
-                <div className="homepage-progress__title">Phân bổ chủ đề</div>
+                <div className="homepage-progress__title">Phân bổ trạng thái</div>
                 <div className="homepage-progress__chart homepage-progress__chart--donut">
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
-                        data={TOPIC_DISTRIBUTION}
+                        data={progressDistribution}
                         dataKey="value"
                         nameKey="name"
                         innerRadius={55}
                         outerRadius={80}
                         paddingAngle={2}
                       >
-                        {TOPIC_DISTRIBUTION.map((entry) => (
+                        {progressDistribution.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
@@ -654,7 +855,7 @@ export default function Homepage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="homepage-progress__legend">
-                    {TOPIC_DISTRIBUTION.map((entry) => (
+                    {progressDistribution.map((entry) => (
                       <div key={entry.name} className="homepage-progress__legend-item">
                         <span className="homepage-progress__legend-dot" style={{ background: entry.color }} />
                         <span>{entry.name}</span>
@@ -663,19 +864,19 @@ export default function Homepage() {
                     ))}
                   </div>
                 </div>
-                <div className="homepage-progress__meta">4 chủ đề đang theo dõi</div>
+                <div className="homepage-progress__meta">{distributionMeta}</div>
               </div>
               <div className="homepage-progress__card">
                 <div className="homepage-progress__title">Streak hoạt động</div>
                 <div className="homepage-progress__heatmap">
-                  {HEATMAP_VALUES.map((level, index) => (
+                  {heatmapValues.map((level, index) => (
                     <span
                       key={`${level}-${index}`}
                       className={`homepage-progress__cell homepage-progress__cell--${level}`}
                     />
                   ))}
                 </div>
-                <div className="homepage-progress__meta">Chuỗi hoạt động 6 ngày liên tiếp</div>
+                <div className="homepage-progress__meta">{streakMeta}</div>
               </div>
             </div>
           </section>

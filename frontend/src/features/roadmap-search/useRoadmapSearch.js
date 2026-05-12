@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import roadmapSearchApi from '../../services/roadmapSearch.api';
-import { canSearchRoadmaps, getInitialSelectedRoadmapId, normalizeRoadmapQuery } from './roadmapSearch.logic';
+import {
+    getInitialSelectedRoadmapId,
+    normalizeRoadmapQuery,
+    selectedTagsSignature,
+    shouldRunRoadmapSearch,
+} from './roadmapSearch.logic';
 
 const DEBOUNCE_MS = 300;
 
 export function useRoadmapSearch(initialQuery = '') {
-    const [query, setQuery] = useState(initialQuery);
+    const [nameQuery, setNameQuery] = useState(initialQuery);
+    const [selectedTags, setSelectedTags] = useState([]);
     const [results, setResults] = useState([]);
     const [selectedRoadmapId, setSelectedRoadmapId] = useState(null);
     const [resultsStatus, setResultsStatus] = useState('idle');
@@ -14,7 +20,8 @@ export function useRoadmapSearch(initialQuery = '') {
     const [errorMessage, setErrorMessage] = useState('');
     const requestRef = useRef(0);
 
-    const normalizedQuery = useMemo(() => normalizeRoadmapQuery(query), [query]);
+    const normalizedNameQuery = useMemo(() => normalizeRoadmapQuery(nameQuery), [nameQuery]);
+    const tagsKey = useMemo(() => selectedTagsSignature(selectedTags), [selectedTags]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -24,12 +31,12 @@ export function useRoadmapSearch(initialQuery = '') {
         const params = new URLSearchParams(window.location.search);
         const initialUrlQuery = String(params.get('q') || '').trim();
         if (initialUrlQuery) {
-            setQuery(initialUrlQuery);
+            setNameQuery(initialUrlQuery);
         }
 
         const handleNavbarQuery = (event) => {
             const nextQuery = String(event?.detail?.query || '');
-            setQuery(nextQuery);
+            setNameQuery(nextQuery);
         };
 
         window.addEventListener('roadmap-search-query', handleNavbarQuery);
@@ -40,7 +47,10 @@ export function useRoadmapSearch(initialQuery = '') {
     }, []);
 
     useEffect(() => {
-        if (normalizedQuery.length === 0) {
+        const q = normalizedNameQuery;
+        const hasTags = Array.isArray(selectedTags) && selectedTags.length > 0;
+
+        if (q.length === 0 && !hasTags) {
             setResults([]);
             setSelectedRoadmapId(null);
             setResultsStatus('idle');
@@ -50,15 +60,20 @@ export function useRoadmapSearch(initialQuery = '') {
             return;
         }
 
-        if (!canSearchRoadmaps(normalizedQuery)) {
+        if (!shouldRunRoadmapSearch(nameQuery, selectedTags)) {
             setResults([]);
             setSelectedRoadmapId(null);
             setResultsStatus('idle');
             setPreviewStatus('idle');
             setPreviewData(null);
-            setErrorMessage('Type at least 2 characters to search.');
+            setErrorMessage('Nhập ít nhất 2 ký tự để tìm theo tên (hoặc chọn tag).');
             return;
         }
+
+        const qParam = q.length >= 2 ? q : '';
+        const tagsParam = Array.isArray(selectedTags)
+            ? selectedTags.map((t) => String(t?.normalizedLabel || '').trim().toLowerCase()).filter(Boolean)
+            : [];
 
         const requestId = requestRef.current + 1;
         requestRef.current = requestId;
@@ -67,7 +82,12 @@ export function useRoadmapSearch(initialQuery = '') {
 
         const timer = window.setTimeout(async () => {
             try {
-                const payload = await roadmapSearchApi.searchPublicRoadmaps({ q: normalizedQuery, page: 1, limit: 20 });
+                const payload = await roadmapSearchApi.searchPublicRoadmaps({
+                    q: qParam,
+                    tags: tagsParam,
+                    page: 1,
+                    limit: 20,
+                });
                 if (requestRef.current !== requestId) {
                     return;
                 }
@@ -125,7 +145,7 @@ export function useRoadmapSearch(initialQuery = '') {
         return () => {
             window.clearTimeout(timer);
         };
-    }, [normalizedQuery]);
+    }, [normalizedNameQuery, tagsKey]);
 
     useEffect(() => {
         if (!selectedRoadmapId) {
@@ -160,8 +180,13 @@ export function useRoadmapSearch(initialQuery = '') {
     }, [selectedRoadmapId]);
 
     return {
-        query,
-        setQuery,
+        nameQuery,
+        setNameQuery,
+        selectedTags,
+        setSelectedTags,
+        /** @deprecated same as nameQuery — kept for callers using `query` */
+        query: nameQuery,
+        setQuery: setNameQuery,
         results,
         selectedRoadmapId,
         setSelectedRoadmapId,

@@ -2925,6 +2925,12 @@ html[data-theme='dark'] .roadmap-search-query-bar__hash {
   background: #eef4fb;
 }
 
+.roadmap-search-query-bar__suggestion--keyboard-active {
+  background: #e2eefb;
+  outline: 2px solid rgba(0, 85, 162, 0.35);
+  outline-offset: -2px;
+}
+
 .roadmap-search-query-bar__suggestion--free {
   color: #0055a2;
   font-weight: 600;
@@ -2996,6 +3002,11 @@ html[data-theme='dark'] .roadmap-search-query-bar__suggestion {
 
 html[data-theme='dark'] .roadmap-search-query-bar__suggestion:hover {
   background: rgba(78, 136, 211, 0.22);
+}
+
+html[data-theme='dark'] .roadmap-search-query-bar__suggestion--keyboard-active {
+  background: rgba(78, 136, 211, 0.28);
+  outline-color: rgba(147, 197, 253, 0.45);
 }
 
 html[data-theme='dark'] .roadmap-search-query-bar__suggestion--free {

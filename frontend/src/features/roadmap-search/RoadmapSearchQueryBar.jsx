@@ -56,6 +56,28 @@ export default function RoadmapSearchQueryBar({
             .slice(0, 8);
     }, [availableTags, tagDraft, selectedTags]);
 
+    /** Thứ tự đúng với DOM: catalog trước, dòng “Thêm …” sau (nếu có). */
+    const suggestionOptions = useMemo(() => {
+        const opts = filteredSuggestions.map((tag) => ({
+            kind: 'catalog',
+            label: tag.label,
+        }));
+        const trimmed = String(tagDraft || '').trim();
+        if (
+            trimmed &&
+            !filteredSuggestions.some((t) => t.label.toLowerCase() === trimmed.toLowerCase())
+        ) {
+            opts.push({ kind: 'free', label: trimmed });
+        }
+        return opts;
+    }, [filteredSuggestions, tagDraft]);
+
+    const [suggestionHighlightIndex, setSuggestionHighlightIndex] = useState(0);
+
+    useEffect(() => {
+        setSuggestionHighlightIndex(0);
+    }, [suggestionOptions]);
+
     const commitTag = useCallback(
         (rawLabel) => {
             const trimmed = String(rawLabel || '').trim();
@@ -124,8 +146,24 @@ export default function RoadmapSearchQueryBar({
 
     const handleTagKeyDown = useCallback(
         (event) => {
+            const len = suggestionOptions.length;
+            if (event.key === 'ArrowDown' && len > 0) {
+                event.preventDefault();
+                setSuggestionHighlightIndex((i) => Math.min(i + 1, len - 1));
+                return;
+            }
+            if (event.key === 'ArrowUp' && len > 0) {
+                event.preventDefault();
+                setSuggestionHighlightIndex((i) => Math.max(i - 1, 0));
+                return;
+            }
             if (event.key === 'Enter') {
                 event.preventDefault();
+                const pick = suggestionOptions[suggestionHighlightIndex];
+                if (pick) {
+                    commitTag(pick.label);
+                    return;
+                }
                 commitTag(tagDraft);
                 return;
             }
@@ -134,7 +172,7 @@ export default function RoadmapSearchQueryBar({
                 setTagDraft(null);
             }
         },
-        [commitTag, tagDraft]
+        [commitTag, suggestionHighlightIndex, suggestionOptions, tagDraft]
     );
 
     useLayoutEffect(() => {
@@ -253,13 +291,15 @@ export default function RoadmapSearchQueryBar({
                                 role="listbox"
                                 aria-label="Gợi ý tag"
                             >
-                                {filteredSuggestions.map((tag) => (
+                                {filteredSuggestions.map((tag, idx) => (
                                     <button
                                         key={tag.normalizedLabel}
                                         type="button"
                                         role="option"
-                                        className="roadmap-search-query-bar__suggestion"
+                                        aria-selected={idx === suggestionHighlightIndex}
+                                        className={`roadmap-search-query-bar__suggestion${idx === suggestionHighlightIndex ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
                                         onMouseDown={(e) => e.preventDefault()}
+                                        onMouseEnter={() => setSuggestionHighlightIndex(idx)}
                                         onClick={() => commitTag(tag.label)}
                                     >
                                         {tag.label}
@@ -272,8 +312,14 @@ export default function RoadmapSearchQueryBar({
                                     <button
                                         type="button"
                                         role="option"
-                                        className="roadmap-search-query-bar__suggestion roadmap-search-query-bar__suggestion--free"
+                                        aria-selected={
+                                            suggestionHighlightIndex === filteredSuggestions.length
+                                        }
+                                        className={`roadmap-search-query-bar__suggestion roadmap-search-query-bar__suggestion--free${suggestionHighlightIndex === filteredSuggestions.length ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
                                         onMouseDown={(e) => e.preventDefault()}
+                                        onMouseEnter={() =>
+                                            setSuggestionHighlightIndex(filteredSuggestions.length)
+                                        }
                                         onClick={() => commitTag(tagDraft)}
                                     >
                                         Thêm “{String(tagDraft).trim()}”

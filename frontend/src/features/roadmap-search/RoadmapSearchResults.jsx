@@ -1,6 +1,18 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function RoadmapSearchResults({ results = [], resultsStatus = 'idle', selectedRoadmapId = null, onSelectResult }) {
+    const listRef = useRef(null);
+
+    useEffect(() => {
+        if (!selectedRoadmapId || !listRef.current) {
+            return;
+        }
+        const id = String(selectedRoadmapId);
+        const card = Array.from(listRef.current.querySelectorAll('[data-result-id]')).find(
+            (el) => el.getAttribute('data-result-id') === id
+        );
+        card?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, [selectedRoadmapId, results]);
     if (resultsStatus === 'searching') {
         return <p className="roadmap-search-results__state">Searching roadmaps...</p>;
     }
@@ -20,7 +32,7 @@ export default function RoadmapSearchResults({ results = [], resultsStatus = 'id
                     Nhập ít nhất 2 ký tự tên hoặc chọn tag (#) để tìm.
                 </p>
             ) : (
-                <div className="roadmap-search-results__list">
+                <div ref={listRef} className="roadmap-search-results__list" role="listbox" aria-label="Danh sách roadmap">
                     {results.map((result) => {
                         const isSelected = result._id === selectedRoadmapId;
                         const tags = Array.isArray(result.tags) ? result.tags : [];
@@ -28,6 +40,9 @@ export default function RoadmapSearchResults({ results = [], resultsStatus = 'id
                             <button
                                 key={result._id}
                                 type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                data-result-id={result._id}
                                 className={`roadmap-search-results__card ${isSelected ? 'is-selected' : ''}`}
                                 onClick={() => onSelectResult?.(result._id)}
                             >

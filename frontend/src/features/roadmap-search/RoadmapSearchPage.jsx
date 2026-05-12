@@ -54,6 +54,59 @@ export default function RoadmapSearchPage() {
         }
     }, []);
 
+    useEffect(() => {
+        /** Bỏ qua điều hướng kết quả: ô tag sau #, textarea/select, hoặc nút trong dropdown gợi ý tag. */
+        function shouldSkipResultArrowNav(el) {
+            if (!el || !(el instanceof HTMLElement)) {
+                return true;
+            }
+            if (el.isContentEditable) {
+                return true;
+            }
+            const tag = el.tagName;
+            if (tag === 'TEXTAREA' || tag === 'SELECT') {
+                return true;
+            }
+            if (tag === 'INPUT') {
+                if (el.classList.contains('roadmap-search-query-bar__tag-input')) {
+                    return true;
+                }
+                if (el.getAttribute('name') === 'roadmap-search-tag-draft') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function onKeyDown(e) {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') {
+                return;
+            }
+            const target = e.target;
+            if (target instanceof HTMLElement && target.closest?.('.roadmap-search-query-bar__suggestions')) {
+                return;
+            }
+            if (shouldSkipResultArrowNav(target)) {
+                return;
+            }
+            if (results.length === 0 || resultsStatus !== 'loaded') {
+                return;
+            }
+            e.preventDefault();
+            const idx = results.findIndex((r) => r._id === selectedRoadmapId);
+            let nextIdx;
+            if (e.key === 'ArrowDown') {
+                nextIdx = idx < 0 ? 0 : (idx + 1) % results.length;
+            } else {
+                nextIdx = idx <= 0 ? results.length - 1 : idx - 1;
+            }
+            setSelectedRoadmapId(results[nextIdx]._id);
+        }
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [results, resultsStatus, selectedRoadmapId, setSelectedRoadmapId]);
+
     return (
         <div className="roadmap-search-page">
             <section className="roadmap-search-page__left">

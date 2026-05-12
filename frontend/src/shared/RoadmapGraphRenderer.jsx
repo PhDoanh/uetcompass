@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNotification } from '../features/general/NotificationContainer';
+import { useNotification } from '../features/notification/NotificationContainer';
 import './roadmapGraphRenderer.css';
 
 /**

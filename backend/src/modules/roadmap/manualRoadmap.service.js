@@ -65,13 +65,20 @@ async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
     );
 }
 
-async function listPublic({ q = '', page = 1, limit = 20 } = {}) {
+async function listPublic({ q = '', tags = [], page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = {};
+    const filter = { isPublic: true };
 
     const normalizedQuery = String(q || '').trim();
     if (normalizedQuery) {
         filter.title = { $regex: escapeRegex(normalizedQuery), $options: 'i' };
+    }
+
+    if (Array.isArray(tags) && tags.length > 0) {
+        const normalizedTags = tags.map(t => String(t || '').trim().toLowerCase()).filter(Boolean);
+        if (normalizedTags.length > 0) {
+            filter['tags.normalizedLabel'] = { $in: normalizedTags };
+        }
     }
 
     const [items, total] = await Promise.all([
@@ -138,7 +145,7 @@ async function listByUser(userId, { page = 1, limit = 20 } = {}) {
     return { items, pagination: { page, limit, total } };
 }
 
-async function createDraft(userId, { title, description, yamlCode, nodes }) {
+async function createDraft(userId, { title, description, yamlCode, nodes, tags = [] }) {
     // Enrich nodes with defaults
     const enrichedNodes = enrichNodes(nodes);
 
@@ -162,6 +169,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes }) {
         yamlCode,
         nodes: enrichedNodes,
         edges,
+        tags: Array.isArray(tags) ? tags : [],
         shared: true,
         isPublic: true,
         status: 'draft',
@@ -187,7 +195,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes }) {
     return result;
 }
 
-async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes }) {
+async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes, tags = [] }) {
     const existing = await ManualRoadmap.findOne({ _id: roadmapId, userId });
     if (!existing) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
@@ -215,6 +223,7 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.yamlCode = yamlCode;
     existing.nodes = enrichedNodes;
     existing.edges = edges;
+    existing.tags = Array.isArray(tags) ? tags : [];
     existing.shared = true;
     existing.isPublic = true;
     existing.sharedAt = existing.sharedAt || new Date();
@@ -238,6 +247,37 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     const out = existing.toObject();
     if (syncSkippedOnUpdate) out.syncSkipped = true;
     return out;
+}
+
+function serializeTag(tag) {
+    if (!tag || typeof tag !== 'object') {
+        return null;
+    }
+    return {
+        label: tag.label || '',
+        normalizedLabel: (tag.normalizedLabel || '').toLowerCase(),
+    };
+}
+
+async function getDistinctTags() {
+    const publicRoadmaps = await ManualRoadmap.find(
+        { isPublic: true },
+        { tags: 1 }
+    ).lean();
+
+    const tagMap = new Map();
+    for (const roadmap of publicRoadmaps) {
+        if (Array.isArray(roadmap.tags)) {
+            for (const tag of roadmap.tags) {
+                const normalized = (tag.normalizedLabel || '').toLowerCase();
+                if (normalized && !tagMap.has(normalized)) {
+                    tagMap.set(normalized, serializeTag(tag));
+                }
+            }
+        }
+    }
+
+    return Array.from(tagMap.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 async function share(roadmapId, userId) {
@@ -269,4 +309,6 @@ module.exports = {
     share,
     listPublic,
     getPublicPreviewById,
+    serializeTag,
+    getDistinctTags,
 };

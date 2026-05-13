@@ -1,6 +1,6 @@
 describe('RoadmapSearchPage shell constants', () => {
     test('defines search placeholder for autofocus entry input', () => {
-        expect('Search roadmap by name...').toBe('Search roadmap by name...');
+        expect('Tìm theo tên… Gõ # để gắn tag, Enter để xác nhận tag.').toMatch(/#/);
     });
 
     test('uses configured debounce and min-length constraints', async () => {

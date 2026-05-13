@@ -9,6 +9,7 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
 import { useNotification } from '../notification/NotificationContainer';
+import TagInput from './TagInput';
 import { CircleHelp, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
@@ -148,6 +149,9 @@ export default function ManualRoadmapPage() {
   const [description, setDescription] = useState('');
   const [preview, setPreview] = useState({ title: '', description: '', nodes: [], edges: [] });
   const [validationError, setValidationError] = useState('');
+  const [tags, setTags] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -247,6 +251,33 @@ export default function ManualRoadmapPage() {
     } catch {
       // Ignore malformed prefill payload and keep default editor content.
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingTags(true);
+
+    (async () => {
+      try {
+        const tags = await manualRoadmapApi.getManualRoadmapTags();
+        if (isMounted) {
+          setAvailableTags(Array.isArray(tags) ? tags : []);
+        }
+      } catch (err) {
+        console.error('Failed to load tag catalog:', err);
+        if (isMounted) {
+          setAvailableTags([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingTags(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -453,6 +484,7 @@ export default function ManualRoadmapPage() {
         setSelectedSampleKey('custom');
         setTitle(roadmap.title || '');
         setDescription(roadmap.description || '');
+        setTags(Array.isArray(roadmap.tags) ? roadmap.tags : []);
       } catch (err) {
         if (!isMounted) return;
         setApiError(err.message || 'Không thể tải roadmap thủ công.');
@@ -600,8 +632,8 @@ export default function ManualRoadmapPage() {
     setIsSaving(true);
     try {
       const result = await (roadmapId
-        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
-        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
+        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode, tags })
+        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode, tags }));
 
       setSuccessMessage(`Đã ${roadmapId ? 'cập nhật' : 'tạo'} roadmap thành công.`);
 
@@ -796,6 +828,21 @@ export default function ManualRoadmapPage() {
                 />
               </div>
               {validationError && <div className="manual-roadmap-alert manual-roadmap-alert--error">{validationError}</div>}
+            </section>
+
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Gắn thẻ roadmap</h4>
+              <div className="manual-roadmap-form">
+                <label className="manual-roadmap-field__label">Thêm hoặc chọn thẻ</label>
+                <TagInput
+                  tags={tags}
+                  availableTags={availableTags}
+                  onTagsChange={setTags}
+                  isLoading={isLoadingTags}
+                  disabled={isSaving}
+                />
+                <p className="manual-roadmap-section__note">Sử dụng thẻ để giúp người dùng tìm kiếm và lọc roadmap của bạn.</p>
+              </div>
             </section>
 
             <section className="resources-tab__section manual-roadmap-section">

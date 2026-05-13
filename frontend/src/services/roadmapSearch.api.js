@@ -27,12 +27,21 @@ async function request(path, method = 'GET') {
     return payload;
 }
 
-export function searchPublicRoadmaps({ q = '', page = 1, limit = 20 } = {}) {
+export function searchPublicRoadmaps({ q = '', tags = [], page = 1, limit = 20 } = {}) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) {
         params.set('q', q);
     }
+    if (Array.isArray(tags) && tags.length > 0) {
+        tags.forEach(tag => {
+            params.append('tags', String(tag || '').trim().toLowerCase());
+        });
+    }
     return request(`/roadmaps/manual-roadmaps/public?${params.toString()}`, 'GET');
+}
+
+export function getManualRoadmapTags() {
+    return request('/roadmaps/manual-roadmaps/tags', 'GET');
 }
 
 export function getPublicRoadmapPreviewById(roadmapId) {
@@ -42,6 +51,7 @@ export function getPublicRoadmapPreviewById(roadmapId) {
 const roadmapSearchApi = {
     searchPublicRoadmaps,
     getPublicRoadmapPreviewById,
+    getManualRoadmapTags,
 };
 
 export default roadmapSearchApi;

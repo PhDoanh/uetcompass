@@ -35,9 +35,6 @@ const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
-<<<<<<< HEAD
-const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 4;
-=======
 const MANUAL_ROADMAP_FETCH_LIMIT = 100;
 const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
 const FEATURED_FEATURES = [
@@ -102,7 +99,6 @@ const HEATMAP_VALUES = [
   1, 2, 3, 4, 2, 1, 1,
   0, 1, 2, 3, 2, 1, 0,
 ];
->>>>>>> origin/dev
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -851,9 +847,6 @@ export default function Homepage() {
           </div>
         </section>
 
-<<<<<<< HEAD
-        <section className="homepage-bento">
-=======
         <section
           id="system-flow"
           className="homepage-section homepage-system"
@@ -887,7 +880,6 @@ export default function Homepage() {
         </section>
 
         <section id="how-it-works" className="homepage-bento">
->>>>>>> origin/dev
           <div className="homepage-bento__main">
             <h2>Bạn là tân sinh viên?</h2>
             <p>

@@ -473,21 +473,6 @@ export default function SkillTreePage() {
           </div>
         </main>
 
-<<<<<<< HEAD
-        <div
-          className="skill-tree-layout__divider"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize roadmap canvas and detail panel"
-          aria-valuemin={Math.round(minRatio * 100)}
-          aria-valuemax={Math.round(maxRatio * 100)}
-          aria-valuenow={Math.round(ratio * 100)}
-          tabIndex={0}
-          onPointerDown={handleResizePointerDown}
-          onKeyDown={handleResizeKeyDown}
-        >
-          <ManualRoadmapDividerHandle />
-=======
         <div className="skill-tree-canvas-controls">
           <button
             type="button"
@@ -529,7 +514,6 @@ export default function SkillTreePage() {
           >
             Locate me
           </button>
->>>>>>> origin/dev
         </div>
 
         <SkillTreeDetailPanel

@@ -430,15 +430,9 @@ html[data-theme='dark'] .navbar__auth-btn--primary {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-<<<<<<< HEAD
-  padding: 0.35rem 0.55rem 0.35rem 0.8rem;
-  border-color: #d5deed;
-  background: #f3f6fb;
-=======
   padding: 0;
   border: none;
   background: transparent;
->>>>>>> origin/dev
   box-shadow: none;
 }
 

@@ -4,7 +4,7 @@ import React from 'react';
  * T024: Build custom course node UI with status badges and lock indicator
  */
 
-export default function CourseNode({ node, onSelect = () => {}, isFocused = false }) {
+export default function CourseNode({ node, onSelect = () => {}, onContextMenu = () => {} }) {
   const getStatusVariant = () => {
     switch (node.progressState) {
       case 'completed':
@@ -24,10 +24,8 @@ export default function CourseNode({ node, onSelect = () => {}, isFocused = fals
   return (
     <button
       onClick={onSelect}
-      data-node-id={node.nodeId}
-      className={`course-node roadmap-node ${isSubtopic ? 'roadmap-node-sub' : 'roadmap-node-main'} ${getStatusVariant()} ${
-        isFocused ? 'course-node--focused' : ''
-      }`}
+      onContextMenu={(event) => onContextMenu(event, node)}
+      className={`course-node roadmap-node ${isSubtopic ? 'roadmap-node-sub' : 'roadmap-node-main'} ${getStatusVariant()}`}
     >
       <div className="course-node__main">
         <div className="course-node__text">

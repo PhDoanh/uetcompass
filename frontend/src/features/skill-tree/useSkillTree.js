@@ -43,6 +43,19 @@ export function useSkillTree() {
   const hiddenRetryLastAtRef = useRef(0);
   const generationStartedAtRef = useRef(0);
 
+  function isOnPersonalizedSkillTreePage() {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const pathname = String(window.location.pathname || '');
+    const normalizedPath = pathname !== '/' && pathname.endsWith('/')
+      ? pathname.slice(0, -1)
+      : pathname;
+
+    return normalizedPath === '/skill-tree';
+  }
+
   async function tryBackgroundKickoffGeneration() {
     if (hiddenRetryInFlightRef.current || Date.now() - hiddenRetryLastAtRef.current <= 10000) {
       return;
@@ -271,11 +284,25 @@ export function useSkillTree() {
       const graph = buildSkillTreeGraph(data.nodes || [], updated?.state || data.progress || {});
       setTreeData({ ...data, progress: updated?.state || data.progress, nodes: graph.nodes, edges: graph.edges });
     } catch (err) {
-      // Rollback on error
-      const data = await skillTreeApi.getTree(authTokenRef.current);
-      const graph = buildSkillTreeGraph(data.nodes || [], data.progress || {});
-      setTreeData({ ...data, nodes: graph.nodes, edges: graph.edges });
-      setError(err);
+      const shouldSilenceError = !isOnPersonalizedSkillTreePage();
+
+      try {
+        // Rollback by syncing current canonical server state.
+        const data = await skillTreeApi.getTree(authTokenRef.current);
+        const graph = buildSkillTreeGraph(data.nodes || [], data.progress || {});
+        setTreeData({ ...data, nodes: graph.nodes, edges: graph.edges });
+      } catch (syncErr) {
+        // Fallback rollback when the follow-up sync also fails.
+        updateProgressState({ nodeId, fromState: toState, toState: fromState });
+
+        if (!shouldSilenceError) {
+          setError(syncErr);
+        }
+      }
+
+      if (!shouldSilenceError) {
+        setError(err);
+      }
     }
   };
 

@@ -51,19 +51,19 @@ export function getManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'GET', authToken);
 }
 
-export function createManualRoadmap(authToken, { yamlCode }) {
-    return request('/roadmaps/manual-roadmaps', 'POST', authToken, { yamlCode });
+export function createManualRoadmap(authToken, { yamlCode, tags = [] }) {
+    return request('/roadmaps/manual-roadmaps', 'POST', authToken, { yamlCode, tags });
 }
 
-export function updateManualRoadmap(authToken, roadmapId, { yamlCode }) {
-    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'PATCH', authToken, { yamlCode });
+export function updateManualRoadmap(authToken, roadmapId, { yamlCode, tags = [] }) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'PATCH', authToken, { yamlCode, tags });
 }
 
 export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
 }
 
-export function listPublicManualRoadmaps({ q = '', page = 1, limit = 20 } = {}) {
+export function listPublicManualRoadmaps({ q = '', tags = [], page = 1, limit = 20 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
@@ -74,11 +74,40 @@ export function listPublicManualRoadmaps({ q = '', page = 1, limit = 20 } = {}) 
         params.set('q', normalizedQuery);
     }
 
+    if (Array.isArray(tags) && tags.length > 0) {
+        tags.forEach(tag => {
+            params.append('tags', String(tag || '').trim().toLowerCase());
+        });
+    }
+
     return request(`/roadmaps/manual-roadmaps/public?${params.toString()}`, 'GET', null, undefined, { requireAuth: false });
+}
+
+export function getManualRoadmapTags() {
+    return request('/roadmaps/manual-roadmaps/tags', 'GET', null, undefined, { requireAuth: false });
 }
 
 export function getPublicManualRoadmapPreviewById(roadmapId) {
     return request(`/roadmaps/manual-roadmaps/public/${roadmapId}`, 'GET', null, undefined, { requireAuth: false });
+}
+
+export function listPublicManualRoadmapComments(roadmapId, limit = 20) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments?limit=${encodeURIComponent(limit)}`,
+        'GET',
+        null,
+        undefined,
+        { requireAuth: false }
+    );
+}
+
+export function createManualRoadmapComment(authToken, roadmapId, { content, rating }) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments`,
+        'POST',
+        authToken,
+        { content, rating }
+    );
 }
 
 const manualRoadmapApi = {
@@ -89,6 +118,9 @@ const manualRoadmapApi = {
     shareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
+    listPublicManualRoadmapComments,
+    createManualRoadmapComment,
+    getManualRoadmapTags,
 };
 
 export default manualRoadmapApi;

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
 import CourseDetailPanel from './CourseDetailPanel';
@@ -15,14 +15,21 @@ function clampZoom(value) {
 
 export default function SkillTreePage() {
   const [zoom, setZoom] = useState(1);
+  const [historyEvents, setHistoryEvents] = useState([]);
+  const [celebration, setCelebration] = useState(null);
   const canvasViewportRef = useRef(null);
   const zoomContentRef = useRef(null);
   const autoFittedRef = useRef(false);
-  const [focusNodeId, setFocusNodeId] = useState('');
+  const milestoneTriggeredRef = useRef(new Set());
+  const previousPercentRef = useRef(0);
+  const celebrationInitializedRef = useRef(false);
+  const celebrationTimerRef = useRef(null);
 
   const {
     nodes,
     edges,
+    roadmapId,
+    roadmapName,
     createdAt,
     acceptedAt,
     activeNodeId,
@@ -40,6 +47,180 @@ export default function SkillTreePage() {
   const hasNodes = (nodes || []).length > 0;
   const roadmapCreatedAt = createdAt || acceptedAt;
   const roadmapCreatedLabel = roadmapCreatedAt ? new Date(roadmapCreatedAt).toLocaleString() : 'Not available';
+  const roadmapTitle = roadmapName || 'Roadmap cá nhân';
+  const roadmapDescription = 'Your personalized roadmap';
+
+  const {
+    layoutRef,
+    ratio,
+    isCompactLayout,
+    minRatio,
+    maxRatio,
+    handleResizePointerDown,
+    handleResizeKeyDown,
+  } = useSplitLayout();
+
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (activeNode) {
+      setActiveTab('node');
+      return;
+    }
+
+    setActiveTab('overview');
+  }, [activeNode]);
+
+  const progressSummary = useMemo(
+    () => calculateProgress(nodes || [], (node) => node.progressState),
+    [nodes]
+  );
+
+  const milestones = useMemo(() => buildFixedMilestones(), []);
+
+  const closeCelebration = useCallback(() => {
+    setCelebration(null);
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    if (!roadmapId) {
+      setHistoryEvents([]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken') || '';
+      const payload = await skillTreeApi.getRoadmapHistory(token, roadmapId, 50);
+      setHistoryEvents(Array.isArray(payload?.items) ? payload.items : []);
+    } catch {
+      setHistoryEvents([]);
+    }
+  }, [roadmapId]);
+
+  const overviewMetaItems = useMemo(() => ([
+    { label: 'Ngày tạo', value: roadmapCreatedLabel },
+    { label: 'Số node', value: hasNodes ? `${nodes.length}` : '0' },
+  ]), [hasNodes, nodes.length, roadmapCreatedLabel]);
+
+  const handleNodeTransition = useCallback(async (fromState, toState) => {
+    if (!activeNode) {
+      return;
+    }
+
+    await transitionNode(activeNode.nodeId, fromState, toState);
+    await refreshHistory();
+  }, [activeNode, refreshHistory, transitionNode]);
+
+  const handleRightClickToggle = useCallback(async (event, node) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!node?.nodeId) {
+      return;
+    }
+
+    const currentState = node.progressState || 'pending';
+    const targetState = currentState === 'completed' ? 'pending' : 'completed';
+
+    await transitionNode(node.nodeId, currentState, targetState);
+    await refreshHistory();
+  }, [refreshHistory, transitionNode]);
+
+  useEffect(() => {
+    if (!hasNodes) {
+      milestoneTriggeredRef.current.clear();
+      previousPercentRef.current = 0;
+      celebrationInitializedRef.current = false;
+      return;
+    }
+
+    const currentPercent = progressSummary.percent || 0;
+    const previousPercent = previousPercentRef.current || 0;
+
+    if (!celebrationInitializedRef.current) {
+      celebrationInitializedRef.current = true;
+      previousPercentRef.current = currentPercent;
+      return;
+    }
+
+    if (currentPercent <= previousPercent) {
+      previousPercentRef.current = currentPercent;
+      return;
+    }
+
+    const orderedMilestones = [...milestones].sort((a, b) => a.percent - b.percent);
+    for (const milestone of orderedMilestones) {
+      if (
+        currentPercent >= milestone.percent
+        && previousPercent < milestone.percent
+        && !milestoneTriggeredRef.current.has(milestone.id)
+      ) {
+        milestoneTriggeredRef.current.add(milestone.id);
+        setCelebration({ milestone, roadmapTitle });
+        break;
+      }
+    }
+
+    previousPercentRef.current = currentPercent;
+  }, [hasNodes, milestones, progressSummary.percent, roadmapTitle]);
+
+  const detailTabs = useMemo(() => ([
+    {
+      id: 'overview',
+      label: 'Tổng quan',
+      content: (
+        <SkillTreeOverviewTab
+          title={roadmapTitle}
+          description={roadmapDescription}
+          metaItems={overviewMetaItems}
+          showRoadmapTitle={false}
+          progress={progressSummary}
+          milestones={milestones}
+          progressVariant="fixed"
+          historyEvents={historyEvents}
+          showHistory
+        />
+      ),
+    },
+    {
+      id: 'node',
+      label: 'Chi tiết nút',
+      disabled: !activeNode,
+      content: (
+        <SkillTreeNodeDetailTab
+          mode="personal"
+          node={activeNode}
+          onClearSelection={closeNode}
+          onTransition={activeNode ? handleNodeTransition : undefined}
+        />
+      ),
+    },
+  ]), [activeNode, closeNode, handleNodeTransition, historyEvents, milestones, overviewMetaItems, progressSummary, roadmapDescription, roadmapTitle]);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  useEffect(() => {
+    if (!celebration) {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = null;
+      }
+      return;
+    }
+
+    celebrationTimerRef.current = setTimeout(() => {
+      setCelebration(null);
+    }, 3800);
+
+    return () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = null;
+      }
+    };
+  }, [celebration]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -78,12 +259,12 @@ export default function SkillTreePage() {
       return;
     }
 
-    const padding = 48;
+    const padding = 140;
     const widthScale = (viewportWidth - padding) / contentWidth;
     const heightScale = (viewportHeight - padding) / contentHeight;
-    const targetZoom = clampZoom(Math.min(widthScale, heightScale));
+    const targetZoom = clampZoom(Math.min(widthScale, heightScale) * 0.9);
 
-    setZoom(Number.isFinite(targetZoom) && targetZoom > 0 ? targetZoom : 1);
+    setZoom(Number.isFinite(targetZoom) && targetZoom > 0 ? targetZoom : 0.9);
 
     requestAnimationFrame(() => {
       viewportEl.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
@@ -254,29 +435,73 @@ export default function SkillTreePage() {
 
   return (
     <div className="skill-tree-page">
-      <div className="skill-tree-layout">
-        <main ref={canvasViewportRef} className="skill-tree-layout__canvas" aria-label="Skill tree canvas">
-          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
-            <h2 className="skill-tree-summary-card__title">Your personalized roadmap</h2>
-            <p className="skill-tree-summary-card__meta">Created at: {roadmapCreatedLabel}</p>
-          </section>
-
-          {hasNodes ? (
-            <div className="skill-tree-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-              <div ref={zoomContentRef}>
-                <SkillTreeCanvas
-                  nodes={nodes || []}
-                  edges={edges || []}
-                  onSelectNode={openNode}
-                  focusNodeId={focusNodeId}
-                />
+      <MilestoneCelebrationModal
+        open={!!celebration}
+        milestone={celebration?.milestone}
+        roadmapTitle={celebration?.roadmapTitle}
+        onClose={closeCelebration}
+      />
+      <div
+        className="skill-tree-layout skill-tree-layout--split"
+        ref={layoutRef}
+        style={{ '--st-panel-ratio': ratio }}
+      >
+        <main
+          ref={canvasViewportRef}
+          className="skill-tree-layout__canvas skill-tree-layout__canvas--split"
+          aria-label="Skill tree canvas"
+        >
+          <div className="skill-tree-canvas-stage skill-tree-canvas-stage--scroll">
+            {hasNodes ? (
+              <div className="skill-tree-zoom-layer" style={{ transform: `scale(${zoom})` }}>
+                <div ref={zoomContentRef}>
+                  <SkillTreeCanvas
+                    nodes={nodes || []}
+                    edges={edges || []}
+                    onSelectNode={openNode}
+                    onToggleNodeStatus={handleRightClickToggle}
+                  />
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="skill-tree-empty-state">
-              <p>{generationMessage || 'Roadmap is not available yet.'}</p>
-            </div>
-          )}
+            ) : (
+              <div className="skill-tree-empty-state">
+                <p>{generationMessage || 'Roadmap is not available yet.'}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="skill-tree-canvas-controls skill-tree-canvas-controls--split">
+            <button
+              type="button"
+              className="skill-tree-canvas-controls__btn"
+              onClick={handleZoomIn}
+              aria-label="Zoom in"
+              title="Zoom in"
+              disabled={!hasNodes}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className="skill-tree-canvas-controls__btn"
+              onClick={handleZoomOut}
+              aria-label="Zoom out"
+              title="Zoom out"
+              disabled={!hasNodes}
+            >
+              -
+            </button>
+            <button
+              type="button"
+              className="skill-tree-canvas-controls__btn"
+              onClick={handleFitView}
+              aria-label="Fit to view"
+              title="Fit to view"
+              disabled={!hasNodes}
+            >
+              ⤢
+            </button>
+          </div>
         </main>
 
         <div className="skill-tree-canvas-controls">
@@ -322,19 +547,14 @@ export default function SkillTreePage() {
           </button>
         </div>
 
-        {activeNode && (
-          <CourseDetailPanel
-            node={activeNode}
-            roadmapId={roadmapId}
-            onClosePanel={closeNode}
-            onTransition={(fromState, toState) => transitionNode(activeNode.nodeId, fromState, toState)}
-          />
-        )}
+        <SkillTreeDetailPanel
+          title="Chi tiết roadmap"
+          subtitle={roadmapTitle}
+          tabs={detailTabs}
+          activeTabId={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
-
-      <footer className="skill-tree-page__footer">
-        <span>UETCompass</span>
-      </footer>
     </div>
   );
 }

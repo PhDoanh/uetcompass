@@ -16,6 +16,7 @@ router.get('/', controller.getTree);
 
 // US2/US3 — Progress read/update by roadmap and nodeId
 router.get('/roadmaps/:roadmapId/progress', controller.getRoadmapProgress);
+router.get('/roadmaps/:roadmapId/history', controller.getRoadmapHistory);
 router.patch('/roadmaps/:roadmapId/progress/node', controller.patchNodeStatus);
 
 // US3 — Course detail panel resources

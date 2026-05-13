@@ -42,14 +42,6 @@ export function getRoadmapSearchTarget(pathname) {
   return !blockedPaths.includes(pathname);
 }
 
-function dispatchRoadmapSearchQuery(query) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.dispatchEvent(new CustomEvent('roadmap-search-query', { detail: { query } }));
-}
-
 function dispatchOpenRoadmapSearchOverlay() {
   if (typeof window === 'undefined') {
     return;
@@ -102,7 +94,6 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFallback, setAvatarFallback] = useState('U');
-  const [searchText, setSearchText] = useState('');
   const [theme, setTheme] = useState(resolveInitialTheme);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const avatarRef = useRef(null);
@@ -265,19 +256,6 @@ export default function NavBar() {
     };
   }, [accessToken, isAuthenticated]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const initialQuery = String(params.get('q') || '').trim();
-    if (initialQuery) {
-      setSearchText(initialQuery);
-      dispatchRoadmapSearchQuery(initialQuery);
-    }
-  }, []);
-
   const navigationItems = isAuthenticated
     ? [
       {
@@ -337,21 +315,15 @@ export default function NavBar() {
         </div>
       </div>
       <div className="navbar__right">
-        <div className="navbar__search" onClick={goRoadmapSearch}>
-          <Search className="navbar__search-icon" size={16} />
-          <input
-            className="navbar__input"
-            type="text"
-            placeholder="Tìm kiếm roadmap..."
-            value={searchText}
-            onFocus={goRoadmapSearch}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              setSearchText(nextValue);
-              dispatchRoadmapSearchQuery(nextValue);
-            }}
-          />
-        </div>
+        <button
+          type="button"
+          className="navbar__icon-btn navbar__search-trigger"
+          aria-label="Tìm kiếm roadmap"
+          title="Tìm kiếm roadmap"
+          onClick={goRoadmapSearch}
+        >
+          <Search size={18} aria-hidden="true" />
+        </button>
         <div className="navbar__actions">
           <div className="navbar__notification" ref={notificationRef}>
             <button

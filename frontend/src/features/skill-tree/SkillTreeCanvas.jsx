@@ -20,7 +20,12 @@ function getRowWidth(topicCount) {
   return topicCount * TOPIC_NODE_WIDTH + (topicCount - 1) * TOPIC_LINK_WIDTH;
 }
 
-export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode = () => {}, focusNodeId = '' }) {
+export default function SkillTreeCanvas({
+  nodes = [],
+  edges = [],
+  onSelectNode = () => {},
+  onToggleNodeStatus = () => {},
+}) {
   if (!nodes.length) {
     return (
       <div className="skill-tree-empty-state">
@@ -82,7 +87,7 @@ export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode =
                       <CourseNode
                         node={topic}
                         onSelect={() => onSelectNode(topic.nodeId)}
-                        isFocused={Boolean(focusNodeId && focusNodeId === topic.nodeId)}
+                        onContextMenu={(event, node) => onToggleNodeStatus(event, node)}
                       />
 
                       {branches.length > 0 && (
@@ -93,7 +98,7 @@ export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode =
                               <CourseNode
                                 node={subtopic}
                                 onSelect={() => onSelectNode(subtopic.nodeId)}
-                                isFocused={Boolean(focusNodeId && focusNodeId === subtopic.nodeId)}
+                                onContextMenu={(event, node) => onToggleNodeStatus(event, node)}
                               />
                             </div>
                           ))}

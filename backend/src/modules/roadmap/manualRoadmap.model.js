@@ -148,6 +148,25 @@ const ManualRoadmapSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        tags: {
+            type: [
+                {
+                    label: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                    },
+                    normalizedLabel: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                        lowercase: true,
+                    },
+                    _id: false,
+                }
+            ],
+            default: [],
+        },
     },
     {
         collection: 'manual_roadmaps',

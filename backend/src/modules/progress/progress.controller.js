@@ -1,7 +1,9 @@
 'use strict';
 
 const progressService = require('./progress.service');
+const progressTrackingService = require('./progress.tracking.service');
 const progressSse = require('./progress.sse');
+const { verifyAccessToken } = require('../auth/token.service');
 
 function sendError(res, err) {
   const status = err?.status || 500;
@@ -44,6 +46,17 @@ async function getRoadmapNodes(req, res) {
   }
 }
 
+async function getTrackingTables(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { scope, roadmapId, groupBy } = req.query || {};
+    const result = await progressTrackingService.getTrackingTables(userId, { scope, roadmapId, groupBy });
+    return res.status(200).json(result);
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
 function streamProgressEvents(req, res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -60,10 +73,17 @@ function streamProgressEvents(req, res) {
     return;
   }
 
-  const userId = sseToken.trim();
+  let userId = '';
+  try {
+    const payload = verifyAccessToken(sseToken.trim());
+    userId = String(payload?.userId || '').trim();
+  } catch (_) {
+    userId = '';
+  }
+
   if (!userId) {
-    res.write('event: error\\n');
-    res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\\n\\n');
+    res.write('event: error\n');
+    res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\n\n');
     res.end();
     return;
   }
@@ -75,5 +95,6 @@ function streamProgressEvents(req, res) {
 module.exports = {
   getSummaries,
   getRoadmapNodes,
+  getTrackingTables,
   streamProgressEvents,
 };

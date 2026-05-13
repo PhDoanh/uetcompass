@@ -25,7 +25,7 @@ export default function RoadmapCard({ roadmap, onSelect, selected = false }) {
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full text-left rounded-xl border p-4 transition ${
+      className={`w-full cursor-pointer text-left rounded-xl border p-4 transition ${
         selected ? 'border-blue-500 shadow-md bg-blue-50' : 'border-gray-200 bg-white hover:shadow-sm'
       }`}
     >

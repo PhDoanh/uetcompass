@@ -18,6 +18,7 @@ export default function SkillTreePage() {
   const canvasViewportRef = useRef(null);
   const zoomContentRef = useRef(null);
   const autoFittedRef = useRef(false);
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const {
     nodes,
@@ -39,6 +40,16 @@ export default function SkillTreePage() {
   const hasNodes = (nodes || []).length > 0;
   const roadmapCreatedAt = createdAt || acceptedAt;
   const roadmapCreatedLabel = roadmapCreatedAt ? new Date(roadmapCreatedAt).toLocaleString() : 'Not available';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const focus = params.get('focus') || '';
+    setFocusNodeId(focus);
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => clampZoom(prev + ZOOM_STEP));
@@ -183,6 +194,27 @@ export default function SkillTreePage() {
     }
   }, [hasNodes, nodes.length, handleFitView]);
 
+  useEffect(() => {
+    if (!focusNodeId || !hasNodes) {
+      return;
+    }
+
+    const viewportEl = canvasViewportRef.current;
+    const contentEl = zoomContentRef.current;
+    if (!viewportEl || !contentEl) {
+      return;
+    }
+
+    const target = contentEl.querySelector(`[data-node-id="${focusNodeId}"]`);
+    if (!target) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    });
+  }, [focusNodeId, hasNodes, nodes, zoom]);
+
   let generationMessage = '';
   if (!hasNodes) {
     if (generationStatus === 'generating' || repersonalizing) {
@@ -236,6 +268,7 @@ export default function SkillTreePage() {
                   nodes={nodes || []}
                   edges={edges || []}
                   onSelectNode={openNode}
+                  focusNodeId={focusNodeId}
                 />
               </div>
             </div>

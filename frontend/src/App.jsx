@@ -32,6 +32,7 @@ const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel
 const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
+const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
 
 function shouldUseReducedMotion() {
 	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -292,6 +293,16 @@ function AppContent() {
 			<AuthGuard>
 				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
 					<ManualRoadmapPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/progress') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<ProgressDashboard />
 				</main>
 			</AuthGuard>
 		);

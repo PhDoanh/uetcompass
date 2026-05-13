@@ -11,5 +11,6 @@ router.get('/sse', progressController.streamProgressEvents);
 router.use(requireAuth);
 router.get('/summaries', progressController.getSummaries);
 router.get('/summaries/:roadmapId/nodes', progressController.getRoadmapNodes);
+router.get('/tracking', progressController.getTrackingTables);
 
 module.exports = router;

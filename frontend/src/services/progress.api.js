@@ -43,6 +43,21 @@ export async function getRoadmapNodes(authToken, roadmapId) {
   return request(`/progress/summaries/${encodeURIComponent(roadmapId)}/nodes`, authToken);
 }
 
+export async function getTrackingTables(authToken, { scope, roadmapId, groupBy }) {
+  const params = new URLSearchParams();
+  if (scope) {
+    params.set('scope', scope);
+  }
+  if (groupBy) {
+    params.set('groupBy', groupBy);
+  }
+  if (roadmapId) {
+    params.set('roadmapId', roadmapId);
+  }
+  const query = params.toString();
+  return request(`/progress/tracking${query ? `?${query}` : ''}`, authToken);
+}
+
 export function buildProgressSseUrl(sseToken) {
   return `${API_BASE_URL}/progress/sse?sseToken=${encodeURIComponent(sseToken)}`;
 }

@@ -3,7 +3,7 @@
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
 **Updated**: 2026-03-30  
-**Research dependency**: [research.md](research.md) (R-002, R-004)  
+**Research dependency**: [research.md](research.md) (R-002, R-004, R-008)  
 **Base URL**: `/api/progress`  
 **Auth**: All non-SSE endpoints require a valid JWT Access Token in the `Authorization: Bearer <token>` header, verified by the shared `auth.middleware.js`. SSE uses short-lived query token `?sseToken=<token>` (see endpoint 3).
 
@@ -289,3 +289,85 @@ When a student taps a node in the detail view, the frontend navigates to:
 ### Consistency policy note
 
 `refreshCache` failures are treated as soft-fail events because cache is derived data. Skill Tree user action is not failed; cache repair is retried asynchronously (eventual consistency). During repair window, `GET /api/progress/summaries` may return briefly stale values.
+
+---
+
+## Endpoint 4 — GET /api/progress/tracking
+
+Returns tracking tables for learning frequency and completion rate, grouped weekly or monthly. Supports both all-roadmaps scope and a single roadmap scope.
+
+### Request
+
+```http
+GET /api/progress/tracking?scope=all&groupBy=weekly
+Authorization: Bearer <accessToken>
+```
+
+```http
+GET /api/progress/tracking?scope=roadmap&roadmapId=64f1a2b3c4d5e6f7a8b9c0d1&groupBy=monthly
+Authorization: Bearer <accessToken>
+```
+
+**Query parameters**:
+
+| Param | Type | Notes |
+|---|---|---|
+| `scope` | String | `all` or `roadmap` |
+| `roadmapId` | String | Required when `scope=roadmap` |
+| `groupBy` | String | `weekly` or `monthly` |
+
+### Response `200 OK`
+
+```json
+{
+  "scope": "roadmap",
+  "roadmapId": "64f1a2b3c4d5e6f7a8b9c0d1",
+  "groupBy": "weekly",
+  "summary": {
+    "totalNodes": 24,
+    "completedNodes": 9,
+    "completionRate": 0.375
+  },
+  "buckets": [
+    {
+      "periodStart": "2026-03-01",
+      "periodEnd": "2026-03-07",
+      "activeDays": 2,
+      "completedNodes": 1,
+      "completionRate": 0.0417
+    },
+    {
+      "periodStart": "2026-03-08",
+      "periodEnd": "2026-03-14",
+      "activeDays": 3,
+      "completedNodes": 2,
+      "completionRate": 0.0833
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `scope` | String | Echoed from request (`all` or `roadmap`) |
+| `roadmapId` | String | Present when scope is `roadmap` |
+| `groupBy` | String | Echoed from request (`weekly` or `monthly`) |
+| `summary.totalNodes` | Number | Total nodes in the scope |
+| `summary.completedNodes` | Number | Count of nodes with `lastDoneAt` in the scope |
+| `summary.completionRate` | Number | `completedNodes / totalNodes` (0 when `totalNodes=0`) |
+| `buckets[].periodStart` | String | ISO date (YYYY-MM-DD) in UTC |
+| `buckets[].periodEnd` | String | ISO date (YYYY-MM-DD) in UTC |
+| `buckets[].activeDays` | Number | Distinct days with any activity window overlap |
+| `buckets[].completedNodes` | Number | Nodes with `lastDoneAt` within the bucket |
+| `buckets[].completionRate` | Number | `completedNodes / totalNodes` for the bucket |
+
+### Error responses
+
+| Status | `code` | Condition |
+|---|---|---|
+| `400 Bad Request` | `INVALID_INPUT` | Missing/invalid `scope`, `groupBy`, or `roadmapId` |
+| `401 Unauthorized` | `UNAUTHORIZED` | Missing or expired access token |
+| `403 Forbidden` | `FORBIDDEN` | Authenticated student does not own this `roadmapId` |
+| `500 Internal Server Error` | `INTERNAL_ERROR` | Unexpected DB or service failure |

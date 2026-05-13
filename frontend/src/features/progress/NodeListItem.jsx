@@ -12,7 +12,7 @@ export default function NodeListItem({ roadmapId, node }) {
   return (
     <a
       href={buildSkillTreeFocusHref(roadmapId, nodeId)}
-      className="block rounded border border-gray-200 p-3 hover:bg-gray-50"
+      className="block cursor-pointer rounded border border-gray-200 p-3 hover:bg-gray-50"
     >
       <div className="font-medium text-gray-900">{node?.courseCode || nodeId}</div>
       <div className="text-sm text-gray-700">{node?.courseName || 'Unknown Course'}</div>

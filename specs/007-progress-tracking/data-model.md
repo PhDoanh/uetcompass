@@ -82,6 +82,47 @@ This is the same formula as the Skill Tree progress bar (SC-002 consistency guar
 
 ---
 
+## Entity: RoadmapProgressActivity
+
+**MongoDB collection**: `roadmap_progress_activity`
+
+**Purpose**: Derived per-node activity timestamps used to calculate learning frequency and completion rate without storing a full event log.
+
+**Cardinality**: One document per `(userId, roadmapId, nodeId)`.
+
+### Schema
+
+| Field | Type | Required | Default | Constraints | Notes |
+|---|---|---|---|---|---|
+| `_id` | ObjectId | auto | — | — | MongoDB primary key |
+| `userId` | ObjectId | yes | — | ref: `users`; part of compound unique key | FK to authenticated student |
+| `roadmapId` | ObjectId | yes | — | ref: `roadmaps`; part of compound unique key | Stable roadmap key from Feature 009 |
+| `nodeId` | String | yes | — | part of compound unique key | Skill Tree node identifier |
+| `lastInProgressAt` | Date | no | `null` | | Updated when node transitions to `in_progress` |
+| `lastDoneAt` | Date | no | `null` | | Updated when node transitions to `done` |
+| `updatedAt` | Date | auto | `Date.now()` | | Updated on every transition write |
+
+### Indexes
+
+| Name | Fields | Type | Enforces |
+|---|---|---|---|
+| `userId_roadmapId_nodeId_unique` | `userId: 1, roadmapId: 1, nodeId: 1` | **Unique compound** | One activity doc per node |
+| `userId_roadmapId_updatedAt_idx` | `userId: 1, roadmapId: 1, updatedAt: -1` | Standard compound | Fast per-roadmap scans |
+
+### Update rules
+
+- When a node transitions to `in_progress`, set `lastInProgressAt = now`.
+- When a node transitions to `done`, set `lastDoneAt = now`.
+- If a node moves back to `pending`, keep the most recent timestamps to preserve the last activity window.
+
+### Aggregation rules (tracking tables)
+
+- **Learning activity window**: starts at `lastInProgressAt` and ends at `lastDoneAt` (if present).
+- **Frequency**: count distinct calendar days in each bucket that intersect any activity window.
+- **Completion rate**: `doneCount / totalNodes` where `doneCount` is the number of nodes with `lastDoneAt` in the bucket and `totalNodes` is the roadmap’s total node count (or sum across roadmaps for scope=all).
+
+---
+
 ## Referenced Entity: SkillNodeStatus (read-only, owned by Feature 004 — Skill Tree)
 
 **MongoDB collection**: `skill_node_statuses`

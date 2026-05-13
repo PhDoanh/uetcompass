@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
-import { getRoadmapNodes, getSummaries } from '../../services/progress.api';
+import { getRoadmapNodes, getSummaries, getTrackingTables } from '../../services/progress.api';
 import RoadmapCard from './RoadmapCard';
 import RoadmapDetailView from './RoadmapDetailView';
+import TrackingTables from './TrackingTables';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
 
 export function getRoadmapIdFromLocation(searchValue) {
@@ -33,6 +34,11 @@ export default function ProgressDashboard() {
   );
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [trackingScope, setTrackingScope] = useState('all');
+  const [trackingGroupBy, setTrackingGroupBy] = useState('weekly');
+  const [trackingData, setTrackingData] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState(null);
 
   const selectedRoadmap = useMemo(
     () => roadmaps.find((item) => item.roadmapId === selectedRoadmapId) || null,
@@ -82,6 +88,35 @@ export default function ProgressDashboard() {
     [accessToken]
   );
 
+  const loadTracking = useCallback(async () => {
+    if (!accessToken) {
+      setTrackingData(null);
+      setTrackingLoading(false);
+      return;
+    }
+
+    if (trackingScope === 'roadmap' && !selectedRoadmapId) {
+      setTrackingData(null);
+      setTrackingLoading(false);
+      return;
+    }
+
+    setTrackingLoading(true);
+    setTrackingError(null);
+    try {
+      const data = await getTrackingTables(accessToken, {
+        scope: trackingScope,
+        groupBy: trackingGroupBy,
+        roadmapId: trackingScope === 'roadmap' ? selectedRoadmapId : undefined,
+      });
+      setTrackingData(data);
+    } catch (err) {
+      setTrackingError(err);
+    } finally {
+      setTrackingLoading(false);
+    }
+  }, [accessToken, trackingScope, trackingGroupBy, selectedRoadmapId]);
+
   useEffect(() => {
     loadSummaries();
   }, [loadSummaries]);
@@ -91,6 +126,10 @@ export default function ProgressDashboard() {
     loadDetail(selectedRoadmapId);
   }, [selectedRoadmapId, loadDetail]);
 
+  useEffect(() => {
+    loadTracking();
+  }, [loadTracking]);
+
   useProgressSSE({
     sseToken: accessToken,
     onSummaryUpdated: (summary) => {
@@ -98,6 +137,7 @@ export default function ProgressDashboard() {
       if (summary?.roadmapId === selectedRoadmapId) {
         loadDetail(selectedRoadmapId);
       }
+      loadTracking();
     },
     onUnauthorized: () => {
       if (typeof window !== 'undefined') {
@@ -126,22 +166,44 @@ export default function ProgressDashboard() {
           You do not have any owned roadmaps yet. Complete onboarding to generate your first roadmap.
         </section>
       ) : (
-        <section className="grid lg:grid-cols-2 gap-6">
-          <div className="grid gap-3 max-h-[70vh] overflow-auto pr-1">
-            {roadmaps.map((roadmap) => (
-              <RoadmapCard
-                key={roadmap.roadmapId}
-                roadmap={roadmap}
-                selected={roadmap.roadmapId === selectedRoadmapId}
-                onSelect={() => setSelectedRoadmapId(roadmap.roadmapId)}
-              />
-            ))}
-          </div>
+        <div className="grid gap-6">
+          <section className="grid lg:grid-cols-2 gap-6">
+            <div className="grid gap-3 max-h-[70vh] overflow-auto pr-1">
+              {roadmaps.map((roadmap) => (
+                <RoadmapCard
+                  key={roadmap.roadmapId}
+                  roadmap={roadmap}
+                  selected={roadmap.roadmapId === selectedRoadmapId}
+                  onSelect={() => setSelectedRoadmapId(roadmap.roadmapId)}
+                />
+              ))}
+            </div>
 
-          <div>
-            <RoadmapDetailView detail={detail || (selectedRoadmap ? { ...selectedRoadmap, nodes: { done: [], inProgress: [], pending: [] } } : null)} loading={detailLoading} />
-          </div>
-        </section>
+            <div>
+              <RoadmapDetailView
+                detail={
+                  detail ||
+                  (selectedRoadmap
+                    ? { ...selectedRoadmap, nodes: { done: [], inProgress: [], pending: [] } }
+                    : null)
+                }
+                loading={detailLoading}
+              />
+            </div>
+          </section>
+
+          <TrackingTables
+            data={trackingData}
+            loading={trackingLoading}
+            error={trackingError}
+            scope={trackingScope}
+            groupBy={trackingGroupBy}
+            onScopeChange={setTrackingScope}
+            onGroupByChange={setTrackingGroupBy}
+            canUseRoadmapScope={Boolean(selectedRoadmapId)}
+            selectedRoadmapName={selectedRoadmap?.roadmapName || ''}
+          />
+        </div>
       )}
     </main>
   );

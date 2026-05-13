@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
-import { getRoadmapNodes, getSummaries } from '../../services/progress.api';
+import { getSummaries, getTrackingTables } from '../../services/progress.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
@@ -140,60 +140,28 @@ function formatRoadmapDate(value) {
 }
 
 
-  function toDateKey(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  function buildActivitySeries(nodesByStatus, days = 30) {
-    const done = nodesByStatus?.done || [];
-    const inProgress = nodesByStatus?.inProgress || [];
-    const pending = nodesByStatus?.pending || [];
-    const nodes = [...done, ...inProgress, ...pending];
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (days - 1));
-
-    const counts = new Map();
-    nodes.forEach((node) => {
-      if (!node?.updatedAt) {
-        return;
-      }
-      const updated = new Date(node.updatedAt);
-      if (Number.isNaN(updated.getTime()) || updated < startDate || updated > today) {
-        return;
-      }
-      const key = toDateKey(updated);
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-
-    return Array.from({ length: days }, (_, index) => {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + index);
-      const key = toDateKey(date);
-      return {
-        day: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-        value: counts.get(key) || 0,
-      };
-    });
+  function buildActivitySeriesFromBuckets(buckets = []) {
+    return buckets.map((bucket) => ({
+      day: bucket.periodStart || 'N/A',
+      value: bucket.activeDays || 0,
+    }));
   }
 
   function buildHeatmapValues(activitySeries, size = 28) {
-    const values = activitySeries.map((item) => item.value);
-    const trimmed = values.slice(-size);
-    const padded = trimmed.length < size
+    if (!activitySeries.length) {
+      return Array.from({ length: size }, () => 0);
+    }
+
+    const normalized = activitySeries.slice(-4).flatMap((item) => {
+      const ratio = Math.min(1, Math.max(0, (item.value || 0) / 7));
+      const intensity = Math.min(4, Math.max(0, Math.round(ratio * 4)));
+      return Array.from({ length: 7 }, () => intensity);
+    });
+
+    const trimmed = normalized.slice(-size);
+    return trimmed.length < size
       ? Array.from({ length: size - trimmed.length }, () => 0).concat(trimmed)
       : trimmed;
-
-    return padded.map((count) => {
-      if (count <= 0) return 0;
-      if (count <= 1) return 1;
-      if (count <= 2) return 2;
-      if (count <= 3) return 3;
-      return 4;
-    });
   }
 
   function computeActivityStreak(activitySeries) {
@@ -217,7 +185,7 @@ export default function Homepage() {
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
   const [progressSummaries, setProgressSummaries] = useState([]);
-  const [progressDetail, setProgressDetail] = useState(null);
+  const [progressTracking, setProgressTracking] = useState(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [progressError, setProgressError] = useState(null);
   const [roadmapPage, setRoadmapPage] = useState(0);
@@ -413,7 +381,7 @@ export default function Homepage() {
       if (!accessToken) {
         if (isMounted) {
           setProgressSummaries([]);
-          setProgressDetail(null);
+          setProgressTracking(null);
           setProgressError(null);
           setIsLoadingProgress(false);
         }
@@ -432,15 +400,12 @@ export default function Homepage() {
         }
 
         setProgressSummaries(summaries);
-        const primary = summaries.find((item) => item?.isPrimary) || summaries[0] || null;
-
-        if (primary?.roadmapId) {
-          const detail = await getRoadmapNodes(accessToken, primary.roadmapId);
-          if (isMounted) {
-            setProgressDetail(detail);
-          }
-        } else if (isMounted) {
-          setProgressDetail(null);
+        const tracking = await getTrackingTables(accessToken, {
+          scope: 'all',
+          groupBy: 'weekly',
+        });
+        if (isMounted) {
+          setProgressTracking(tracking);
         }
       } catch (err) {
         if (err?.status === 401) {
@@ -450,7 +415,7 @@ export default function Homepage() {
 
         if (isMounted) {
           setProgressError(err);
-          setProgressDetail(null);
+          setProgressTracking(null);
           setProgressSummaries([]);
         }
       } finally {
@@ -677,8 +642,8 @@ export default function Homepage() {
     ];
   }, [progressTotals]);
   const activitySeries = useMemo(
-    () => buildActivitySeries(progressDetail?.nodes),
-    [progressDetail]
+    () => buildActivitySeriesFromBuckets(progressTracking?.buckets || []),
+    [progressTracking]
   );
   const heatmapValues = useMemo(
     () => buildHeatmapValues(activitySeries),
@@ -699,14 +664,14 @@ export default function Homepage() {
     if (isLoadingProgress) {
       return 'Đang tải dữ liệu tiến độ...';
     }
-    if (!progressDetail) {
+    if (!progressTracking) {
       return 'Chưa có dữ liệu hoạt động gần đây.';
     }
     const roadmapLabel = primaryProgressRoadmap?.roadmapName
       ? ` - ${primaryProgressRoadmap.roadmapName}`
       : '';
-    return `${activityTotal} lần cập nhật trong 30 ngày${roadmapLabel}`;
-  }, [activityTotal, isLoadingProgress, primaryProgressRoadmap, progressDetail, progressError]);
+    return `${activityTotal} ngày hoạt động gần đây${roadmapLabel}`;
+  }, [activityTotal, isLoadingProgress, primaryProgressRoadmap, progressTracking, progressError]);
   const distributionMeta = useMemo(() => {
     if (progressError) {
       return 'Không thể tải dữ liệu tiến độ.';

@@ -101,6 +101,20 @@ async function updateNodeState(studentId, roadmapId, { nodeId, fromState, toStat
       toState
     );
 
+    try {
+      const progressService = require('../progress/progress.service');
+      await progressService.refreshCache(studentId, roadmapId);
+    } catch (err) {
+      console.error('[progress] refreshCache failed:', err.message);
+    }
+
+    try {
+      const progressTrackingService = require('../progress/progress.tracking.service');
+      await progressTrackingService.updateNodeActivity(studentId, roadmapId, nodeId, toState);
+    } catch (err) {
+      console.error('[progress] updateNodeActivity failed:', err.message);
+    }
+
     return {
       roadmapId: String(updated.roadmapId),
       state: updated.state,
@@ -130,6 +144,79 @@ async function getRoadmapProgress(studentId, roadmapId) {
   }
 }
 
+function buildCourseNodePayload(node, status, updatedAt) {
+  const course = Array.isArray(node?.relatedCourses) ? node.relatedCourses[0] : null;
+  const courseCode = course?.courseCode || node?.nodeId || '';
+  const courseName = course?.courseName || node?.skillName || courseCode || 'Unknown Course';
+
+  return {
+    nodeId: node?.nodeId || courseCode,
+    courseCode,
+    courseName,
+    status,
+    updatedAt: updatedAt || null,
+  };
+}
+
+async function getNodesByStatus(studentId, roadmapId) {
+  try {
+    const roadmap = await roadmapService.getByIdForUser(roadmapId, studentId);
+    if (!roadmap) {
+      throw createServiceError(404, 'ROADMAP_NOT_FOUND', 'Roadmap not found.');
+    }
+
+    const nodes = roadmap.nodes || [];
+    const progress = await roadmapProgressService.getProgress(studentId, roadmapId);
+    const state = progress?.state || buildDefaultProgressState(nodes);
+    const updatedAt = progress?.updatedAt || null;
+
+    const doneSet = new Set(state.completed || []);
+    const inProgressSet = new Set(state.inProgress || []);
+    const pendingSet = new Set(state.pending || []);
+    const skipSet = new Set(state.skip || []);
+
+    const done = [];
+    const inProgress = [];
+    const pending = [];
+
+    for (const node of nodes) {
+      if (!node?.nodeId) {
+        continue;
+      }
+
+      if (doneSet.has(node.nodeId)) {
+        done.push(buildCourseNodePayload(node, 'done', updatedAt));
+        continue;
+      }
+
+      if (inProgressSet.has(node.nodeId)) {
+        inProgress.push(buildCourseNodePayload(node, 'in_progress', updatedAt));
+        continue;
+      }
+
+      if (pendingSet.has(node.nodeId) || skipSet.has(node.nodeId)) {
+        pending.push(buildCourseNodePayload(node, 'pending', updatedAt));
+        continue;
+      }
+
+      pending.push(buildCourseNodePayload(node, 'pending', updatedAt));
+    }
+
+    return {
+      roadmapId: String(roadmap._id),
+      roadmapName: roadmap.roadmapName,
+      done,
+      inProgress,
+      pending,
+    };
+  } catch (err) {
+    if (err.code && err.status) {
+      throw err;
+    }
+    throw createServiceError(500, 'NODE_STATUS_FETCH_FAILED', err.message, { cause: err });
+  }
+}
+
 /**
  * Helper: create structured error
  */
@@ -145,6 +232,7 @@ module.exports = {
   getSkillTree,
   updateNodeState,
   getRoadmapProgress,
+  getNodesByStatus,
   buildDefaultProgressState,
   createServiceError,
 };

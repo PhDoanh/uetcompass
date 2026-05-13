@@ -20,7 +20,7 @@ function getRowWidth(topicCount) {
   return topicCount * TOPIC_NODE_WIDTH + (topicCount - 1) * TOPIC_LINK_WIDTH;
 }
 
-export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode = () => {} }) {
+export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode = () => {}, focusNodeId = '' }) {
   if (!nodes.length) {
     return (
       <div className="skill-tree-empty-state">
@@ -79,14 +79,22 @@ export default function SkillTreeCanvas({ nodes = [], edges = [], onSelectNode =
                 return (
                   <React.Fragment key={topic.nodeId}>
                     <div className="skill-tree-roadmap-v2__cell" role="listitem">
-                      <CourseNode node={topic} onSelect={() => onSelectNode(topic.nodeId)} />
+                      <CourseNode
+                        node={topic}
+                        onSelect={() => onSelectNode(topic.nodeId)}
+                        isFocused={Boolean(focusNodeId && focusNodeId === topic.nodeId)}
+                      />
 
                       {branches.length > 0 && (
                         <div className="skill-tree-roadmap-v2__chips" aria-label="Subtopics">
                           {branches.map((subtopic) => (
                             <div key={subtopic.nodeId} className="skill-tree-roadmap-v2__chip-wrap">
                               <div className="skill-tree-roadmap-v2__chip-line" aria-hidden="true" />
-                              <CourseNode node={subtopic} onSelect={() => onSelectNode(subtopic.nodeId)} />
+                              <CourseNode
+                                node={subtopic}
+                                onSelect={() => onSelectNode(subtopic.nodeId)}
+                                isFocused={Boolean(focusNodeId && focusNodeId === subtopic.nodeId)}
+                              />
                             </div>
                           ))}
                         </div>

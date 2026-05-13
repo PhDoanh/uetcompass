@@ -1,161 +1,170 @@
-# Tasks: Progress Tracking Dashboard
+# Tasks: Progress Tracking Dashboard (Refined for Re-implementation)
 
-**Input**: Design documents from /specs/007-progress-tracking/
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/rest-api.md, quickstart.md
+**Input**: /specs/007-progress-tracking/spec.md, plan.md, research.md, data-model.md, contracts/rest-api.md, quickstart.md
+**Goal**: Re-implement Progress Tracking from scratch with full coverage of US1–US5 and SC-001 validation.
 
-**Tests**: Jest unit tests and frontend component/hook tests are included because testing is explicitly required by the feature spec and implementation plan.
-
-**Organization**: Tasks are grouped by user story so each story can be implemented and validated independently.
+**Rules**
+- Keep tasks grouped by user story and readiness.
+- Always add tests before implementation within each story.
+- Use stable `roadmapId` as cache key, API path key, SSE merge key, and deep-link key.
 
 ## Format: [ID] [P?] [Story] Description
 
 - [P]: Can run in parallel (different files, no dependency on incomplete tasks)
-- [Story]: User story label (US1, US2, US3, US4)
+- [Story]: User story label (US1, US2, US3, US4, US5)
 - Each task includes exact file path(s)
 
 ---
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Shared Setup (Scaffold + Wiring)
 
-**Purpose**: Create scaffolding for the new progress module and feature UI.
+**Purpose**: Recreate module structure and core plumbing before story work.
 
-- [x] T001 Create backend progress module scaffold in backend/src/modules/progress/ (roadmapProgressCache.model.js, roadmapOwner.adapter.js, progress.service.js, progress.controller.js, progress.routes.js, progress.sse.js)
-- [x] T002 [P] Create frontend progress feature scaffold in frontend/src/features/progress/ (ProgressDashboard.jsx, RoadmapCard.jsx, RoadmapDetailView.jsx, NodeListItem.jsx, useProgressSSE.js)
-- [x] T003 [P] Create progress API client scaffold in frontend/src/services/progress.api.js and test folder backend/tests/unit/progress/
+- [ ] T001 Create backend progress module scaffold in backend/src/modules/progress/ (roadmapProgressCache.model.js, roadmapProgressActivity.model.js, roadmapOwner.adapter.js, progress.service.js, progress.tracking.service.js, progress.controller.js, progress.routes.js, progress.sse.js)
+- [ ] T002 [P] Create frontend progress feature scaffold in frontend/src/features/progress/ (ProgressDashboard.jsx, RoadmapCard.jsx, RoadmapDetailView.jsx, NodeListItem.jsx, TrackingTables.jsx, useProgressSSE.js)
+- [ ] T003 [P] Create progress API client scaffold in frontend/src/services/progress.api.js and test folder backend/tests/unit/progress/
+- [ ] T004 Mount progress model and routes in backend/src/app.js
+- [ ] T005 Wire Skill Tree status-write trigger to await progressService.refreshCache and progressTrackingService.updateNodeActivity with soft-fail behavior in backend/src/modules/skill-tree/skillTree.service.js
 
----
-
-## Phase 2: Foundational (Blocking Prerequisites)
-
-**Purpose**: Core backend contracts and wiring required by all stories.
-
-**CRITICAL**: No user story implementation starts before this phase completes.
-
-- [x] T004 Implement RoadmapProgressCache schema, indexes, and collection mapping in backend/src/modules/progress/roadmapProgressCache.model.js
-- [x] T005 [P] Implement roadmap ownership adapter for Feature 009 lookup in backend/src/modules/progress/roadmapOwner.adapter.js
-- [x] T006 [P] Implement SSE client registry helpers (addClient, removeClient, notifyUser, heartbeat) in backend/src/modules/progress/progress.sse.js
-- [x] T007 Implement base progress service methods (refreshCache, getAll, getRoadmapDetail) with soft-fail retry hooks in backend/src/modules/progress/progress.service.js
-- [x] T008 [P] Implement progress controller handlers with contract-compliant error envelope in backend/src/modules/progress/progress.controller.js
-- [x] T009 [P] Implement progress routes for summaries, detail, and SSE endpoints in backend/src/modules/progress/progress.routes.js
-- [x] T010 Mount progress model and routes in backend/src/app.js
-- [x] T011 Wire Skill Tree status-write trigger to await progressService.refreshCache with soft-fail behavior in backend/src/modules/skill-tree/skillTree.service.js
-
-**Checkpoint**: Backend foundation complete; user stories can now proceed.
+**Checkpoint**: Progress module loads, routes mounted, Skill Tree hook wired.
 
 ---
 
-## Phase 3: User Story 1 - View Multi-Roadmap Progress Overview (Priority: P1) 🎯 MVP
+## Phase 2: Foundational Backend Contracts
 
-**Goal**: Student sees one summary card per owned roadmap with percentage, status counts, and last activity.
+**Purpose**: Build cache schema, SSE store, and service backbone used by all stories.
 
-**Independent Test**: Login with a user owning at least two roadmaps, open /progress, verify all roadmap cards render with correct values and empty-state behavior for zero progress.
+- [ ] T006 Implement RoadmapProgressCache schema, indexes, and collection mapping in backend/src/modules/progress/roadmapProgressCache.model.js
+- [ ] T007 [P] Implement RoadmapProgressActivity schema, indexes in backend/src/modules/progress/roadmapProgressActivity.model.js
+- [ ] T008 [P] Implement roadmap ownership adapter for Feature 009 lookup in backend/src/modules/progress/roadmapOwner.adapter.js
+- [ ] T009 [P] Implement SSE client registry helpers (addClient, removeClient, notifyUser, heartbeat) in backend/src/modules/progress/progress.sse.js
+- [ ] T010 Implement base progress service methods (refreshCache, getAll, getRoadmapDetail) with soft-fail retry hooks in backend/src/modules/progress/progress.service.js
+- [ ] T011 [P] Implement tracking service method getTrackingTables(userId, { scope, roadmapId, groupBy }) in backend/src/modules/progress/progress.tracking.service.js
+- [ ] T012 [P] Implement progress controller handlers with contract-compliant error envelope in backend/src/modules/progress/progress.controller.js
+- [ ] T013 [P] Implement progress routes for summaries, detail, tracking, and SSE endpoints in backend/src/modules/progress/progress.routes.js
 
-### Tests for User Story 1
-
-- [x] T012 [P] [US1] Add unit tests for getAll and refreshCache percentage math (including totalNodes=0 guard) in backend/tests/unit/progress/progress.service.test.js
-- [x] T013 [P] [US1] Add controller tests for GET /api/progress/summaries auth and response mapping in backend/tests/unit/progress/progress.controller.test.js
-- [x] T014 [P] [US1] Add UI tests for summary-card rendering and no-roadmap empty state in frontend/src/features/progress/ProgressDashboard.test.jsx
-
-### Implementation for User Story 1
-
-- [x] T015 [US1] Implement getAll(userId) summary read path from roadmap_progress_cache in backend/src/modules/progress/progress.service.js
-- [x] T016 [US1] Implement GET /api/progress/summaries handler in backend/src/modules/progress/progress.controller.js
-- [x] T017 [US1] Implement getSummaries() fetch wrapper in frontend/src/services/progress.api.js
-- [x] T018 [US1] Implement roadmap summary card component in frontend/src/features/progress/RoadmapCard.jsx
-- [x] T019 [US1] Implement overview page load, empty state, and card list rendering in frontend/src/features/progress/ProgressDashboard.jsx
-- [x] T020 [US1] Register authenticated /progress route in frontend/src/App.jsx
-
-**Checkpoint**: US1 is independently functional and demo-ready as MVP.
+**Checkpoint**: Backend foundations complete; user stories can proceed.
 
 ---
 
-## Phase 4: User Story 2 - Drill Down Into Roadmap Node-Level Detail (Priority: P1)
+## Phase 3: User Story 1 - View Multi-Roadmap Progress Overview (P1)
 
-**Goal**: Student opens a roadmap detail panel with Done/In Progress/Pending groups and per-group empty states.
+**Goal**: Student sees one summary card per owned roadmap with % and counts.
 
-**Independent Test**: Open a roadmap card and confirm every node appears in exactly one of the three status groups, with counts matching summary totals.
+### Tests
 
-### Tests for User Story 2
+- [ ] T014 [P] [US1] Add unit tests for getAll and refreshCache percentage math (including totalNodes=0 guard) in backend/tests/unit/progress/progress.service.test.js
+- [ ] T015 [P] [US1] Add controller tests for GET /api/progress/summaries auth and response mapping in backend/tests/unit/progress/progress.controller.test.js
+- [ ] T016 [P] [US1] Add UI tests for summary-card rendering and no-roadmap empty state in frontend/src/features/progress/ProgressDashboard.test.jsx
 
-- [x] T021 [P] [US2] Add service tests for getRoadmapDetail(userId, roadmapId) using Feature 004 getNodesByStatus contract in backend/tests/unit/progress/progress.service.detail.test.js
-- [x] T022 [P] [US2] Add detail-view tests for grouped rendering and zero-count empty-state messages in frontend/src/features/progress/RoadmapDetailView.test.jsx
+### Implementation
 
-### Implementation for User Story 2
+- [ ] T017 [US1] Implement getAll(userId) summary read path from roadmap_progress_cache in backend/src/modules/progress/progress.service.js
+- [ ] T018 [US1] Implement GET /api/progress/summaries handler in backend/src/modules/progress/progress.controller.js
+- [ ] T019 [US1] Implement getSummaries() fetch wrapper in frontend/src/services/progress.api.js
+- [ ] T020 [US1] Implement roadmap summary card component in frontend/src/features/progress/RoadmapCard.jsx
+- [ ] T021 [US1] Implement overview page load, empty state, and card list rendering in frontend/src/features/progress/ProgressDashboard.jsx
+- [ ] T022 [US1] Register authenticated /progress route in frontend/src/App.jsx
 
-- [x] T023 [US2] Implement getRoadmapDetail(userId, roadmapId) with ownership validation and grouped-node response in backend/src/modules/progress/progress.service.js
-- [x] T024 [US2] Implement GET /api/progress/summaries/:roadmapId/nodes handler and route wiring in backend/src/modules/progress/progress.controller.js and backend/src/modules/progress/progress.routes.js
-- [x] T025 [US2] Implement getRoadmapNodes(roadmapId) API wrapper in frontend/src/services/progress.api.js
-- [x] T026 [US2] Implement roadmap detail grouped UI in frontend/src/features/progress/RoadmapDetailView.jsx
-- [x] T027 [US2] Integrate card selection, detail loading, and back-to-overview state preservation in frontend/src/features/progress/ProgressDashboard.jsx
-
-**Checkpoint**: US2 is independently functional with complete node-by-status drill-down.
+**Checkpoint**: US1 demo-ready and independently testable.
 
 ---
 
-## Phase 5: User Story 3 - Navigate to Specific Node in Skill Tree (Priority: P2)
+## Phase 4: User Story 2 - Drill Down into Node Detail (P1)
+
+**Goal**: Student opens roadmap detail panel with Done/In Progress/Pending groups and per-group empty states.
+
+### Tests
+
+- [ ] T023 [P] [US2] Add service tests for getRoadmapDetail(userId, roadmapId) using Feature 004 getNodesByStatus contract in backend/tests/unit/progress/progress.service.detail.test.js
+- [ ] T024 [P] [US2] Add detail-view tests for grouped rendering and zero-count empty-state messages in frontend/src/features/progress/RoadmapDetailView.test.jsx
+
+### Implementation
+
+- [ ] T025 [US2] Implement getRoadmapDetail(userId, roadmapId) with ownership validation and grouped-node response in backend/src/modules/progress/progress.service.js
+- [ ] T026 [US2] Implement GET /api/progress/summaries/:roadmapId/nodes handler and route wiring in backend/src/modules/progress/progress.controller.js and backend/src/modules/progress/progress.routes.js
+- [ ] T027 [US2] Implement getRoadmapNodes(roadmapId) API wrapper in frontend/src/services/progress.api.js
+- [ ] T028 [US2] Implement roadmap detail grouped UI in frontend/src/features/progress/RoadmapDetailView.jsx
+- [ ] T029 [US2] Integrate card selection, detail loading, and back-to-overview state preservation in frontend/src/features/progress/ProgressDashboard.jsx
+
+**Checkpoint**: US2 drill-down functional with complete node-by-status breakdown.
+
+---
+
+## Phase 5: User Story 3 - Deep-Link to Skill Tree Node (P2)
 
 **Goal**: Student taps a node in detail view and lands on Skill Tree with that node focused/highlighted.
 
-**Independent Test**: Click any node in roadmap detail and verify navigation to /skill-tree/:roadmapId?focus=<nodeId> and visible focus on target node; browser back returns to same detail context.
+### Tests
 
-### Tests for User Story 3
+- [ ] T030 [P] [US3] Add NodeListItem deep-link URL test for roadmapId + focus query param in frontend/src/features/progress/NodeListItem.test.jsx
+- [ ] T031 [P] [US3] Add SkillTree focus-param handling test in frontend/src/features/skill-tree/SkillTreePage.test.jsx
 
-- [x] T028 [P] [US3] Add NodeListItem deep-link URL test for roadmapId + focus query param in frontend/src/features/progress/NodeListItem.test.jsx
-- [x] T029 [P] [US3] Add SkillTree focus-param handling test in frontend/src/features/skill-tree/SkillTreePage.test.jsx
+### Implementation
 
-### Implementation for User Story 3
+- [ ] T032 [US3] Implement tappable node list item with deep-link URL builder in frontend/src/features/progress/NodeListItem.jsx
+- [ ] T033 [US3] Replace static node rows with NodeListItem in all status groups in frontend/src/features/progress/RoadmapDetailView.jsx
+- [ ] T034 [US3] Implement focus query-param parsing and focus lifecycle in frontend/src/features/skill-tree/SkillTreePage.jsx
+- [ ] T035 [US3] Implement visual highlight/scroll behavior for focused node in frontend/src/features/skill-tree/SkillTreeCanvas.jsx
 
-- [x] T030 [US3] Implement tappable node list item with deep-link URL builder in frontend/src/features/progress/NodeListItem.jsx
-- [x] T031 [US3] Replace static node rows with NodeListItem in all status groups in frontend/src/features/progress/RoadmapDetailView.jsx
-- [x] T032 [US3] Implement focus query-param parsing and focus lifecycle in frontend/src/features/skill-tree/SkillTreePage.jsx
-- [x] T033 [US3] Implement visual highlight/scroll behavior for focused node in frontend/src/features/skill-tree/SkillTreeCanvas.jsx
-
-**Checkpoint**: US3 closes the dashboard-to-action loop with deterministic node deep-link navigation.
+**Checkpoint**: US3 deep-link navigation works with back-navigation state preserved.
 
 ---
 
-## Phase 6: User Story 4 - Dashboard Reflects Skill Tree Changes Without Reload (Priority: P2)
+## Phase 6: User Story 4 - Live Updates via SSE (P2)
 
-**Goal**: Dashboard receives live updates after Skill Tree status changes and refreshes relevant roadmap data within 5 seconds.
+**Goal**: Dashboard receives live updates after Skill Tree status changes within 5 seconds.
 
-**Independent Test**: Keep /progress open, update node status in Skill Tree tab, return to dashboard tab and verify updated summary/detail values appear without manual reload.
+### Tests
 
-### Tests for User Story 4
+- [ ] T036 [P] [US4] Add SSE store tests for connect/disconnect/heartbeat/notify flows in backend/tests/unit/progress/progress.sse.test.js
+- [ ] T037 [P] [US4] Add refreshCache soft-fail + eventual-retry behavior tests in backend/tests/unit/progress/progress.service.reliability.test.js
+- [ ] T038 [P] [US4] Add useProgressSSE hook tests for merge-by-roadmapId and unauthorized-close handling in frontend/src/features/progress/useProgressSSE.test.jsx
 
-- [x] T034 [P] [US4] Add SSE store tests for connect/disconnect/heartbeat/notify flows in backend/tests/unit/progress/progress.sse.test.js
-- [x] T035 [P] [US4] Add refreshCache soft-fail + eventual-retry behavior tests in backend/tests/unit/progress/progress.service.reliability.test.js
-- [x] T036 [P] [US4] Add useProgressSSE hook tests for merge-by-roadmapId and unauthorized-close handling in frontend/src/features/progress/useProgressSSE.test.jsx
+### Implementation
 
-### Implementation for User Story 4
+- [ ] T039 [US4] Implement GET /api/progress/sse sseToken validation and event stream responses in backend/src/modules/progress/progress.routes.js
+- [ ] T040 [US4] Emit progress:updated events from refreshCache after successful upsert in backend/src/modules/progress/progress.service.js
+- [ ] T041 [US4] Implement retry scheduling on refresh failure without breaking Skill Tree writes in backend/src/modules/progress/progress.service.js
+- [ ] T042 [US4] Implement frontend SSE hook for progress updates in frontend/src/features/progress/useProgressSSE.js
+- [ ] T043 [US4] Merge incoming SSE summary payload into dashboard overview/detail state in frontend/src/features/progress/ProgressDashboard.jsx
 
-- [x] T037 [US4] Implement GET /api/progress/sse sseToken validation and event stream responses in backend/src/modules/progress/progress.routes.js
-- [x] T038 [US4] Emit progress:updated events from refreshCache after successful upsert in backend/src/modules/progress/progress.service.js
-- [x] T039 [US4] Implement retry scheduling on refresh failure without breaking Skill Tree writes in backend/src/modules/progress/progress.service.js
-- [x] T040 [US4] Implement frontend SSE hook for progress updates in frontend/src/features/progress/useProgressSSE.js
-- [x] T041 [US4] Merge incoming SSE summary payload into dashboard overview/detail state in frontend/src/features/progress/ProgressDashboard.jsx
-
-**Checkpoint**: US4 delivers trustable near-real-time consistency between Skill Tree and Progress Dashboard.
+**Checkpoint**: US4 delivers near-real-time consistency between Skill Tree and Progress Dashboard.
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Phase 7: User Story 5 - Tracking Tables (P1)
 
-**Purpose**: Final quality pass, docs alignment, and integrated verification.
+**Goal**: Student sees learning frequency and completion rate tables, scoped by all-roadmaps and per-roadmap, with weekly/monthly grouping.
 
-- [x] T042 [P] Update API contract examples and SSE auth token naming consistency in specs/007-progress-tracking/contracts/rest-api.md
-- [x] T043 [P] Update manual validation steps and acceptance scenario checklist in specs/007-progress-tracking/quickstart.md
-- [ ] T044 [P] Validate SC-001 performance on 4G-throttled profile (<=2s full dashboard load with up to 10 owned roadmaps) and record measured results in specs/007-progress-tracking/quickstart.md
-- [x] T045 [P] Add cross-view parity test to verify Progress summary percent stays within ±1pp of Skill Tree percent for the same user/roadmap fixture in backend/tests/unit/progress/progress.service.parity.test.js
-- [x] T046 [P] Add end-to-end roadmapId propagation test (cache key, API payload/path, SSE merge key, deep-link focus URL) in frontend/src/features/progress/ProgressDashboard.integration.test.jsx
-- [x] T047 Run targeted backend/frontend test commands for progress feature via scripts/run-tests.mjs and record pass/fail notes in specs/007-progress-tracking/tasks.md
+### Tests
 
-### T047 Execution Notes
+- [ ] T044 [P] [US5] Add tracking aggregation tests for weekly/monthly buckets, completion rate, and empty periods in backend/tests/unit/progress/progress.tracking.service.test.js
+- [ ] T045 [P] [US5] Add controller tests for GET /api/progress/tracking in backend/tests/unit/progress/progress.controller.test.js
+- [ ] T046 [P] [US5] Add UI tests for tracking tables rendering, scope toggle, and empty-state behavior in frontend/src/features/progress/TrackingTables.test.jsx
 
-- Command: `node scripts/run-tests.mjs backend`
-- Result: PARTIAL PASS (54 suites passed, 1 suite failed)
-- Failing suite: `backend/tests/unit/roadmap/generation.service.test.js` (pre-existing roadmap-generation assertions, not introduced by progress module changes)
-- Command: `node scripts/run-tests.mjs frontend`
-- Result: PASS (9/9 suites)
+### Implementation
+
+- [ ] T047 [US5] Implement GET /api/progress/tracking handler in backend/src/modules/progress/progress.controller.js
+- [ ] T048 [US5] Implement tracking endpoint route wiring in backend/src/modules/progress/progress.routes.js
+- [ ] T049 [US5] Implement getTrackingTables(params) API wrapper in frontend/src/services/progress.api.js
+- [ ] T050 [US5] Implement tracking tables UI (scope toggle, weekly/monthly grouping, empty states) in frontend/src/features/progress/TrackingTables.jsx
+- [ ] T051 [US5] Integrate tracking tables into ProgressDashboard with per-roadmap and all-roadmaps modes in frontend/src/features/progress/ProgressDashboard.jsx
+
+**Checkpoint**: US5 tracking tables meet FR-008a-e and SC-005.
+
+---
+
+## Phase 8: Polish & Verification
+
+**Purpose**: Validate performance and run targeted tests for re-implementation.
+
+- [ ] T052 [P] Update API contract examples and SSE auth token naming consistency in specs/007-progress-tracking/contracts/rest-api.md
+- [ ] T053 [P] Update manual validation steps and acceptance scenario checklist in specs/007-progress-tracking/quickstart.md
+- [ ] T054 [P] Validate SC-001 performance on 4G-throttled profile (<=2s full dashboard load with up to 10 owned roadmaps) and record measured results in specs/007-progress-tracking/quickstart.md
+- [ ] T055 [P] Add cross-view parity test to verify Progress summary percent stays within ±1pp of Skill Tree percent for the same user/roadmap fixture in backend/tests/unit/progress/progress.service.parity.test.js
+- [ ] T056 [P] Add end-to-end roadmapId propagation test (cache key, API payload/path, SSE merge key, deep-link focus URL) in frontend/src/features/progress/ProgressDashboard.integration.test.jsx
+- [ ] T057 Run targeted backend/frontend test commands via scripts/run-tests.mjs and record pass/fail notes in specs/007-progress-tracking/tasks.md
 
 ---
 
@@ -163,75 +172,23 @@
 
 ### Phase Dependencies
 
-- Setup (Phase 1): No dependencies, start immediately.
-- Foundational (Phase 2): Depends on Phase 1 and blocks all user stories.
-- US1 (Phase 3): Depends on Phase 2 completion.
-- US2 (Phase 4): Depends on Phase 2 and builds on US1 overview flow.
-- US3 (Phase 5): Depends on US2 detail-view implementation.
-- US4 (Phase 6): Depends on Phase 2; integrates best with US1 and US2 already completed.
-- Polish (Phase 7): Depends on all targeted stories being complete.
+- Phase 1 before Phase 2.
+- Phase 2 blocks all user stories.
+- US1 before US2 and US4.
+- US2 before US3.
+- US5 can start after Phase 2 (independent of US2/US3) but integrates into the same dashboard surface.
 
-### User Story Completion Order (Dependency Graph)
+### Within Each Story
 
-- US1 -> US2 -> US3
-- US1 -> US4
-- US2 -> US4 (for detail-view live-update parity)
-
-### Within Each User Story
-
-- Tests before implementation for that story.
+- Tests before implementation.
 - Backend service/controller/routes before frontend integration.
-- Component and hook tasks before route/state wiring tasks.
-
----
-
-## Parallel Execution Examples
-
-### User Story 1
-
-- Run T012, T013, and T014 in parallel (different test files).
-- Run T017 and T018 in parallel after T015 and T016 are in place.
-
-### User Story 2
-
-- Run T021 and T022 in parallel.
-- Run T025 and T026 in parallel after T024.
-
-### User Story 3
-
-- Run T028 and T029 in parallel.
-- Run T030 and T032 in parallel, then integrate through T031 and T033.
-
-### User Story 4
-
-- Run T034, T035, and T036 in parallel.
-- Run T040 in parallel with T038 and T039, then finalize merge in T041.
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 only)
-
-1. Complete Phase 1 and Phase 2.
-2. Complete Phase 3 (US1).
-3. Validate US1 independently using its independent test criteria.
-4. Demo/deploy MVP with overview dashboard.
-
-### Incremental Delivery
-
-1. Deliver US1 (overview) as MVP.
-2. Add US2 (detail drill-down), validate independently.
-3. Add US3 (deep-link to Skill Tree), validate independently.
-4. Add US4 (live updates), validate independently.
-5. Finish Phase 7 polish and full quickstart regression.
-
-### Parallel Team Strategy
-
-1. Team aligns on Phase 1 and Phase 2 together.
-2. After foundation:
-   - Developer A: US1/US2 backend.
-   - Developer B: US1/US2 frontend.
-   - Developer C: US4 SSE and reliability.
-3. Merge US3 after US2 detail surfaces are stable.
+1. Rebuild Phase 1–2 scaffolding and base services.
+2. Implement US1–US4 in order (overview, detail, deep-link, SSE).
+3. Implement US5 tracking tables.
+4. Complete Phase 8 verification and SC-001 measurement.
 

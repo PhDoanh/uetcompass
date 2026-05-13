@@ -86,6 +86,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [isComputingLayout, setIsComputingLayout] = useState(false);
   const [activeNodeId, setActiveNodeId] = useState('');
   const [nodeStates, setNodeStates] = useState({});
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -101,6 +102,15 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [activeNodeId, nodesForRender]
   );
   const normalizedRoadmapId = useMemo(() => String(roadmapId || '').trim(), [roadmapId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    setFocusNodeId(params.get('focus') || '');
+  }, []);
 
   const handleBack = () => {
     if (typeof window === 'undefined') {
@@ -193,6 +203,17 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     setNodeStates(initialStates);
     setActiveNodeId('');
   }, [normalizedNodes]);
+
+  useEffect(() => {
+    if (!focusNodeId || normalizedNodes.length === 0) {
+      return;
+    }
+
+    const targetExists = normalizedNodes.some((node) => node.nodeId === focusNodeId);
+    if (targetExists) {
+      setActiveNodeId(focusNodeId);
+    }
+  }, [focusNodeId, normalizedNodes]);
 
   useEffect(() => {
     if (normalizedNodes.length === 0) {

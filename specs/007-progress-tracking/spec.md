@@ -12,6 +12,8 @@
 
 Progress Tracking adds a dedicated **Progress Dashboard** (`/progress`) that gives students a cross-roadmap view of their learning progress — the one thing Skill Tree does not provide because it displays only one roadmap at a time.
 
+The dashboard also provides **tracking tables** derived from roadmap activity to show learning frequency and completion rate across all owned roadmaps and per-roadmap views.
+
 Feature boundary alignment:
 - Roadmap lifecycle and ownership are canonical in Feature 009.
 - `roadmapId` is the stable identifier from Feature 009 (`roadmaps._id`).
@@ -22,6 +24,7 @@ Feature boundary alignment:
 - Does not allow students to change node statuses — all updates happen on the Skill Tree page.
 - Does not re-define the three node states (Pending / In Progress / Done) — those are owned by Skill Tree.
 - Does not store authoritative node-state data — Skill Tree is the source of truth; this feature only reads aggregated summaries.
+- Does not introduce a new learning event log; tracking tables are derived from node status transitions.
 
 ---
 
@@ -97,6 +100,23 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 
 ---
 
+### User Story 5 – View Learning Frequency and Completion Rate (Priority: P1)
+
+A student opens the Progress Dashboard and sees tracking tables that summarize how often they study and how much they complete. They can view these metrics for all owned roadmaps combined and for a specific roadmap, with weekly and monthly grouping.
+
+**Why this priority**: Tracking tables are a primary motivation for this dashboard and extend the value beyond static progress percentages.
+
+**Independent Test**: Can be tested by creating multiple node status transitions across different days and verifying that the frequency table, completion rate, and streak match the derived activity and selected scope.
+
+**Acceptance Scenarios**:
+
+1. **Given** a student has activity in multiple roadmaps, **When** they view the dashboard, **Then** they see tracking tables for both overall (all roadmaps) and per-roadmap views.
+2. **Given** the student switches the time grouping to weekly or monthly, **When** the tables render, **Then** the counts and rates are aggregated to the selected grouping.
+3. **Given** a roadmap has no activity in the selected period, **When** the tables render, **Then** they show a clear empty state rather than missing sections.
+4. **Given** a node is moved to In Progress and later Done, **When** the student views completion rate, **Then** the completion rate reflects the Done transition for that roadmap and for the overall summary.
+
+---
+
 ### Edge Cases
 
 - **No roadmaps owned**: A student with no owned roadmap document in Feature 009 opens `/progress` → the dashboard shows an empty state, not an error page.
@@ -105,6 +125,8 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 - **100% completion**: A student who has marked every node Done → the dashboard shows 100% and an empty Pending and In Progress group, with a visual completion signal.
 - **Very large roadmap (100+ nodes)**: A student with a roadmap containing 100+ nodes → the detail view loads completely within the dashboard's performance budget; nodes are presented in a scannable format (e.g., grouped, scrollable) rather than a flat dump.
 - **Concurrent update during detail view**: A student is looking at the detail view of a roadmap while simultaneously marking a node Done on the Skill Tree → the detail view also updates to move that node from its old group to Done, consistent with Story 4 behavior.
+- **Ongoing learning activity**: A node is In Progress without a Done timestamp → the tracking tables count activity from the In Progress change and treat the session as ongoing until Done.
+- **Multiple status flips**: A node moves In Progress → Pending → In Progress again → Done → the latest In Progress to Done window defines the learning activity period for that node.
 
 ---
 
@@ -120,6 +142,11 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 - **FR-006**: Every node in the detail view MUST be tappable/clickable, and the action MUST navigate the student to the Skill Tree page for that roadmap with the selected node visually highlighted or scrolled into view.
 - **FR-007**: The completion percentage shown on the dashboard MUST use the same formula as the Skill Tree progress bar (Done ÷ total nodes × 100%), ensuring both views always display the same value.
 - **FR-008**: The dashboard MUST reflect node-status changes made on the Skill Tree within 5 seconds, without requiring the student to manually reload the page.
+- **FR-008a**: The dashboard MUST display tracking tables for learning frequency and completion rate.
+- **FR-008b**: Tracking tables MUST be available at two scopes: per-roadmap and all-roadmaps combined.
+- **FR-008c**: Tracking tables MUST support weekly and monthly aggregation.
+- **FR-008d**: A learning activity window starts when a node status transitions to In Progress and ends when that node transitions to Done.
+- **FR-008e**: Completion rate in tracking tables MUST be derived from Done transitions and align with summary completion percentages.
 - **FR-009**: The dashboard MUST display an empty state (not an error) for students who have no owned roadmaps.
 - **FR-010**: When a status group in the detail view contains zero nodes, the system MUST show a clear empty-state indication for that group rather than hiding it silently or displaying a blank section.
 - **FR-011**: The feature MUST use stable `roadmapId` from Feature 009 (`roadmaps._id`) as cache key, API path key, SSE merge key, and deep-link key.
@@ -131,6 +158,8 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 - **Progress Dashboard**: The cross-roadmap overview page accessible at a fixed URL. Displays one summary card per owned roadmap. Read-only.
 - **Roadmap Progress Summary**: The aggregated representation of one roadmap's progress as seen by a specific student. Contains: roadmap identity, total node count, counts per status (Done / In Progress / Pending), computed completion percentage, and last activity timestamp.
 - **Roadmap Progress Cache**: The stored copy of a Roadmap Progress Summary, maintained by the Skill Tree system and read by the dashboard. Updated every time a node's status changes on the corresponding Skill Tree. Has a one-to-one relationship with a (student, roadmap) pair.
+- **Learning Activity Window**: A derived period for a node that begins at the status change to In Progress and ends at the status change to Done. Used for frequency and streak calculations.
+- **Tracking Tables**: Weekly and monthly aggregates showing learning frequency (count of activity days) and completion rate (Done transitions over total nodes), at both per-roadmap and all-roadmaps scopes.
 - **Node Status Detail**: The individual course node entry shown within a roadmap's detail view. Follows Feature 004 payload shape: `nodeId`, `courseCode`, `courseName`, `status`, `updatedAt`.
 
 ### Assumptions
@@ -139,6 +168,8 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 - The Skill Tree system is the sole writer of node-status data. The Progress Tracking feature only reads the aggregated cache that the Skill Tree system maintains.
 - Feature 004 owns node status storage in `skill_node_statuses` and exposes `getNodesByStatus(userId, roadmapId)`.
 - The Roadmap Progress Cache is updated by the Skill Tree system synchronously (or near-synchronously) whenever a node status changes, so the dashboard's 5-second update guarantee does not require the dashboard itself to poll raw node data.
+- Learning activity is inferred from node status transitions: In Progress starts activity, Done ends activity.
+- Tracking tables use only node status transition timestamps (no separate study session logs).
 - "Roadmap" and "Skill Tree" refer to the same learning-path concept from different perspectives: Skill Tree is the interactive tree view; Roadmap is the canonical data entity owned by Feature 009.
 - Students are always authenticated before accessing the dashboard; unauthenticated users are redirected to the login page.
 - Node type in this feature is exclusively `Course`, consistent with the scope defined in the Skill Tree specification.
@@ -153,3 +184,4 @@ A student has the Progress Dashboard open in one browser tab and the Skill Tree 
 - **SC-002**: The completion percentage displayed on a roadmap's summary card matches the progress bar percentage shown on the corresponding Skill Tree page to within ±1 percentage point (accounting for rounding), at all times.
 - **SC-003**: A student owning multiple roadmaps sees every owned roadmap on the dashboard and can select any of them to view a complete node-by-status breakdown; no roadmap is omitted.
 - **SC-004**: After a student changes a node's status on the Skill Tree, the corresponding roadmap card on the Progress Dashboard reflects the updated percentage and node counts within 5 seconds, with no manual page reload required.
+- **SC-005**: Tracking tables (weekly/monthly) reflect new In Progress and Done transitions within 5 seconds, with correct per-roadmap and all-roadmaps aggregation.

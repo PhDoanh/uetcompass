@@ -1,5 +1,6 @@
 const primaryRoadmapService = require('./primaryRoadmap.service');
 const roadmapProgressService = require('../roadmap/roadmapProgress.service');
+const roadmapHistoryService = require('../roadmap/roadmapHistory.service');
 const roadmapService = require('../roadmap/roadmap.service');
 const previewStore = require('../roadmap/roadmap.preview.store');
 const { isGenerating } = require('../roadmap/generation.service');
@@ -114,6 +115,19 @@ async function updateNodeState(studentId, roadmapId, { nodeId, fromState, toStat
   }
 }
 
+async function getRoadmapHistory(studentId, roadmapId, { limit = 50 } = {}) {
+  try {
+    const roadmap = await roadmapService.getByIdForUser(roadmapId, studentId);
+    if (!roadmap) {
+      return null;
+    }
+
+    return await roadmapHistoryService.listByRoadmap(studentId, roadmapId, { limit });
+  } catch (err) {
+    throw createServiceError(500, 'HISTORY_FETCH_FAILED', err.message, { cause: err });
+  }
+}
+
 /**
  * Get progress by roadmap
  */
@@ -145,6 +159,7 @@ module.exports = {
   getSkillTree,
   updateNodeState,
   getRoadmapProgress,
+  getRoadmapHistory,
   buildDefaultProgressState,
   createServiceError,
 };

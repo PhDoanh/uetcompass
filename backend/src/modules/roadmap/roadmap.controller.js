@@ -5,6 +5,7 @@ const path = require('path');
 const roadmapService = require('./roadmap.service');
 const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
+const roadmapCommentService = require('./roadmapComment.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
 const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
@@ -84,11 +85,43 @@ async function listPublicManualRoadmaps(req, res) {
 
 async function getPublicManualRoadmapPreviewById(req, res) {
 	try {
-		const roadmap = await manualRoadmapService.getPublicPreviewById(req.params.roadmapId);
+		const [roadmap, commentsResult] = await Promise.all([
+			manualRoadmapService.getPublicPreviewById(req.params.roadmapId),
+			roadmapCommentService.listByRoadmapId(req.params.roadmapId, { limit: 10 }),
+		]);
 		if (!roadmap) {
 			throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
 		}
-		return res.json(roadmap);
+		return res.json({
+			...roadmap,
+			reviews: commentsResult.items,
+			reviewCount: commentsResult.pagination.total,
+		});
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function listRoadmapComments(req, res) {
+	try {
+		const { limit } = req.query;
+		const result = await roadmapCommentService.listByRoadmapId(req.params.roadmapId, {
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+	}
+
+async function createRoadmapComment(req, res) {
+	try {
+		const { content, rating } = req.body ?? {};
+		const result = await roadmapCommentService.createComment(req.params.roadmapId, req.user.userId, {
+			content,
+			rating,
+		});
+		return res.status(201).json(result);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -325,6 +358,8 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
+	listRoadmapComments,
+	createRoadmapComment,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

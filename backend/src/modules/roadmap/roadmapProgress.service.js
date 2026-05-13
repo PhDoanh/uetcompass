@@ -1,6 +1,8 @@
 'use strict';
 
 const { RoadmapProgress } = require('./roadmapProgress.model');
+const roadmapHistoryService = require('./roadmapHistory.service');
+const roadmapService = require('./roadmap.service');
 
 const VALID_STATES = new Set(['pending', 'inProgress', 'completed', 'skip']);
 
@@ -90,6 +92,14 @@ async function updateNodeState(userId, roadmapId, nodeId, fromState, toState) {
 	}
 
 	const filter = { userId, roadmapId, [`state.${fromState}`]: nodeId };
+	const before = await RoadmapProgress.findOne({ userId, roadmapId }).lean();
+	const beforeCompleted = Array.isArray(before?.state?.completed) ? before.state.completed.length : 0;
+	const totalNodes = [
+		...(before?.state?.pending || []),
+		...(before?.state?.inProgress || []),
+		...(before?.state?.completed || []),
+		...(before?.state?.skip || []),
+	].length || 0;
 
 	// Aggregation pipeline update: pull nodeId from ALL arrays to restore
 	// the exactly-one-array invariant, then push to the target array.
@@ -116,6 +126,29 @@ async function updateNodeState(userId, roadmapId, nodeId, fromState, toState) {
 		err.code = 'INVALID_TRANSITION';
 		err.status = 422;
 		throw err;
+	}
+
+	try {
+		const currentCompleted = Array.isArray(updated.state?.completed) ? updated.state.completed.length : 0;
+		const previousPercent = roadmapHistoryService.calculateProgressPercent(beforeCompleted, totalNodes);
+		const currentPercent = roadmapHistoryService.calculateProgressPercent(currentCompleted, totalNodes);
+		const roadmap = await roadmapService.getByIdForUser(roadmapId, userId);
+		const nodeLabel = (roadmap?.nodes || []).find((node) => node.nodeId === nodeId)?.skillName || nodeId;
+
+		await roadmapHistoryService.recordNodeTransition(userId, roadmapId, {
+			nodeId,
+			nodeLabel,
+			fromState,
+			toState,
+		});
+
+		await roadmapHistoryService.recordMilestoneAchievements(userId, roadmapId, {
+			previousPercent,
+			currentPercent,
+		});
+	} catch (historyErr) {
+		// History is best-effort: progress transition should still succeed even if logging fails.
+		console.error('[roadmap-history:error]', historyErr);
 	}
 
 	return updated;

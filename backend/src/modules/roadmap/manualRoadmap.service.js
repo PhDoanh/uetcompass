@@ -168,8 +168,23 @@ async function createDraft(userId, { title, description, yamlCode, nodes }) {
         sharedAt,
     });
 
-    await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
-    return manualRoadmap;
+    let syncSkipped = false;
+    try {
+        await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
+    } catch (err) {
+        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
+            // Log and continue — draft is still created and persisted in ManualRoadmap.
+            // eslint-disable-next-line no-console
+            console.warn('syncToRoadmapCollection skipped:', err.message);
+            syncSkipped = true;
+        } else {
+            throw err;
+        }
+    }
+
+    const result = typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
+    if (syncSkipped) result.syncSkipped = true;
+    return result;
 }
 
 async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes }) {
@@ -206,8 +221,23 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.updatedAt = new Date();
 
     await existing.save();
-    await syncToRoadmapCollection(existing._id, userId, { title, nodes: enrichedNodes });
-    return existing.toObject();
+    let syncSkippedOnUpdate = false;
+    try {
+        await syncToRoadmapCollection(existing._id, userId, { title, nodes: enrichedNodes });
+    } catch (err) {
+        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
+            // Allow update to succeed even if onboarding/profile is missing.
+            // eslint-disable-next-line no-console
+            console.warn('syncToRoadmapCollection skipped on update:', err.message);
+            syncSkippedOnUpdate = true;
+        } else {
+            throw err;
+        }
+    }
+
+    const out = existing.toObject();
+    if (syncSkippedOnUpdate) out.syncSkipped = true;
+    return out;
 }
 
 async function share(roadmapId, userId) {

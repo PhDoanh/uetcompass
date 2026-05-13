@@ -2039,6 +2039,14 @@ html[data-theme='dark'] .sample-resource-list__open {
   opacity: 0.45;
 }
 
+.skill-tree-canvas-controls__btn:last-child {
+  width: auto;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .skill-tree-page__footer {
   height: 38px;
   border-top: 1px solid rgba(114, 119, 130, 0.18);

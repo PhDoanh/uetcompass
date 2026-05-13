@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNotification } from '../features/general/NotificationContainer';
 import './roadmapGraphRenderer.css';
 
 /**
@@ -39,6 +40,7 @@ export function RoadmapGraphRenderer({
     const [isPanning, setIsPanning] = useState(false);
     const [showClusters, setShowClusters] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+    const { addNotification } = useNotification();
 
     useEffect(() => {
         zoomRef.current = zoom;
@@ -490,6 +492,51 @@ export function RoadmapGraphRenderer({
         fitRoadmapToView();
     }, [fitRoadmapToView]);
 
+    const locateCurrentNodes = useCallback(() => {
+        if (planeNodes.length === 0) return;
+
+        const currentNodes = planeNodes.filter((node) => {
+            const status = String(node.status || '').toLowerCase();
+            return status === 'inprogress' || status.includes('in_progress') || status.includes('in-progress');
+        });
+
+        if (currentNodes.length === 0) {
+            addNotification('Không có node nào đang trong trạng thái học', 'info');
+            return;
+        }
+
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const bounds = currentNodes.reduce((acc, node) => {
+            acc.minX = Math.min(acc.minX, node.x);
+            acc.minY = Math.min(acc.minY, node.y);
+            acc.maxX = Math.max(acc.maxX, node.x + node.width);
+            acc.maxY = Math.max(acc.maxY, node.y + node.height);
+            return acc;
+        }, {
+            minX: Number.POSITIVE_INFINITY,
+            minY: Number.POSITIVE_INFINITY,
+            maxX: Number.NEGATIVE_INFINITY,
+            maxY: Number.NEGATIVE_INFINITY,
+        });
+
+        const padding = 120;
+        const targetWidth = Math.max(1, bounds.maxX - bounds.minX);
+        const targetHeight = Math.max(1, bounds.maxY - bounds.minY);
+        const availableWidth = Math.max(240, viewport.clientWidth - padding);
+        const availableHeight = Math.max(240, viewport.clientHeight - padding);
+        const fitScale = clampZoom(Math.min(1.1, Math.max(0.45, Math.min(availableWidth / targetWidth, availableHeight / targetHeight))));
+        const targetCenterX = bounds.minX + targetWidth / 2;
+        const targetCenterY = bounds.minY + targetHeight / 2;
+
+        setZoom(fitScale);
+        setPan({
+            x: Math.round(viewport.clientWidth / 2 - targetCenterX * fitScale),
+            y: Math.round(viewport.clientHeight / 2 - targetCenterY * fitScale),
+        });
+    }, [addNotification, planeNodes]);
+
     return (
         <div className="roadmap-graph-renderer" style={{ width: '100%', height: '100%', minHeight: 420 }}>
             {!loading && planeNodes.length === 0 && (
@@ -512,6 +559,7 @@ export function RoadmapGraphRenderer({
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(-0.1)}>-</button>
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={resetView}>Overview</button>
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={centerRoadmap}>Center</button>
+                            <button type="button" className="roadmap-graph-renderer__control-btn" onClick={locateCurrentNodes}>Locate me</button>
                             <button
                                 type="button"
                                 className={`roadmap-graph-renderer__control-btn ${showClusters ? 'is-active' : ''}`}

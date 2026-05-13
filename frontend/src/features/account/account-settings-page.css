@@ -18,6 +18,7 @@
 .account-settings-header h1 {
   margin: 0;
   font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
   color: #003e79;
   line-height: 1.1;
   font-weight: 700;
@@ -33,51 +34,7 @@
   font-size: 0.95rem;
 }
 
-.account-settings-identity {
-  margin: 2rem auto 0;
-  max-width: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.75rem;
-  padding: 1.5rem 1.75rem;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #d9e3f3;
-  box-shadow: 0 10px 28px rgba(18, 44, 77, 0.06);
-}
-
-.account-settings-identity .learning-profile-avatar-ring {
-  background: linear-gradient(135deg, #0055a2 0%, #003e79 100%);
-  box-shadow: 0 12px 24px rgba(0, 85, 162, 0.18);
-}
-
-.account-settings-identity .learning-profile-avatar {
-  border: 4px solid #ebf2ff;
-}
-
-.account-settings-identity .learning-profile-avatar--fallback {
-  background: linear-gradient(135deg, #0055a2 0%, #003e79 100%);
-  color: #ffffff;
-}
-
-.account-settings-identity-info h2 {
-  margin: 0.35rem 0 0;
-  font-size: 1.35rem;
-  color: #003e79;
-  font-weight: 700;
-}
-
-.account-settings-email {
-  margin: 0.3rem 0 0.75rem;
-  color: #2b5f9e;
-  font-weight: 600;
-}
-
-
-.profile-grid {
+.account-top-grid {
   margin-top: 2rem;
   display: grid;
   grid-template-columns: 1fr;
@@ -85,28 +42,26 @@
 }
 
 .profile-avatar-card,
-.profile-form-card,
 .security-card,
-.privacy-card {
+.privacy-card,
+.notification-card {
   border: 1px solid #d9e3f3;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 10px 28px rgba(18, 44, 77, 0.06);
 }
 
-.profile-avatar-card {
+.profile-avatar-card,
+.security-card,
+.privacy-card,
+.notification-card {
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
 }
 
 .avatar-wrap {
   position: relative;
   width: 132px;
   height: 132px;
-  margin-bottom: 1rem;
 }
 
 .avatar-image,
@@ -145,27 +100,31 @@
   cursor: pointer;
 }
 
-.profile-avatar-card h3 {
-  margin: 0;
-}
-
-.profile-avatar-card p {
-  margin: 0.35rem 0 1rem;
-  color: #2b5f9e;
-  font-size: 0.9rem;
-}
-
-.avatar-actions {
-  width: 100%;
+.profile-card__content {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.55rem;
+  grid-template-columns: 120px 1fr;
+  gap: 1.2rem;
+  align-items: center;
 }
 
-.profile-form-card,
-.security-card,
-.privacy-card {
-  padding: 1.5rem;
+.profile-card__info {
+  display: grid;
+  gap: 0.75rem;
+  color: #1f2f4a;
+}
+
+.profile-card__info strong {
+  display: block;
+  font-size: 1rem;
+  color: #111c2a;
+}
+
+.profile-card__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b687d;
+  font-weight: 700;
 }
 
 .card-title-row {
@@ -201,6 +160,12 @@
   font-weight: 700;
 }
 
+.field-helper {
+  margin: 0.25rem 0 0;
+  font-size: 0.74rem;
+  color: #5a677d;
+}
+
 .field input,
 .field select {
   width: 100%;
@@ -230,7 +195,7 @@
   justify-content: flex-end;
 }
 
-.secondary-grid {
+.account-bottom-grid {
   margin-top: 1.2rem;
   display: grid;
   grid-template-columns: 1fr;
@@ -268,16 +233,6 @@
   gap: 0.75rem;
 }
 
-.security-chip {
-  background: #d8f4df;
-  color: #0b7a2a;
-  border-radius: 999px;
-  padding: 0.26rem 0.62rem;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-}
 
 .password-wrap {
   position: relative;
@@ -303,42 +258,6 @@
   color: #54607a;
 }
 
-.strength-wrap {
-  margin-top: 0.75rem;
-}
-
-.strength-bars {
-  display: flex;
-  gap: 0.3rem;
-}
-
-.bar {
-  height: 6px;
-  border-radius: 999px;
-  flex: 1;
-  background: #d0d9e7;
-}
-
-.bar.weak {
-  background: #cf4a4a;
-}
-
-.bar.medium {
-  background: #d08915;
-}
-
-.bar.strong {
-  background: #1d9248;
-}
-
-.strength-meta {
-  margin-top: 0.35rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.74rem;
-  color: #5a677d;
-}
 
 .card-divider-top {
   border-top: 1px solid #e0e6f2;
@@ -352,14 +271,13 @@
   color: #5f6f84;
 }
 
-.privacy-card > p {
-  margin: 0 0 1rem;
-  color: #4f5a70;
-}
-
 .privacy-options {
   display: grid;
   gap: 0.75rem;
+}
+
+.privacy-options.horizontal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .privacy-option {
@@ -454,6 +372,83 @@
   margin-top: 1.1rem;
 }
 
+.btn.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+.card-actions.align-right {
+  justify-content: flex-end;
+}
+
+.notification-card h3 {
+  margin: 0 0 0.35rem;
+  color: #111c2a;
+  font-size: 1rem;
+}
+
+.notification-card p {
+  margin: 0;
+  color: #4f5a70;
+  max-width: 300px;
+}
+
+.notification-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.notification-box {
+  border: 1px solid #e2e9f3;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: #f8fbff;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-track {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #d3ddeb;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background: #0055a2;
+}
+
+.toggle-switch input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(20px);
+}
+
 .message {
   margin: 0.8rem 0 0;
   font-size: 0.88rem;
@@ -477,6 +472,7 @@
   padding: 16px;
   background: rgba(15, 23, 42, 0.34);
   backdrop-filter: blur(4px);
+  overscroll-behavior: contain;
 }
 
 .account-delete-modal {
@@ -552,16 +548,9 @@
     padding: 2.25rem 1.5rem 3.25rem;
   }
 
-  .form-grid {
+  .account-top-grid,
+  .account-bottom-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .field.field-wide {
-    grid-column: span 2;
-  }
-
-  .avatar-actions {
-    grid-template-columns: 1fr 1fr;
   }
 
   .footer-inner {
@@ -592,6 +581,11 @@ html[data-theme='dark'] .profile-avatar-card h3 {
   color: #dce9fc;
 }
 
+html[data-theme='dark'] .profile-card__label,
+html[data-theme='dark'] .profile-card__info strong {
+  color: #ffffff;
+}
+
 html[data-theme='dark'] .account-settings-header p,
 html[data-theme='dark'] .profile-avatar-card p,
 html[data-theme='dark'] .privacy-card > p,
@@ -604,7 +598,8 @@ html[data-theme='dark'] .privacy-content span {
 html[data-theme='dark'] .profile-avatar-card,
 html[data-theme='dark'] .profile-form-card,
 html[data-theme='dark'] .security-card,
-html[data-theme='dark'] .privacy-card {
+html[data-theme='dark'] .privacy-card,
+html[data-theme='dark'] .notification-card {
   border: 1px solid rgba(94, 145, 214, 0.35);
   background: #142741;
   box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
@@ -676,6 +671,20 @@ html[data-theme='dark'] .privacy-option.selected {
 
 html[data-theme='dark'] .privacy-content {
   color: #cfe4ff;
+}
+
+html[data-theme='dark'] .notification-card h3,
+html[data-theme='dark'] .notification-card p {
+  color: #dce9fc;
+}
+
+html[data-theme='dark'] .notification-box {
+  border: 1px solid rgba(95, 146, 214, 0.28);
+  background: #1a304d;
+}
+
+html[data-theme='dark'] .toggle-track {
+  background: #2a4164;
 }
 
 html[data-theme='dark'] .btn.ghost,

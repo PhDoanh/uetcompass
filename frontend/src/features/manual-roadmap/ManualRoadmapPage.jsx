@@ -8,7 +8,7 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { CircleHelp, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
@@ -599,11 +599,15 @@ export default function ManualRoadmapPage() {
 
     setIsSaving(true);
     try {
-      await (roadmapId
+      const result = await (roadmapId
         ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
         : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
 
       setSuccessMessage(`Đã ${roadmapId ? 'cập nhật' : 'tạo'} roadmap thành công.`);
+
+      if (result && result.syncSkipped) {
+        addNotification('Roadmap đã được lưu cục bộ nhưng chưa được đồng bộ sang primary vì hồ sơ onboarding chưa hoàn thành.', 'warning');
+      }
     } catch (err) {
       if (err?.status === 401) {
         setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi lưu lại roadmap.');

@@ -3,7 +3,7 @@ import { Compass, Map, GitBranch, LibraryBig, Users, Search } from 'lucide-react
 import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
 import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import './onboarding-panel.css';
 
 const EMPTY_FORM = {

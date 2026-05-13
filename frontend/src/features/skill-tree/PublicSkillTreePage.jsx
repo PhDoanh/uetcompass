@@ -3,16 +3,9 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
-import SkillTreeDetailPanel, {
-  SkillTreeNodeDetailTab,
-  SkillTreeOverviewTab,
-  buildFixedMilestones,
-  calculateProgress,
-} from './SkillTreeDetailPanel';
-import ReviewTab from './ReviewTab';
+import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../general/NotificationContainer';
-import { useSplitLayout } from './useSplitLayout';
+import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';

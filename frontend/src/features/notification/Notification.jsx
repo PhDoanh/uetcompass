@@ -16,7 +16,7 @@ export default function Notification({ message, type = 'info', onClose, duration
     success: <CheckCircle size={20} />,
     error: <XCircle size={20} />,
     warning: <AlertCircle size={20} />,
-    info: <Info size={20} />
+    info: <Info size={20} />,
   };
 
   return (

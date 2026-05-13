@@ -258,6 +258,48 @@ function validateManualRoadmapYaml(yamlCode) {
     };
 }
 
+function normalizeTag(tag) {
+    if (!tag || typeof tag !== 'object') {
+        return null;
+    }
+    const label = String(tag.label || '').trim();
+    if (!label) {
+        return null;
+    }
+    return {
+        label,
+        normalizedLabel: label.toLowerCase().trim(),
+    };
+}
+
+function validateAndNormalizeTags(tags) {
+    if (!tags) {
+        return [];
+    }
+    if (!Array.isArray(tags)) {
+        throw new RoadmapError(422, ERROR_CODES.VALIDATION_ERROR, 'Tags must be an array.');
+    }
+
+    const normalized = [];
+    const seen = new Set();
+
+    for (const tag of tags) {
+        const normalized_tag = normalizeTag(tag);
+        if (!normalized_tag) {
+            continue;
+        }
+        if (seen.has(normalized_tag.normalizedLabel)) {
+            continue;
+        }
+        seen.add(normalized_tag.normalizedLabel);
+        normalized.push(normalized_tag);
+    }
+
+    return normalized;
+}
+
 module.exports = {
     validateManualRoadmapYaml,
+    normalizeTag,
+    validateAndNormalizeTags,
 };

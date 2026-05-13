@@ -16,6 +16,7 @@ roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
 roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
 roadmapRouter.get('/manual-roadmaps/:roadmapId/comments', controller.listRoadmapComments);
+roadmapRouter.get('/manual-roadmaps/tags', controller.getManualRoadmapTags);
 
 // SSE endpoint supports EventSource by authenticating with JWT passed via sseToken query.
 roadmapRouter.get('/sse', (req, res) => {

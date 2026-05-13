@@ -57,15 +57,23 @@ async function getRoadmapById(req, res) {
 
 async function listPublicManualRoadmaps(req, res) {
 	try {
-		const { q, page, limit } = req.query;
+		const { q, tags, page, limit } = req.query;
 		const normalizedQuery = String(q || '').trim();
 
 		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
 			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
 		}
 
+		// Parse tags parameter (can be string or array)
+		let selectedTags = [];
+		if (tags) {
+			selectedTags = Array.isArray(tags) ? tags : [tags];
+			selectedTags = selectedTags.map(tag => String(tag || '').trim().toLowerCase()).filter(Boolean);
+		}
+
 		const result = await manualRoadmapService.listPublic({
 			q: normalizedQuery,
+			tags: selectedTags,
 			page: parsePositiveIntQuery(page, 'page'),
 			limit: parsePositiveIntQuery(limit, 'limit'),
 		});
@@ -131,15 +139,18 @@ async function getManualRoadmapById(req, res) {
 
 async function createManualRoadmap(req, res) {
 	try {
-		const { yamlCode } = req.body ?? {};
+		const { yamlCode, tags } = req.body ?? {};
 		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
 		const { title, description, nodes } = parsed;
+
+		const normalizedTags = manualRoadmapValidation.validateAndNormalizeTags(tags);
 
 		const roadmap = await manualRoadmapService.createDraft(req.user.userId, {
 			title,
 			description,
 			yamlCode: String(yamlCode || '').trim(),
 			nodes,
+			tags: normalizedTags,
 		});
 
 		return res.status(201).json(roadmap);
@@ -150,15 +161,18 @@ async function createManualRoadmap(req, res) {
 
 async function updateManualRoadmap(req, res) {
 	try {
-		const { yamlCode } = req.body ?? {};
+		const { yamlCode, tags } = req.body ?? {};
 		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
 		const { title, description, nodes } = parsed;
+
+		const normalizedTags = manualRoadmapValidation.validateAndNormalizeTags(tags);
 
 		const roadmap = await manualRoadmapService.updateDraft(req.params.roadmapId, req.user.userId, {
 			title,
 			description,
 			yamlCode: String(yamlCode || '').trim(),
 			nodes,
+			tags: normalizedTags,
 		});
 
 		return res.json(roadmap);
@@ -328,6 +342,15 @@ async function updateNodeStateHandler(req, res) {
 	}
 }
 
+async function getManualRoadmapTags(req, res) {
+	try {
+		const tags = await manualRoadmapService.getDistinctTags();
+		return res.json(tags);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
@@ -348,4 +371,5 @@ module.exports = {
 	previewRoadmapHandler,
 	getProgressHandler,
 	updateNodeStateHandler,
+	getManualRoadmapTags,
 };

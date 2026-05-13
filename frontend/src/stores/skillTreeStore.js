@@ -52,26 +52,15 @@ export const useSkillTreeStore = create((set) => ({
     const current = state.progress || { pending: [], inProgress: [], completed: [], skip: [] };
 
     const dedup = (arr) => (arr || []).filter((id) => id !== nodeId);
-    const nextProgress = {
-      pending: dedup(current.pending),
-      inProgress: dedup(current.inProgress),
-      completed: dedup(current.completed),
-      skip: dedup(current.skip),
-      [toState]: [...dedup(current[toState]), nodeId],
-    };
 
     return {
-      progress: nextProgress,
-      nodes: (state.nodes || []).map((node) => {
-        if (node?.nodeId !== nodeId) {
-          return node;
-        }
-
-        return {
-          ...node,
-          progressState: toState,
-        };
-      }),
+      progress: {
+        pending: dedup(current.pending),
+        inProgress: dedup(current.inProgress),
+        completed: dedup(current.completed),
+        skip: dedup(current.skip),
+        [toState]: [...dedup(current[toState]), nodeId],
+      },
     };
   }),
 

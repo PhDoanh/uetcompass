@@ -14,7 +14,6 @@ export function RoadmapGraphRenderer({
     edges = [],
     positions = {},
     onNodeSelect,
-    onNodeToggleStatus,
     loading = false,
     controlsVisible = true,
     selectedNodeId = '',
@@ -684,12 +683,6 @@ export function RoadmapGraphRenderer({
                                     style={{ left: `${node.x}px`, top: `${node.y}px`, width: `${node.width}px`, height: `${node.height}px` }}
                                     title={node.id}
                                     onClick={() => onNodeSelect?.(node.id)}
-                                    onContextMenu={(event) => {
-                                        if (!onNodeToggleStatus) return;
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        onNodeToggleStatus(node.id);
-                                    }}
                                     role="button"
                                     tabIndex={0}
                                     aria-pressed={node.id === selectedNodeId}

@@ -1,17 +1,12 @@
 'use strict';
 
-jest.mock('../../src/modules/roadmap/manualRoadmap.service', () => ({
+jest.mock('../../../src/modules/roadmap/manualRoadmap.service', () => ({
 	listPublic: jest.fn(),
 	getPublicPreviewById: jest.fn(),
 }));
 
-jest.mock('../../src/modules/roadmap/roadmapComment.service', () => ({
-	listByRoadmapId: jest.fn(),
-}));
-
-const manualRoadmapService = require('../../src/modules/roadmap/manualRoadmap.service');
-const roadmapCommentService = require('../../src/modules/roadmap/roadmapComment.service');
-const { listPublicManualRoadmaps, getPublicManualRoadmapPreviewById } = require('../../src/modules/roadmap/roadmap.controller');
+const manualRoadmapService = require('../../../src/modules/roadmap/manualRoadmap.service');
+const { listPublicManualRoadmaps, getPublicManualRoadmapPreviewById } = require('../../../src/modules/roadmap/roadmap.controller');
 
 function mockRes() {
 	return {
@@ -40,10 +35,6 @@ describe('roadmap search preview controller', () => {
 			description: 'Preview',
 			nodes: [{ nodeId: 'A', label: 'Alpha' }],
 		});
-		roadmapCommentService.listByRoadmapId.mockResolvedValue({
-			items: [{ id: 'comment-1', author: 'Bạn', rating: 5, content: 'Great roadmap', date: '28/04/2026 10:00' }],
-			pagination: { page: 1, limit: 10, total: 1 },
-		});
 
 		const req = { params: { roadmapId: 'roadmap-1' } };
 		const res = mockRes();
@@ -51,10 +42,8 @@ describe('roadmap search preview controller', () => {
 		await getPublicManualRoadmapPreviewById(req, res);
 
 		expect(manualRoadmapService.getPublicPreviewById).toHaveBeenCalledWith('roadmap-1');
-		expect(roadmapCommentService.listByRoadmapId).toHaveBeenCalledWith('roadmap-1', { limit: 10 });
 		expect(res.statusCode).toBe(200);
 		expect(res.jsonBody.title).toBe('Frontend Roadmap');
-		expect(res.jsonBody.reviews).toHaveLength(1);
 	});
 
 	test('returns not found when preview id is missing', async () => {

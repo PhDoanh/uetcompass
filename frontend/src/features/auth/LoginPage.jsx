@@ -11,14 +11,6 @@ const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
 const BUTTON_DELAY_MS = 5000;
 
-function resolveIsDarkTheme() {
-  if (typeof document === 'undefined') {
-    return false;
-  }
-
-  return document.documentElement.getAttribute('data-theme') === 'dark';
-}
-
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
   const minutes = Math.floor(safe / 60);
@@ -37,7 +29,6 @@ export default function LoginPage() {
   const [lockRemaining, setLockRemaining] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(resolveIsDarkTheme);
   const buttonDelayTimerRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const hasGoogleClientId = Boolean(String(googleClientId).trim());
@@ -83,41 +74,12 @@ export default function LoginPage() {
     window.sessionStorage.removeItem(REGISTER_SUCCESS_NOTICE_KEY);
   }, [addNotification]);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') {
-      return undefined;
-    }
-
-    const root = document.documentElement;
-    const syncTheme = () => {
-      setIsDarkTheme(resolveIsDarkTheme());
-    };
-
-    syncTheme();
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          syncTheme();
-          break;
-        }
-      }
-    });
-
-    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
     }
     return `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${formatCountdown(lockRemaining)}.`;
   }, [lockRemaining]);
-  const googleButtonTheme = isDarkTheme ? 'filled_black' : 'outline';
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -191,7 +153,7 @@ export default function LoginPage() {
               onSuccess={handleGoogleSuccess}
               onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
               useOneTap={false}
-              theme={googleButtonTheme}
+              theme="outline"
               shape="pill"
               size="large"
               text="continue_with"

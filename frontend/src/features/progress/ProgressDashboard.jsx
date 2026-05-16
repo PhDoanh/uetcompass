@@ -5,11 +5,7 @@ import RoadmapCard from './RoadmapCard';
 import RoadmapDetailView from './RoadmapDetailView';
 import TrackingTables from './TrackingTables';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
-
-export function getRoadmapIdFromLocation(searchValue) {
-  const params = new URLSearchParams(searchValue || '');
-  return params.get('roadmapId') || '';
-}
+import { getRoadmapIdFromLocation } from './progress.utils';
 
 function updateRoadmapIdInLocation(roadmapId) {
   if (typeof window === 'undefined') {
@@ -104,9 +100,10 @@ export default function ProgressDashboard() {
     setTrackingLoading(true);
     setTrackingError(null);
     try {
+      const apiGroupBy = trackingGroupBy === 'daily' ? 'weekly' : trackingGroupBy;
       const data = await getTrackingTables(accessToken, {
         scope: trackingScope,
-        groupBy: trackingGroupBy,
+        groupBy: apiGroupBy,
         roadmapId: trackingScope === 'roadmap' ? selectedRoadmapId : undefined,
       });
       setTrackingData(data);
@@ -184,7 +181,7 @@ export default function ProgressDashboard() {
                 detail={
                   detail ||
                   (selectedRoadmap
-                    ? { ...selectedRoadmap, nodes: { done: [], inProgress: [], pending: [] } }
+                    ? { ...selectedRoadmap, nodes: { done: [], pending: [] } }
                     : null)
                 }
                 loading={detailLoading}

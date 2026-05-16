@@ -143,7 +143,7 @@ function formatRoadmapDate(value) {
   function buildActivitySeriesFromBuckets(buckets = []) {
     return buckets.map((bucket) => ({
       day: bucket.periodStart || 'N/A',
-      value: bucket.activeDays || 0,
+      value: bucket.activeNodes || 0,
     }));
   }
 
@@ -188,6 +188,7 @@ export default function Homepage() {
   const [progressTracking, setProgressTracking] = useState(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [progressError, setProgressError] = useState(null);
+  const [progressTrackingGroupBy, setProgressTrackingGroupBy] = useState('weekly');
   const [roadmapPage, setRoadmapPage] = useState(0);
   const [myRoadmapPage, setMyRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
@@ -365,7 +366,7 @@ export default function Homepage() {
         setProgressSummaries(summaries);
         const tracking = await getTrackingTables(accessToken, {
           scope: 'all',
-          groupBy: 'weekly',
+          groupBy: progressTrackingGroupBy,
         });
         if (isMounted) {
           setProgressTracking(tracking);
@@ -393,7 +394,7 @@ export default function Homepage() {
     return () => {
       isMounted = false;
     };
-  }, [accessToken, logoutAndRedirect]);
+  }, [accessToken, logoutAndRedirect, progressTrackingGroupBy]);
 
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
@@ -587,11 +588,10 @@ export default function Homepage() {
       (acc, roadmap) => {
         acc.totalNodes += roadmap?.totalNodes || 0;
         acc.doneNodes += roadmap?.doneNodes || 0;
-        acc.inProgressNodes += roadmap?.inProgressNodes || 0;
         acc.pendingNodes += roadmap?.pendingNodes || 0;
         return acc;
       },
-      { totalNodes: 0, doneNodes: 0, inProgressNodes: 0, pendingNodes: 0 }
+      { totalNodes: 0, doneNodes: 0, pendingNodes: 0 }
     );
   }, [progressSummaries]);
   const progressDistribution = useMemo(() => {
@@ -600,14 +600,13 @@ export default function Homepage() {
 
     return [
       { name: 'Hoàn thành', value: toPercent(progressTotals.doneNodes), color: '#22C55E' },
-      { name: 'Đang học', value: toPercent(progressTotals.inProgressNodes), color: '#0EA5E9' },
       { name: 'Chưa bắt đầu', value: toPercent(progressTotals.pendingNodes), color: '#94A3B8' },
     ];
   }, [progressTotals]);
-  const activitySeries = useMemo(
-    () => buildActivitySeriesFromBuckets(progressTracking?.buckets || []),
-    [progressTracking]
-  );
+  const activitySeries = useMemo(() => {
+    const baseSeries = buildActivitySeriesFromBuckets(progressTracking?.buckets || []);
+    return baseSeries.slice(-7);
+  }, [progressTracking]);
   const heatmapValues = useMemo(
     () => buildHeatmapValues(activitySeries),
     [activitySeries]
@@ -633,7 +632,7 @@ export default function Homepage() {
     const roadmapLabel = primaryProgressRoadmap?.roadmapName
       ? ` - ${primaryProgressRoadmap.roadmapName}`
       : '';
-    return `${activityTotal} ngày hoạt động gần đây${roadmapLabel}`;
+    return `${activityTotal} node đã học gần đây${roadmapLabel}`;
   }, [activityTotal, isLoadingProgress, primaryProgressRoadmap, progressTracking, progressError]);
   const distributionMeta = useMemo(() => {
     if (progressError) {
@@ -749,13 +748,37 @@ export default function Homepage() {
             </div>
             <div className="homepage-progress__grid">
               <div className="homepage-progress__card">
-                <div className="homepage-progress__title">Hoạt động theo ngày</div>
+                <div className="homepage-progress__title">Số node đã học</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[
+                    { id: 'weekly', label: 'Weekly' },
+                    { id: 'monthly', label: 'Monthly' },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setProgressTrackingGroupBy(option.id)}
+                      className="homepage-outline-btn"
+                      style={option.id === progressTrackingGroupBy ? {
+                        backgroundColor: '#0EA5E9',
+                        borderColor: '#0EA5E9',
+                        color: '#fff',
+                      } : undefined}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="homepage-progress__chart">
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={activitySeries} margin={{ left: -12, right: 8, top: 10, bottom: 0 }}>
                       <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#94A3B8" />
                       <YAxis domain={[0, 'dataMax']} tick={{ fontSize: 11 }} stroke="#94A3B8" />
-                      <Tooltip contentStyle={{ borderRadius: 12, borderColor: '#E2E8F0' }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 12, borderColor: '#E2E8F0' }}
+                        labelFormatter={(label) => `Kỳ: ${label}`}
+                        formatter={(value) => [`${value}`, 'Node đã học']}
+                      />
                       <Line type="monotone" dataKey="value" stroke="#0EA5E9" strokeWidth={3} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -848,7 +871,11 @@ export default function Homepage() {
         </section>
 
         {shouldShowMyRoadmapsSection ? (
-          <section className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
+          <section
+            id="my-roadmaps"
+            className="homepage-section homepage-section--plain"
+            aria-label="My roadmap gallery"
+          >
             <div className="homepage-roadmap-head">
               <div>
                 <h2>Roadmap của tôi</h2>

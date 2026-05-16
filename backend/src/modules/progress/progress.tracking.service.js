@@ -75,9 +75,11 @@ function ensureBucket(buckets, key, groupBy) {
       periodStart: formatDateUtc(start),
       periodEnd: formatDateUtc(end),
       activeDays: 0,
+      activeNodes: 0,
       completedNodes: 0,
       completionRate: 0,
       activeDaysSet: new Set(),
+      activeNodesSet: new Set(),
     });
   }
 
@@ -109,6 +111,7 @@ function buildBucketsFromActivity(activityDocs, groupBy) {
       const bucketKey = getBucketKey(cursor, groupBy);
       const bucket = ensureBucket(buckets, bucketKey, groupBy);
       bucket.activeDaysSet.add(formatDateUtc(cursor));
+      bucket.activeNodesSet.add(activity.nodeId);
     }
 
     if (activity?.lastDoneAt) {
@@ -227,11 +230,13 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
   const buckets = Array.from(bucketMap.values())
     .map((bucket) => {
       const activeDays = bucket.activeDaysSet.size;
+      const activeNodes = bucket.activeNodesSet.size;
       const completionRate = totalNodes === 0 ? 0 : bucket.completedNodes / totalNodes;
       return {
         periodStart: bucket.periodStart,
         periodEnd: bucket.periodEnd,
         activeDays,
+        activeNodes,
         completedNodes: bucket.completedNodes,
         completionRate,
       };

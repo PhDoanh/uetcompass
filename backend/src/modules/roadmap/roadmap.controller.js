@@ -5,7 +5,6 @@ const path = require('path');
 const roadmapService = require('./roadmap.service');
 const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
-const roadmapCommentService = require('./roadmapComment.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
 const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
@@ -85,46 +84,22 @@ async function listPublicManualRoadmaps(req, res) {
 
 async function getPublicManualRoadmapPreviewById(req, res) {
 	try {
-		const [roadmap, commentsResult] = await Promise.all([
-			manualRoadmapService.getPublicPreviewById(req.params.roadmapId),
-			roadmapCommentService.listByRoadmapId(req.params.roadmapId, { limit: 10 }),
-		]);
+		const roadmap = await manualRoadmapService.getPublicPreviewById(req.params.roadmapId);
 		if (!roadmap) {
 			throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Public roadmap not found.');
 		}
-		return res.json({
-			...roadmap,
-			reviews: commentsResult.items,
-			reviewCount: commentsResult.pagination.total,
-		});
+		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
 	}
 }
 
 async function listRoadmapComments(req, res) {
-	try {
-		const { limit } = req.query;
-		const result = await roadmapCommentService.listByRoadmapId(req.params.roadmapId, {
-			limit: parsePositiveIntQuery(limit, 'limit'),
-		});
-		return res.json(result);
-	} catch (err) {
-		return mapError(err, res);
-	}
-	}
+	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
+}
 
 async function createRoadmapComment(req, res) {
-	try {
-		const { content, rating } = req.body ?? {};
-		const result = await roadmapCommentService.createComment(req.params.roadmapId, req.user.userId, {
-			content,
-			rating,
-		});
-		return res.status(201).json(result);
-	} catch (err) {
-		return mapError(err, res);
-	}
+	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
 }
 
 async function getManualRoadmapById(req, res) {
@@ -358,8 +333,6 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
-	listRoadmapComments,
-	createRoadmapComment,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

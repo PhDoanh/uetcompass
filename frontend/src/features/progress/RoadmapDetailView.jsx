@@ -2,13 +2,17 @@ import React from 'react';
 import NodeListItem from './NodeListItem';
 
 function Group({ title, nodes, emptyLabel, roadmapId }) {
+  const hasOverflow = nodes.length > 10;
   return (
     <section className="rounded-xl border border-gray-200 p-4 bg-white">
       <h4 className="font-semibold text-gray-900">{title} ({nodes.length})</h4>
       {nodes.length === 0 ? (
         <p className="text-sm text-gray-500 mt-2">{emptyLabel}</p>
       ) : (
-        <div className="mt-3 grid gap-2">
+        <div
+          className="mt-3 grid gap-2"
+          style={hasOverflow ? { maxHeight: '560px', overflowY: 'auto' } : undefined}
+        >
           {nodes.map((node) => (
             <NodeListItem key={`${title}-${node.nodeId || node.courseCode}`} roadmapId={roadmapId} node={node} />
           ))}
@@ -28,7 +32,6 @@ export default function RoadmapDetailView({ detail, loading = false }) {
   }
 
   const done = detail?.nodes?.done || [];
-  const inProgress = detail?.nodes?.inProgress || [];
   const pending = detail?.nodes?.pending || [];
 
   return (
@@ -39,7 +42,6 @@ export default function RoadmapDetailView({ detail, loading = false }) {
       </div>
 
       <Group title="Done" nodes={done} emptyLabel="No done nodes yet." roadmapId={detail.roadmapId} />
-      <Group title="In Progress" nodes={inProgress} emptyLabel="No in-progress nodes right now." roadmapId={detail.roadmapId} />
       <Group title="Pending" nodes={pending} emptyLabel="No pending nodes remaining." roadmapId={detail.roadmapId} />
     </div>
   );

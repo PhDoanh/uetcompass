@@ -1,10 +1,11 @@
-import { PROGRESS_STATES } from './skillTree.types';
+import { PROGRESS_STATES, normalizeProgressState } from './skillTree.types';
 
 function toStateMap(progressState = {}) {
   const map = new Map();
   for (const stateKey of Object.keys(progressState)) {
+    const normalizedState = normalizeProgressState(stateKey) || stateKey;
     for (const nodeId of progressState[stateKey] || []) {
-      map.set(nodeId, stateKey);
+      map.set(nodeId, normalizedState);
     }
   }
   return map;

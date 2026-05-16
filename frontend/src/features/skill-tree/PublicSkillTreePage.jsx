@@ -4,9 +4,19 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
+import { useSplitLayout } from './useSplitLayout';
+import ReviewTab from './ReviewTab';
+import MilestoneCelebrationModal from './MilestoneCelebrationModal';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
+import SkillTreeDetailPanel, {
+  SkillTreeOverviewTab,
+  SkillTreeNodeDetailTab,
+  calculateProgress,
+  buildFixedMilestones,
+} from './SkillTreeDetailPanel';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
 const YAML_MAX_LENGTH = 10 * 1024;
@@ -23,12 +33,14 @@ function normalizeNodeState(state) {
 }
 
 function normalizePreviewNodes(nodes = []) {
+  const seenIds = new Set();
   const mappedNodes = nodes
     .map((node) => {
       const nodeId = String(node?.nodeId || node?.id || '').trim();
-      if (!nodeId) {
+      if (!nodeId || seenIds.has(nodeId)) {
         return null;
       }
+      seenIds.add(nodeId);
 
       const metadata = typeof node?.metadata === 'object' && node?.metadata !== null ? node.metadata : {};
       const parentNodeId = String(
@@ -87,6 +99,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [activeNodeId, setActiveNodeId] = useState('');
   const [nodeStates, setNodeStates] = useState({});
   const [activeTab, setActiveTab] = useState('overview');
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -111,6 +124,16 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
 
     setActiveTab('overview');
   }, [activeNode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const focus = params.get('focus') || '';
+    setFocusNodeId(focus);
+  }, []);
 
   const {
     layoutRef,
@@ -166,8 +189,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           title={previewData?.title || 'Roadmap'}
           description={previewData?.description || 'Chưa có mô tả.'}
           metaItems={overviewMetaItems}
-          progress={progressSummary}
-          milestones={milestones}
           progressVariant="fixed"
           actions={overviewActions}
         />

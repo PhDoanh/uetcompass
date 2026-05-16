@@ -17,7 +17,6 @@ export default function RoadmapCard({ roadmap, onSelect, selected = false }) {
   const title = roadmap?.roadmapName || 'Untitled Roadmap';
   const done = roadmap?.doneNodes || 0;
   const total = roadmap?.totalNodes || 0;
-  const inProgress = roadmap?.inProgressNodes || 0;
   const pending = roadmap?.pendingNodes || 0;
   const percent = roadmap?.progressPercent || 0;
 
@@ -50,9 +49,8 @@ export default function RoadmapCard({ roadmap, onSelect, selected = false }) {
         <div className="mt-2 text-xs text-gray-600">Done {done}/{total}</div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded bg-green-50 p-2 text-green-700">Done: {done}</div>
-        <div className="rounded bg-blue-50 p-2 text-blue-700">In Progress: {inProgress}</div>
         <div className="rounded bg-gray-100 p-2 text-gray-700">Pending: {pending}</div>
       </div>
     </button>

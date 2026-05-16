@@ -112,7 +112,7 @@ export default function TrackingTables({
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div className="grid grid-cols-5 gap-2 bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>Period</span>
-                <span>Active days</span>
+                <span>Active nodes</span>
                 <span>Completed</span>
                 <span>Rate</span>
                 <span>Range</span>
@@ -124,7 +124,7 @@ export default function TrackingTables({
                     className="grid grid-cols-5 gap-2 px-4 py-3 text-sm text-slate-700"
                   >
                     <span className="font-medium text-slate-900">{bucket.periodStart}</span>
-                    <span>{bucket.activeDays}</span>
+                    <span>{bucket.activeNodes ?? bucket.activeDays}</span>
                     <span>{bucket.completedNodes}</span>
                     <span>{formatRate(bucket.completionRate)}</span>
                     <span className="text-xs text-slate-500">{bucket.periodStart} - {bucket.periodEnd}</span>

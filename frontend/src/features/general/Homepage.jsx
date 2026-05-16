@@ -268,28 +268,11 @@ export default function Homepage() {
       }
 
       try {
-        const items = [];
-        let page = 1;
-        let totalPages = 1;
-
-        while (page <= totalPages && page <= MAX_MANUAL_ROADMAP_FETCH_PAGES) {
-          const result = await manualRoadmapApi.listManualRoadmaps(accessToken, {
-            page,
-            limit: MANUAL_ROADMAP_FETCH_LIMIT,
-          });
-
-          const pageItems = Array.isArray(result?.items) ? result.items : [];
-          items.push(...pageItems);
-
-          const total = Number(result?.pagination?.total || items.length);
-          totalPages = Math.max(1, Math.ceil(total / MANUAL_ROADMAP_FETCH_LIMIT));
-
-          if (pageItems.length === 0) {
-            break;
-          }
-
-          page += 1;
-        }
+        const result = await manualRoadmapApi.listManualRoadmaps(accessToken, {
+          page: 1,
+          limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
+        });
+        const items = Array.isArray(result?.items) ? result.items : [];
 
         if (isMounted) {
           setMyManualRoadmaps(items);
@@ -301,31 +284,11 @@ export default function Homepage() {
         }
 
         try {
-          const normalizedUserId = String(userId || '').trim();
-          const ownRoadmaps = [];
-          let page = 1;
-          let totalPages = 1;
-
-          while (page <= totalPages && page <= MAX_MANUAL_ROADMAP_FETCH_PAGES) {
-            const fallback = await manualRoadmapApi.listPublicManualRoadmaps({
-              page,
-              limit: MANUAL_ROADMAP_FETCH_LIMIT,
-            });
-            const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
-
-            ownRoadmaps.push(
-              ...fallbackItems.filter((roadmap) => String(roadmap?.userId || '').trim() === normalizedUserId)
-            );
-
-            const total = Number(fallback?.pagination?.total || ownRoadmaps.length);
-            totalPages = Math.max(1, Math.ceil(total / MANUAL_ROADMAP_FETCH_LIMIT));
-
-            if (fallbackItems.length === 0) {
-              break;
-            }
-
-            page += 1;
-          }
+          const fallback = await manualRoadmapApi.listPublicManualRoadmaps({ page: 1, limit: 100 });
+          const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
+          const ownRoadmaps = fallbackItems
+            .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
+            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
 
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
@@ -719,7 +682,7 @@ export default function Homepage() {
         </section>
 
         {shouldShowMyRoadmapsSection ? (
-          <section id="my-roadmaps" className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
+          <section className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
             <div className="homepage-roadmap-head">
               <div>
                 <h2>Roadmap của tôi</h2>

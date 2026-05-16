@@ -94,6 +94,14 @@ async function getPublicManualRoadmapPreviewById(req, res) {
 	}
 }
 
+async function listRoadmapComments(req, res) {
+	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
+}
+
+async function createRoadmapComment(req, res) {
+	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
+}
+
 async function getManualRoadmapById(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
@@ -325,6 +333,8 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
+	listRoadmapComments,
+	createRoadmapComment,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

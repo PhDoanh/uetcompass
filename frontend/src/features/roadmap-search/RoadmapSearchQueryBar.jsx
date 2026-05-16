@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, X } from 'lucide-react';
 
 function existingNormalizedSet(tags = []) {
     return new Set(tags.map((t) => String(t?.normalizedLabel || '').trim().toLowerCase()).filter(Boolean));
@@ -27,6 +27,8 @@ export default function RoadmapSearchQueryBar({
     availableTags = [],
     inputRef: externalInputRef,
     placeholder = '',
+    sortAscending = true,
+    onToggleSort,
 }) {
     const [tagDraft, setTagDraft] = useState(null);
     const combinedRef = useRef(null);
@@ -226,127 +228,138 @@ export default function RoadmapSearchQueryBar({
     );
 
     return (
-        <div className="roadmap-search-query-bar">
-            <div className="roadmap-search-query-bar__shell">
-                <div className="roadmap-search-query-bar__row">
-                    <Search className="roadmap-search-page__query-icon" size={18} aria-hidden="true" />
-                    <div className="roadmap-search-query-bar__field-wrap">
-                        {!isSplit ? (
+    <div className="roadmap-search-query-bar">
+        <div className="roadmap-search-query-bar__shell">
+            {/* HÀNG 1: Chứa ô nhập liệu và nút Sort */}
+            <div className="roadmap-search-query-bar__row">
+                <div className="roadmap-search-query-bar__field-wrap">
+                    {!isSplit ? (
+                        <input
+                            ref={setCombinedEl}
+                            className="roadmap-search-page__input roadmap-search-page__input--full"
+                            type="text"
+                            name="roadmap-search-query"
+                            placeholder={placeholder}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            value={nameQuery}
+                            onChange={handleCombinedChange}
+                            onKeyDown={handleCombinedKeyDown}
+                            aria-expanded={false}
+                        />
+                    ) : (
+                        <div className="roadmap-search-query-bar__split" role="group" aria-label="Tìm kiếm và tag">
                             <input
-                                ref={setCombinedEl}
-                                className="roadmap-search-page__input roadmap-search-page__input--full"
+                                ref={setNameEl}
+                                className="roadmap-search-page__input roadmap-search-page__input--name-part"
                                 type="text"
-                                name="roadmap-search-query"
-                                placeholder={placeholder}
+                                name="roadmap-search-name"
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck={false}
                                 value={nameQuery}
-                                onChange={handleCombinedChange}
-                                onKeyDown={handleCombinedKeyDown}
-                                aria-expanded={false}
+                                onChange={(e) => setNameQuery(e.target.value)}
+                                aria-label="Từ khóa tên roadmap"
                             />
-                        ) : (
-                            <div className="roadmap-search-query-bar__split" role="group" aria-label="Tìm kiếm và tag">
+                            <span className="roadmap-search-query-bar__hash" aria-hidden="true">#</span>
+                            <div className="roadmap-search-query-bar__tag-zone">
                                 <input
-                                    ref={setNameEl}
-                                    className="roadmap-search-page__input roadmap-search-page__input--name-part"
+                                    ref={tagInputRef}
+                                    className="roadmap-search-query-bar__tag-input"
                                     type="text"
-                                    name="roadmap-search-name"
+                                    name="roadmap-search-tag-draft"
                                     autoComplete="off"
                                     autoCorrect="off"
                                     spellCheck={false}
-                                    value={nameQuery}
-                                    onChange={(e) => setNameQuery(e.target.value)}
-                                    aria-label="Từ khóa tên roadmap"
+                                    value={tagDraft}
+                                    onChange={(e) => setTagDraft(e.target.value)}
+                                    onKeyDown={handleTagKeyDown}
+                                    placeholder="tag…"
+                                    aria-label="Nhập tag sau dấu #"
+                                    aria-controls={showSuggestions ? 'roadmap-search-tag-suggestions' : undefined}
+                                    aria-expanded={showSuggestions}
                                 />
-                                <span className="roadmap-search-query-bar__hash" aria-hidden="true">
-                                    #
-                                </span>
-                                <div className="roadmap-search-query-bar__tag-zone">
-                                    <input
-                                        ref={tagInputRef}
-                                        className="roadmap-search-query-bar__tag-input"
-                                        type="text"
-                                        name="roadmap-search-tag-draft"
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        spellCheck={false}
-                                        value={tagDraft}
-                                        onChange={(e) => setTagDraft(e.target.value)}
-                                        onKeyDown={handleTagKeyDown}
-                                        placeholder="tag…"
-                                        aria-label="Nhập tag sau dấu #"
-                                        aria-controls={showSuggestions ? 'roadmap-search-tag-suggestions' : undefined}
-                                        aria-expanded={showSuggestions}
-                                    />
-                                </div>
                             </div>
-                        )}
-                        {showSuggestions ? (
-                            <div
-                                ref={suggestionsRef}
-                                id="roadmap-search-tag-suggestions"
-                                className="roadmap-search-query-bar__suggestions"
-                                role="listbox"
-                                aria-label="Gợi ý tag"
-                            >
-                                {filteredSuggestions.map((tag, idx) => (
-                                    <button
-                                        key={tag.normalizedLabel}
-                                        type="button"
-                                        role="option"
-                                        aria-selected={idx === suggestionHighlightIndex}
-                                        className={`roadmap-search-query-bar__suggestion${idx === suggestionHighlightIndex ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
-                                        onMouseDown={(e) => e.preventDefault()}
-                                        onMouseEnter={() => setSuggestionHighlightIndex(idx)}
-                                        onClick={() => commitTag(tag.label)}
-                                    >
-                                        {tag.label}
-                                    </button>
-                                ))}
-                                {String(tagDraft || '').trim().length > 0 &&
-                                !filteredSuggestions.some(
-                                    (t) => t.label.toLowerCase() === String(tagDraft).trim().toLowerCase()
-                                ) ? (
-                                    <button
-                                        type="button"
-                                        role="option"
-                                        aria-selected={
-                                            suggestionHighlightIndex === filteredSuggestions.length
-                                        }
-                                        className={`roadmap-search-query-bar__suggestion roadmap-search-query-bar__suggestion--free${suggestionHighlightIndex === filteredSuggestions.length ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
-                                        onMouseDown={(e) => e.preventDefault()}
-                                        onMouseEnter={() =>
-                                            setSuggestionHighlightIndex(filteredSuggestions.length)
-                                        }
-                                        onClick={() => commitTag(tagDraft)}
-                                    >
-                                        Thêm “{String(tagDraft).trim()}”
-                                    </button>
-                                ) : null}
-                            </div>
-                        ) : null}
-                    </div>
+                        </div>
+                    )}
+
+                    {/* Gợi ý từ danh mục popup giữ nguyên vị trí cũ */}
+                    {showSuggestions ? (
+                        <div
+                            ref={suggestionsRef}
+                            id="roadmap-search-tag-suggestions"
+                            className="roadmap-search-query-bar__suggestions"
+                            role="listbox"
+                            aria-label="Gợi ý tag"
+                        >
+                            {filteredSuggestions.map((tag, idx) => (
+                                <button
+                                    key={tag.normalizedLabel}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={idx === suggestionHighlightIndex}
+                                    className={`roadmap-search-query-bar__suggestion${idx === suggestionHighlightIndex ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onMouseEnter={() => setSuggestionHighlightIndex(idx)}
+                                    onClick={() => commitTag(tag.label)}
+                                >
+                                    {tag.label}
+                                </button>
+                            ))}
+                            {String(tagDraft || '').trim().length > 0 &&
+                            !filteredSuggestions.some(
+                                (t) => t.label.toLowerCase() === String(tagDraft).trim().toLowerCase()
+                            ) ? (
+                                <button
+                                    type="button"
+                                    role="option"
+                                    aria-selected={suggestionHighlightIndex === filteredSuggestions.length}
+                                    className={`roadmap-search-query-bar__suggestion roadmap-search-query-bar__suggestion--free${suggestionHighlightIndex === filteredSuggestions.length ? ' roadmap-search-query-bar__suggestion--keyboard-active' : ''}`}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onMouseEnter={() => setSuggestionHighlightIndex(filteredSuggestions.length)}
+                                    onClick={() => commitTag(tagDraft)}
+                                >
+                                    Thêm “{String(tagDraft).trim()}”
+                                </button>
+                            ) : null}
+                        </div>
+                    ) : null}
                 </div>
+
+                {/* Nút sort */}
+                {typeof onToggleSort === 'function' ? (
+                    <button
+                        type="button"
+                        className="roadmap-search-query-bar__sort"
+                        onClick={onToggleSort}
+                        aria-label={sortAscending ? 'Sắp xếp Z–A' : 'Sắp xếp A–Z'}
+                        title={sortAscending ? 'Sắp xếp Z–A' : 'Sắp xếp A–Z'}
+                    >
+                        {sortAscending ? <ArrowDownAZ size={18} aria-hidden="true" /> : <ArrowUpAZ size={18} aria-hidden="true" />}
+                    </button>
+                ) : null}
             </div>
+
+            {/* HÀNG 2: Đã di dời xuống ĐÂY. Hiển thị danh sách các tag đã chọn ngay phía dưới */}
             {selectedTags.length > 0 ? (
-                <div className="roadmap-search-query-bar__chips" aria-label="Tag đang lọc">
+                <div className="roadmap-search-query-bar__inline-tags" aria-label="Tag đang tìm">
                     {selectedTags.map((tag) => (
-                        <span key={tag.normalizedLabel} className="roadmap-search-query-bar__chip">
-                            <span className="roadmap-search-query-bar__chip-label">{tag.label}</span>
+                        <span key={tag.normalizedLabel} className="roadmap-search-query-bar__inline-tag">
+                            <span className="roadmap-search-query-bar__inline-tag-label">#{tag.label}</span>
                             <button
                                 type="button"
-                                className="roadmap-search-query-bar__chip-remove"
+                                className="roadmap-search-query-bar__inline-tag-remove"
                                 aria-label={`Xóa tag ${tag.label}`}
                                 onClick={() => removeTag(tag.normalizedLabel)}
                             >
-                                <X size={14} aria-hidden="true" />
+                                <X size={12} aria-hidden="true" />
                             </button>
                         </span>
                     ))}
                 </div>
             ) : null}
         </div>
-    );
+    </div>
+);
 }

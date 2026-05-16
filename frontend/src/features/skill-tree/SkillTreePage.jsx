@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as skillTreeApi from '../../services/skillTree.api';
 import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
 import CourseDetailPanel from './CourseDetailPanel';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
+import { useSplitLayout } from './useSplitLayout';
+import SkillTreeDetailPanel, { calculateProgress, buildFixedMilestones, SkillTreeOverviewTab, SkillTreeNodeDetailTab } from './SkillTreeDetailPanel';
+import MilestoneCelebrationModal from './MilestoneCelebrationModal';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import './skill-tree.css';
 
 const ZOOM_MIN = 0.6;
@@ -470,50 +475,32 @@ export default function SkillTreePage() {
             >
               ⤢
             </button>
+            <button
+              type="button"
+              className="skill-tree-canvas-controls__btn"
+              onClick={handleLocateCurrent}
+              aria-label="Locate me"
+              title="Locate to current learning position"
+              disabled={!hasNodes}
+            >
+              Locate me
+            </button>
           </div>
         </main>
 
-        <div className="skill-tree-canvas-controls">
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleZoomIn}
-            aria-label="Zoom in"
-            title="Zoom in"
-            disabled={!hasNodes}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleZoomOut}
-            aria-label="Zoom out"
-            title="Zoom out"
-            disabled={!hasNodes}
-          >
-            -
-          </button>
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleFitView}
-            aria-label="Fit to view"
-            title="Fit to view"
-            disabled={!hasNodes}
-          >
-            ⤢
-          </button>
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleLocateCurrent}
-            aria-label="Locate me"
-            title="Locate to current learning position"
-            disabled={!hasNodes}
-          >
-            Locate me
-          </button>
+        <div
+          className="skill-tree-layout__divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize skill tree canvas and detail panel"
+          aria-valuemin={Math.round(minRatio * 100)}
+          aria-valuemax={Math.round(maxRatio * 100)}
+          aria-valuenow={Math.round(ratio * 100)}
+          tabIndex={0}
+          onPointerDown={handleResizePointerDown}
+          onKeyDown={handleResizeKeyDown}
+        >
+          <ManualRoadmapDividerHandle />
         </div>
 
         <SkillTreeDetailPanel

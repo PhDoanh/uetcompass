@@ -4,9 +4,18 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
+import { useSplitLayout } from './useSplitLayout';
+import SkillTreeDetailPanel, {
+  calculateProgress,
+  buildFixedMilestones,
+  SkillTreeOverviewTab,
+  SkillTreeNodeDetailTab,
+} from './SkillTreeDetailPanel';
+import ReviewTab from './ReviewTab';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
 const YAML_MAX_LENGTH = 10 * 1024;
@@ -23,12 +32,14 @@ function normalizeNodeState(state) {
 }
 
 function normalizePreviewNodes(nodes = []) {
+  const seenIds = new Set();
   const mappedNodes = nodes
     .map((node) => {
       const nodeId = String(node?.nodeId || node?.id || '').trim();
-      if (!nodeId) {
+      if (!nodeId || seenIds.has(nodeId)) {
         return null;
       }
+      seenIds.add(nodeId);
 
       const metadata = typeof node?.metadata === 'object' && node?.metadata !== null ? node.metadata : {};
       const parentNodeId = String(

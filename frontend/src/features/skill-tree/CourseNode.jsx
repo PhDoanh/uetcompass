@@ -23,7 +23,7 @@ export default function CourseNode({ node, onSelect = () => {}, onContextMenu = 
 
   return (
     <button
-      onClick={onSelect}
+      onClick={(event) => { if (event.button === 0) onSelect(); }}
       onContextMenu={(event) => onContextMenu(event, node)}
       className={`course-node roadmap-node ${isSubtopic ? 'roadmap-node-sub' : 'roadmap-node-main'} ${getStatusVariant()}`}
     >

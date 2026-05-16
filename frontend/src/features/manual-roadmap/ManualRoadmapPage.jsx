@@ -544,7 +544,6 @@ export default function ManualRoadmapPage() {
 
       const next = transform(parsed);
       const nextYaml = dump(next, { noRefs: true, lineWidth: 120, sortKeys: false });
-      setYamlCode(nextYaml);
       setApiError('');
     } catch (err) {
       setApiError(err.message || 'Không thể cập nhật học liệu trong YAML.');
@@ -699,6 +698,7 @@ export default function ManualRoadmapPage() {
         className="skill-tree-layout manual-roadmap-layout"
         ref={layoutRef}
       >
+        {/* PHẦN CANVAS PREVIEW FULL BÊN TRÁI */}
         <main
           className="skill-tree-layout__canvas manual-roadmap-layout__canvas"
           aria-label="Manual roadmap preview"
@@ -710,17 +710,10 @@ export default function ManualRoadmapPage() {
             : undefined
           }
         >
-          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
-            <h2 className="skill-tree-summary-card__title">{title || 'Manual roadmap draft'}</h2>
-            <p className="skill-tree-summary-card__meta">{description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}</p>
-            <div className={`manual-roadmap-summary-card__status ${validationError ? 'manual-roadmap-summary-card__status--error' : 'manual-roadmap-summary-card__status--info'}`} role="status" aria-live="polite">
-              {renderStatusMessage}
-            </div>
-          </section>
-
           <div
             className="manual-roadmap-preview-stage"
             ref={previewStageRef}
+            style={{ height: '100%', width: '100%' }}
           >
             <RoadmapGraphRenderer
               nodes={displayNodes}
@@ -747,6 +740,7 @@ export default function ManualRoadmapPage() {
           <ManualRoadmapDividerHandle />
         </div>
 
+        {/* PHẦN PANEL ĐIỀU KHIỂN BÊN PHẢI */}
         <aside
           className="skill-tree-panel manual-roadmap-panel"
           aria-label="Manual roadmap editor"
@@ -787,6 +781,32 @@ export default function ManualRoadmapPage() {
           </div>
 
           <div className="skill-tree-panel__content manual-roadmap-panel__content">
+            {/* ĐÃ CHUYỂN CARD THÔNG TIN VÀO ĐÂY (NẰM TRÊN CÙNG CỦA PANEL NỘI DUNG BÊN PHẢI) */}
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Thông tin tổng quan</h4>
+              <div
+                className="skill-tree-summary-card"
+                aria-label="Roadmap summary"
+                style={{
+                  position: 'static',      /* Xóa bỏ định vị float/absolute cũ nếu có */
+                  width: '100%',           /* Kéo giãn độ rộng bằng với thẻ cha */
+                  maxWidth: '100%',        /* Ghi đè max-width cũ giới hạn trên canvas */
+                  margin: 0,               /* Gỡ bỏ margin thừa gây lệch hàng */
+                  boxSizing: 'border-box'
+                }}
+              >
+                <h2 className="skill-tree-summary-card__title" style={{ fontSize: '1.1rem' }}>
+                  {title || 'Manual roadmap draft'}
+                </h2>
+                <p className="skill-tree-summary-card__meta">
+                  {description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}
+                </p>
+                <div className={`manual-roadmap-summary-card__status ${validationError ? 'manual-roadmap-summary-card__status--error' : 'manual-roadmap-summary-card__status--info'}`} role="status" aria-live="polite">
+                  {renderStatusMessage}
+                </div>
+              </div>
+            </section>
+
             <section className="resources-tab__section manual-roadmap-section">
               <h4 className="resources-tab__heading">Chọn mẫu roadmap</h4>
               <div className="manual-roadmap-form__grid">
@@ -861,7 +881,7 @@ export default function ManualRoadmapPage() {
                         {node.label || node.nodeId}
                       </option>
                     ))}
-                  </select>
+                  </  select>
                 </div>
 
                 <div className="manual-roadmap-form__grid">

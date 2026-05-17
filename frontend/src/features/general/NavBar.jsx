@@ -96,6 +96,7 @@ export default function NavBar() {
   const [avatarFallback, setAvatarFallback] = useState('U');
   const [theme, setTheme] = useState(resolveInitialTheme);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [isRoadmapSearchOpen, setIsRoadmapSearchOpen] = useState(false);
   const avatarRef = useRef(null);
   const notificationRef = useRef(null);
   const { isAuthenticated, accessToken, onboardingState } = useAuth();
@@ -131,6 +132,23 @@ export default function NavBar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleOpen = () => setIsRoadmapSearchOpen(true);
+    const handleClose = () => setIsRoadmapSearchOpen(false);
+
+    window.addEventListener('roadmap-search-overlay-open', handleOpen);
+    window.addEventListener('roadmap-search-overlay-close', handleClose);
+
+    return () => {
+      window.removeEventListener('roadmap-search-overlay-open', handleOpen);
+      window.removeEventListener('roadmap-search-overlay-close', handleClose);
+    };
+  }, []);
+
   const goHome = () => {
     navigateTo('/');
   };
@@ -148,6 +166,7 @@ export default function NavBar() {
       const canOpen = getRoadmapSearchTarget(window.location.pathname);
       if (canOpen) {
         dispatchOpenRoadmapSearchOverlay();
+        setIsRoadmapSearchOpen(true);
       }
     }
   };
@@ -233,7 +252,7 @@ export default function NavBar() {
           setAvatarUrl(next.avatarUrl);
           setAvatarFallback(next.avatarFallback);
         }
-      } catch (_) {
+      } catch {
         if (isMounted) {
           setAvatarUrl('');
           setAvatarFallback('U');
@@ -298,7 +317,7 @@ export default function NavBar() {
     <nav className="navbar">
       <div className="navbar__left">
         <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
-          <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
+          <img src="/images/ueticon.png" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
           UETCompass
         </button>
         <div className="navbar__links" aria-label="Điều hướng chính">
@@ -315,15 +334,21 @@ export default function NavBar() {
         </div>
       </div>
       <div className="navbar__right">
-        <button
-          type="button"
-          className="navbar__icon-btn navbar__search-trigger"
-          aria-label="Tìm kiếm roadmap"
-          title="Tìm kiếm roadmap"
-          onClick={goRoadmapSearch}
-        >
-          <Search size={18} aria-hidden="true" />
-        </button>
+        <div className="navbar__search" role="search">
+          <Search size={16} aria-hidden="true" className="navbar__search-icon" />
+          <input
+            className="navbar__input"
+            type="search"
+            placeholder="Tìm lộ trình"
+            readOnly
+            aria-label="Tìm kiếm lộ trình"
+            aria-haspopup="dialog"
+            aria-controls="roadmap-search-overlay"
+            aria-expanded={isRoadmapSearchOpen}
+            onClick={goRoadmapSearch}
+            onFocus={goRoadmapSearch}
+          />
+        </div>
         <div className="navbar__actions">
           <div className="navbar__notification" ref={notificationRef}>
             <button

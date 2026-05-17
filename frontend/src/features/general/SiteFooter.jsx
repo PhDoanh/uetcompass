@@ -23,7 +23,7 @@ export default function SiteFooter() {
         <div className="homepage-footer__left">
           <div className="homepage-footer__brand-row">
             <span className="homepage-footer__logo" aria-hidden="true">
-              <img src="/favicon-compass.svg" alt="" className="homepage-footer__logo-icon" />
+              <img src="/favicon-compass.svg" alt="UETCompass Favicon" className="homepage-footer__logo-icon" />
             </span>
             <h4>UETCompass</h4>
           </div>
@@ -56,12 +56,12 @@ export default function SiteFooter() {
               <p className="homepage-footer__school-name">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ</p>
               <p className="homepage-footer__school-en">UNIVERSITY OF ENGINEERING AND TECHNOLOGY</p>
             </div>
-            <span className="homepage-footer__ico-badge">ICO</span>
+            <img src="/images/ueticon.png" alt="ICO" className="homepage-footer__ico-badge" />
           </div>
           <p className="homepage-footer__school-desc">
             Kết nối tri thức, mở đường tương lai và hỗ trợ sinh viên UET trên mọi chặng đường.
           </p>
-          <button type="button" className="homepage-footer__cookie">
+          {/* <button type="button" className="homepage-footer__cookie">
             <span className="homepage-footer__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" role="img">
                 <path
@@ -71,7 +71,7 @@ export default function SiteFooter() {
               </svg>
             </span>
             Thiết lập Cookie
-          </button>
+          </button> */}
         </div>
       </div>
       <hr className="homepage-footer__rule" />

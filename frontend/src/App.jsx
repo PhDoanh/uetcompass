@@ -191,6 +191,16 @@ function AppContent() {
 	}, [pathname]);
 
 	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.dispatchEvent(
+			new CustomEvent(isRoadmapSearchOverlayOpen ? 'roadmap-search-overlay-open' : 'roadmap-search-overlay-close')
+		);
+	}, [isRoadmapSearchOverlayOpen]);
+
+	useEffect(() => {
 		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
 			return undefined;
 		}
@@ -381,6 +391,7 @@ function AppContent() {
 				{isRoadmapSearchOverlayOpen ? (
 					<div
 						className="roadmap-search-overlay"
+						id="roadmap-search-overlay"
 						role="dialog"
 						aria-modal="true"
 						aria-label="Roadmap search overlay"

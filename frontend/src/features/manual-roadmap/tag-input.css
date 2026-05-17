@@ -1,5 +1,18 @@
 /* Tag Input Component Styles */
 
+:root {
+    --color-border: var(--border-1);
+    --color-border-hover: var(--border-2);
+    --color-background: var(--surface-1);
+    --color-text: var(--text-1);
+    --color-text-secondary: var(--text-3);
+    --color-text-placeholder: var(--text-3);
+    --color-primary: var(--color-primary);
+    --color-tag-bg: var(--surface-3);
+    --color-tag-border: var(--border-2);
+    --color-tag-text: var(--text-1);
+    --color-hover-bg: var(--surface-2);
+}
 .tag-input-container {
     position: relative;
     width: 100%;

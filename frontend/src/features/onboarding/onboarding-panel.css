@@ -1,11 +1,11 @@
 .onboarding-panel-shell {
-  border: 1px solid rgba(194, 198, 211, 0.35);
+  border: 1px solid var(--border-1);
   border-radius: 16px;
   padding: 0;
   margin-bottom: 0;
-  background: #ffffff;
-  color: #111c2a;
-  box-shadow: 0 48px 80px -12px rgba(0, 62, 121, 0.15);
+  background: var(--surface-1);
+    color: var(--text-1);
+    box-shadow: var(--shadow-xl);
   width: min(1120px, 96vw);
   max-height: 86vh;
   overflow-y: auto;
@@ -27,9 +27,9 @@
 
 .onboarding-panel-aside {
   position: relative;
-  background: #eff4ff;
+  background: var(--surface-2);
   padding: 1.7rem 1.25rem;
-  border-right: 1px solid rgba(194, 198, 211, 0.32);
+  border-right: 1px solid var(--border-1);
 }
 
 .onboarding-panel-brand-row {
@@ -42,7 +42,7 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #003e79 0%, #0055a2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -50,23 +50,21 @@
 }
 
 .onboarding-panel-brand-name {
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
   font-size: 1.05rem;
   font-weight: 800;
-  color: #003e79;
+  color: var(--text-1);
 }
 
 .onboarding-panel-aside-title {
   margin: 1rem 0 0;
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
   font-size: clamp(1.45rem, 4vw, 2rem);
   line-height: 1.2;
-  color: #003e79;
+  color: var(--text-1);
 }
 
 .onboarding-panel-aside-description {
   margin: 0.9rem 0 0;
-  color: #424751;
+  color: var(--text-3);
   line-height: 1.6;
 }
 
@@ -88,8 +86,8 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #d8e3f6;
-  color: #003e79;
+  background: var(--surface-3);
+    color: var(--color-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -103,25 +101,24 @@
 
 .onboarding-panel-benefits p {
   margin: 0.12rem 0 0;
-  color: #424751;
+  color: var(--text-3);
   font-size: 0.82rem;
 }
 
 .onboarding-panel-form-wrap {
   padding: 1.5rem 1.2rem;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .onboarding-panel-form-head h3 {
   margin: 0;
   font-size: 1.2rem;
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
-  color: #111c2a;
+  color: var(--text-1);
 }
 
 .onboarding-panel-form-head p {
   margin: 0.35rem 0 0;
-  color: #424751;
+  color: var(--text-3);
 }
 
 .onboarding-modern-form-grid {
@@ -144,7 +141,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #727782;
+  color: var(--text-3);
   font-weight: 700;
 }
 
@@ -154,8 +151,8 @@
   min-height: 48px;
   border: 0;
   border-radius: 12px;
-  background: #eff4ff;
-  color: #111c2a;
+  background: var(--surface-2);
+    color: var(--text-1);
   padding: 0.75rem 0.95rem;
   box-sizing: border-box;
   font-size: 0.95rem;
@@ -169,8 +166,8 @@
   -moz-appearance: none;
   padding-right: 2.2rem;
   background-image:
-    linear-gradient(45deg, transparent 50%, #727782 50%),
-    linear-gradient(135deg, #727782 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, var(--text-3) 50%),
+      linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
   background-position:
     calc(100% - 18px) calc(50% - 2px),
     calc(100% - 12px) calc(50% - 2px);
@@ -181,7 +178,7 @@
 .onboarding-modern-field select:focus,
 .onboarding-modern-field input[type='month']:focus,
 .onboarding-modern-course-search input:focus {
-  box-shadow: 0 0 0 2px rgba(0, 62, 121, 0.22);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .onboarding-modern-field-head {
@@ -194,7 +191,7 @@
 .onboarding-modern-field-head button {
   border: 0;
   background: transparent;
-  color: #0055a2;
+  color: var(--color-primary);
   font-size: 0.72rem;
   font-weight: 700;
   text-decoration: underline;
@@ -203,7 +200,7 @@
 
 .onboarding-modern-course-box {
   border-radius: 12px;
-  background: #eff4ff;
+  background: var(--surface-2);
   padding: 0.5rem;
 }
 
@@ -211,8 +208,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #727782;
-  border-bottom: 1px solid rgba(194, 198, 211, 0.45);
+  color: var(--text-3);
+    border-bottom: 1px solid var(--border-1);
   padding: 0.45rem 0.4rem 0.5rem;
 }
 
@@ -245,13 +242,13 @@
 }
 
 .onboarding-modern-course-item:hover {
-  background: #dee9fc;
+  background: var(--surface-3);
 }
 
 .onboarding-modern-course-item input[type='checkbox'] {
   width: 15px;
   height: 15px;
-  accent-color: #003e79;
+  accent-color: var(--color-primary);
 }
 
 .onboarding-modern-course-item span {
@@ -261,7 +258,7 @@
 .onboarding-modern-link {
   display: inline-block;
   margin-top: 0.5rem;
-  color: #0055a2;
+  color: var(--color-primary);
   font-size: 0.76rem;
   font-weight: 700;
   text-decoration: none;
@@ -274,10 +271,10 @@
   padding: 24px 12px;
   display: flex;
   justify-content: center;
-  background-color: var(--bg-dark);
+  background-color: var(--surface-0);
   background-image:
-    linear-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--text-3) 40%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--text-3) 40%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -285,7 +282,7 @@
   width: min(920px, 100%);
   min-height: calc(100vh - 140px);
   padding: 6px 2px;
-  color: #f1f5f9;
+  color: var(--text-1);
 }
 
 .learning-profile-content .profile-grid {
@@ -301,7 +298,7 @@
 }
 
 .learning-profile-success {
-  color: #7dd3fc;
+  color: var(--color-secondary);
   margin-top: 6px;
 }
 
@@ -312,17 +309,17 @@
 .onboarding-label {
   display: block;
   margin-bottom: 8px;
-  color: #e2e8f0;
+  color: var(--text-1);
   font-size: 1.05rem;
   font-weight: 700;
 }
 
 .onboarding-label-required {
-  color: #f43f5e;
+  color: var(--state-danger-text);
 }
 
 .onboarding-label-optional {
-  color: #94a3b8;
+  color: var(--text-3);
   font-weight: 500;
 }
 
@@ -331,22 +328,22 @@
   min-height: 48px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #334155;
-  background: #1e293b;
-  color: #f8fafc;
+  border: 1px solid var(--border-1);
+    background: var(--surface-2);
+    color: var(--text-1);
   box-sizing: border-box;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .onboarding-input::placeholder {
-  color: #94a3b8;
+  color: var(--text-3);
 }
 
 .onboarding-input:focus {
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+  border-color: var(--color-secondary);
+    box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .onboarding-select {
@@ -355,8 +352,8 @@
   -moz-appearance: none;
   padding-right: 42px;
   background-image:
-    linear-gradient(45deg, transparent 50%, #38bdf8 50%),
-    linear-gradient(135deg, #38bdf8 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, var(--color-secondary) 50%),
+      linear-gradient(135deg, var(--color-secondary) 50%, transparent 50%);
   background-position:
     calc(100% - 20px) calc(50% - 3px),
     calc(100% - 14px) calc(50% - 3px);
@@ -372,28 +369,28 @@
 }
 
 .onboarding-error-text {
-  color: #fca5a5;
+  color: var(--state-danger-strong);
 }
 
 .onboarding-counter-text {
-  color: #94a3b8;
+  color: var(--text-3);
 }
 
 .onboarding-panel-title {
   margin-top: 0;
   margin-bottom: 8px;
-  color: #38bdf8;
+  color: var(--color-secondary);
   font-size: 1.4rem;
 }
 
 .onboarding-panel-description {
   margin-top: 0;
   margin-bottom: 16px;
-  color: #94a3b8;
+  color: var(--text-3);
 }
 
 .onboarding-panel-note {
-  color: #55627a;
+  color: var(--text-3);
   margin-bottom: 8px;
   font-size: 0.86rem;
 }
@@ -769,7 +766,6 @@
 
 .learning-profile-header h1 {
   margin: 0.15rem 0 0;
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
   font-size: clamp(1.75rem, 3vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -801,7 +797,6 @@
 .learning-section__head h2 {
   margin: 0;
   color: #111c2a;
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
   font-size: 1.3rem;
 }
 
@@ -1006,7 +1001,6 @@
   margin: 0.15rem 0 0;
   font-size: clamp(1.6rem, 4vw, 2.1rem);
   line-height: 1.05;
-  font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
   font-weight: 800;
 }
 

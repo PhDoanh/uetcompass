@@ -5,7 +5,7 @@
     width: 100%;
     height: 100%;
     min-height: 420px;
-    background: #f9fafb;
+    background: var(--surface-1);
 }
 
 .roadmap-graph-renderer__viewport {
@@ -24,7 +24,7 @@
     width: 100%;
     height: 100%;
     min-height: 420px;
-    background: #f8fbff;
+    background: var(--surface-2);
 }
 
 .roadmap-graph-renderer__fallback-note {
@@ -33,10 +33,10 @@
     top: 12px;
     right: 12px;
     z-index: 2;
-    border: 1px solid #93c5fd;
+    border: 1px solid var(--color-secondary);
     border-radius: 8px;
-    background: #e0f2fe;
-    color: #075985;
+    background: var(--surface-3);
+        color: var(--text-1);
     padding: 8px 10px;
     font-size: 12px;
 }
@@ -54,9 +54,9 @@
 }
 
 .roadmap-graph-renderer__control-btn {
-    border: 1px solid #93c5fd;
-    background: #ffffff;
-    color: #0f172a;
+    border: 1px solid var(--border-1);
+        background: var(--surface-1);
+        color: var(--text-1);
     border-radius: 8px;
     min-width: 36px;
     height: 32px;
@@ -67,13 +67,13 @@
 }
 
 .roadmap-graph-renderer__control-btn:hover {
-    background: #eff6ff;
+    background: var(--surface-2);
 }
 
 .roadmap-graph-renderer__control-btn.is-active {
-    background: #dbeafe;
-    border-color: #3b82f6;
-    color: #1e3a8a;
+    background: var(--surface-3);
+        border-color: var(--color-primary);
+        color: var(--text-1);
 }
 
 .roadmap-graph-renderer__fallback-canvas {

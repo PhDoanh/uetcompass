@@ -19,6 +19,7 @@ export default function MenuBar({ onClose }) {
   return (
     <div className="menubar">
       <button className="menubar__item" onClick={() => navigateToPath('/learning-profile')}>Trang cá nhân</button>
+      <button className="menubar__item" onClick={() => navigateToPath('/progress')}>Tiến độ học tập</button>
       <button className="menubar__item" onClick={() => navigateToPath('/manual-roadmap')}>Lộ trình mới</button>
       <button className="menubar__item" onClick={() => navigateToPath('/settings')}>Cài đặt</button>
       <div className="menubar__divider" />

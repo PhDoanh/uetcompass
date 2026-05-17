@@ -8,14 +8,15 @@ import { useNotification } from '../notification/NotificationContainer';
 import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
 import { useSplitLayout } from './useSplitLayout';
+import ReviewTab from './ReviewTab';
+import MilestoneCelebrationModal from './MilestoneCelebrationModal';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import SkillTreeDetailPanel, {
-  calculateProgress,
-  buildFixedMilestones,
   SkillTreeOverviewTab,
   SkillTreeNodeDetailTab,
+  calculateProgress,
+  buildFixedMilestones,
 } from './SkillTreeDetailPanel';
-import ReviewTab from './ReviewTab';
-import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
 const YAML_MAX_LENGTH = 10 * 1024;
@@ -98,6 +99,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [activeNodeId, setActiveNodeId] = useState('');
   const [nodeStates, setNodeStates] = useState({});
   const [activeTab, setActiveTab] = useState('overview');
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -122,6 +124,16 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
 
     setActiveTab('overview');
   }, [activeNode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const focus = params.get('focus') || '';
+    setFocusNodeId(focus);
+  }, []);
 
   const {
     layoutRef,
@@ -177,8 +189,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           title={previewData?.title || 'Roadmap'}
           description={previewData?.description || 'Chưa có mô tả.'}
           metaItems={overviewMetaItems}
-          progress={progressSummary}
-          milestones={milestones}
           progressVariant="fixed"
           actions={overviewActions}
         />
@@ -317,6 +327,17 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     setNodeStates(initialStates);
     setActiveNodeId('');
   }, [normalizedNodes]);
+
+  useEffect(() => {
+    if (!focusNodeId || normalizedNodes.length === 0) {
+      return;
+    }
+
+    const targetExists = normalizedNodes.some((node) => node.nodeId === focusNodeId);
+    if (targetExists) {
+      setActiveNodeId(focusNodeId);
+    }
+  }, [focusNodeId, normalizedNodes]);
 
   useEffect(() => {
     if (normalizedNodes.length === 0) {

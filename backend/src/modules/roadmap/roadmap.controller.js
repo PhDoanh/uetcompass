@@ -333,8 +333,6 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
-	listRoadmapComments,
-	createRoadmapComment,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

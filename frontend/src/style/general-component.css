@@ -178,6 +178,7 @@ html[data-theme='dark'] .navbar__input {
 html[data-theme='dark'] .navbar__input::placeholder {
   color: #86a2c9;
 }
+
 .navbar__links {
   display: flex;
   align-items: center;

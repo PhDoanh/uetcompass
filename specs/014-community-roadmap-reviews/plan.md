@@ -1,93 +1,104 @@
-# Implementation Plan: Community Roadmap Review & Rating System
+# Implementation Plan: [FEATURE]
 
-**Branch**: `014-community-roadmap-reviews` | **Date**: 2026-04-28 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/014-community-roadmap-reviews/spec.md`
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
-Add a standalone review module that lets authenticated UET students upsert one review per roadmap, runs synchronous blacklist rejection plus async moderation with Perspective API and Gemini fallback, and keeps public roadmap ratings fresh through SSE broadcasts. The same review data powers the authenticated review tab in the Skill Tree detail panel and the guest-only homepage review carousel, with pagination for the review list and CSS-only motion for the carousel.
+[Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
 
-**Language/Version**: Node.js 22.x backend, React 18 frontend  
-**Primary Dependencies**: Express, Mongoose, nodemailer, `@google/generative-ai`, MongoDB, Vite, Axios, Jest  
-**Storage**: MongoDB Atlas; new `Review` collection plus `averageRating` on `Roadmap` and `ManualRoadmap` documents  
-**Testing**: Jest backend unit tests with external moderation APIs mocked; frontend smoke/manual validation for the new review surfaces  
-**Target Platform**: Render backend, Vercel frontend, MongoDB Atlas  
-**Project Type**: Web application with a modular monolith backend and React SPA frontend  
-**Performance Goals**: Approved-review rating updates broadcast within 3 seconds; homepage carousel first paint for 20 reviews within 200 ms on mobile; review list page size defaults to 10  
-**Constraints**: No new frontend libraries; no queue service; no direct cross-module model imports; reduced-motion must disable carousel auto-scroll; UET-only scope  
-**Scale/Scope**: Typical UET roadmap traffic, one active review per student per roadmap, top-20 guest carousel, paginated review browsing
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
+
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-| Principle | Status | Notes |
-|---|---|---|
-| I. Modular Monolithic | ✅ PASS | Review logic stays in `backend/src/modules/review/` and talks to roadmap through service calls only. |
-| II. UET-First Scope | ✅ PASS | The feature is scoped to UET students, UET roadmaps, and `@vnu.edu.vn` notification email. |
-| III. Privacy by Minimalism | ✅ PASS | Only review content, author identity, status, and timestamps are stored; no extra personal data is introduced. |
-| IV. AI-Assisted, Human-Controlled | ✅ PASS | Gemini is only a moderation fallback, not a decision-maker for business logic. |
-| V. Test What Matters | ✅ PASS | The plan requires backend unit tests for moderation, rating recalculation, and SSE payloads with external APIs mocked. |
+[Gates determined based on constitution file]
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/014-community-roadmap-reviews/
-├── plan.md
-├── research.md
-├── data-model.md
-├── quickstart.md
-├── contracts/
-│   └── rest-api.md
-└── tasks.md
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
-│   ├── modules/
-│   │   ├── roadmap/
-│   │   │   ├── roadmap.model.js
-│   │   │   ├── manualRoadmap.model.js
-│   │   │   ├── roadmap.service.js
-│   │   │   ├── roadmap.sse.js
-│   │   │   └── roadmap.gemini.service.js
-│   │   ├── notifications/
-│   │   │   ├── notification.service.js
-│   │   │   └── notification.sse.js
-│   │   └── review/
-│   │       ├── review.model.js
-│   │       ├── review.service.js
-│   │       ├── review.controller.js
-│   │       ├── review.routes.js
-│   │       ├── review.moderation.service.js
-│   │       └── review.sse.js
-│   └── app.js
+│   ├── models/
+│   ├── services/
+│   └── api/
 └── tests/
-    └── unit/
-        └── review/
 
 frontend/
 ├── src/
-│   ├── features/
-│   │   ├── skill-tree/
-│   │   │   ├── CourseDetailPanel.jsx
-│   │   │   ├── PublicRoadmapNodePanel.jsx
-│   │   │   └── ReviewTab.jsx
-│   │   └── general/
-│   │       ├── Homepage.jsx
-│   │       └── ReviewCarousel.jsx
+│   ├── components/
+│   ├── pages/
 │   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Web application. The backend gets a new `review` module under `backend/src/modules/` following the existing module boundary pattern, and the frontend reuses the current skill-tree detail panel and homepage surfaces without new routes.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 
-> No constitution violations require justification.
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

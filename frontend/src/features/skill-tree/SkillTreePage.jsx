@@ -29,6 +29,7 @@ export default function SkillTreePage() {
   const previousPercentRef = useRef(0);
   const celebrationInitializedRef = useRef(false);
   const celebrationTimerRef = useRef(null);
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const {
     nodes,
@@ -227,6 +228,16 @@ export default function SkillTreePage() {
     };
   }, [celebration]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const focus = params.get('focus') || '';
+    setFocusNodeId(focus);
+  }, []);
+
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => clampZoom(prev + ZOOM_STEP));
   }, []);
@@ -369,6 +380,27 @@ export default function SkillTreePage() {
       handleFitView();
     }
   }, [hasNodes, nodes.length, handleFitView]);
+
+  useEffect(() => {
+    if (!focusNodeId || !hasNodes) {
+      return;
+    }
+
+    const viewportEl = canvasViewportRef.current;
+    const contentEl = zoomContentRef.current;
+    if (!viewportEl || !contentEl) {
+      return;
+    }
+
+    const target = contentEl.querySelector(`[data-node-id="${focusNodeId}"]`);
+    if (!target) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    });
+  }, [focusNodeId, hasNodes, nodes, zoom]);
 
   let generationMessage = '';
   if (!hasNodes) {

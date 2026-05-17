@@ -1622,6 +1622,15 @@ html[data-theme='dark'] .roadmap-node-sub.node-color-skip {
 }
 
 .course-node__code {
+.course-node--focused {
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35), 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme='dark'] .course-node--focused {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45), 0 16px 28px rgba(2, 9, 20, 0.6);
+}
   margin: 0;
   font-size: 0.92rem;
   font-weight: 700;

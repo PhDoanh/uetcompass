@@ -5,6 +5,7 @@ import { useAuth } from '../../providers/AuthProvider';
 import { useNotification } from '../notification/NotificationContainer';
 import accountApi from '../../services/account.api';
 import { navigateTo } from '../../shared/navigation';
+import { getRoadmapSearchTarget } from './navbar.utils';
 import '../../style/general-component.css';
 
 const THEME_STORAGE_KEY = 'uetcompass-theme';
@@ -35,11 +36,6 @@ function getAvatarState(profile = {}) {
     avatarFallback: (displayName.charAt(0) || 'U').toUpperCase(),
     displayName: displayName || 'Người dùng',
   };
-}
-
-export function getRoadmapSearchTarget(pathname) {
-  const blockedPaths = ['/login', '/register', '/forgot-password'];
-  return !blockedPaths.includes(pathname);
 }
 
 function dispatchOpenRoadmapSearchOverlay() {
@@ -99,7 +95,7 @@ export default function NavBar() {
   const [isRoadmapSearchOpen, setIsRoadmapSearchOpen] = useState(false);
   const avatarRef = useRef(null);
   const notificationRef = useRef(null);
-  const { isAuthenticated, accessToken, onboardingState } = useAuth();
+  const { isAuthenticated, accessToken, onboardingState, updateAuthInfo, logoutAndRedirect } = useAuth();
   const {
     addNotification,
     savedNotifications,
@@ -175,8 +171,27 @@ export default function NavBar() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const goMyRoadmaps = () => {
-    const onboardingDone = onboardingState === 'COMPLETED';
+  const goMyRoadmaps = async () => {
+    let onboardingDone = onboardingState === 'COMPLETED';
+    if (!onboardingDone && accessToken) {
+      try {
+        const profile = await accountApi.getProfile(accessToken);
+        const resolvedState = profile?.onboardingState;
+        const hasMajorFallback = Boolean(String(profile?.profile?.major || '').trim());
+        onboardingDone = resolvedState === 'COMPLETED' || (!resolvedState && hasMajorFallback);
+
+        if (onboardingDone) {
+          updateAuthInfo?.({ onboardingState: 'COMPLETED' });
+        } else if (resolvedState && resolvedState !== onboardingState) {
+          updateAuthInfo?.({ onboardingState: resolvedState });
+        }
+      } catch (error) {
+        if (error?.status === 401) {
+          logoutAndRedirect?.();
+          return;
+        }
+      }
+    }
 
     if (!onboardingDone) {
       addNotification('Bạn cần hoàn tất onboarding để mở Lộ trình của tôi.', 'warning');

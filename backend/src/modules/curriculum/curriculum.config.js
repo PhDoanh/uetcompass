@@ -2,14 +2,62 @@
 const DEFAULT_CRON_SCHEDULE = '0 0 1 3,8 *';
 
 const programs = [
-	{
+    { // Công nghệ thông tin định hướng thị trường Nhật Bản (khoá QH-2022 trở đi)
 		programId: 'IT-JAPAN',
 		sources: {
 			'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-dinh-huong-thi-truong-nhat-ban-8/' },
 			'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-dinh-huong-thi-truong-nhat-ban-9/' },
 			'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-dinh-huong-thi-truong-nhat-ban-10/' },
 		}
-	},
+    },
+    { // Công nghệ thông tin (khóa QH-2022 đến QH-2024)
+        programId: 'IT',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-8/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-9/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-10/' },
+        }
+    },
+    { // Công nghệ thông tin chất lượng cao (khoá QH-2022 trở đi)
+        programId: 'IT-HIGH-QUALITY',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-chat-luong-cao-8/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-chat-luong-cao-9/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-cong-nghe-thong-tin-chat-luong-cao-10/' },
+        }
+    },
+    { // Khoa học máy tính (khoá QH-2022 đến QH-2024)
+        programId: 'CS',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-khoa-hoc-may-tinh-19/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-khoa-hoc-may-tinh-20/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-khoa-hoc-may-tinh-21/' },
+        }
+    },
+    { // Kỹ thuật máy tính (khoá QH-2022 đến QH-2024)
+        programId: 'CE',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-ky-thuat-may-tinh-8/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-ky-thuat-may-tinh-9/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-ky-thuat-may-tinh-10/' },
+        }
+    },
+    { // Hệ thống thông tin (khoá QH-2022 đến QH-2024)
+        programId: 'IS',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-thong-thong-tin-19/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-thong-thong-tin-20/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-thong-thong-tin-21/' },
+        }
+    },
+    { // Mạng máy tính và truyền thông dữ liệu (khoá QH-2023 và QH-2024)
+        programId: 'CN',
+        sources: {
+            'program-overview': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-mang-may-tinh-va-truyen-thong-du-lieu-11/' },
+            'program-outcomes': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-mang-may-tinh-va-truyen-thong-du-lieu-12/' },
+            'program-courses': { url: 'https://uet.edu.vn/chuong-trinh-dao-tao-nganh-mang-may-tinh-va-truyen-thong-du-lieu-13/' },
+        }
+    },
 ];
 
 const careerTracks = [
@@ -19,7 +67,7 @@ const careerTracks = [
 	},
 	{
 		trackId: 'Software Engineer Japan',
-		description: 'A software engineer profile oriented toward the Japanese IT market, where graduates work in Japanese or Japan-affiliated companies as BrSE, offshore developer, or on-site project member. Key differentiators include Japanese language proficiency (JLPT N3–N2), knowledge of Japanese business culture and ITSS standards, and experience from mandatory internships at Japanese partner companies.',
+        description: 'A software engineer profile oriented toward the Japanese IT market, where graduates work in Japanese or Japan-affiliated companies as BrSE, offshore developer, or on-site project member. Key differentiators include Japanese language proficiency (JLPT N3-N2), knowledge of Japanese business culture and ITSS standards, and experience from mandatory internships at Japanese partner companies.',
 	},
 	{
 		trackId: 'Software Engineer General',

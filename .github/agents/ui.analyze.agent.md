@@ -10,7 +10,7 @@ handoffs:
   - label: "Implement UI Code"
     agent: ui.implement
     prompt: >
-      The UI Analysis Report is ready above. Read the full report, design-system/MASTER.md, plan, then generate code.
+      The UI Analysis Report is ready above. Read the full report, design-system/MASTER.md, then plan and generate code.
     send: false
 ---
 

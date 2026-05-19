@@ -7,18 +7,25 @@ import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import ReviewCarousel from './ReviewCarousel';
+import CompassFeatureMap from './CompassFeatureMap';
 import SiteFooter from './SiteFooter';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
 import {
-  Award,
-  BarChart3,
-  BookOpen,
+  Briefcase,
+  Cloud,
+  Code2,
+  Cpu,
+  Database,
+  FlaskConical,
+  GraduationCap,
+  Laptop,
+  MonitorSmartphone,
+  ShieldCheck,
+  Server,
+  Users,
   ChevronLeft,
   ChevronRight,
-  Compass,
-  Route,
-  Users,
 } from 'lucide-react';
 import {
   Cell,
@@ -38,50 +45,58 @@ const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
 const MANUAL_ROADMAP_FETCH_LIMIT = 100;
 const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
-const FEATURED_FEATURES = [
-  {
-    key: 'skill-tree',
-    title: 'Skill Tree',
-    description: 'Cây kỹ năng trực quan theo từng ngành',
-    icon: Compass,
-    position: 'north',
-  },
-  {
-    key: 'personalized-roadmap',
-    title: 'Roadmap cá nhân hóa',
-    description: 'Gợi ý lộ trình dựa trên mục tiêu của bạn',
-    icon: Route,
-    position: 'east',
-  },
-  {
-    key: 'community',
-    title: 'Cộng đồng',
-    description: 'Kết nối với sinh viên cùng lộ trình',
-    icon: Users,
-    position: 'west',
-  },
-  {
-    key: 'resources',
-    title: 'Kho tài liệu',
-    description: 'Slide, đề thi, tài liệu từ các khóa trước',
-    icon: BookOpen,
-    position: 'southwest',
-  },
-  {
-    key: 'progress',
-    title: 'Theo dõi tiến độ',
-    description: 'Dashboard tổng quan tiến trình học tập',
-    icon: BarChart3,
-    position: 'southeast',
-  },
-  {
-    key: 'achievements',
-    title: 'Thành tích',
-    description: 'Huy hiệu và milestone học tập',
-    icon: Award,
-    position: 'south',
-  },
+const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
+  const day = index + 1;
+  const base = Math.min(10, Math.max(0, Math.round(day / 3 + (day % 5 === 0 ? 2 : 0))));
+  const value = Math.min(10, Math.max(0, base - (day % 7 === 0 ? 2 : 0)));
+  return { day, value };
+});
+const TOPIC_DISTRIBUTION = [
+  { name: 'Web', value: 35, color: '#38BDF8' },
+  { name: 'AI/ML', value: 25, color: '#0EA5E9' },
+  { name: 'DevOps', value: 20, color: '#F97316' },
+  { name: 'Khác', value: 20, color: '#94A3B8' },
 ];
+const HEATMAP_VALUES = [
+  0, 1, 2, 3, 1, 0, 2,
+  2, 3, 4, 3, 2, 1, 0,
+  1, 2, 3, 4, 2, 1, 1,
+  0, 1, 2, 3, 2, 1, 0,
+];
+const HERO_LEFT_ICONS = [
+  { key: 'left-1', top: '12%', left: '8%', size: '62px', rotate: '-8deg', icon: GraduationCap },
+  { key: 'left-2', top: '24%', left: '18%', size: '46px', rotate: '6deg', icon: FlaskConical },
+  { key: 'left-3', top: '38%', left: '10%', size: '40px', rotate: '-12deg', icon: Code2 },
+  { key: 'left-4', top: '52%', left: '16%', size: '48px', rotate: '10deg', icon: Database },
+  { key: 'left-5', top: '68%', left: '6%', size: '40px', rotate: '-6deg', icon: Cpu },
+  { key: 'left-6', top: '82%', left: '20%', size: '46px', rotate: '12deg', icon: MonitorSmartphone },
+];
+const HERO_RIGHT_ICONS = [
+  { key: 'right-1', top: '14%', right: '10%', size: '46px', rotate: '10deg', icon: Briefcase },
+  { key: 'right-2', top: '28%', right: '6%', size: '54px', rotate: '-8deg', icon: Server },
+  { key: 'right-3', top: '42%', right: '16%', size: '42px', rotate: '12deg', icon: Cloud },
+  { key: 'right-4', top: '58%', right: '8%', size: '40px', rotate: '-6deg', icon: ShieldCheck },
+  { key: 'right-5', top: '72%', right: '14%', size: '48px', rotate: '8deg', icon: Laptop },
+  { key: 'right-6', top: '84%', right: '6%', size: '40px', rotate: '-10deg', icon: Users },
+];
+
+function navigateToHomeSection(sectionId) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const pathname = window.location.pathname;
+  if (pathname !== '/') {
+    window.location.assign(`/#${sectionId}`);
+    return;
+  }
+
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.history.replaceState(null, '', `/#${sectionId}`);
+  }
+}
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -675,54 +690,104 @@ export default function Homepage() {
   return (
     <div className="homepage homepage--modern">
       <main className="homepage-content homepage-content--modern">
-        <section id="hero" className="homepage-hero-modern">
-          <div className="homepage-hero-modern__content">
-            <span className="homepage-status homepage-status--badge">
-              {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
-            </span>
-            <h1 className="homepage-title">
-              La bàn dẫn lối sự nghiệp <span className="homepage-title__nowrap">UET-ers</span>
-            </h1>
-            <p className="homepage-description">
-              Khám phá các cây kỹ năng và lộ trình đào tạo được thiết kế riêng cho sinh viên Đại học Công nghệ,
-              từ lập trình web đến trí tuệ nhân tạo.
-            </p>
-
-            <div className="homepage-hero-actions homepage-hero-actions--column">
-              <a href="#roadmap-community" className="homepage-wire-btn homepage-wire-btn--white">Khám phá Roadmap</a>
-              {shouldPromptOnboarding ? (
-                <button type="button" onClick={handleOpenOnboarding} className="homepage-wire-btn homepage-wire-btn--translucent">
-                  Nhận roadmap cá nhân hóa
-                </button>
-              ) : accessToken ? (
-                <a href="/skill-tree" className="homepage-wire-btn homepage-wire-btn--translucent">
-                  Nhận roadmap cá nhân hóa
-                </a>
-              ) : (
-                <a href="/register" className="homepage-wire-btn homepage-wire-btn--translucent">
-                  Nhận roadmap cá nhân hóa
-                </a>
-              )}
+        {!accessToken ? (
+          <section id="hero" className="homepage-hero-modern homepage-hero-modern--centered">
+            <div className="homepage-hero-orbits" aria-hidden="true">
+              {HERO_LEFT_ICONS.map((icon) => (
+                <span
+                  key={icon.key}
+                  className="homepage-hero-ico homepage-hero-ico--left"
+                  style={{
+                    '--ico-top': icon.top,
+                    '--ico-left': icon.left,
+                    '--ico-size': icon.size,
+                    '--ico-rotate': icon.rotate,
+                  }}
+                >
+                  <icon.icon className="homepage-hero-ico__icon" aria-hidden="true" />
+                </span>
+              ))}
+              {HERO_RIGHT_ICONS.map((icon) => (
+                <span
+                  key={icon.key}
+                  className="homepage-hero-ico homepage-hero-ico--right"
+                  style={{
+                    '--ico-top': icon.top,
+                    '--ico-right': icon.right,
+                    '--ico-size': icon.size,
+                    '--ico-rotate': icon.rotate,
+                  }}
+                >
+                  <icon.icon className="homepage-hero-ico__icon" aria-hidden="true" />
+                </span>
+              ))}
             </div>
 
-            <div className="homepage-social-proof" aria-label="Community stats">
-              <div className="homepage-social-proof__avatars">
-                {socialAvatars.map((avatar) => (
-                  <img key={avatar} src={avatar} alt="Sinh viên UET" />
-                ))}
-                <span>+1.2k</span>
+            <div className="homepage-hero-modern__content homepage-hero-modern__content--centered">
+              <span className="homepage-status homepage-status--badge">
+                {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
+              </span>
+              <h1 className="homepage-title">
+                La bàn dẫn lối sự nghiệp <span className="homepage-title__nowrap">UET-ers</span>
+              </h1>
+              <p className="homepage-description">
+                Khám phá các cây kỹ năng và lộ trình đào tạo được thiết kế riêng cho sinh viên Đại học Công nghệ,
+                từ lập trình web đến trí tuệ nhân tạo.
+              </p>
+
+              <div className="homepage-hero-actions homepage-hero-actions--inline">
+                <a
+                  href="/#roadmap-community"
+                  className="homepage-wire-btn homepage-wire-btn--white"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateTo('/#roadmap-community');
+                  }}
+                >
+                  Khám phá lộ trình
+                </a>
+                {shouldPromptOnboarding ? (
+                  <button type="button" onClick={handleOpenOnboarding} className="homepage-wire-btn homepage-wire-btn--translucent">
+                    Nhận roadmap cá nhân hóa
+                  </button>
+                ) : accessToken ? (
+                    <a
+                      href="/skill-tree"
+                      className="homepage-wire-btn homepage-wire-btn--translucent"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        navigateTo('/skill-tree');
+                      }}
+                    >
+                    Nhận roadmap cá nhân hóa
+                  </a>
+                ) : (
+                      <a
+                        href="/register"
+                        className="homepage-wire-btn homepage-wire-btn--translucent"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          navigateTo('/register');
+                        }}
+                      >
+                    Nhận roadmap cá nhân hóa
+                  </a>
+                )}
               </div>
-              <p><strong>1,200+</strong> sinh viên đang sử dụng</p>
-            </div>
-          </div>
 
-          <div className="homepage-hero-modern__visual" aria-hidden="true">
-            <div className="hero-map-card hero-map-card--image">
-              <img src="/images/uetstone.jpg" alt="UET Stone Roadmap" className="hero-map-image" />
+              <div className="homepage-social-proof" aria-label="Community stats">
+                <div className="homepage-social-proof__avatars">
+                  {socialAvatars.map((avatar) => (
+                    <img key={avatar} src={avatar} alt="Sinh viên UET" />
+                  ))}
+                  <span>+1.2k</span>
+                </div>
+                <p><strong>1,200+</strong> sinh viên đang sử dụng</p>
+              </div>
             </div>
-          </div>
-        </section>
-
+          </section>
+        ) : null}
+          
         {accessToken ? (
           <section
             id="monthly-progress"
@@ -833,42 +898,26 @@ export default function Homepage() {
           </section>
         ) : null}
 
-        <section
-          id="featured-features"
-          className="homepage-section homepage-featured"
-          aria-label="Tính năng nổi bật"
-        >
-          <div className="homepage-section__head">
-            <div>
+        {!accessToken ? (
+          <section
+            id="featured-features"
+            className="homepage-section homepage-featured"
+            aria-label="Tính năng nổi bật"
+          >
+            <div className="homepage-featured__head">
               <h2>Tính năng nổi bật</h2>
-              <p>Tất cả công cụ bạn cần để định hướng và phát triển sự nghiệp ngay từ ghế nhà trường.</p>
             </div>
-          </div>
-          <div className="homepage-featured__radial">
-            <div className="homepage-featured__center">
-              <Compass size={40} />
-              <span>UETCompass</span>
+            <p className="homepage-featured__quote homepage-featured__quote--top-right">
+              Tất cả công cụ bạn cần để định hướng và phát triển sự nghiệp ngay từ ghế nhà trường.
+            </p>
+            <div className="homepage-featured__radial">
+              <CompassFeatureMap />
             </div>
-            {FEATURED_FEATURES.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={feature.key}
-                  className={`homepage-feature-card homepage-feature-card--${feature.position}`}
-                >
-                  <div className="homepage-feature-card__icon">
-                    <Icon size={18} />
-                  </div>
-                  <div>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="homepage-featured__note">Thiết kế mô phỏng giúp bạn hình dung hệ sinh thái học tập trên UETCompass.</p>
-        </section>
+            <p className="homepage-featured__quote homepage-featured__quote--bottom-left">
+              Thiết kế mô phỏng giúp bạn hình dung hệ sinh thái học tập trên UETCompass.
+            </p>
+          </section>
+        ) : null}
 
         {shouldShowMyRoadmapsSection ? (
           <section
@@ -888,7 +937,7 @@ export default function Homepage() {
                   onClick={handlePrevMyRoadmapPage}
                   disabled={!canGoPrevMyRoadmapPage}
                 >
-                  ‹
+                  <ChevronLeft />
                 </button>
                 <button
                   type="button"
@@ -896,7 +945,7 @@ export default function Homepage() {
                   onClick={handleNextMyRoadmapPage}
                   disabled={!canGoNextMyRoadmapPage}
                 >
-                  ›
+                  <ChevronRight />
                 </button>
               </div>
             </div>
@@ -1040,56 +1089,39 @@ export default function Homepage() {
           </div>
         </section>
 
-        <section
-          id="system-flow"
-          className="homepage-section homepage-system"
-          aria-label="Cách hệ thống vận hành"
-        >
-          <div className="homepage-section__head homepage-section__head--center">
-            <div>
-              <h2>Cách hệ thống vận hành</h2>
-              <p>Chỉ 3 bước để bắt đầu lộ trình học tập cá nhân hóa.</p>
+        {!accessToken ? (
+          <section
+            id="system-flow"
+            className="homepage-section homepage-system"
+            aria-label="Cách hệ thống vận hành"
+          >
+            <div className="homepage-section__head homepage-section__head--center">
+              <div>
+                <h2>Cách hệ thống vận hành</h2>
+                <p>Chỉ 3 bước để bắt đầu lộ trình học tập cá nhân hóa.</p>
+              </div>
             </div>
-          </div>
-          <div className="homepage-system__steps">
-            <div className="homepage-system__step">
-              <span className="homepage-system__badge">①</span>
-              <h3>Tạo tài khoản</h3>
-              <p>Đăng ký miễn phí bằng email sinh viên UET.</p>
+            <div className="homepage-system__steps">
+              <div className="homepage-system__step">
+                <span className="homepage-system__badge">①</span>
+                <h3>Tạo tài khoản</h3>
+                <p>Đăng ký miễn phí bằng email sinh viên UET.</p>
+              </div>
+              <span className="homepage-system__arrow" aria-hidden="true">→</span>
+              <div className="homepage-system__step">
+                <span className="homepage-system__badge">②</span>
+                <h3>Hoàn thành onboarding</h3>
+                <p>Trả lời vài câu hỏi để hệ thống hiểu mục tiêu của bạn.</p>
+              </div>
+              <span className="homepage-system__arrow" aria-hidden="true">→</span>
+              <div className="homepage-system__step">
+                <span className="homepage-system__badge">③</span>
+                <h3>Bắt đầu lộ trình</h3>
+                <p>Nhận skill tree cá nhân hóa và theo dõi tiến độ theo ngày.</p>
+              </div>
             </div>
-            <span className="homepage-system__arrow" aria-hidden="true">→</span>
-            <div className="homepage-system__step">
-              <span className="homepage-system__badge">②</span>
-              <h3>Hoàn thành onboarding</h3>
-              <p>Trả lời vài câu hỏi để hệ thống hiểu mục tiêu của bạn.</p>
-            </div>
-            <span className="homepage-system__arrow" aria-hidden="true">→</span>
-            <div className="homepage-system__step">
-              <span className="homepage-system__badge">③</span>
-              <h3>Bắt đầu lộ trình</h3>
-              <p>Nhận skill tree cá nhân hóa và theo dõi tiến độ theo ngày.</p>
-            </div>
-          </div>
-        </section>
-
-        <section id="how-it-works" className="homepage-bento">
-          <div className="homepage-bento__main">
-            <h2>Bạn là tân sinh viên?</h2>
-            <p>
-              Chúng tôi có lộ trình "Nhập môn" dành riêng cho các bạn K6x để nhanh chóng làm quen
-              với môi trường đại học và phương pháp học tập mới.
-            </p>
-            <button type="button">Bắt đầu ngay</button>
-          </div>
-
-          <div className="homepage-bento__side">
-            <h3>Tài liệu tham khảo</h3>
-            <p>
-              Kho lưu trữ slide bài giảng, đề thi cũ và tài liệu ôn tập được đóng góp bởi sinh viên các khóa.
-            </p>
-            <a href="#">Truy cập kho tài liệu</a>
-          </div>
-        </section>
+          </section>
+        ): null}
 
         {!accessToken ? <ReviewCarousel visible /> : null}
         <SiteFooter />

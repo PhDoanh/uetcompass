@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --st-bg: #f8f9ff;
-  --st-topbar: #0055a2;
-  --st-text: #111c2a;
-  --st-muted: #5d6470;
-  --st-line: #3b82f6;
-  --st-shadow: 0 20px 40px rgba(17, 28, 42, 0.14);
+  --st-bg: var(--surface-0);
+    --st-topbar: var(--color-primary);
+    --st-text: var(--text-1);
+    --st-muted: var(--text-3);
+    --st-line: var(--color-primary);
+    --st-shadow: var(--shadow-xl);
   --st-shell-header-h: 70px;
   --st-summary-top-gap: -13px;
   --st-panel-top: calc(var(--st-shell-header-h) + var(--st-summary-top-gap));
@@ -64,8 +64,8 @@
   user-select: none;
   touch-action: none;
   background: linear-gradient(180deg, rgba(148, 163, 184, 0.14) 0%, rgba(148, 163, 184, 0.04) 100%);
-  border-left: 1px solid #dbeafe;
-  border-right: 1px solid #dbeafe;
+  border-left: 1px solid var(--border-1);
+    border-right: 1px solid var(--border-1);
 }
 
 .skill-tree-layout__divider:focus-visible {
@@ -82,8 +82,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-left: 1px solid #dbeafe;
+  background: var(--surface-1);
+    border-left: 1px solid var(--border-1);
   overflow: hidden;
 }
 
@@ -119,10 +119,10 @@
 .skill-tree-canvas-stage {
   flex: 1;
   min-height: 0;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--border-1);
   border-radius: 12px;
   overflow: hidden;
-  background: #f8fbff;
+  background: var(--surface-2);
 }
 
 .skill-tree-canvas-stage--scroll {
@@ -1084,7 +1084,6 @@ html[data-theme='dark'] .skill-tree-page {
 }
 
 .skill-tree-page__brand {
-  font-family: 'Be Vietnam Pro', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   white-space: nowrap;
@@ -1100,7 +1099,6 @@ html[data-theme='dark'] .skill-tree-page {
 
 .skill-tree-page__title {
   margin: 0;
-  font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1.05rem;
   line-height: 1;
 }
@@ -1170,7 +1168,6 @@ html[data-theme='dark'] .skill-tree-summary-card {
 
 .skill-tree-summary-card__title {
   margin: 0;
-  font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: #0f172a;
@@ -1483,7 +1480,6 @@ html[data-theme='dark'] .skill-canvas {
   text-align: left;
   cursor: pointer;
   transition: transform 160ms ease, box-shadow 160ms ease;
-  font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .roadmap-node:hover {
@@ -1740,7 +1736,6 @@ html[data-theme='dark'] .skill-tree-panel {
 
 .skill-tree-panel__title {
   margin: 0;
-  font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1.4rem;
 }
 

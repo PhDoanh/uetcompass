@@ -5,7 +5,8 @@ const RoadmapProgressCache = require('./roadmapProgressCache.model');
 const roadmapOwnerAdapter = require('./roadmapOwner.adapter');
 
 const VALID_SCOPES = new Set(['all', 'roadmap']);
-const VALID_GROUPINGS = new Set(['weekly', 'monthly']);
+const VALID_GROUPINGS = new Set(['daily', 'weekly', 'monthly']);
+const DAILY_WINDOW_DAYS = 7;
 
 function createServiceError(status, code, message, details = undefined) {
   const error = new Error(message);
@@ -35,6 +36,10 @@ function addDaysUtc(date, days) {
   return next;
 }
 
+function getDayStartUtc(date) {
+  return startOfDayUtc(date);
+}
+
 function getWeekStartUtc(date) {
   const start = startOfDayUtc(date);
   const day = start.getUTCDay();
@@ -46,10 +51,16 @@ function getMonthStartUtc(date) {
 }
 
 function getPeriodStartUtc(date, groupBy) {
+  if (groupBy === 'daily') {
+    return getDayStartUtc(date);
+  }
   return groupBy === 'monthly' ? getMonthStartUtc(date) : getWeekStartUtc(date);
 }
 
 function getPeriodEndUtc(start, groupBy) {
+  if (groupBy === 'daily') {
+    return start;
+  }
   if (groupBy === 'monthly') {
     const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
     return end;
@@ -175,7 +186,7 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
   }
 
   if (!VALID_GROUPINGS.has(normalizedGroupBy)) {
-    throw createServiceError(400, 'INVALID_INPUT', 'groupBy must be "weekly" or "monthly"');
+    throw createServiceError(400, 'INVALID_INPUT', 'groupBy must be "daily", "weekly", or "monthly"');
   }
 
   const ownedRoadmaps = await roadmapOwnerAdapter.listOwnedRoadmaps(userKey);
@@ -213,6 +224,14 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
 
   const activityDocs = await RoadmapProgressActivity.find(activityFilter).lean();
   const bucketMap = buildBucketsFromActivity(activityDocs, normalizedGroupBy);
+  if (normalizedGroupBy === 'daily') {
+    const today = startOfDayUtc(new Date());
+    for (let offset = DAILY_WINDOW_DAYS - 1; offset >= 0; offset -= 1) {
+      const day = addDaysUtc(today, -offset);
+      const key = formatDateUtc(day);
+      ensureBucket(bucketMap, key, normalizedGroupBy);
+    }
+  }
 
   const completedNodes = activityDocs.filter((doc) => doc?.lastDoneAt).length;
   let totalNodes = 0;

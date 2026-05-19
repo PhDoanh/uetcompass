@@ -21,6 +21,8 @@ function normalizeRoadmap(roadmapDoc) {
     roadmapId,
     roadmapName: buildRoadmapName(roadmapDoc),
     isPrimary: Boolean(roadmapDoc.isPrimary),
+    createdAt: roadmapDoc.createdAt || null,
+    acceptedAt: roadmapDoc.acceptedAt || null,
   };
 }
 

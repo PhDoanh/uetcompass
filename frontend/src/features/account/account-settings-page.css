@@ -46,15 +46,9 @@
 .privacy-card,
 .notification-card {
   border: 1px solid var(--border-1);
-    background: var(--surface-1);
+  background: var(--surface-1);
   border-radius: 16px;
   box-shadow: var(--shadow-md);
-}
-
-.profile-avatar-card,
-.security-card,
-.privacy-card,
-.notification-card {
   padding: 1.5rem;
 }
 
@@ -62,6 +56,10 @@
   position: relative;
   width: 132px;
   height: 132px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
 }
 
 .avatar-image,
@@ -73,6 +71,7 @@
 }
 
 .avatar-image {
+  display: block;
   object-fit: cover;
 }
 
@@ -80,7 +79,7 @@
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  color: #ffffff;
+  color: var(--text-on-accent);
   font-size: 2rem;
   font-weight: 700;
 }
@@ -94,7 +93,7 @@
   border-radius: 999px;
   border: 0;
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--text-on-accent);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -363,8 +362,8 @@
 
 .btn.danger.solid {
   border-color: var(--state-danger-text);
-    background: var(--state-danger-text);
-  color: #ffffff;
+  background: var(--state-danger-text);
+  color: var(--text-on-accent);
 }
 
 .btn.full {
@@ -424,7 +423,7 @@
   width: 46px;
   height: 26px;
   border-radius: 999px;
-  background: #d3ddeb;
+  background: var(--surface-3);
   position: relative;
   transition: background 0.2s ease;
 }
@@ -436,13 +435,13 @@
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease;
 }
 
 .toggle-switch input:checked + .toggle-track {
-  background: #0055a2;
+  background: var(--color-primary);
 }
 
 .toggle-switch input:checked + .toggle-track .toggle-thumb {
@@ -455,11 +454,11 @@
 }
 
 .message.error {
-  color: #9f1e1e;
+  color: var(--state-danger-text);
 }
 
 .message.success {
-  color: #146f3a;
+  color: var(--state-success-text);
 }
 
 .account-delete-modal-overlay {
@@ -470,7 +469,7 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(15, 23, 42, 0.34);
+  background: var(--overlay-scrim);
   backdrop-filter: blur(4px);
   overscroll-behavior: contain;
 }
@@ -479,8 +478,8 @@
   width: min(460px, calc(100vw - 24px));
   border-radius: 14px;
   border: 1px solid var(--state-danger-border);
-    background: var(--surface-1);
-  box-shadow: 0 24px 42px rgba(62, 16, 16, 0.18);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
   padding: 1.2rem;
 }
 
@@ -571,19 +570,23 @@
 
 /* Dark theme - Account Settings */
 html[data-theme='dark'] .account-settings-page {
-  background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
-  color: #dce9fc;
+  background: var(--surface-0);
+  color: var(--text-1);
 }
 
 html[data-theme='dark'] .account-settings-header h1,
 html[data-theme='dark'] .card-title-row h2,
-html[data-theme='dark'] .profile-avatar-card h3 {
-  color: #dce9fc;
+html[data-theme='dark'] .profile-avatar-card h3,
+html[data-theme='dark'] .account-settings-identity-info h2,
+html[data-theme='dark'] .account-settings-email {
+  color: var(--text-1);
 }
 
 html[data-theme='dark'] .profile-card__label,
-html[data-theme='dark'] .profile-card__info strong {
-  color: #ffffff;
+html[data-theme='dark'] .profile-card__info strong,
+html[data-theme='dark'] .notification-card h3,
+html[data-theme='dark'] .notification-card p {
+  color: var(--text-1);
 }
 
 html[data-theme='dark'] .account-settings-header p,
@@ -592,249 +595,134 @@ html[data-theme='dark'] .privacy-card > p,
 html[data-theme='dark'] .card-divider-top p,
 html[data-theme='dark'] .strength-meta,
 html[data-theme='dark'] .privacy-content span {
-  color: #a8bfde;
+  color: var(--text-3);
 }
 
 html[data-theme='dark'] .profile-avatar-card,
 html[data-theme='dark'] .profile-form-card,
 html[data-theme='dark'] .security-card,
 html[data-theme='dark'] .privacy-card,
-html[data-theme='dark'] .notification-card {
-  border: 1px solid rgba(94, 145, 214, 0.35);
-  background: #142741;
-  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
+html[data-theme='dark'] .notification-card,
+html[data-theme='dark'] .account-settings-identity {
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
 }
 
 html[data-theme='dark'] .danger-zone-card {
-  border: 1px solid rgba(239, 131, 131, 0.4);
-  background: rgba(83, 30, 30, 0.28);
-  box-shadow: 0 12px 24px rgba(22, 6, 6, 0.45);
+  border: 1px solid var(--state-danger-border);
+  background: var(--state-danger-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 html[data-theme='dark'] .danger-title-row {
-  color: #ff9a9a;
+  color: var(--state-danger-text);
 }
 
 html[data-theme='dark'] .danger-zone-card > p {
-  color: #f8bfbf;
+  color: var(--state-danger-strong);
 }
 
 html[data-theme='dark'] .avatar-image,
 html[data-theme='dark'] .avatar-fallback {
-  border: 4px solid #1f3d63;
+  border: 4px solid var(--border-2);
 }
 
 html[data-theme='dark'] .field label {
-  color: #adc5e4;
+  color: var(--text-3);
 }
 
 html[data-theme='dark'] .field input,
 html[data-theme='dark'] .field select {
-  border: 1px solid rgba(95, 146, 214, 0.4);
-  background: #1a304d;
-  color: #e6effd;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 
 html[data-theme='dark'] .field input:focus,
 html[data-theme='dark'] .field select:focus {
-  border-color: #67abff;
-  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 html[data-theme='dark'] .field input:disabled {
-  background: #243e61;
-  color: #9ab4d6;
+  background: var(--surface-3);
+  color: var(--text-3);
 }
 
 html[data-theme='dark'] .security-chip {
-  background: rgba(34, 197, 94, 0.16);
-  color: #76e3a2;
+  background: var(--state-success-bg);
+  color: var(--state-success-text);
 }
 
 html[data-theme='dark'] .bar {
-  background: #2d4467;
+  background: var(--surface-3);
 }
 
 html[data-theme='dark'] .card-divider-top {
-  border-top: 1px solid rgba(95, 146, 214, 0.3);
+  border-top: 1px solid var(--border-1);
 }
 
 html[data-theme='dark'] .privacy-option {
-  border: 2px solid rgba(95, 146, 214, 0.28);
-  background: #1a304d;
+  border: 2px solid var(--border-1);
+  background: var(--surface-2);
 }
 
 html[data-theme='dark'] .privacy-option.selected {
-  border-color: #63aaff;
-  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 html[data-theme='dark'] .privacy-content {
-  color: #cfe4ff;
+  color: var(--text-2);
 }
 
-html[data-theme='dark'] .notification-card h3,
-html[data-theme='dark'] .notification-card p {
-  color: #dce9fc;
+html[data-theme='dark'] .btn.ghost,
+html[data-theme='dark'] .btn.subtle {
+  border-color: var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+html[data-theme='dark'] .btn.danger {
+  border-color: var(--state-danger-border);
+  background: var(--state-danger-bg);
+  color: var(--state-danger-text);
 }
 
 html[data-theme='dark'] .notification-box {
-  border: 1px solid rgba(95, 146, 214, 0.28);
-  background: #1a304d;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
 }
 
 html[data-theme='dark'] .toggle-track {
-  background: #2a4164;
-}
-
-html[data-theme='dark'] .btn.ghost,
-html[data-theme='dark'] .btn.subtle {
-  border-color: rgba(95, 146, 214, 0.45);
-  background: #223b5d;
-  color: #d2e6ff;
-}
-
-html[data-theme='dark'] .btn.danger {
-  border-color: rgba(244, 114, 114, 0.45);
-  background: rgba(127, 29, 29, 0.2);
-  color: #fecaca;
+  background: var(--surface-3);
 }
 
 html[data-theme='dark'] .account-delete-modal-overlay {
-  background: rgba(2, 9, 20, 0.62);
+  background: var(--overlay-scrim);
 }
 
 html[data-theme='dark'] .account-delete-modal {
-  border-color: rgba(239, 131, 131, 0.48);
-  background: #1c2e48;
-  box-shadow: 0 28px 46px rgba(3, 8, 17, 0.72);
+  border-color: var(--state-danger-border);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
 }
 
 html[data-theme='dark'] .account-delete-modal__title-row {
-  color: #ff9a9a;
+  color: var(--state-danger-text);
 }
 
 html[data-theme='dark'] .account-delete-modal__title-row h3 {
-  color: #ffd4d4;
+  color: var(--state-danger-strong);
 }
 
 html[data-theme='dark'] .account-delete-modal p {
-  color: #f3c0c0;
+  color: var(--state-danger-text);
 }
 
 html[data-theme='dark'] .btn.danger.solid {
-  border-color: rgba(248, 113, 113, 0.75);
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-  color: #ffffff;
-}
-
-/* Dark theme - Account Settings */
-html[data-theme='dark'] .account-settings-page {
-  background: radial-gradient(circle at top right, #173356 0%, #102237 40%, #0b1728 100%);
-  color: #dce9fc;
-}
-
-html[data-theme='dark'] .account-settings-identity {
-  background: #142741;
-  border: 1px solid rgba(94, 145, 214, 0.35);
-  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
-}
-
-html[data-theme='dark'] .account-settings-identity-info h2 {
-  color: #dce9fc; 
-}
-
-html[data-theme='dark'] .account-settings-email {
-  color: #dce9fc;
-}
-
-html[data-theme='dark'] .account-settings-header h1,
-html[data-theme='dark'] .card-title-row h2,
-html[data-theme='dark'] .profile-avatar-card h3 {
-  color: #dce9fc;
-}
-
-html[data-theme='dark'] .account-settings-header p,
-html[data-theme='dark'] .profile-avatar-card p,
-html[data-theme='dark'] .privacy-card > p,
-html[data-theme='dark'] .card-divider-top p,
-html[data-theme='dark'] .strength-meta,
-html[data-theme='dark'] .privacy-content span {
-  color: #a8bfde;
-}
-
-html[data-theme='dark'] .profile-avatar-card,
-html[data-theme='dark'] .profile-form-card,
-html[data-theme='dark'] .security-card,
-html[data-theme='dark'] .privacy-card {
-  border: 1px solid rgba(94, 145, 214, 0.35);
-  background: #142741;
-  box-shadow: 0 12px 24px rgba(2, 9, 20, 0.45);
-}
-
-html[data-theme='dark'] .avatar-image,
-html[data-theme='dark'] .avatar-fallback {
-  border: 4px solid #1f3d63;
-}
-
-html[data-theme='dark'] .field label {
-  color: #adc5e4;
-}
-
-html[data-theme='dark'] .field input,
-html[data-theme='dark'] .field select {
-  border: 1px solid rgba(95, 146, 214, 0.4);
-  background: #1a304d;
-  color: #e6effd;
-}
-
-html[data-theme='dark'] .field input:focus,
-html[data-theme='dark'] .field select:focus {
-  border-color: #67abff;
-  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
-}
-
-html[data-theme='dark'] .field input:disabled {
-  background: #243e61;
-  color: #9ab4d6;
-}
-
-html[data-theme='dark'] .security-chip {
-  background: rgba(34, 197, 94, 0.16);
-  color: #76e3a2;
-}
-
-html[data-theme='dark'] .bar {
-  background: #2d4467;
-}
-
-html[data-theme='dark'] .card-divider-top {
-  border-top: 1px solid rgba(95, 146, 214, 0.3);
-}
-
-html[data-theme='dark'] .privacy-option {
-  border: 2px solid rgba(95, 146, 214, 0.28);
-  background: #1a304d;
-}
-
-html[data-theme='dark'] .privacy-option.selected {
-  border-color: #63aaff;
-  box-shadow: 0 0 0 3px rgba(73, 152, 245, 0.2);
-}
-
-html[data-theme='dark'] .privacy-content {
-  color: #cfe4ff;
-}
-
-html[data-theme='dark'] .btn.ghost,
-html[data-theme='dark'] .btn.subtle {
-  border-color: rgba(95, 146, 214, 0.45);
-  background: #223b5d;
-  color: #d2e6ff;
-}
-
-html[data-theme='dark'] .btn.danger {
-  border-color: rgba(244, 114, 114, 0.45);
-  background: rgba(127, 29, 29, 0.2);
-  color: #fecaca;
+  border-color: var(--state-danger-text);
+  background: var(--state-danger-text);
+  color: var(--text-on-accent);
 }

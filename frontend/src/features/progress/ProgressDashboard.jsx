@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pie, PieChart, ResponsiveContainer, Cell } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label } from 'recharts';
 import { useAuth } from '../../providers/AuthProvider';
 import { getRoadmapNodes, getSummaries, getTrackingTables } from '../../services/progress.api';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
@@ -45,6 +45,20 @@ function formatPercent(value) {
     return '--';
   }
   return `${Math.round(value * 100)}%`;
+}
+
+function formatFrequency(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '--';
+  }
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
+}
+
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
 export default function ProgressDashboard() {
@@ -164,20 +178,51 @@ export default function ProgressDashboard() {
   });
 
   const summary = trackingData?.summary || {};
-  const periods = trackingData?.buckets?.slice(0, 3) || [];
+  const periods = (trackingData?.buckets || [])
+    .slice()
+    .sort((a, b) => (a.periodStart < b.periodStart ? 1 : -1))
+    .slice(0, 3);
   const doneNodes = detail?.nodes?.done || detail?.doneNodes || [];
+  const inProgressNodes = detail?.nodes?.inProgress || detail?.inProgressNodes || [];
   const pendingNodes = detail?.nodes?.pending || detail?.pendingNodes || [];
   const doneCount = doneNodes.length;
   const pendingCount = pendingNodes.length;
+  const totalNodes = doneCount + pendingCount + inProgressNodes.length;
+  const remainingCount = Math.max(0, totalNodes - doneCount);
   const completionRate = Number.isFinite(selectedRoadmap?.progressPercent)
     ? selectedRoadmap.progressPercent / 100
     : doneCount + pendingCount > 0
       ? doneCount / (doneCount + pendingCount)
       : 0;
+  const completionPercent = Math.round(completionRate * 100);
   const donutData = [
     { name: 'Pending', value: Math.max(0, 1 - completionRate) },
     { name: 'Done', value: completionRate },
   ];
+  const roadmapAcceptedAt = selectedRoadmap?.roadmapAcceptedAt;
+  const roadmapCreatedAt = selectedRoadmap?.roadmapCreatedAt;
+  const acceptedDate = roadmapAcceptedAt ? new Date(roadmapAcceptedAt) : null;
+  const createdDate = roadmapCreatedAt ? new Date(roadmapCreatedAt) : null;
+  const earliestLearningDate =
+    acceptedDate && !Number.isNaN(acceptedDate.getTime())
+      ? acceptedDate
+      : createdDate && !Number.isNaN(createdDate.getTime())
+        ? createdDate
+        : null;
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfLearning = earliestLearningDate ? new Date(earliestLearningDate) : null;
+  if (startOfLearning) {
+    startOfLearning.setHours(0, 0, 0, 0);
+  }
+  const learnedDays = startOfLearning
+    ? Math.max(0, Math.floor((startOfToday - startOfLearning) / (24 * 60 * 60 * 1000)))
+    : 0;
+  const studyFrequency = learnedDays > 0 ? doneCount / learnedDays : 0;
+  const estimatedCompletionDate =
+    studyFrequency > 0
+      ? addDays(startOfToday, Math.ceil(remainingCount / studyFrequency))
+      : null;
 
   const totalRoadmapPages = Math.max(1, Math.ceil(roadmaps.length / ROADMAPS_PER_PAGE));
   const canGoPrevRoadmapPage = roadmapPage > 0;
@@ -212,10 +257,10 @@ export default function ProgressDashboard() {
           <div className={styles.toggleGroup}>
             <button
               type="button"
-              className={`${styles.toggleButton} ${trackingGroupBy === 'monthly' ? styles.isActive : ''}`}
-              onClick={() => setTrackingGroupBy('monthly')}
+              className={`${styles.toggleButton} ${trackingGroupBy === 'daily' ? styles.isActive : ''}`}
+              onClick={() => setTrackingGroupBy('daily')}
             >
-              Tháng
+              Ngày
             </button>
             <button
               type="button"
@@ -223,6 +268,13 @@ export default function ProgressDashboard() {
               onClick={() => setTrackingGroupBy('weekly')}
             >
               Tuần
+            </button>
+            <button
+              type="button"
+              className={`${styles.toggleButton} ${trackingGroupBy === 'monthly' ? styles.isActive : ''}`}
+              onClick={() => setTrackingGroupBy('monthly')}
+            >
+              Tháng
             </button>
           </div>
         </div>
@@ -275,9 +327,9 @@ export default function ProgressDashboard() {
             className="homepage-section homepage-section--plain"
             aria-label="My roadmap gallery"
           >
-        <div className="homepage-roadmap-head">
+        <div  className={styles.statsHeader}>
           <div>
-            <h2>Các roadmap của tôi</h2>
+            <h2 className={styles.statsTitle}> Các roadmap của tôi</h2>
           </div>
           <div className="homepage-roadmap-controls">
             <button
@@ -415,6 +467,7 @@ export default function ProgressDashboard() {
                     <Pie data={donutData} dataKey="value" innerRadius={52} outerRadius={70} paddingAngle={3}>
                       <Cell fill="var(--pastel-lavender)" />
                       <Cell fill="var(--pastel-pink)" />
+                      <Label value={`${completionPercent}%`} position="center" className={styles.donutValue} />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
@@ -433,11 +486,11 @@ export default function ProgressDashboard() {
             </div>
             <div className={styles.metricCard}>
               <p className={styles.metricLabel}>Tần suất học</p>
-              <p className={styles.metricValue}>{detail?.dailyFrequency ?? '--'} nodes / ngay</p>
+              <p className={styles.metricValue}>{formatFrequency(studyFrequency)} nodes / ngày</p>
             </div>
             <div className={styles.metricCard}>
               <p className={styles.metricLabel}>Dự đoán ngày hoàn thành</p>
-              <p className={styles.metricValue}>{formatDate(detail?.estimatedCompletion)}</p>
+              <p className={styles.metricValue}>{formatDate(estimatedCompletionDate)}</p>
             </div>
           </div>
         </section>

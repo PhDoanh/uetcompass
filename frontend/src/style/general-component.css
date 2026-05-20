@@ -71,6 +71,17 @@
     --text-muted: var(--text-3);
     --border-glow: var(--border-1);
   --input-bg: #f1f4fa;
+  /* Typography tokens */
+  --fs-xxl: 2.6rem;
+  --fs-xl: clamp(1.7rem, 3vw, 2.4rem);
+  --fs-lg: 1.6rem;
+  --fs-md: 1rem;
+  --fs-sm: 0.92rem;
+  --fs-xs: 0.85rem;
+  --fw-regular: 400;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
 }
 
 html[data-theme='dark'] {
@@ -698,6 +709,14 @@ html[data-theme='dark'] .navbar__auth-btn--primary {
   box-shadow: none;
 }
 
+.navbar__auth-btn.navbar__profile-trigger {
+  min-height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
 html[data-theme='dark'] .navbar__profile-trigger {
   border: none;
   background: transparent;
@@ -736,7 +755,7 @@ html[data-theme='dark'] .navbar__profile-trigger {
 .navbar__profile-trigger:hover .navbar__avatar {
   transform: translateY(-1px);
   filter: brightness(1.06);
-  box-shadow: 0 8px 16px rgba(0, 85, 162, 0.24);
+  box-shadow: none;
 }
 
 .navbar__avatar span {

@@ -60,6 +60,14 @@ const roadmapProgressCacheSchema = new mongoose.Schema(
       required: true,
       default: Date.now,
     },
+    roadmapCreatedAt: {
+      type: Date,
+      default: null,
+    },
+    roadmapAcceptedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     collection: 'roadmap_progress_cache',

@@ -26,15 +26,15 @@
 }
 
 .progressTrackingTitle {
-  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-size: var(--fs-xl);
   margin: 0;
-  color: #0b4f92;
-  font-weight: 800;
+  color: var(--text-main);
+  font-weight: var(--fw-extrabold);
 }
 
 .progressTrackingSubtitle {
   margin: var(--space-xs) 0 0;
-  color: #62708a;
+  color: var(--text-muted);
 }
 
 .toggleGroup {
@@ -85,12 +85,10 @@
 }
 
 .statsTitle {
-  color: #0b4f92;
-  margin-top: var(--space-xs);
-  margin-left: var(--space-lg);
+  color: var(--text-main);
   size: var(--space-xl);
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
 
 .statsCards {
@@ -118,8 +116,8 @@
 .statsValue {
   margin: var(--space-sm);
   text-align: center;
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
 
 .statsTable {
@@ -138,14 +136,14 @@
   gap: var(--space-sm);
   padding: 0.9rem 1.25rem;
   align-items: center;
-  font-size: 0.92rem;
+  font-size: var(--fs-sm);
 }
 
 .statsRowHead {
   background: color-mix(in srgb, var(--primary-purple) 14%, var(--bg-card));
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
 }
 
@@ -217,13 +215,13 @@
   background: var(--bg-card);
   z-index: 10;
   padding-top: var(--space-sm);
-  color: #0b4f92;
-  font-weight: 700;
+  color: var(--text-muted);
+  font-weight: var(--fw-bold);
 }
 
 .detailColumnHeader h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-md);
 }
 
 .detailColumnHeader span {
@@ -247,12 +245,12 @@
 
 .detailItem strong {
   display: block;
-  font-size: 0.92rem;
+  font-size: var(--fs-sm);
 }
 
 .detailItem span {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
 }
 
 .detailBottom {
@@ -273,7 +271,13 @@
 
 .donutLabel {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
+}
+
+.donutValue {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  fill: var(--text-main);
 }
 
 .donutLegend {
@@ -318,13 +322,13 @@
 .metricLabel {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
 }
 
 .metricValue {
   margin: 0;
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
 
 @media (max-width: 1024px) {
@@ -357,5 +361,5 @@
 }
 
 :global(html[data-theme='dark']) .detailLink {
-  color: #d7e9ff;
+  color: var(--text-on-accent);
 }

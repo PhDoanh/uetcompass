@@ -164,7 +164,6 @@ export default function LearningProfilePage() {
 	const [saving, setSaving] = useState(false);
 	const [regenerating, setRegenerating] = useState(false);
 	const [showRegenRoadmap, setShowRegenRoadmap] = useState(false);
-	const [showAllCourses, setShowAllCourses] = useState(false);
 
 	const [catalogLoading, setCatalogLoading] = useState(true);
 	const [catalogMajors, setCatalogMajors] = useState([]);
@@ -181,26 +180,6 @@ export default function LearningProfilePage() {
 		() => new Set((form.completedCourses || []).map((item) => `${item.major}::${item.courseCode}`)),
 		[form.completedCourses]
 	);
-	const visibleCourseOptions = useMemo(() => (showAllCourses ? courseOptions : courseOptions.slice(0, 6)), [courseOptions, showAllCourses]);
-	const graduationLabel = useMemo(() => {
-		const raw = String(form?.careerGoal?.graduationTimeline || '').trim();
-		if (!raw) {
-			return 'Chưa cập nhật';
-		}
-
-		const [year, month] = raw.split('-').map((part) => Number(part));
-		if (!year || !month) {
-			return raw;
-		}
-
-		return `Tháng ${month}, ${year}`;
-	}, [form?.careerGoal?.graduationTimeline]);
-	const completionPercent = useMemo(() => {
-		if (!courseOptions.length) {
-			return 0;
-		}
-		return Math.min(100, Math.round(((form.completedCourses || []).length / courseOptions.length) * 100));
-	}, [courseOptions.length, form.completedCourses]);
 
 	const patchForm = (next) => {
 		setForm(next);
@@ -374,6 +353,7 @@ export default function LearningProfilePage() {
 		setRegenerating(true);
 		try {
 			await retryRoadmapGeneration(accessToken);
+			setShowRegenRoadmap(false);
 			addNotification('Đã gửi yêu cầu tạo lại Roadmap thành công.', 'success');
 		} catch (err) {
 			if (err?.status === 401) {
@@ -459,267 +439,245 @@ export default function LearningProfilePage() {
 	}, [accessToken, logoutAndRedirect, addNotification]);
 
 	return (
-		<main className="learning-profile-page learning-profile-page--modern">
-			{loading ? <div style={{ marginBottom: 12 }}>Loading learning profile...</div> : null}
-			{!loading ? (
-				<>
-				<section className="learning-profile-content learning-profile-content--modern">
-					<section className="learning-profile-header">
-						<span className="learning-profile-badge">Hồ sơ sinh viên</span>
-						<h1>{identity.displayName}</h1>
-						<p>{form.major || 'Chưa chọn ngành học'}</p>
-					</section>
+		<>
+			<main className="learning-profile-page learning-profile-page--modern">
+				{loading ? <div style={{ marginBottom: 12 }}>Loading learning profile...</div> : null}
+				{!loading ? (
+					<section className="learning-profile-content learning-profile-content--modern">
+						<header className="learning-profile-header learning-profile-header--center">
+							<h1>Hồ sơ sinh viên</h1>
+							<h2>{identity.displayName}</h2>
+							<p>{form.major || 'Chưa chọn ngành học'}</p>
+						</header>
 
-					<section className="profile-grid">
-						<div className="profile-avatar-card learning-profile-card">
-							<div className="learning-profile-card__layout">
-								<div className="learning-profile-card__avatar">
-									<div className="avatar-wrap">
-										{identity.avatarUrl ? (
-											<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
-										) : (
-											<div className="avatar-fallback">{identity.displayName.charAt(0).toUpperCase() || 'U'}</div>
-										)}
-										<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
-											<Camera size={14} />
-										</label>
-									</div>
-									<div className="avatar-actions">
-										<input
-											id="avatarImport"
-											type="file"
-											accept="image/*"
-											onChange={onImportImage}
-											hidden
-										/>
-										<label htmlFor="avatarImport" className="btn ghost">
-											Import avatar
-										</label>
-										<button
-											type="button"
-											className="btn danger"
-											onClick={onDeleteImage}
-											disabled={loading || !identity.avatarUrl}
-										>
-											Delete image
-										</button>
-									</div>
-									{imageError ? <p className="message error">{imageError}</p> : null}
-								</div>
-
-								<form className="learning-profile-card__details" onSubmit={onSaveProfile}>
+						<div className="learning-profile-layout">
+							<div className="learning-profile-left">
+								<section className="learning-profile-card learning-profile-card--profile">
 									<div className="card-title-row">
 										<User size={18} />
-										<h2>Thông tin cá nhân</h2>
+										<h3>Profile</h3>
 									</div>
-									<div className="learning-profile-card__form">
+									<div className="learning-profile-card__layout">
+										<div className="learning-profile-card__avatar">
+											<div className="avatar-wrap">
+												{identity.avatarUrl ? (
+													<img src={identity.avatarUrl} alt="Avatar preview" className="avatar-image" />
+												) : (
+													<div className="avatar-fallback">{identity.displayName.charAt(0).toUpperCase() || 'U'}</div>
+												)}
+												<label htmlFor="avatarImport" className="avatar-edit-btn" title="Upload avatar">
+													<Camera size={14} />
+												</label>
+											</div>
+											<div className="avatar-actions">
+												<input
+													id="avatarImport"
+													type="file"
+													accept="image/*"
+													onChange={onImportImage}
+													hidden
+												/>
+												<label htmlFor="avatarImport" className="btn ghost">
+													Import image
+												</label>
+												<button
+													type="button"
+													className="btn danger"
+													onClick={onDeleteImage}
+													disabled={loading || !identity.avatarUrl}
+												>
+													Delete image
+												</button>
+											</div>
+											{imageError ? <p className="message error">{imageError}</p> : null}
+										</div>
+
+										<form className="learning-profile-card__details" onSubmit={onSaveProfile}>
+											<div className="learning-profile-card__form">
+												<div className="learning-field">
+													<label htmlFor="profileDisplayName" className="learning-label">Tên hiển thị</label>
+													<input
+														id="profileDisplayName"
+														className="learning-input"
+														value={identity.displayName}
+														onChange={(event) =>
+															setIdentity((prev) => ({ ...prev, displayName: event.target.value }))
+														}
+													/>
+												</div>
+												<div className="learning-field">
+													<label htmlFor="profileFullName" className="learning-label">Tên đầy đủ</label>
+													<input
+														id="profileFullName"
+														className="learning-input"
+														value={identity.fullName}
+														onChange={(event) =>
+															setIdentity((prev) => ({ ...prev, fullName: event.target.value }))
+														}
+													/>
+												</div>
+												<div className="learning-field">
+													<label htmlFor="profileEmail" className="learning-label">Email</label>
+													<input
+														id="profileEmail"
+														className="learning-input"
+														value={identity.email}
+														disabled
+														readOnly
+													/>
+												</div>
+											</div>
+											<div className="card-actions card-actions--right">
+												<button type="submit" className="btn primary" disabled={loading}>
+													Save Profile
+												</button>
+											</div>
+										</form>
+									</div>
+								</section>
+
+								<section className="learning-profile-card learning-profile-card--learning">
+									<div className="card-title-row">
+										<BookOpenCheck size={18} />
+										<h3>Learning</h3>
+									</div>
+									<div className="learning-section__card learning-grid-two">
 										<div className="learning-field">
-											<label htmlFor="profileDisplayName" className="learning-label">Tên hiển thị</label>
-											<input
-												id="profileDisplayName"
-												className="learning-input"
-												value={identity.displayName}
+											<label htmlFor="major" className="learning-label">Ngành học</label>
+											<select
+												id="major"
+												value={form.programId || ''}
+												onChange={(event) => handleMajorChange(event.target.value)}
+												className="learning-input learning-select"
+											>
+												<option value="">Chọn ngành học</option>
+												{catalogMajors.map((major) => (
+													<option key={major.programId} value={major.programId}>{major.nameEN}</option>
+												))}
+											</select>
+										</div>
+
+										<div className="learning-field">
+											<label htmlFor="target-role" className="learning-label">Mục tiêu nghề nghiệp</label>
+											<select
+												id="target-role"
+												value={form?.careerGoal?.role || ''}
 												onChange={(event) =>
-													setIdentity((prev) => ({ ...prev, displayName: event.target.value }))
+													patchForm({
+														...form,
+														careerGoal: {
+															...(form.careerGoal || {}),
+															role: event.target.value,
+														},
+													})
 												}
-											/>
+												disabled={!form.programId || roleOptions.length === 0}
+												className="learning-input learning-select"
+											>
+												<option value="">
+													{form.programId
+														? roleOptions.length
+															? 'Chọn vai trò mục tiêu'
+															: 'Không có role cho ngành đã chọn'
+														: 'Chọn ngành học trước'}
+												</option>
+												{roleOptions.map((item) => (
+													<option key={item} value={item}>{item}</option>
+												))}
+											</select>
 										</div>
 										<div className="learning-field">
-											<label htmlFor="profileFullName" className="learning-label">Tên đầy đủ</label>
+											<label htmlFor="timeline" className="learning-label">Dự kiến tốt nghiệp</label>
 											<input
-												id="profileFullName"
-												className="learning-input"
-												value={identity.fullName}
+												type="date"
+												id="timeline"
+												value={form?.careerGoal?.graduationTimeline || ''}
 												onChange={(event) =>
-													setIdentity((prev) => ({ ...prev, fullName: event.target.value }))
+													patchForm({
+														...form,
+														careerGoal: {
+															...(form.careerGoal || {}),
+															graduationTimeline: event.target.value,
+														},
+													})
 												}
-											/>
-										</div>
-										<div className="learning-field">
-											<label htmlFor="profileEmail" className="learning-label">Email</label>
-											<input
-												id="profileEmail"
 												className="learning-input"
-												value={identity.email}
-												disabled
-												readOnly
 											/>
 										</div>
 									</div>
-									<div className="card-actions">
-										<button type="submit" className="btn primary" disabled={loading}>
-											Save Changes
-										</button>
+								</section>
+							</div>
+
+							<div className="learning-profile-right">
+								<section className="learning-profile-card learning-course-card">
+									<div className="card-title-row">
+										<GraduationCap size={18} />
+										<h3>Các môn đã học</h3>
 									</div>
-								</form>
+									{catalogLoading ? <div className="onboarding-panel-note">Loading majors and courses...</div> : null}
+
+									{!form.programId ? (
+										<div className="learning-section__empty">Hãy chọn ngành học để hiển thị danh sách môn học.</div>
+									) : courseOptions.length === 0 ? (
+										<div className="learning-section__empty">
+											Không có dữ liệu môn học tự chọn cho ngành này.
+											{requiredCourseLink ? (
+												<a href={requiredCourseLink} target="_blank" rel="noreferrer">Xem danh sách môn học bắt buộc</a>
+											) : null}
+										</div>
+									) : (
+										<>
+											<div className="learning-course-list learning-course-list--scroll">
+												{courseOptions.map((course) => {
+													const key = `${form.major}::${course.courseCode}`;
+													const checked = selectedCourseKeys.has(key);
+													return (
+														<label key={key} className="learning-course-item">
+															<div>
+																<h3>{course.name || course.courseCode}</h3>
+																<p>
+																	{course.courseCode}
+																	{course.credit ? ` • ${course.credit} Tín chỉ` : ''}
+																</p>
+															</div>
+															<input
+																type="checkbox"
+																checked={checked}
+																onChange={() => handleToggleCourse(course)}
+															/>
+														</label>
+													);
+												})}
+											</div>
+										</>
+									)}
+								</section>
 							</div>
 						</div>
+
+						<footer className="learning-profile-footer">
+							<div className="learning-profile-footer-left">
+								{hasChanges ? <span className="learning-profile-change-hint">Khi thông tin thay đổi</span> : null}
+							</div>
+							<div className="learning-profile-footer-center">
+								{hasChanges ? (
+									<button type="button" className="primary-btn" onClick={handleSaveProfile} disabled={saving}>
+										<Save size={17} />
+										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
+									</button>
+								) : null}
+								{showRegenRoadmap ? (
+									<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
+										<Sparkles size={17} />
+										{regenerating ? 'Đang tạo lại Roadmap...' : 'Tạo lại Roadmap'}
+									</button>
+								) : null}
+							</div>
+						</footer>
 					</section>
-
-					{catalogLoading ? <div className="onboarding-panel-note">Loading majors and courses...</div> : null}
-
-					<div className="learning-profile-sections">
-						<section className="learning-section">
-							<div className="learning-section__head">
-								<User size={18} />
-								<h2>Thông tin cá nhân</h2>
-							</div>
-							<div className="learning-section__card learning-grid-two">
-								<div className="learning-field">
-									<label htmlFor="major" className="learning-label">Ngành học</label>
-									<select
-										id="major"
-										value={form.programId || ''}
-										onChange={(event) => handleMajorChange(event.target.value)}
-										className="learning-input learning-select"
-									>
-										<option value="">Chọn ngành học</option>
-										{catalogMajors.map((major) => (
-											<option key={major.programId} value={major.programId}>{major.nameEN}</option>
-										))}
-									</select>
-								</div>
-
-								<div className="learning-field">
-									<label htmlFor="target-role" className="learning-label">Mục tiêu nghề nghiệp</label>
-									<select
-										id="target-role"
-										value={form?.careerGoal?.role || ''}
-										onChange={(event) =>
-											patchForm({
-												...form,
-												careerGoal: {
-													...(form.careerGoal || {}),
-													role: event.target.value,
-												},
-											})
-										}
-										disabled={!form.programId || roleOptions.length === 0}
-										className="learning-input learning-select"
-									>
-										<option value="">
-											{form.programId
-												? roleOptions.length
-													? 'Chọn vai trò mục tiêu'
-													: 'Không có role cho ngành đã chọn'
-												: 'Chọn ngành học trước'}
-										</option>
-										{roleOptions.map((item) => (
-											<option key={item} value={item}>{item}</option>
-										))}
-									</select>
-								</div>
-							</div>
-						</section>
-
-						<section className="learning-section">
-							<div className="learning-section__head">
-								<BookOpenCheck size={18} />
-								<h2>Các môn đã học</h2>
-							</div>
-
-							{!form.programId ? (
-								<div className="learning-section__empty">Hãy chọn ngành học để hiển thị danh sách môn học.</div>
-							) : courseOptions.length === 0 ? (
-								<div className="learning-section__empty">
-									Không có dữ liệu môn học tự chọn cho ngành này.
-									{requiredCourseLink ? (
-										<a href={requiredCourseLink} target="_blank" rel="noreferrer">Xem danh sách môn học bắt buộc</a>
-									) : null}
-								</div>
-							) : (
-								<>
-									<div className="learning-course-list">
-										{visibleCourseOptions.map((course) => {
-											const key = `${form.major}::${course.courseCode}`;
-											const checked = selectedCourseKeys.has(key);
-											return (
-												<label key={key} className="learning-course-item">
-													<div>
-														<h3>{course.name || course.courseCode}</h3>
-														<p>
-															{course.courseCode}
-															{course.credit ? ` • ${course.credit} Tín chỉ` : ''}
-														</p>
-													</div>
-													<input
-														type="checkbox"
-														checked={checked}
-														onChange={() => handleToggleCourse(course)}
-													/>
-												</label>
-											);
-										})}
-									</div>
-
-									{courseOptions.length > 6 ? (
-										<button
-											type="button"
-											className="learning-expand-btn"
-											onClick={() => setShowAllCourses((prev) => !prev)}
-										>
-											{showAllCourses ? 'Thu gọn danh sách môn học' : 'Xem toàn bộ môn học'}
-										</button>
-									) : null}
-								</>
-							)}
-						</section>
-
-						<section className="learning-section">
-							<div className="learning-section__head">
-								<GraduationCap size={18} />
-								<h2>Dự kiến tốt nghiệp</h2>
-							</div>
-							<div className="learning-grad-card">
-								<div className="onboarding-field">
-									<label htmlFor="timeline" className="onboarding-label">Thời gian dự kiến</label>
-									<input
-										type="date"
-										id="timeline"
-										value={form?.careerGoal?.graduationTimeline || ''}
-										onChange={(event) =>
-											patchForm({
-												...form,
-												careerGoal: {
-													...(form.careerGoal || {}),
-													graduationTimeline: event.target.value,
-												},
-											})
-										}
-										className="onboarding-input"
-									/>
-								</div>
-
-								<p className="learning-grad-card__meta">Mốc thời gian hiện tại</p>
-								<p className="learning-grad-card__date">{graduationLabel}</p>
-								<div className="learning-progress-row">
-									<div className="learning-progress-bar">
-										<span style={{ width: `${completionPercent}%` }} />
-									</div>
-									<strong>{completionPercent}%</strong>
-								</div>
-							</div>
-						</section>
-					</div>
-
-					<div className="learning-profile-actions">
-						{hasChanges ? (
-							<button type="button" className="primary-btn" onClick={handleSaveProfile} disabled={saving}>
-								<Save size={17} />
-								{saving ? 'Đang lưu...' : 'Lưu thông tin'}
-							</button>
-						) : null}
-						{showRegenRoadmap ? (
-							<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
-								<Sparkles size={17} />
-								{regenerating ? 'Đang tạo lại Roadmap...' : 'Tạo lại Roadmap'}
-							</button>
-						) : null}
-					</div>
-				</section>
-				<SiteFooter />
-				</>
-			) : null}
-		</main>
+				) : null}
+			</main>
+		<SiteFooter />
+		</>
 	);
 }

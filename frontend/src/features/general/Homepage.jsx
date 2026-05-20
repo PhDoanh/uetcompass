@@ -816,6 +816,7 @@ export default function Homepage() {
                 <div className="homepage-progress__title">Số node đã học</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {[
+                    { id: 'daily', label: 'Daily' },
                     { id: 'weekly', label: 'Weekly' },
                     { id: 'monthly', label: 'Monthly' },
                   ].map((option) => (

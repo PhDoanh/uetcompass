@@ -76,6 +76,8 @@ async function refreshCache(userId, roadmapId, options = {}) {
       roadmapId: roadmapKey,
       roadmapName: ownedRoadmap.roadmapName,
       isPrimary: ownedRoadmap.isPrimary,
+      roadmapCreatedAt: ownedRoadmap.createdAt || null,
+      roadmapAcceptedAt: ownedRoadmap.acceptedAt || null,
       totalNodes,
       doneNodes,
       inProgressNodes,
@@ -98,6 +100,8 @@ async function refreshCache(userId, roadmapId, options = {}) {
       roadmapId: payload.roadmapId,
       roadmapName: payload.roadmapName,
       isPrimary: payload.isPrimary,
+      roadmapCreatedAt: payload.roadmapCreatedAt,
+      roadmapAcceptedAt: payload.roadmapAcceptedAt,
       totalNodes: payload.totalNodes,
       doneNodes: payload.doneNodes,
       inProgressNodes: payload.inProgressNodes,
@@ -129,18 +133,29 @@ async function getAll(userId) {
   const docs = await RoadmapProgressCache.find({ userId: userKey })
     .sort({ isPrimary: -1, updatedAt: -1 })
     .lean();
+  const ownedRoadmaps = await roadmapOwnerAdapter.listOwnedRoadmaps(userKey);
+  const ownedRoadmapMap = new Map(
+    ownedRoadmaps.map((roadmap) => [roadmap.roadmapId, roadmap])
+  );
 
-  return docs.map((doc) => ({
-    roadmapId: doc.roadmapId,
-    roadmapName: doc.roadmapName,
-    isPrimary: Boolean(doc.isPrimary),
-    totalNodes: doc.totalNodes || 0,
-    doneNodes: doc.doneNodes || 0,
-    inProgressNodes: doc.inProgressNodes || 0,
-    pendingNodes: doc.pendingNodes || 0,
-    progressPercent: doc.progressPercent || 0,
-    lastActivityDate: doc.lastActivityDate || null,
-  }));
+  return docs.map((doc) => {
+    const ownedRoadmap = ownedRoadmapMap.get(doc.roadmapId);
+    const roadmapCreatedAt = doc.roadmapCreatedAt || ownedRoadmap?.createdAt || null;
+    const roadmapAcceptedAt = doc.roadmapAcceptedAt || ownedRoadmap?.acceptedAt || null;
+    return {
+      roadmapId: doc.roadmapId,
+      roadmapName: doc.roadmapName,
+      isPrimary: Boolean(doc.isPrimary),
+      roadmapCreatedAt,
+      roadmapAcceptedAt,
+      totalNodes: doc.totalNodes || 0,
+      doneNodes: doc.doneNodes || 0,
+      inProgressNodes: doc.inProgressNodes || 0,
+      pendingNodes: doc.pendingNodes || 0,
+      progressPercent: doc.progressPercent || 0,
+      lastActivityDate: doc.lastActivityDate || null,
+    };
+  });
 }
 
 async function getRoadmapDetail(userId, roadmapId) {

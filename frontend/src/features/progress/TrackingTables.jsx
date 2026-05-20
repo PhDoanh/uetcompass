@@ -68,6 +68,17 @@ export default function TrackingTables({
           <div className="inline-flex rounded-full bg-white p-1 shadow-sm">
             <button
               type="button"
+              onClick={() => onGroupByChange('daily')}
+              className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition ${
+                groupBy === 'daily'
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              type="button"
               onClick={() => onGroupByChange('weekly')}
               className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition ${
                 groupBy === 'weekly'

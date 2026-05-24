@@ -636,6 +636,7 @@ html[data-theme='dark'] .review-carousel__card {
   width: 34px;
   height: 34px;
   border-radius: 999px;
+  flex-shrink: 0;
   border: none;
   background: transparent;
   color: #5a6579;
@@ -956,18 +957,12 @@ html[data-theme='dark'] .navbar__notification-empty {
 }
 
 .navbar.scrolled .navbar__icon,
-.navbar.scrolled .navbar__icon-btn,
-.navbar.scrolled .navbar__auth-btn {
+.navbar.scrolled .navbar__icon-btn {
   color: #ffffff;
 }
 
 .navbar.scrolled .navbar__icon-btn:hover {
   background: rgba(255, 255, 255, 0.12);
-}
-
-.navbar.scrolled .navbar__auth-btn {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .navbar.scrolled .navbar__auth-btn--primary {

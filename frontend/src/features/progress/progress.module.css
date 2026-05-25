@@ -181,6 +181,16 @@
   background: linear-gradient(90deg, var(--pastel-purple), var(--pastel-pink));
 }
 
+.roadmapProgressBlock {
+  margin-top: auto;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.roadmapPercent {
+  margin: 0;
+}
+
 
 .detailSection {
   background: linear-gradient(160deg, color-mix(in srgb, var(--bg-card) 92%, var(--bg-dark)), var(--bg-card));
@@ -260,6 +270,63 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.donutLegend {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.legendItem strong {
+  margin-left: auto;
+  color: var(--text-main);
+  font-weight: var(--fw-semibold);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--pastel-lavender);
+}
+
+.monthlyBar {
+  margin-top: var(--space-sm);
+}
+
+.monthlyBarTrack {
+  display: flex;
+  align-items: center;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border-glow) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-glow) 75%, transparent);
+  position: relative;
+}
+
+.monthlyBarSegment {
+  height: 100%;
+  display: block;
+  transition: opacity 150ms ease;
+}
+
+.monthlyBarSegment:hover {
+  opacity: 0.85;
+}
+
+.monthlyBarEmpty {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  padding-left: 0.6rem;
+}
+
 .donutCard {
   border-radius: 16px;
   border: 1px solid var(--border-glow);
@@ -279,35 +346,6 @@
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
   fill: var(--text-main);
-}
-
-.donutLegend {
-  display: grid;
-  gap: 0.4rem;
-  justify-items: start;
-}
-
-.legendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.legendDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  display: inline-block;
-}
-
-.legendDotPending {
-  background: var(--pastel-lavender);
-}
-
-.legendDotDone {
-  background: var(--pastel-pink);
 }
 
 .metricCard {

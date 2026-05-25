@@ -59,6 +59,10 @@ export function updateManualRoadmap(authToken, roadmapId, { yamlCode, tags = [] 
     return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'PATCH', authToken, { yamlCode, tags });
 }
 
+export function deleteManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'DELETE', authToken);
+}
+
 export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
 }
@@ -115,6 +119,7 @@ const manualRoadmapApi = {
     getManualRoadmap,
     createManualRoadmap,
     updateManualRoadmap,
+    deleteManualRoadmap,
     shareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,

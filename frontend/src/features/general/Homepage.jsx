@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../providers/AuthProvider';
 import accountApi from '../../services/account.api';
 import { getSummaries, getTrackingTables } from '../../services/progress.api';
@@ -11,6 +12,7 @@ import CompassFeatureMap from './CompassFeatureMap';
 import SiteFooter from './SiteFooter';
 import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
+import { loadManualProgress } from '../progress/manualProgress.utils';
 import {
   Briefcase,
   Cloud,
@@ -26,6 +28,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Cell,
@@ -43,6 +46,7 @@ const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
+const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
 const MANUAL_ROADMAP_FETCH_LIMIT = 100;
 const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
 const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
@@ -142,41 +146,89 @@ function resolveUserId(accessToken) {
   }
 }
 
-function formatRoadmapDate(value) {
-  if (!value) {
-    return 'N/A';
-  }
-
-  try {
-    return `Cập nhật ${new Date(value).toLocaleDateString('vi-VN')}`;
-  } catch (_) {
-    return 'N/A';
-  }
+function isSameMonth(date, compare) {
+  return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
 
+function findCurrentMonthBucket(buckets = [], referenceDate = new Date()) {
+  return buckets.find((bucket) => {
+    if (!bucket?.periodStart) {
+      return false;
+    }
+    const date = new Date(`${bucket.periodStart}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return false;
+    }
+    return isSameMonth(date, referenceDate);
+  }) || null;
+}
 
-  function buildActivitySeriesFromBuckets(buckets = []) {
-    return buckets.map((bucket) => ({
-      day: bucket.periodStart || 'N/A',
-      value: bucket.activeNodes || 0,
-    }));
+function buildActivitySeriesFromBuckets(buckets = []) {
+  return buckets.map((bucket) => ({
+    day: bucket.periodStart || 'N/A',
+    value: bucket.activeNodes || 0,
+  }));
+}
+
+function toRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') {
+    return `rgba(148, 163, 184, ${alpha})`;
   }
+  const normalized = hex.replace('#', '').trim();
+  if (normalized.length !== 6) {
+    return `rgba(148, 163, 184, ${alpha})`;
+  }
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  if ([r, g, b].some((value) => Number.isNaN(value))) {
+    return `rgba(148, 163, 184, ${alpha})`;
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
-  function buildHeatmapValues(activitySeries, size = 28) {
-    if (!activitySeries.length) {
-      return Array.from({ length: size }, () => 0);
+  function buildMonthlyHeatmapCells(dailyBuckets = []) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const startDay = monthStart.getDay();
+    const leadingBlanks = (startDay + 6) % 7;
+
+    const bucketMap = new Map(
+      dailyBuckets.map((bucket) => [String(bucket?.periodStart || ''), bucket])
+    );
+
+    let maxActive = 0;
+    const dailyValues = [];
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+      const key = date.toISOString().slice(0, 10);
+      const active = bucketMap.get(key)?.activeNodes || 0;
+      maxActive = Math.max(maxActive, active);
+      dailyValues.push({ dayNumber: day, active });
     }
 
-    const normalized = activitySeries.slice(-4).flatMap((item) => {
-      const ratio = Math.min(1, Math.max(0, (item.value || 0) / 7));
-      const intensity = Math.min(4, Math.max(0, Math.round(ratio * 4)));
-      return Array.from({ length: 7 }, () => intensity);
+    const cells = [];
+    for (let i = 0; i < leadingBlanks; i += 1) {
+      cells.push({ dayNumber: null, level: 0, isEmpty: true });
+    }
+
+    dailyValues.forEach((value) => {
+      const level = maxActive === 0
+        ? 0
+        : value.active
+          ? Math.min(4, Math.max(1, Math.ceil((value.active / maxActive) * 4)))
+          : 0;
+      cells.push({ dayNumber: value.dayNumber, level, isEmpty: false });
     });
 
-    const trimmed = normalized.slice(-size);
-    return trimmed.length < size
-      ? Array.from({ length: size - trimmed.length }, () => 0).concat(trimmed)
-      : trimmed;
+    const remainder = cells.length % 7;
+    const trailingBlanks = remainder === 0 ? 0 : 7 - remainder;
+    for (let i = 0; i < trailingBlanks; i += 1) {
+      cells.push({ dayNumber: null, level: 0, isEmpty: true });
+    }
+
+    return cells;
   }
 
   function computeActivityStreak(activitySeries) {
@@ -199,11 +251,17 @@ export default function Homepage() {
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
+  const [deletingManualRoadmapId, setDeletingManualRoadmapId] = useState('');
+  const [pendingDeleteRoadmap, setPendingDeleteRoadmap] = useState(null);
   const [progressSummaries, setProgressSummaries] = useState([]);
   const [progressTracking, setProgressTracking] = useState(null);
+  const [progressTrackingDaily, setProgressTrackingDaily] = useState(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [progressError, setProgressError] = useState(null);
   const [progressTrackingGroupBy, setProgressTrackingGroupBy] = useState('weekly');
+  const [manualProgressSummaries, setManualProgressSummaries] = useState([]);
+  const [monthlyRoadmapStats, setMonthlyRoadmapStats] = useState([]);
+  const [monthlyRoadmapLoading, setMonthlyRoadmapLoading] = useState(false);
   const [roadmapPage, setRoadmapPage] = useState(0);
   const [myRoadmapPage, setMyRoadmapPage] = useState(0);
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
@@ -328,7 +386,6 @@ export default function Homepage() {
           const ownRoadmaps = fallbackItems
             .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
             .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
-
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
           }
@@ -361,6 +418,7 @@ export default function Homepage() {
         if (isMounted) {
           setProgressSummaries([]);
           setProgressTracking(null);
+          setProgressTrackingDaily(null);
           setProgressError(null);
           setIsLoadingProgress(false);
         }
@@ -383,8 +441,13 @@ export default function Homepage() {
           scope: 'all',
           groupBy: progressTrackingGroupBy,
         });
+        const dailyTracking = await getTrackingTables(accessToken, {
+          scope: 'all',
+          groupBy: 'daily',
+        });
         if (isMounted) {
           setProgressTracking(tracking);
+          setProgressTrackingDaily(dailyTracking);
         }
       } catch (err) {
         if (err?.status === 401) {
@@ -395,6 +458,7 @@ export default function Homepage() {
         if (isMounted) {
           setProgressError(err);
           setProgressTracking(null);
+          setProgressTrackingDaily(null);
           setProgressSummaries([]);
         }
       } finally {
@@ -410,6 +474,121 @@ export default function Homepage() {
       isMounted = false;
     };
   }, [accessToken, logoutAndRedirect, progressTrackingGroupBy]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!accessToken) {
+      if (isMounted) {
+        setManualProgressSummaries([]);
+      }
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    loadManualProgress(accessToken)
+      .then(({ summaries }) => {
+        if (isMounted) {
+          setManualProgressSummaries(summaries);
+        }
+      })
+      .catch(async (err) => {
+        if (err?.status === 401) {
+          await logoutAndRedirect();
+          return;
+        }
+        if (isMounted) {
+          setManualProgressSummaries([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, logoutAndRedirect]);
+
+  const combinedProgressSummaries = useMemo(
+    () => [...progressSummaries, ...manualProgressSummaries],
+    [progressSummaries, manualProgressSummaries]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!accessToken || combinedProgressSummaries.length === 0) {
+      if (isMounted) {
+        setMonthlyRoadmapStats([]);
+        setMonthlyRoadmapLoading(false);
+      }
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const colorList = ['#0EA5E9', '#F97316', '#6366F1', '#EC4899', '#22C55E', '#F59E0B', '#14B8A6'];
+    setMonthlyRoadmapLoading(true);
+
+    Promise.allSettled(
+      combinedProgressSummaries.map(async (roadmap, index) => {
+        const roadmapId = roadmap?.roadmapId;
+        if (!roadmapId) {
+          return null;
+        }
+
+        try {
+          const response = await getTrackingTables(accessToken, {
+            scope: 'roadmap',
+            roadmapId,
+            groupBy: 'monthly',
+          });
+          const bucket = findCurrentMonthBucket(response?.buckets || []);
+          const completedNodes = bucket?.completedNodes || 0;
+          const totalNodes = roadmap?.totalNodes || 0;
+          const doneNodes = roadmap?.doneNodes || 0;
+          const completionPercent = totalNodes > 0
+            ? Math.round((doneNodes / totalNodes) * 100)
+            : Math.round(roadmap?.progressPercent || 0);
+
+          return {
+            roadmapId,
+            roadmapName: roadmap?.roadmapName || 'Roadmap',
+            completedNodes,
+            completionPercent,
+            color: colorList[index % colorList.length],
+          };
+        } catch (_) {
+          const totalNodes = roadmap?.totalNodes || 0;
+          const doneNodes = roadmap?.doneNodes || 0;
+          const completionPercent = totalNodes > 0
+            ? Math.round((doneNodes / totalNodes) * 100)
+            : Math.round(roadmap?.progressPercent || 0);
+
+          return {
+            roadmapId,
+            roadmapName: roadmap?.roadmapName || 'Roadmap',
+            completedNodes: 0,
+            completionPercent,
+            color: colorList[index % colorList.length],
+          };
+        }
+      })
+    ).then((results) => {
+      if (!isMounted) {
+        return;
+      }
+      const items = results
+        .filter((result) => result.status === 'fulfilled')
+        .map((result) => result.value)
+        .filter((item) => item && item.roadmapId);
+      setMonthlyRoadmapStats(items);
+      setMonthlyRoadmapLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, combinedProgressSummaries]);
 
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
@@ -458,6 +637,56 @@ export default function Homepage() {
     } finally {
       setOpeningRoadmapTitle('');
     }
+  };
+
+  const handleRequestDeleteManualRoadmap = (roadmapId, roadmapTitle) => {
+    const normalizedId = String(roadmapId || '').trim();
+    if (!normalizedId) {
+      return;
+    }
+
+    setPendingDeleteRoadmap({ id: normalizedId, title: roadmapTitle || 'này' });
+  };
+
+  const handleDeleteManualRoadmap = async () => {
+    if (!pendingDeleteRoadmap || !accessToken || typeof window === 'undefined') {
+      setPendingDeleteRoadmap(null);
+      return;
+    }
+
+    const { id: normalizedId } = pendingDeleteRoadmap;
+    if (!normalizedId) {
+      setPendingDeleteRoadmap(null);
+      return;
+    }
+
+    setDeletingManualRoadmapId(normalizedId);
+
+    try {
+      await manualRoadmapApi.deleteManualRoadmap(accessToken, normalizedId);
+      setMyManualRoadmaps((prev) => prev.filter((roadmap) => String(roadmap?._id || '').trim() !== normalizedId));
+      setManualProgressSummaries((prev) => prev.filter((summary) => summary?.roadmapId !== normalizedId));
+      addNotification('Đã xóa roadmap thành công.', 'success');
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
+    } catch (err) {
+      if (err?.status === 401) {
+        await logoutAndRedirect();
+        return;
+      }
+      addNotification(err?.message || 'Xóa roadmap thất bại. Vui lòng thử lại.', 'error');
+    } finally {
+      setDeletingManualRoadmapId('');
+      setPendingDeleteRoadmap(null);
+    }
+  };
+
+  const handleCancelDeleteManualRoadmap = () => {
+    if (deletingManualRoadmapId) {
+      return;
+    }
+    setPendingDeleteRoadmap(null);
   };
 
   const roadmapTags = ['Fullstack Engineer', 'DevOps', 'Game Developer', 'Project Manager', 'Software Architect'];
@@ -594,41 +823,59 @@ export default function Homepage() {
   );
   const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
   const primaryProgressRoadmap = useMemo(() => {
-    const list = Array.isArray(progressSummaries) ? progressSummaries : [];
+    const list = Array.isArray(combinedProgressSummaries) ? combinedProgressSummaries : [];
     return list.find((item) => item?.isPrimary) || list[0] || null;
-  }, [progressSummaries]);
-  const progressTotals = useMemo(() => {
-    const list = Array.isArray(progressSummaries) ? progressSummaries : [];
-    return list.reduce(
-      (acc, roadmap) => {
-        acc.totalNodes += roadmap?.totalNodes || 0;
-        acc.doneNodes += roadmap?.doneNodes || 0;
-        acc.pendingNodes += roadmap?.pendingNodes || 0;
-        return acc;
-      },
-      { totalNodes: 0, doneNodes: 0, pendingNodes: 0 }
-    );
-  }, [progressSummaries]);
-  const progressDistribution = useMemo(() => {
-    const total = progressTotals.totalNodes || 0;
-    const toPercent = (value) => (total > 0 ? Math.round((value / total) * 100) : 0);
+  }, [combinedProgressSummaries]);
+  const monthlyTotalNodes = useMemo(
+    () => monthlyRoadmapStats.reduce((sum, item) => sum + (item.completedNodes || 0), 0),
+    [monthlyRoadmapStats]
+  );
+  const monthlyDistribution = useMemo(
+    () => monthlyRoadmapStats.map((item) => ({
+      name: item.roadmapName,
+      value: item.completedNodes,
+      color: item.color,
+      completionPercent: item.completionPercent,
+    })),
+    [monthlyRoadmapStats]
+  );
+  const roadmapProgressStack = useMemo(
+    () => combinedProgressSummaries.map((roadmap, index) => {
+      const stats = monthlyRoadmapStats.find((item) => item.roadmapId === roadmap.roadmapId);
+      const totalNodes = roadmap?.totalNodes || (roadmap?.doneNodes || 0) + (roadmap?.pendingNodes || 0);
+      const doneNodes = roadmap?.doneNodes || 0;
+      const completionPercent = totalNodes > 0
+        ? Math.round((doneNodes / totalNodes) * 100)
+        : Math.round(roadmap?.progressPercent || 0);
+      const color = stats?.color || ['#0EA5E9', '#F97316', '#6366F1', '#EC4899', '#22C55E', '#F59E0B', '#14B8A6'][index % 7];
 
-    return [
-      { name: 'Hoàn thành', value: toPercent(progressTotals.doneNodes), color: '#22C55E' },
-      { name: 'Chưa bắt đầu', value: toPercent(progressTotals.pendingNodes), color: '#94A3B8' },
-    ];
-  }, [progressTotals]);
+      return {
+        roadmapId: roadmap.roadmapId,
+        name: roadmap?.roadmapName || 'Roadmap',
+        totalNodes,
+        doneNodes,
+        monthlyCompleted: stats?.completedNodes || 0,
+        completionPercent,
+        color,
+      };
+    }),
+    [combinedProgressSummaries, monthlyRoadmapStats]
+  );
   const activitySeries = useMemo(() => {
     const baseSeries = buildActivitySeriesFromBuckets(progressTracking?.buckets || []);
     return baseSeries.slice(-7);
   }, [progressTracking]);
-  const heatmapValues = useMemo(
-    () => buildHeatmapValues(activitySeries),
-    [activitySeries]
+  const dailyActivitySeries = useMemo(() => {
+    const baseSeries = buildActivitySeriesFromBuckets(progressTrackingDaily?.buckets || []);
+    return baseSeries.slice(-30);
+  }, [progressTrackingDaily]);
+  const heatmapCells = useMemo(
+    () => buildMonthlyHeatmapCells(progressTrackingDaily?.buckets || []),
+    [progressTrackingDaily]
   );
   const activityStreak = useMemo(
-    () => computeActivityStreak(activitySeries),
-    [activitySeries]
+    () => computeActivityStreak(dailyActivitySeries),
+    [dailyActivitySeries]
   );
   const activityTotal = useMemo(
     () => activitySeries.reduce((sum, item) => sum + item.value, 0),
@@ -653,14 +900,14 @@ export default function Homepage() {
     if (progressError) {
       return 'Không thể tải dữ liệu tiến độ.';
     }
-    if (isLoadingProgress) {
+    if (isLoadingProgress || monthlyRoadmapLoading) {
       return 'Đang tải dữ liệu tiến độ...';
     }
-    if (progressTotals.totalNodes === 0) {
-      return 'Chưa có node đang theo dõi.';
+    if (monthlyTotalNodes === 0) {
+      return 'Chưa có node học trong tháng.';
     }
-    return `${progressTotals.totalNodes} node đang theo dõi`;
-  }, [isLoadingProgress, progressError, progressTotals]);
+    return `${monthlyTotalNodes} node học trong ${currentMonthLabel}`;
+  }, [currentMonthLabel, isLoadingProgress, monthlyRoadmapLoading, monthlyTotalNodes, progressError]);
   const streakMeta = useMemo(() => (
     activityStreak > 0
       ? `Chuỗi hoạt động ${activityStreak} ngày liên tiếp`
@@ -690,7 +937,7 @@ export default function Homepage() {
   return (
     <div className="homepage homepage--modern">
       <main className="homepage-content homepage-content--modern">
-        {!accessToken ? (
+        {!accessToken || onboardingState !== 'COMPLETED' ? (
           <section id="hero" className="homepage-hero-modern homepage-hero-modern--centered">
             <div className="homepage-hero-orbits" aria-hidden="true">
               {HERO_LEFT_ICONS.map((icon) => (
@@ -788,7 +1035,7 @@ export default function Homepage() {
           </section>
         ) : null}
           
-        {accessToken ? (
+        {accessToken && onboardingState === 'COMPLETED' ? (
           <section
             id="monthly-progress"
             className="homepage-section homepage-progress"
@@ -797,7 +1044,7 @@ export default function Homepage() {
             <div className="homepage-section__head">
               <div>
                 <h2>Tổng quan tiến độ {currentMonthLabel}</h2>
-                <p>Theo dõi nhịp học tập và phân bổ trạng thái trong tháng.</p>
+                <p>Theo dõi nhịp học tập và so sánh node đã học theo từng lộ trình.</p>
               </div>
               <button
                 type="button"
@@ -852,19 +1099,19 @@ export default function Homepage() {
                 <div className="homepage-progress__meta">{activityMeta}</div>
               </div>
               <div className="homepage-progress__card">
-                <div className="homepage-progress__title">Phân bổ trạng thái</div>
+                <div className="homepage-progress__title">Node học trong tháng</div>
                 <div className="homepage-progress__chart homepage-progress__chart--donut">
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
-                        data={progressDistribution}
+                        data={monthlyDistribution}
                         dataKey="value"
                         nameKey="name"
                         innerRadius={55}
                         outerRadius={80}
                         paddingAngle={2}
                       >
-                        {progressDistribution.map((entry) => (
+                        {monthlyDistribution.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
@@ -872,26 +1119,72 @@ export default function Homepage() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="homepage-progress__legend">
-                    {progressDistribution.map((entry) => (
+                    {monthlyDistribution.map((entry) => (
                       <div key={entry.name} className="homepage-progress__legend-item">
                         <span className="homepage-progress__legend-dot" style={{ background: entry.color }} />
                         <span>{entry.name}</span>
-                        <strong>{entry.value}%</strong>
+                        <strong>{entry.value}</strong>
                       </div>
                     ))}
                   </div>
                 </div>
+                <div className="homepage-progress__stack">
+                  <div className="homepage-progress__stack-label">
+                    {roadmapProgressStack.length} lộ trình đang theo học
+                  </div>
+                  {roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0) > 0 ? (
+                    <div className="homepage-progress__stack-track" role="list">
+                      {roadmapProgressStack.map((entry) => (
+                        <div
+                          key={entry.roadmapId || entry.name}
+                          className="homepage-progress__stack-segment"
+                          style={{
+                            flex: entry.totalNodes || 1,
+                            backgroundColor: toRgba(entry.color, 0.18),
+                          }}
+                          role="listitem"
+                          aria-label={`${entry.name}: ${entry.completionPercent}%`}
+                        >
+                          <span
+                            className="homepage-progress__stack-fill"
+                            style={{
+                              width: `${entry.completionPercent}%`,
+                              backgroundColor: entry.color,
+                            }}
+                          />
+                          <span className="homepage-progress__stack-tooltip">
+                            {entry.name}: {entry.monthlyCompleted} node
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="homepage-progress__stack-empty">Chưa có dữ liệu trong tháng này.</div>
+                  )}
+                </div>
                 <div className="homepage-progress__meta">{distributionMeta}</div>
               </div>
               <div className="homepage-progress__card">
-                <div className="homepage-progress__title">Streak hoạt động</div>
+                <div className="homepage-progress__title">Hoạt động trong tháng</div>
                 <div className="homepage-progress__heatmap">
-                  {heatmapValues.map((level, index) => (
-                    <span
-                      key={`${level}-${index}`}
-                      className={`homepage-progress__cell homepage-progress__cell--${level}`}
-                    />
-                  ))}
+                  <div className="homepage-progress__heatmap-header" aria-hidden="true">
+                    {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((label) => (
+                      <span key={label} className="homepage-progress__heatmap-day">{label}</span>
+                    ))}
+                  </div>
+                  <div className="homepage-progress__heatmap-grid">
+                    {heatmapCells.map((cell, index) => (
+                      <span
+                        key={`${cell.dayNumber || 'empty'}-${index}`}
+                        className={`homepage-progress__cell homepage-progress__cell--${cell.level}${cell.isEmpty ? ' is-empty' : ''}`}
+                        aria-label={cell.dayNumber ? `Ngày ${cell.dayNumber} ${currentMonthLabel}` : 'Ngày trống'}
+                      >
+                        {cell.dayNumber ? (
+                          <span className="homepage-progress__cell-label">{cell.dayNumber}</span>
+                        ) : null}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div className="homepage-progress__meta">{streakMeta}</div>
               </div>
@@ -994,7 +1287,7 @@ export default function Homepage() {
                 const roadmapId = card.id;
                 const roadmapTitle = String(roadmap?.title || '').trim() || 'Roadmap tạo thủ công';
                 const roadmapDescription = String(roadmap?.description || '').trim() || 'Roadmap thủ công do bạn tạo.';
-                const roadmapMeta = formatRoadmapDate(roadmap?.updatedAt || roadmap?.createdAt || null);
+                const isDeleting = deletingManualRoadmapId === roadmapId;
 
                 return (
                   <article key={roadmapId} className="homepage-roadmap-card">
@@ -1012,19 +1305,29 @@ export default function Homepage() {
                     <div className="homepage-roadmap-card__body">
                       <h3 className="homepage-roadmap-card__title">{roadmapTitle}</h3>
                       <p className="homepage-roadmap-card__description">{roadmapDescription}</p>
-                      <div className="homepage-roadmap-card__meta">
-                        <small>{roadmapMeta}</small>
-                        <button
-                          type="button"
-                          className="homepage-card-action"
-                          onClick={() => {
-                            if (typeof window !== 'undefined') {
-                              navigateTo(`/manual-roadmap?id=${encodeURIComponent(roadmapId)}`);
-                            }
-                          }}
-                        >
-                          Mở roadmap
-                        </button>
+                      <div className="homepage-roadmap-card__meta homepage-roadmap-card__meta--actions-only">
+                        <div className="homepage-roadmap-card__meta-actions">
+                          <button
+                            type="button"
+                            className="homepage-card-action"
+                            onClick={() => {
+                              if (typeof window !== 'undefined') {
+                                navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+                              }
+                            }}
+                            disabled={isDeleting}
+                          >
+                            Mở roadmap
+                          </button>
+                          <button
+                            type="button"
+                            className="homepage-card-action homepage-card-action--danger"
+                            onClick={() => handleRequestDeleteManualRoadmap(roadmapId, roadmapTitle)}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -1138,6 +1441,51 @@ export default function Homepage() {
           />
         </div>
       )}
+      {pendingDeleteRoadmap && typeof document !== 'undefined'
+        ? createPortal(
+          <div
+            className="account-delete-modal-overlay"
+            onClick={handleCancelDeleteManualRoadmap}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="account-delete-modal"
+              role="document"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="account-delete-modal__title-row">
+                <AlertTriangle size={18} />
+                <h3>Xác nhận xóa roadmap</h3>
+              </div>
+              <p>
+                Bạn có chắc muốn xóa roadmap "{pendingDeleteRoadmap.title}"?
+                <br />
+                Dữ liệu và tiến độ liên quan sẽ bị xóa vĩnh viễn.
+              </p>
+              <div className="account-delete-modal__actions">
+                <button
+                  type="button"
+                  className="btn subtle"
+                  onClick={handleCancelDeleteManualRoadmap}
+                  disabled={Boolean(deletingManualRoadmapId)}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  className="btn danger solid"
+                  onClick={handleDeleteManualRoadmap}
+                  disabled={Boolean(deletingManualRoadmapId)}
+                >
+                  {deletingManualRoadmapId ? 'Đang xóa...' : 'Xóa'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+        : null}
     </div>
   );
 }

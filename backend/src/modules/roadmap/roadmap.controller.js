@@ -165,6 +165,15 @@ async function shareManualRoadmap(req, res) {
 	}
 }
 
+async function deleteManualRoadmap(req, res) {
+	try {
+		const result = await manualRoadmapService.deleteById(req.params.roadmapId, req.user.userId);
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 async function acceptRoadmapHandler(req, res) {
 	try {
 		const { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes, sseToken } = req.body ?? {};
@@ -337,6 +346,7 @@ module.exports = {
 	getManualRoadmapById,
 	updateManualRoadmap,
 	shareManualRoadmap,
+	deleteManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,
 	retryGeneration,

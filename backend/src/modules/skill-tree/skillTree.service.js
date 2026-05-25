@@ -94,6 +94,12 @@ async function updateNodeState(studentId, roadmapId, { nodeId, fromState, toStat
       throw createServiceError(404, 'ROADMAP_NOT_FOUND', 'Roadmap not found.');
     }
 
+    const existingProgress = await roadmapProgressService.getProgress(studentId, roadmapId);
+    if (!existingProgress) {
+      const nodeIds = (roadmap.nodes || []).map((node) => node.nodeId).filter(Boolean);
+      await roadmapProgressService.createProgress(studentId, roadmapId, nodeIds);
+    }
+
     const updated = await roadmapProgressService.updateNodeState(
       studentId,
       roadmapId,

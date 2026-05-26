@@ -311,9 +311,11 @@ function AppContent() {
 	if (!content && pathname === '/progress') {
 		content = (
 			<AuthGuard>
-				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
-					<ProgressDashboard />
-				</main>
+				<OnboardingGuard>
+					<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+						<ProgressDashboard />
+					</main>
+				</OnboardingGuard>
 			</AuthGuard>
 		);
 	}

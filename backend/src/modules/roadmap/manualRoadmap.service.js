@@ -2,6 +2,10 @@
 
 const { ManualRoadmap } = require('./manualRoadmap.model');
 const { Roadmap } = require('./roadmap.model');
+const { RoadmapProgress } = require('./roadmapProgress.model');
+const { RoadmapHistory } = require('./roadmapHistory.model');
+const RoadmapProgressCache = require('../progress/roadmapProgressCache.model');
+const RoadmapProgressActivity = require('../progress/roadmapProgressActivity.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
 const { generateEdgesFromHierarchy, enrichNodes, validateHierarchy } = require('./graph.generator');
@@ -299,6 +303,24 @@ async function share(roadmapId, userId) {
     return roadmap.toObject();
 }
 
+async function deleteById(roadmapId, userId) {
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId }, { _id: 1 }).lean();
+    if (!roadmap) {
+        throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+    }
+
+    await Promise.all([
+        ManualRoadmap.deleteOne({ _id: roadmapId, userId }),
+        Roadmap.deleteOne({ _id: roadmapId, userId }),
+        RoadmapProgress.deleteOne({ roadmapId, userId }),
+        RoadmapHistory.deleteMany({ roadmapId, userId }),
+        RoadmapProgressCache.deleteOne({ roadmapId: String(roadmapId), userId: String(userId) }),
+        RoadmapProgressActivity.deleteMany({ roadmapId: String(roadmapId), userId: String(userId) }),
+    ]);
+
+    return { deleted: true, roadmapId };
+}
+
 module.exports = {
     listByUser,
     getByIdForUser,
@@ -307,6 +329,7 @@ module.exports = {
     createDraft,
     updateDraft,
     share,
+    deleteById,
     listPublic,
     getPublicPreviewById,
     serializeTag,

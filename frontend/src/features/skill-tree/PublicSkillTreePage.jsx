@@ -16,7 +16,6 @@ import SkillTreeDetailPanel, {
   SkillTreeOverviewTab,
   SkillTreeNodeDetailTab,
   calculateProgress,
-  buildFixedMilestones,
 } from './SkillTreeDetailPanel';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
@@ -123,6 +122,12 @@ function normalizePreviewNodes(nodes = []) {
   return [...rootNodes, ...childNodes];
 }
 
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 export default function PublicSkillTreePage({ roadmapId = '' }) {
   const { isAuthenticated, accessToken } = useAuth();
   const { addNotification } = useNotification();
@@ -185,7 +190,39 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [nodesForRender]
   );
 
-  const milestones = useMemo(() => buildFixedMilestones(), []);
+  const progressStats = useMemo(() => {
+    const totalNodes = nodesForRender.length;
+    const doneNodes = nodesForRender.filter((node) => node.status === 'completed').length;
+    const inProgressNodes = nodesForRender.filter((node) => node.status === 'inProgress').length;
+    const pendingNodes = Math.max(0, totalNodes - doneNodes - inProgressNodes);
+    const startDate = previewData?.sharedAt || previewData?.createdAt || null;
+
+    const start = startDate ? new Date(startDate) : null;
+    if (start) {
+      start.setHours(0, 0, 0, 0);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const learnedDays = start
+      ? Math.max(0, Math.floor((today - start) / (24 * 60 * 60 * 1000)))
+      : 0;
+    const nodesPerDay = learnedDays > 0 ? inProgressNodes / learnedDays : 0;
+    const estimatedCompletionDate = nodesPerDay > 0
+      ? addDays(today, Math.ceil(pendingNodes / nodesPerDay))
+      : null;
+
+    return {
+      totalNodes,
+      doneNodes,
+      inProgressNodes,
+      pendingNodes,
+      nodesPerDay,
+      startDate,
+      estimatedCompletionDate,
+    };
+  }, [nodesForRender, previewData]);
 
   const sharedAtLabel = previewData?.sharedAt
     ? new Date(previewData.sharedAt).toLocaleString()
@@ -283,7 +320,8 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           title={previewData?.title || 'Roadmap'}
           description={previewData?.description || 'Chưa có mô tả.'}
           metaItems={overviewMetaItems}
-          progressVariant="fixed"
+          progress={progressSummary}
+          progressStats={progressStats}
           actions={overviewActions}
         />
       ),

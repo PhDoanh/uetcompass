@@ -151,6 +151,13 @@ async function updateNodeState(userId, roadmapId, nodeId, fromState, toState) {
 		console.error('[roadmap-history:error]', historyErr);
 	}
 
+	try {
+		const progressTrackingService = require('../progress/progress.tracking.service');
+		await progressTrackingService.updateNodeActivity(userId, roadmapId, nodeId, toState);
+	} catch (trackingErr) {
+		console.error('[progress] updateNodeActivity failed:', trackingErr.message);
+	}
+
 	return updated;
 }
 

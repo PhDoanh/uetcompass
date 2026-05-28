@@ -69,9 +69,14 @@ async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
     );
 }
 
-async function listPublic({ q = '', tags = [], page = 1, limit = 20 } = {}) {
+async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
     const filter = { isPublic: true };
+
+    const normalizedUserId = String(userId || '').trim();
+    if (normalizedUserId) {
+        filter.userId = normalizedUserId;
+    }
 
     const normalizedQuery = String(q || '').trim();
     if (normalizedQuery) {

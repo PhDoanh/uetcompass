@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Compass, Star, UserPlus, Users } from 'lucide-react';
 import accountApi from '../../services/account.api';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import skillTreeApi from '../../services/skillTree.api';
-import { useAuth } from '../../providers/AuthProvider';
 import { useNotification } from '../notification/NotificationContainer';
 import '../../style/general-component.css';
 import './public-profile-page.css';
@@ -13,19 +11,6 @@ const STAR_COUNT = 5;
 
 function safeText(value, fallback = '') {
 	return String(value || '').trim() || fallback;
-}
-
-function toDateLabel(value) {
-	if (!value) {
-		return 'Chưa cập nhật';
-	}
-
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return safeText(value, 'Chưa cập nhật');
-	}
-
-	return date.toLocaleDateString('vi-VN');
 }
 
 function toRelativeDays(startDate) {
@@ -118,6 +103,20 @@ function uniqueById(items) {
 	return uniqueItems;
 }
 
+function resolveUserIdFromLocation(fallbackUserId = '') {
+	const direct = String(fallbackUserId || '').trim();
+	if (direct) {
+		return direct;
+	}
+
+	if (typeof window === 'undefined') {
+		return '';
+	}
+
+	const match = String(window.location.pathname || '').match(/^\/public-profile\/([^/]+)$/);
+	return match ? decodeURIComponent(match[1]) : '';
+}
+
 function normalizeManualRoadmap(item, authorName, authorAvatar) {
 	const title = safeText(item?.title, 'Manual roadmap');
 	const description = safeText(item?.description, 'Lộ trình cộng đồng được chia sẻ để người khác tham khảo và học theo.');
@@ -182,8 +181,7 @@ function RoadmapCard({ item }) {
 	);
 }
 
-export default function PublicProfilePage() {
-	const { accessToken, logoutAndRedirect } = useAuth();
+export default function PublicProfilePage({ userId }) {
 	const notificationApi = useNotification();
 	const addNotification = notificationApi?.addNotification || (() => {});
 	const [loading, setLoading] = useState(true);
@@ -194,10 +192,11 @@ export default function PublicProfilePage() {
 
 	useEffect(() => {
 		let alive = true;
+		const resolvedUserId = resolveUserIdFromLocation(userId);
 
 		async function loadProfile() {
-			if (!accessToken) {
-				setError('Vui lòng đăng nhập để xem dữ liệu hồ sơ công khai.');
+			if (!resolvedUserId) {
+				setError('Thiếu id hồ sơ công khai.');
 				setLoading(false);
 				return;
 			}
@@ -207,9 +206,8 @@ export default function PublicProfilePage() {
 
 			try {
 				const [profilePayload, manualPayload, skillTreePayload] = await Promise.all([
-					accountApi.getProfile(accessToken),
-					manualRoadmapApi.listManualRoadmaps(accessToken, { page: 1, limit: 100 }),
-					skillTreeApi.getTree(accessToken),
+					accountApi.getPublicProfile(resolvedUserId),
+					manualRoadmapApi.listPublicManualRoadmaps({ userId: resolvedUserId, page: 1, limit: 100 }),
 				]);
 
 				if (!alive) {
@@ -217,9 +215,9 @@ export default function PublicProfilePage() {
 				}
 
 				const identity = profilePayload?.identity || {};
+				const visible = profilePayload?.visible !== false && identity?.privacySetting !== 'anonymous';
 				const displayName = safeText(identity.effectiveDisplayName || identity.displayName || identity.fullName, 'Sinh viên UET');
 				const avatarUrl = safeText(identity.avatarUrl, '');
-				const completedNodes = Array.isArray(skillTreePayload?.progress?.completed) ? skillTreePayload.progress.completed : [];
 				const manualRoadmaps = uniqueById(manualPayload?.items);
 				const combined = manualRoadmaps.map((item) => normalizeManualRoadmap(item, displayName, avatarUrl)).sort((left, right) => {
 					const leftTime = new Date(left.updatedAt || 0).getTime();
@@ -228,27 +226,23 @@ export default function PublicProfilePage() {
 				});
 
 				setProfile({
+					userId: resolvedUserId,
+					visible,
 					identity,
 					displayName,
 					avatarUrl,
 					joinedAt: identity.joinedAt || profilePayload?.createdAt || null,
-					major: safeText(profilePayload?.profile?.major, 'Chưa cập nhật'),
-					careerGoalRole: safeText(profilePayload?.profile?.careerGoal?.role, 'Chưa cập nhật'),
-					completedNodesCount: completedNodes.length,
+					major: visible ? safeText(profilePayload?.profile?.major, 'Chưa cập nhật') : '',
+					careerGoalRole: visible ? safeText(profilePayload?.profile?.careerGoal?.role, 'Chưa cập nhật') : '',
 					roadmapCount: combined.length,
 					averageRating: average(combined.map((item) => item.rating)),
 					followers: Math.max(12, Math.round(combined.length * 4 + average(combined.map((item) => item.rating)) * 6)),
-					following: Math.max(8, Math.round(completedNodes.length / 2 + manualRoadmaps.length)),
+					following: Math.max(8, Math.round(combined.length + manualRoadmaps.length)),
 				});
 				setRoadmaps(combined);
 				setPageIndex(0);
 			} catch (loadError) {
 				if (!alive) {
-					return;
-				}
-
-				if (loadError?.status === 401) {
-					await logoutAndRedirect();
 					return;
 				}
 
@@ -267,7 +261,7 @@ export default function PublicProfilePage() {
 		return () => {
 			alive = false;
 		};
-	}, [accessToken, logoutAndRedirect]);
+	}, [userId]);
 
 	const totalPages = Math.max(1, Math.ceil(roadmaps.length / PAGE_SIZE));
 	const safePageIndex = Math.min(pageIndex, totalPages - 1);
@@ -292,13 +286,6 @@ export default function PublicProfilePage() {
 		<main className="public-profile-page">
 			<section className="public-profile-page__shell">
 				<header className="public-profile-page__hero">
-					<div>
-						<p className="public-profile-page__eyebrow">Public profile</p>
-						<h1>Manual roadmap của {profile?.displayName || 'bạn'}</h1>
-						<p className="public-profile-page__subtitle">
-							Trang xem công khai chỉ để quan sát hồ sơ, tiến độ học tập và các manual roadmap được chia sẻ.
-						</p>
-					</div>
 					<div className="public-profile-page__hero-actions">
 						<button type="button" className="public-profile-page__nav-btn" onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))} disabled={safePageIndex === 0 || loading} aria-label="Trang trước">
 							<ChevronLeft size={18} />
@@ -312,69 +299,77 @@ export default function PublicProfilePage() {
 				<div className="public-profile-page__layout">
 					<aside className="public-profile-page__sidebar">
 						<section className="public-profile-card public-profile-card--profile">
-							<div className="public-profile-card__profile-top">
-								<div className="public-profile-card__avatar-wrap">
-									{profile?.avatarUrl ? (
-										<img src={profile.avatarUrl} alt="Ảnh đại diện" className="public-profile-card__avatar" />
-									) : (
-										<div className="public-profile-card__avatar public-profile-card__avatar--fallback">{(profile?.displayName || 'U').charAt(0).toUpperCase()}</div>
-									)}
+							{profile?.visible === false ? (
+								<div className="public-profile-page__empty-state public-profile-page__empty-state--error">
+									Hồ sơ này đang để chế độ ẩn. Chỉ có manual roadmap công khai được hiển thị.
 								</div>
-								<div>
-									<h2>{profile?.displayName || 'Sinh viên UET'}</h2>
-									<span className="public-profile-card__meta">{profile?.identity?.email || 'Email chưa cập nhật'}</span>
-								</div>
-							</div>
+							) : (
+								<>
+									<div className="public-profile-card__profile-top">
+										<div className="public-profile-card__avatar-wrap">
+											{profile?.avatarUrl ? (
+												<img src={profile.avatarUrl} alt="Ảnh đại diện" className="public-profile-card__avatar" />
+											) : (
+												<div className="public-profile-card__avatar public-profile-card__avatar--fallback">{(profile?.displayName || 'U').charAt(0).toUpperCase()}</div>
+											)}
+										</div>
+										<div>
+											<h2>{profile?.displayName || 'Sinh viên UET'}</h2>
+											<span className="public-profile-card__meta">{profile?.identity?.email || 'Email chưa cập nhật'}</span>
+										</div>
+									</div>
 
-							<div className="public-profile-card__detail-grid">
-								<div>
-									<span>Ngành</span>
-									<strong>{profile?.major}</strong>
-								</div>
-								<div>
-									<span>Mục tiêu nghề nghiệp</span>
-									<strong>{profile?.careerGoalRole}</strong>
-								</div>
-							</div>
+									<div className="public-profile-card__detail-grid">
+										<div>
+											<span>Ngành</span>
+											<strong>{profile?.major}</strong>
+										</div>
+										<div>
+											<span>Mục tiêu nghề nghiệp</span>
+											<strong>{profile?.careerGoalRole}</strong>
+										</div>
+									</div>
 
-							<button type="button" className="public-profile-card__follow-btn" onClick={handleFollow}>
-								<UserPlus size={16} />
-								Follow
-							</button>
+									<button type="button" className="public-profile-card__follow-btn" onClick={handleFollow}>
+										<UserPlus size={16} />
+										Follow
+									</button>
 
-							<div className="public-profile-card__stats public-profile-card__stats--social">
-								<div>
-									<strong>{profile?.followers || 0}</strong>
-									<span>Followers</span>
-								</div>
-								<div>
-									<strong>{profile?.following || 0}</strong>
-									<span>Following</span>
-								</div>
-							</div>
+									<div className="public-profile-card__stats public-profile-card__stats--social">
+										<div>
+											<strong>{profile?.followers || 0}</strong>
+											<span>Followers</span>
+										</div>
+										<div>
+											<strong>{profile?.following || 0}</strong>
+											<span>Following</span>
+										</div>
+									</div>
 
-							<div className="public-profile-card__rating-block">
-								<RatingStrip value={topRating} />
-								<p>Đánh giá trung bình của toàn bộ manual roadmap được chia sẻ công khai.</p>
-							</div>
+									<div className="public-profile-card__rating-block">
+										<RatingStrip value={topRating} />
+										<p>Đánh giá trung bình của toàn bộ manual roadmap được chia sẻ công khai.</p>
+									</div>
 
-							<div className="public-profile-card__stats public-profile-card__stats--text">
-								<div>
-									<CalendarDays size={16} />
-									<span>Số ngày</span>
-									<strong>{joinedLabel}</strong>
-								</div>
-								<div>
-									<Compass size={16} />
-									<span>Nodes đã học</span>
-									<strong>{profile?.completedNodesCount || 0}</strong>
-								</div>
-								<div>
-									<Users size={16} />
-									<span>Manual roadmap</span>
-									<strong>{profile?.roadmapCount || 0}</strong>
-								</div>
-							</div>
+									<div className="public-profile-card__stats public-profile-card__stats--text">
+										<div>
+											<CalendarDays size={16} />
+											<span>Số ngày</span>
+											<strong>{joinedLabel}</strong>
+										</div>
+										<div>
+											<Users size={16} />
+											<span>Manual roadmap</span>
+											<strong>{profile?.roadmapCount || 0}</strong>
+										</div>
+										<div>
+											<Star size={16} />
+											<span>Đánh giá TB</span>
+											<strong>{topRating.toFixed(1)}</strong>
+										</div>
+									</div>
+								</>
+							)}
 						</section>
 					</aside>
 

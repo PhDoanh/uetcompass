@@ -77,11 +77,13 @@ function streamProgressEvents(req, res) {
   try {
     const payload = verifyAccessToken(sseToken.trim());
     userId = String(payload?.userId || '').trim();
-  } catch (_) {
+  } catch (error) {
+    console.error('Error occurred while verifying SSE token:', error);
     userId = '';
   }
 
   if (!userId) {
+    console.error('Invalid or missing user ID from SSE token');
     res.write('event: error\n');
     res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\n\n');
     res.end();

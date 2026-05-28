@@ -10,7 +10,7 @@ const { RoadmapProgress } = require('../roadmap/roadmapProgress.model');
 const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 const { AccountAuditEvent } = require('./account.model');
 const accountAuditService = require('./accountAudit.service');
-const { resolveEffectiveDisplayName } = require('./identity.policy');
+const { resolveEffectiveDisplayName, resolvePublicIdentity } = require('./identity.policy');
 
 const BCRYPT_ROUNDS = 12;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -30,6 +30,7 @@ function validatePasswordPolicy(value) {
 
 function mapIdentity(user) {
   return {
+    userId: String(user._id || ''),
     email: user.email,
     displayName: user.displayName || null,
     fullName: user.fullName,
@@ -40,6 +41,49 @@ function mapIdentity(user) {
       displayName: user.displayName,
       fullName: user.fullName,
       email: user.email,
+    }),
+  };
+}
+
+async function getPublicProfile(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw buildError(404, 'NOT_FOUND', 'User profile not found.');
+  }
+
+  const identity = mapIdentity(user);
+  const visible = user.privacySetting !== 'anonymous';
+
+  if (!visible) {
+    return {
+      visible: false,
+      identity: {
+        userId: identity.userId,
+        displayName: resolvePublicIdentity({
+          displayName: user.displayName,
+          fullName: user.fullName,
+          email: user.email,
+          privacySetting: user.privacySetting,
+        }),
+        privacySetting: user.privacySetting,
+        avatarUrl: identity.avatarUrl,
+      },
+      profile: null,
+    };
+  }
+
+  const studentProfile = await StudentProfile.findOne({ userId });
+
+  return {
+    visible: true,
+    identity,
+    profile: normalizeProfileDraft({
+      major: studentProfile?.major,
+      completedCourseIds: Array.isArray(studentProfile?.completedCourses)
+        ? studentProfile.completedCourses.map((item) => item?.courseUnitId || item?.courseCode).filter(Boolean)
+        : [],
+      careerGoal: studentProfile?.careerGoal,
+      personalAspirations: studentProfile?.personalAspirations,
     }),
   };
 }
@@ -303,4 +347,5 @@ module.exports = {
   changePassword,
   hardDeleteAccount,
   validatePasswordPolicy,
+  getPublicProfile,
 };

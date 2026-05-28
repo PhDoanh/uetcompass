@@ -393,6 +393,7 @@ export default function LearningProfilePage() {
 					const identityPayload = profilePayload?.identity || {};
 					setAvatarBroken(false);
 					setIdentity({
+						userId: String(identityPayload.userId || profilePayload?.userId || '').trim(),
 						email: String(identityPayload.email || '').trim(),
 						displayName: String(identityPayload.displayName || identityPayload.fullName || 'Sinh viên UET').trim(),
 						fullName: String(identityPayload.fullName || '').trim(),
@@ -667,7 +668,7 @@ export default function LearningProfilePage() {
 										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 									</button>
 								) : null}
-								<button type="button" className="secondary-btn" onClick={() => navigateTo('/public-profile')}>
+								<button type="button" className="secondary-btn" onClick={() => navigateTo(identity?.userId ? `/public-profile/${identity.userId}` : '/public-profile')}>
 									Xem trang cá nhân công khai
 								</button>
 								{showRegenRoadmap ? (

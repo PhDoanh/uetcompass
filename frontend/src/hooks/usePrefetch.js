@@ -28,7 +28,7 @@ function createRoutePrefetchers() {
 			load: () => import('../features/onboarding/OnboardingPanel'),
 		},
 		{ match: (path) => path === '/learning-profile', load: () => import('../features/onboarding/LearningProfilePage') },
-		{ match: (path) => path === '/public-profile', load: () => import('../features/public-profile/PublicProfilePage') },
+		{ match: (path) => path === '/public-profile' || path.startsWith('/public-profile/'), load: () => import('../features/public-profile/PublicProfilePage') },
 		{ match: (path) => path.startsWith('/roadmaps/public/'), load: () => import('../features/skill-tree/PublicSkillTreePage') },
 	];
 }

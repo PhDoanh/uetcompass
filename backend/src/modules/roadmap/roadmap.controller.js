@@ -58,6 +58,7 @@ async function listPublicManualRoadmaps(req, res) {
 	try {
 		const { q, tags, page, limit } = req.query;
 		const normalizedQuery = String(q || '').trim();
+		const userId = String(req.query?.userId || '').trim();
 
 		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
 			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
@@ -73,6 +74,7 @@ async function listPublicManualRoadmaps(req, res) {
 		const result = await manualRoadmapService.listPublic({
 			q: normalizedQuery,
 			tags: selectedTags,
+			userId,
 			page: parsePositiveIntQuery(page, 'page'),
 			limit: parsePositiveIntQuery(limit, 'limit'),
 		});

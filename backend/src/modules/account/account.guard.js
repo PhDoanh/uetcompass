@@ -15,7 +15,8 @@ function requireAccountAccess(req, res, next) {
       }
 
       return next();
-    } catch (_) {
+    } catch (error) {
+      console.error('Account access check error:', error);
       return res.status(500).json({
         error: {
           code: 'INTERNAL_ERROR',

@@ -46,8 +46,8 @@ async function verifyGoogleIdToken(credential, context = {}) {
         outcome: 'fail',
         metadata: { email },
       });
-    } catch (_) {
-      // Ignore audit emission failures on deny path.
+    } catch (error) {
+      console.error('Audit event emission error:', error);
     }
     throw buildError(403, 'GOOGLE_DOMAIN_RESTRICTED', 'Only @vnu.edu.vn accounts are allowed.');
   }

@@ -67,7 +67,7 @@ export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
 }
 
-export function listPublicManualRoadmaps({ q = '', tags = [], page = 1, limit = 20 } = {}) {
+export function listPublicManualRoadmaps({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
@@ -82,6 +82,11 @@ export function listPublicManualRoadmaps({ q = '', tags = [], page = 1, limit = 
         tags.forEach(tag => {
             params.append('tags', String(tag || '').trim().toLowerCase());
         });
+    }
+
+    const normalizedUserId = String(userId || '').trim();
+    if (normalizedUserId) {
+        params.set('userId', normalizedUserId);
     }
 
     return request(`/roadmaps/manual-roadmaps/public?${params.toString()}`, 'GET', null, undefined, { requireAuth: false });

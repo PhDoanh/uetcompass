@@ -8,6 +8,7 @@ import { getCourseCatalog } from '../../services/onboarding.api';
 import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import { validateProfilePayload } from '../account/accountSettings.validation';
+import { navigateTo } from '../../shared/navigation';
 import './onboarding-panel.css';
 import '../account/account-settings-page.css';
 
@@ -666,6 +667,9 @@ export default function LearningProfilePage() {
 										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 									</button>
 								) : null}
+								<button type="button" className="secondary-btn" onClick={() => navigateTo('/public-profile')}>
+									Xem trang cá nhân công khai
+								</button>
 								{showRegenRoadmap ? (
 									<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 										<Sparkles size={17} />

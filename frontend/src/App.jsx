@@ -30,6 +30,7 @@ const AccountSettingsPage = lazy(() => import('./features/account/AccountSetting
 const Homepage = lazy(() => import('./features/general/Homepage'));
 const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel'));
 const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
+const PublicProfilePage = lazy(() => import('./features/public-profile/PublicProfilePage'));
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
@@ -358,6 +359,10 @@ function AppContent() {
 				</OnboardingGuard>
 			</AuthGuard>
 		);
+	}
+
+	if (!content && pathname === '/public-profile') {
+		content = <PublicProfilePage />;
 	}
 
 	if (!content && isAuthPopupPath) {

@@ -35,6 +35,7 @@ function mapIdentity(user) {
     fullName: user.fullName,
     privacySetting: user.privacySetting,
     avatarUrl: user.avatarUrl || null,
+    joinedAt: user.createdAt || null,
     effectiveDisplayName: resolveEffectiveDisplayName({
       displayName: user.displayName,
       fullName: user.fullName,

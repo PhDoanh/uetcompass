@@ -2324,15 +2324,15 @@ html[data-theme='dark'] .homepage-hero-ico {
 .homepage-progress__stack-track {
   display: flex;
   height: 14px;
-  border-radius: 999px;
-  overflow: hidden;
+  border-radius: 0;
+  overflow: visible;
   background: #e2e8f0;
 }
 
 .homepage-progress__stack-segment {
   position: relative;
   min-width: 4px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .homepage-progress__stack-fill {
@@ -2350,7 +2350,7 @@ html[data-theme='dark'] .homepage-hero-ico {
   background: #0f172a;
   color: #fff;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 0.7rem;
   white-space: nowrap;
   opacity: 0;

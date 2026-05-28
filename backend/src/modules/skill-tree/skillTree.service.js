@@ -115,13 +115,6 @@ async function updateNodeState(studentId, roadmapId, { nodeId, fromState, toStat
       console.error('[progress] refreshCache failed:', err.message);
     }
 
-    try {
-      const progressTrackingService = require('../progress/progress.tracking.service');
-      await progressTrackingService.updateNodeActivity(studentId, roadmapId, nodeId, toState);
-    } catch (err) {
-      console.error('[progress] updateNodeActivity failed:', err.message);
-    }
-
     return {
       roadmapId: String(updated.roadmapId),
       state: updated.state,

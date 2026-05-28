@@ -1,28 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pie, PieChart, ResponsiveContainer, Cell, Label } from 'recharts';
 import { useAuth } from '../../providers/AuthProvider';
 import { getRoadmapNodes, getSummaries, getTrackingTables } from '../../services/progress.api';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
-import { getRoadmapIdFromLocation } from './progress.utils';
 import { computeManualProgressTotals, loadManualProgress } from './manualProgress.utils';
+import { navigateTo } from '../../shared/navigation';
 import SiteFooter from '../general/SiteFooter';
 import styles from './progress.module.css';
 
 const ROADMAPS_PER_PAGE = 5;
 const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
-
-function updateRoadmapIdInLocation(roadmapId) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  const url = new URL(window.location.href);
-  if (roadmapId) {
-    url.searchParams.set('roadmapId', roadmapId);
-  } else {
-    url.searchParams.delete('roadmapId');
-  }
-  window.history.replaceState({}, '', `${url.pathname}${url.search}`);
-}
 
 function formatDate(value) {
   if (!value) {
@@ -57,23 +44,6 @@ function formatFrequency(value) {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
 }
 
-function isSameMonth(date, compare) {
-  return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
-}
-
-function findCurrentMonthBucket(buckets = [], referenceDate = new Date()) {
-  return buckets.find((bucket) => {
-    if (!bucket?.periodStart) {
-      return false;
-    }
-    const date = new Date(`${bucket.periodStart}T00:00:00`);
-    if (Number.isNaN(date.getTime())) {
-      return false;
-    }
-    return isSameMonth(date, referenceDate);
-  }) || null;
-}
-
 function addDays(date, days) {
   const next = new Date(date.getTime());
   next.setDate(next.getDate() + days);
@@ -85,9 +55,7 @@ export default function ProgressDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roadmaps, setRoadmaps] = useState([]);
-  const [selectedRoadmapId, setSelectedRoadmapId] = useState(() =>
-    typeof window === 'undefined' ? '' : getRoadmapIdFromLocation(window.location.search)
-  );
+  const [selectedRoadmapId, setSelectedRoadmapId] = useState('');
   const [detailRoadmapId, setDetailRoadmapId] = useState('');
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -98,8 +66,7 @@ export default function ProgressDashboard() {
   const [roadmapPage, setRoadmapPage] = useState(0);
   const [manualProgressSummaries, setManualProgressSummaries] = useState([]);
   const [manualProgressDetails, setManualProgressDetails] = useState({});
-  const [monthlyRoadmapStats, setMonthlyRoadmapStats] = useState([]);
-  const [monthlyRoadmapLoading, setMonthlyRoadmapLoading] = useState(false);
+  const detailCacheRef = useRef(new Map());
 
   const combinedRoadmaps = useMemo(
     () => [...roadmaps, ...manualProgressSummaries],
@@ -135,9 +102,15 @@ export default function ProgressDashboard() {
   }, [accessToken, selectedRoadmapId]);
 
   const loadDetail = useCallback(
-    async (roadmapId) => {
+    async (roadmapId, { force = false } = {}) => {
       if (!accessToken || !roadmapId) {
         setDetail(null);
+        return;
+      }
+
+      if (!force && detailCacheRef.current.has(roadmapId)) {
+        setDetail(detailCacheRef.current.get(roadmapId));
+        setDetailLoading(false);
         return;
       }
 
@@ -148,17 +121,20 @@ export default function ProgressDashboard() {
       if (manualDetail) {
         setDetail(manualDetail);
         setDetailLoading(false);
+        detailCacheRef.current.set(roadmapId, manualDetail);
         return;
       }
 
       if (isManualRoadmap) {
-        setDetail({
+        const fallbackDetail = {
           roadmapId,
           roadmapName: selectedRoadmap?.roadmapName || 'Manual roadmap',
           nodes: { done: [], inProgress: [], pending: [] },
           manualMissingData: true,
-        });
+        };
+        setDetail(fallbackDetail);
         setDetailLoading(false);
+        detailCacheRef.current.set(roadmapId, fallbackDetail);
         return;
       }
 
@@ -166,6 +142,7 @@ export default function ProgressDashboard() {
       try {
         const data = await getRoadmapNodes(accessToken, roadmapId);
         setDetail(data);
+        detailCacheRef.current.set(roadmapId, data);
       } catch (err) {
         setError(err);
       } finally {
@@ -202,6 +179,20 @@ export default function ProgressDashboard() {
   }, [loadSummaries]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('roadmapId')) {
+      return;
+    }
+
+    url.searchParams.delete('roadmapId');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
 
     if (!accessToken) {
@@ -232,9 +223,8 @@ export default function ProgressDashboard() {
   }, [accessToken]);
 
   useEffect(() => {
-    updateRoadmapIdInLocation(detailRoadmapId || selectedRoadmapId);
     loadDetail(detailRoadmapId);
-  }, [detailRoadmapId, selectedRoadmapId, loadDetail]);
+  }, [detailRoadmapId, loadDetail]);
 
   useEffect(() => {
     if (!selectedRoadmapId && combinedRoadmaps[0]?.roadmapId) {
@@ -246,67 +236,12 @@ export default function ProgressDashboard() {
     loadTracking();
   }, [loadTracking]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    if (!accessToken || combinedRoadmaps.length === 0) {
-      setMonthlyRoadmapStats([]);
-      setMonthlyRoadmapLoading(false);
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    const colorList = ['#2563eb', '#f97316', '#8b5cf6', '#ec4899', '#22c55e', '#f59e0b', '#14b8a6'];
-    setMonthlyRoadmapLoading(true);
-
-    Promise.allSettled(
-      combinedRoadmaps.map(async (roadmap, index) => {
-        const roadmapId = roadmap.roadmapId;
-        const response = await getTrackingTables(accessToken, {
-          scope: 'roadmap',
-          roadmapId,
-          groupBy: 'monthly',
-        });
-        const bucket = findCurrentMonthBucket(response?.buckets || []);
-        const completedNodes = bucket?.completedNodes || 0;
-        const totalNodes = roadmap?.totalNodes || 0;
-        const doneNodes = roadmap?.doneNodes || 0;
-        const completionPercent = totalNodes
-          ? Math.round((doneNodes / totalNodes) * 100)
-          : Math.round(roadmap?.progressPercent || 0);
-
-        return {
-          roadmapId,
-          roadmapName: roadmap?.roadmapName || 'Roadmap',
-          completedNodes,
-          completionPercent,
-          color: colorList[index % colorList.length],
-        };
-      })
-    ).then((results) => {
-      if (!isMounted) {
-        return;
-      }
-      const items = results
-        .filter((result) => result.status === 'fulfilled')
-        .map((result) => result.value)
-        .filter((item) => item && item.roadmapId);
-      setMonthlyRoadmapStats(items);
-      setMonthlyRoadmapLoading(false);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [accessToken, combinedRoadmaps]);
-
   useProgressSSE({
     sseToken: accessToken,
     onSummaryUpdated: (summary) => {
       setRoadmaps((current) => mergeSummaryIntoRoadmaps(current, summary));
       if (summary?.roadmapId === detailRoadmapId) {
-        loadDetail(detailRoadmapId);
+        loadDetail(detailRoadmapId, { force: true });
       }
       loadTracking();
     },
@@ -324,10 +259,17 @@ export default function ProgressDashboard() {
   const summaryBase = trackingData?.summary || {};
   const summaryTotalNodes = (summaryBase.totalNodes || 0) + manualTotals.totalNodes;
   const summaryCompletedNodes = (summaryBase.completedNodes || 0) + manualTotals.doneNodes;
+  const summaryInProgressNodes = (summaryBase.inProgressNodes || 0) + manualTotals.inProgressNodes;
+  const summaryActiveNodes = summaryBase.activeNodes || 0;
+  const summaryLearningRate = summaryTotalNodes ? summaryInProgressNodes / summaryTotalNodes : 0;
   const summary = {
     totalNodes: summaryTotalNodes,
     completedNodes: summaryCompletedNodes,
+    inProgressNodes: summaryInProgressNodes,
+    activeNodes: summaryActiveNodes,
     completionRate: summaryTotalNodes ? summaryCompletedNodes / summaryTotalNodes : 0,
+    learningRate: summaryLearningRate,
+    firstActivityDate: summaryBase.firstActivityDate || null,
   };
   const periods = (trackingData?.buckets || [])
     .slice()
@@ -337,31 +279,36 @@ export default function ProgressDashboard() {
   const inProgressNodes = detail?.nodes?.inProgress || detail?.inProgressNodes || [];
   const pendingNodes = detail?.nodes?.pending || detail?.pendingNodes || [];
   const doneCount = doneNodes.length;
+  const inProgressCount = inProgressNodes.length;
   const pendingCount = pendingNodes.length;
   const totalNodes = doneCount + pendingCount + inProgressNodes.length;
-  const remainingCount = Math.max(0, totalNodes - doneCount);
-  const completionRate = Number.isFinite(selectedRoadmap?.progressPercent)
-    ? selectedRoadmap.progressPercent / 100
-    : doneCount + pendingCount > 0
-      ? doneCount / (doneCount + pendingCount)
-      : 0;
-  const completionPercent = Math.round(completionRate * 100);
-  const monthlyTotalNodes = monthlyRoadmapStats.reduce((sum, item) => sum + item.completedNodes, 0);
-  const donutData = monthlyRoadmapStats.map((item) => ({
-    name: item.roadmapName,
-    value: item.completedNodes,
-    color: item.color,
-  }));
+  const remainingCount = pendingCount;
+  const learningRate = totalNodes > 0 ? inProgressCount / totalNodes : 0;
+  const learningPercent = Math.round(learningRate * 100);
+  const donutData = [
+    { name: 'Hoàn thành', value: doneCount, color: '#22c55e' },
+    { name: 'Đang học', value: inProgressCount, color: '#f59e0b' },
+    { name: 'Chưa học', value: pendingCount, color: '#94a3b8' },
+  ];
   const roadmapAcceptedAt = selectedRoadmap?.roadmapAcceptedAt;
   const roadmapCreatedAt = selectedRoadmap?.roadmapCreatedAt;
   const acceptedDate = roadmapAcceptedAt ? new Date(roadmapAcceptedAt) : null;
   const createdDate = roadmapCreatedAt ? new Date(roadmapCreatedAt) : null;
-  const earliestLearningDate =
-    acceptedDate && !Number.isNaN(acceptedDate.getTime())
-      ? acceptedDate
-      : createdDate && !Number.isNaN(createdDate.getTime())
-        ? createdDate
-        : null;
+  const activityDates = [...doneNodes, ...inProgressNodes]
+    .map((node) => node?.updatedAt)
+    .filter(Boolean)
+    .map((value) => new Date(value))
+    .filter((value) => !Number.isNaN(value.getTime()));
+  const earliestNodeActivity = activityDates.length
+    ? new Date(Math.min(...activityDates.map((value) => value.getTime())))
+    : null;
+  const summaryFirstActivity = summary.firstActivityDate
+    ? new Date(summary.firstActivityDate)
+    : null;
+  const earliestLearningDate = earliestNodeActivity
+    || (summaryFirstActivity && !Number.isNaN(summaryFirstActivity.getTime()) ? summaryFirstActivity : null)
+    || (acceptedDate && !Number.isNaN(acceptedDate.getTime()) ? acceptedDate : null)
+    || (createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate : null);
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startOfLearning = earliestLearningDate ? new Date(earliestLearningDate) : null;
@@ -371,7 +318,7 @@ export default function ProgressDashboard() {
   const learnedDays = startOfLearning
     ? Math.max(0, Math.floor((startOfToday - startOfLearning) / (24 * 60 * 60 * 1000)))
     : 0;
-  const studyFrequency = learnedDays > 0 ? doneCount / learnedDays : 0;
+  const studyFrequency = learnedDays > 0 ? inProgressCount / learnedDays : 0;
   const estimatedCompletionDate =
     studyFrequency > 0
       ? addDays(startOfToday, Math.ceil(remainingCount / studyFrequency))
@@ -433,7 +380,7 @@ export default function ProgressDashboard() {
           </div>
         </div>
 
-        <div className={styles.statsCards}>
+          <div className={styles.statsCards}>
           <div className={styles.statsCard}>
             <p className={styles.statsLabel}>Tổng số nốt</p>
             <p className={styles.statsValue}>{summary.totalNodes ?? '--'}</p>
@@ -441,6 +388,10 @@ export default function ProgressDashboard() {
           <div className={styles.statsCard}>
             <p className={styles.statsLabel}>Đã hoàn thành</p>
             <p className={styles.statsValue}>{summary.completedNodes ?? '--'}</p>
+          </div>
+          <div className={styles.statsCard}>
+            <p className={styles.statsLabel}>Đang học</p>
+            <p className={styles.statsValue}>{summary.inProgressNodes ?? '--'}</p>
           </div>
           <div className={styles.statsCard}>
             <p className={styles.statsLabel}>Tỷ lệ hoàn thành</p>
@@ -453,7 +404,7 @@ export default function ProgressDashboard() {
         <div className={styles.statsTable}>
           <div className={`${styles.statsRow} ${styles.statsRowHead}`}>
             <span>Thời gian</span>
-            <span>Nốt hoạt động</span>
+            <span>Đang học</span>
             <span>Hoàn thành</span>
             <span>Tỷ lệ</span>
           </div>
@@ -464,7 +415,7 @@ export default function ProgressDashboard() {
               periods.map((period) => (
                 <div key={`${period.periodStart}-${period.periodEnd}`} className={styles.statsRow}>
                   <span>{formatRange(period.periodStart, period.periodEnd)}</span>
-                  <span>{period.activeNodes ?? period.activeDays ?? '--'}</span>
+                  <span>{period.inProgressNodes ?? '--'}</span>
                   <span>{period.completedNodes ?? '--'}</span>
                   <span>{formatPercent(period.completionRate)}</span>
                 </div>
@@ -544,6 +495,9 @@ export default function ProgressDashboard() {
                     <p className={`${styles.roadmapPercent} homepage-roadmap-card__description`}>
                       Đã hoàn thành {percent}%
                     </p>
+                    <p className={styles.roadmapSubtext}>
+                      Đang học {roadmap?.inProgressNodes ?? 0} node
+                    </p>
                     <div className={styles.progressBar}>
                       <span className={styles.progressBarFill} style={{ width: `${percent}%` }} />
                     </div>
@@ -554,12 +508,12 @@ export default function ProgressDashboard() {
                       type="button"
                       className="homepage-card-action"
                       onClick={() => {
-                        if (detailRoadmapId === roadmap.roadmapId) {
-                            setDetailRoadmapId('');
-                        } else {
-                            setSelectedRoadmapId(roadmap.roadmapId);
-                            setDetailRoadmapId(roadmap.roadmapId);
+                        if (roadmap?.isManual) {
+                          navigateTo(`/skill-tree/${encodeURIComponent(roadmap.roadmapId)}`);
+                          return;
                         }
+
+                        navigateTo('/skill-tree');
                       }}
                     >
                       Chi tiết
@@ -630,44 +584,39 @@ export default function ProgressDashboard() {
                       {donutData.map((entry) => (
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
-                      <Label value={monthlyRoadmapLoading ? '--' : `${monthlyTotalNodes}`} position="center" className={styles.donutValue} />
+                      <Label value={`${totalNodes}`} position="center" className={styles.donutValue} />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <p className={styles.donutLabel}>Node hoàn thành trong tháng</p>
+              <p className={styles.donutLabel}>Tình trạng roadmap</p>
+              <p className={styles.donutMeta}>Tổng số node: {totalNodes}</p>
               <div className={styles.donutLegend}>
-                {monthlyRoadmapStats.map((item) => (
-                  <div key={item.roadmapId} className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{ backgroundColor: item.color }} />
-                    <span>{item.roadmapName}</span>
-                    <strong>{item.completedNodes}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.monthlyBar}>
-                <div className={styles.monthlyBarTrack}>
-                  {monthlyTotalNodes > 0 ? (
-                    monthlyRoadmapStats.map((item) => (
-                      <span
-                        key={item.roadmapId}
-                        className={styles.monthlyBarSegment}
-                        style={{
-                          width: `${(item.completedNodes / monthlyTotalNodes) * 100}%`,
-                          backgroundColor: item.color,
-                        }}
-                        title={`${item.roadmapName}: ${item.completionPercent}% (thang nay ${item.completedNodes} node)`}
-                      />
-                    ))
-                  ) : (
-                    <span className={styles.monthlyBarEmpty}>Chua co hoat dong trong thang.</span>
-                  )}
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#22c55e' }} />
+                  <span>Hoàn thành</span>
+                  <strong>{doneCount}</strong>
+                </div>
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#f59e0b' }} />
+                  <span>Đang học</span>
+                  <strong>{inProgressCount}</strong>
+                </div>
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#94a3b8' }} />
+                  <span>Chưa học</span>
+                  <strong>{pendingCount}</strong>
                 </div>
               </div>
             </div>
             <div className={styles.metricCard}>
               <p className={styles.metricLabel}>Tần suất học</p>
               <p className={styles.metricValue}>{formatFrequency(studyFrequency)} nodes / ngày</p>
+              <p className={styles.metricHint}>Tỷ lệ đang học: {learningPercent}%</p>
+            </div>
+            <div className={styles.metricCard}>
+              <p className={styles.metricLabel}>Bắt đầu học</p>
+              <p className={styles.metricValue}>{formatDate(earliestLearningDate)}</p>
             </div>
             <div className={styles.metricCard}>
               <p className={styles.metricLabel}>Dự đoán ngày hoàn thành</p>

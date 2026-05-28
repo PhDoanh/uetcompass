@@ -10,7 +10,15 @@ const PAGE_SIZE = 6;
 const STAR_COUNT = 5;
 
 function safeText(value, fallback = '') {
-	return String(value || '').trim() || fallback;
+	if (typeof value === 'string') {
+		return value.trim() || fallback;
+	}
+
+	if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+		return String(value);
+	}
+
+	return fallback;
 }
 
 function toRelativeDays(startDate) {
@@ -33,7 +41,8 @@ function average(numbers) {
 }
 
 function buildSeed(source) {
-	return Array.from(String(source || 'u'), (char) => char.charCodeAt(0)).reduce((sum, value) => sum + value, 0);
+	const normalizedSource = safeText(source, 'u');
+	return Array.from(normalizedSource, (char) => char.charCodeAt(0)).reduce((sum, value) => sum + value, 0);
 }
 
 function buildGradient(seed) {
@@ -66,7 +75,7 @@ function normalizeTags(item) {
 				continue;
 			}
 			if (tag && typeof tag === 'object') {
-				tags.push(safeText(tag.label || tag.name || tag.normalizedLabel));
+				tags.push(safeText(tag.label ?? tag.name ?? tag.normalizedLabel));
 			}
 		}
 	}
@@ -76,7 +85,7 @@ function normalizeTags(item) {
 	}
 
 	if (item?.status) {
-		tags.push(String(item.status).trim());
+		tags.push(safeText(item.status));
 	}
 
 	if (item?.personalisationLevel) {
@@ -91,7 +100,7 @@ function uniqueById(items) {
 	const uniqueItems = [];
 
 	for (const item of Array.isArray(items) ? items : []) {
-		const id = String(item?._id || '').trim();
+		const id = safeText(item?._id);
 		if (!id || seenIds.has(id)) {
 			continue;
 		}
@@ -104,7 +113,7 @@ function uniqueById(items) {
 }
 
 function resolveUserIdFromLocation(fallbackUserId = '') {
-	const direct = String(fallbackUserId || '').trim();
+	const direct = typeof fallbackUserId === 'string' ? fallbackUserId.trim() : '';
 	if (direct) {
 		return direct;
 	}
@@ -113,7 +122,7 @@ function resolveUserIdFromLocation(fallbackUserId = '') {
 		return '';
 	}
 
-	const match = String(window.location.pathname || '').match(/^\/public-profile\/([^/]+)$/);
+	const match = safeText(window.location.pathname).match(/^\/public-profile\/([^/]+)$/);
 	return match ? decodeURIComponent(match[1]) : '';
 }
 
@@ -158,7 +167,7 @@ function RoadmapCard({ item }) {
 				<div className="public-profile-card__thumbnail-title">{item.title}</div>
 			</div>
 			<div className="public-profile-card__tags">
-				{item.tags.length > 0 ? item.tags.map((tag) => <span key={tag}>{tag}</span>) : <span>Không có tag</span>}
+				{item.tags.length > 0 ? item.tags.map((tag, index) => <span key={`${item.id}-tag-${index}`}>{tag}</span>) : <span>Không có tag</span>}
 			</div>
 			<div className="public-profile-card__title-row">
 				<h3>{item.title}</h3>
@@ -169,7 +178,7 @@ function RoadmapCard({ item }) {
 				<span>{item.readingTime}</span>
 				<div className="public-profile-card__author">
 					<div className="public-profile-card__author-avatar" aria-hidden="true">
-						{String(item.authorName || 'U').charAt(0).toUpperCase()}
+						{safeText(item.authorName, 'U').charAt(0).toUpperCase()}
 					</div>
 					<div>
 						<strong>{item.authorName}</strong>
@@ -348,7 +357,7 @@ export default function PublicProfilePage({ userId }) {
 
 									<div className="public-profile-card__rating-block">
 										<RatingStrip value={topRating} />
-										<p>Đánh giá trung bình của toàn bộ manual roadmap được chia sẻ công khai.</p>
+										<p>Đánh giá trung bình của toàn bộ roadmap được chia sẻ công khai.</p>
 									</div>
 
 									<div className="public-profile-card__stats public-profile-card__stats--text">
@@ -376,8 +385,8 @@ export default function PublicProfilePage({ userId }) {
 					<section className="public-profile-page__content">
 						<div className="public-profile-page__content-header">
 							<div>
-								<p className="public-profile-page__eyebrow">Manual roadmaps công khai</p>
-								<h2>{roadmaps.length > 0 ? 'Danh sách manual roadmap' : 'Chưa có manual roadmap công khai'}</h2>
+								<p className="public-profile-page__eyebrow">Roadmaps công khai</p>
+								<h2>{roadmaps.length > 0 ? 'Danh sách roadmap' : 'Chưa có roadmap công khai'}</h2>
 							</div>
 							<span className="public-profile-page__page-indicator">{safePageIndex + 1} / {totalPages}</span>
 						</div>

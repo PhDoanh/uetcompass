@@ -87,10 +87,12 @@ function ensureBucket(buckets, key, groupBy) {
       periodEnd: formatDateUtc(end),
       activeDays: 0,
       activeNodes: 0,
+      inProgressNodes: 0,
       completedNodes: 0,
       completionRate: 0,
       activeDaysSet: new Set(),
       activeNodesSet: new Set(),
+      inProgressNodesSet: new Set(),
     });
   }
 
@@ -123,6 +125,12 @@ function buildBucketsFromActivity(activityDocs, groupBy) {
       const bucket = ensureBucket(buckets, bucketKey, groupBy);
       bucket.activeDaysSet.add(formatDateUtc(cursor));
       bucket.activeNodesSet.add(activity.nodeId);
+    }
+
+    if (activity?.lastInProgressAt) {
+      const progressBucketKey = getBucketKey(new Date(activity.lastInProgressAt), groupBy);
+      const bucket = ensureBucket(buckets, progressBucketKey, groupBy);
+      bucket.inProgressNodesSet.add(activity.nodeId);
     }
 
     if (activity?.lastDoneAt) {
@@ -200,7 +208,11 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
       summary: {
         totalNodes: 0,
         completedNodes: 0,
+        inProgressNodes: 0,
+        activeNodes: 0,
         completionRate: 0,
+        learningRate: 0,
+        firstActivityDate: null,
       },
       buckets: [],
     };
@@ -234,30 +246,47 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
   }
 
   const completedNodes = activityDocs.filter((doc) => doc?.lastDoneAt).length;
+  const activeNodes = new Set(activityDocs.map((doc) => doc?.nodeId).filter(Boolean)).size;
+  let inProgressNodes = 0;
   let totalNodes = 0;
 
   if (normalizedScope === 'roadmap') {
     const cacheDoc = await RoadmapProgressCache.findOne({ userId: userKey, roadmapId: roadmapKey }).lean();
     totalNodes = cacheDoc?.totalNodes || 0;
+    inProgressNodes = cacheDoc?.inProgressNodes || 0;
   } else {
     const cacheDocs = await RoadmapProgressCache.find({ userId: userKey, roadmapId: { $in: ownedRoadmapIds } }).lean();
     totalNodes = cacheDocs.reduce((sum, doc) => sum + (doc?.totalNodes || 0), 0);
+    inProgressNodes = cacheDocs.reduce((sum, doc) => sum + (doc?.inProgressNodes || 0), 0);
   }
 
   const summaryCompletionRate = totalNodes === 0 ? 0 : completedNodes / totalNodes;
+  const summaryLearningRate = totalNodes === 0 ? 0 : inProgressNodes / totalNodes;
+  const activityTimestamps = activityDocs
+    .map((doc) => doc?.lastInProgressAt || doc?.lastDoneAt)
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => Number.isFinite(value));
+  const earliestActivityDate = activityTimestamps.length
+    ? new Date(Math.min(...activityTimestamps))
+    : null;
 
   const buckets = Array.from(bucketMap.values())
     .map((bucket) => {
       const activeDays = bucket.activeDaysSet.size;
       const activeNodes = bucket.activeNodesSet.size;
+      const inProgressNodes = bucket.inProgressNodesSet.size;
       const completionRate = totalNodes === 0 ? 0 : bucket.completedNodes / totalNodes;
+      const learningRate = totalNodes === 0 ? 0 : inProgressNodes / totalNodes;
       return {
         periodStart: bucket.periodStart,
         periodEnd: bucket.periodEnd,
         activeDays,
         activeNodes,
+        inProgressNodes,
         completedNodes: bucket.completedNodes,
         completionRate,
+        learningRate,
       };
     })
     .sort((a, b) => (a.periodStart < b.periodStart ? -1 : 1));
@@ -269,7 +298,11 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
     summary: {
       totalNodes,
       completedNodes,
+      inProgressNodes,
+      activeNodes,
       completionRate: summaryCompletionRate,
+      learningRate: summaryLearningRate,
+      firstActivityDate: earliestActivityDate ? earliestActivityDate.toISOString() : null,
     },
     buckets,
   };

@@ -667,9 +667,6 @@ export default function Homepage() {
       setMyManualRoadmaps((prev) => prev.filter((roadmap) => String(roadmap?._id || '').trim() !== normalizedId));
       setManualProgressSummaries((prev) => prev.filter((summary) => summary?.roadmapId !== normalizedId));
       addNotification('Đã xóa roadmap thành công.', 'success');
-      if (typeof window !== 'undefined') {
-        window.location.reload();
-      }
     } catch (err) {
       if (err?.status === 401) {
         await logoutAndRedirect();
@@ -861,6 +858,20 @@ export default function Homepage() {
     }),
     [combinedProgressSummaries, monthlyRoadmapStats]
   );
+  const totalStackNodes = useMemo(
+    () => roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0),
+    [roadmapProgressStack]
+  );
+  const totalStackDoneNodes = useMemo(
+    () => roadmapProgressStack.reduce((sum, item) => sum + (item.doneNodes || 0), 0),
+    [roadmapProgressStack]
+  );
+  const totalStackCompletionPercent = useMemo(() => {
+    if (totalStackNodes === 0) {
+      return 0;
+    }
+    return Math.round((totalStackDoneNodes / totalStackNodes) * 100);
+  }, [totalStackDoneNodes, totalStackNodes]);
   const activitySeries = useMemo(() => {
     const baseSeries = buildActivitySeriesFromBuckets(progressTracking?.buckets || []);
     return baseSeries.slice(-7);
@@ -1130,9 +1141,9 @@ export default function Homepage() {
                 </div>
                 <div className="homepage-progress__stack">
                   <div className="homepage-progress__stack-label">
-                    {roadmapProgressStack.length} lộ trình đang theo học
+                    Hoàn thành {totalStackCompletionPercent}%
                   </div>
-                  {roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0) > 0 ? (
+                    {totalStackNodes > 0 ? (
                     <div className="homepage-progress__stack-track" role="list">
                       {roadmapProgressStack.map((entry) => (
                         <div
@@ -1153,7 +1164,7 @@ export default function Homepage() {
                             }}
                           />
                           <span className="homepage-progress__stack-tooltip">
-                            {entry.name}: {entry.monthlyCompleted} node
+                            {entry.name}: {entry.completionPercent}% ({entry.monthlyCompleted} node)
                           </span>
                         </div>
                       ))}

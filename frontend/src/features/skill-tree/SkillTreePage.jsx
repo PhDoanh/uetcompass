@@ -18,6 +18,43 @@ function clampZoom(value) {
   return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
 }
 
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function isInProgressState(state) {
+  const normalizedState = String(state || '').toLowerCase();
+  return normalizedState === 'inprogress' || normalizedState === 'in_progress' || normalizedState === 'in-progress';
+}
+
+function isCompletedState(state) {
+  return String(state || '').toLowerCase() === 'completed';
+}
+
+function formatDateLabel(value) {
+  if (!value) {
+    return '--';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
+
+  return date.toLocaleDateString('vi-VN');
+}
+
+function formatFrequencyLabel(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '--';
+  }
+
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
+}
+
 export default function SkillTreePage() {
   const [zoom, setZoom] = useState(1);
   const [historyEvents, setHistoryEvents] = useState([]);
@@ -81,6 +118,53 @@ export default function SkillTreePage() {
     () => calculateProgress(nodes || [], (node) => node.progressState),
     [nodes]
   );
+
+  const progressInsights = useMemo(() => {
+    const safeNodes = Array.isArray(nodes) ? nodes : [];
+    const doneNodes = safeNodes.filter((node) => isCompletedState(node?.progressState)).length;
+    const inProgressNodes = safeNodes.filter((node) => isInProgressState(node?.progressState)).length;
+    const pendingNodes = Math.max(0, safeNodes.length - doneNodes - inProgressNodes);
+
+    const activityDates = safeNodes
+      .filter((node) => isCompletedState(node?.progressState) || isInProgressState(node?.progressState))
+      .map((node) => node?.updatedAt)
+      .filter(Boolean)
+      .map((value) => new Date(value))
+      .filter((value) => !Number.isNaN(value.getTime()));
+
+    const earliestNodeActivity = activityDates.length
+      ? new Date(Math.min(...activityDates.map((value) => value.getTime())))
+      : null;
+    const roadmapCreatedAt = createdAt || acceptedAt || null;
+    const earliestLearningDate = earliestNodeActivity || roadmapCreatedAt;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfLearning = earliestLearningDate ? new Date(earliestLearningDate) : null;
+    if (startOfLearning) {
+      startOfLearning.setHours(0, 0, 0, 0);
+    }
+
+    const learnedDays = startOfLearning
+      ? Math.max(0, Math.floor((startOfToday - startOfLearning) / (24 * 60 * 60 * 1000)))
+      : 0;
+    const nodesPerDay = learnedDays > 0 ? inProgressNodes / learnedDays : 0;
+    const estimatedCompletionDate = nodesPerDay > 0
+      ? addDays(startOfToday, Math.ceil(pendingNodes / nodesPerDay))
+      : null;
+
+    return {
+      totalNodes: safeNodes.length,
+      doneNodes,
+      inProgressNodes,
+      pendingNodes,
+      nodesPerDay,
+      startDate: earliestLearningDate,
+      estimatedCompletionDate,
+      completionRate: progressSummary.percent || 0,
+    };
+  }, [acceptedAt, createdAt, nodes, progressSummary.percent]);
 
   const milestones = useMemo(() => buildFixedMilestones(), []);
 
@@ -181,6 +265,7 @@ export default function SkillTreePage() {
           metaItems={overviewMetaItems}
           showRoadmapTitle={false}
           progress={progressSummary}
+          progressStats={progressInsights}
           milestones={milestones}
           progressVariant="fixed"
           historyEvents={historyEvents}

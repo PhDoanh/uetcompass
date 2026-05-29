@@ -170,15 +170,20 @@
 }
 
 .progressBar {
-  height: 8px;
-  background: color-mix(in srgb, var(--border-glow) 60%, transparent);
-  border-radius: 999px;
+  height: 10px;
+  background: color-mix(in srgb, var(--primary-blue) 8%, var(--bg-card));
+  border-radius: 6px;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
 }
 
 .progressBarFill {
+  display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--pastel-purple), var(--pastel-pink));
+  background: linear-gradient(90deg, #0ea5e9 0%, #6366f1 100%);
+  transition: width 360ms cubic-bezier(.2,.9,.2,1);
+  box-shadow: 0 2px 6px rgba(14,165,233,0.18);
+  border-radius: 4px 0 0 4px;
 }
 
 .roadmapProgressBlock {
@@ -189,6 +194,12 @@
 
 .roadmapPercent {
   margin: 0;
+}
+
+.roadmapSubtext {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
 }
 
 
@@ -289,6 +300,12 @@
   font-weight: var(--fw-semibold);
 }
 
+.legendMeta {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  margin-left: 0.4rem;
+}
+
 .legendDot {
   width: 10px;
   height: 10px;
@@ -342,6 +359,12 @@
   font-weight: var(--fw-bold);
 }
 
+.donutMeta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+
 .donutValue {
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
@@ -368,6 +391,12 @@
   margin: 0;
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
+}
+
+.metricHint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
 }
 
 @media (max-width: 1024px) {

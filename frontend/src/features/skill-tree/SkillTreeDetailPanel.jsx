@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Cell, Label, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { Star, X } from 'lucide-react';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import { getNextTransitionOptions } from './skillTree.types';
@@ -40,6 +41,28 @@ function formatHistoryEventSummary(event) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function formatDate(value) {
+  if (!value) {
+    return '--';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
+
+  return date.toLocaleDateString('vi-VN');
+}
+
+function formatFrequency(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '--';
+  }
+
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
 }
 
 export function calculateProgress(nodes, getState) {
@@ -175,8 +198,7 @@ export function SkillTreeOverviewTab({
   metaItems = [],
   showRoadmapTitle = true,
   progress,
-  milestones = [],
-  progressVariant = 'cluster',
+  progressStats = null,
   historyEvents = [],
   showHistory = false,
   actions,
@@ -186,24 +208,26 @@ export function SkillTreeOverviewTab({
     ? `${progress?.completed ?? 0}/${progress.total} nút (${progressPercent}%)`
     : 'Chưa có dữ liệu tiến độ';
 
-  const fixedSegments = useMemo(() => {
-    if (progressVariant !== 'fixed') {
+  const donutData = useMemo(() => {
+    if (!progressStats?.totalNodes) {
       return [];
     }
 
-    let previous = 0;
-    return milestones.map((milestone) => {
-      const span = Math.max(1, milestone.percent - previous);
-      const fillPercent = Math.min(100, Math.max(0, ((progressPercent - previous) / span) * 100));
-      const segment = {
-        ...milestone,
-        fillPercent,
-        span,
-      };
-      previous = milestone.percent;
-      return segment;
-    });
-  }, [milestones, progressPercent, progressVariant]);
+    return [
+      { name: 'Hoàn thành', value: progressStats.doneNodes || 0, color: '#22c55e' },
+      { name: 'Đang học', value: progressStats.inProgressNodes || 0, color: '#f59e0b' },
+      { name: 'Chưa học', value: progressStats.pendingNodes || 0, color: '#94a3b8' },
+    ];
+  }, [progressStats]);
+
+  const hasProgressStats = Boolean(progressStats?.totalNodes);
+  const learningPercent = hasProgressStats && progressStats.totalNodes
+    ? Math.round((progressStats.inProgressNodes / progressStats.totalNodes) * 100)
+    : 0;
+  const nodesPerDayLabel = formatFrequency(progressStats?.nodesPerDay);
+  const nodesPerDayText = nodesPerDayLabel === '--' ? '--' : `${nodesPerDayLabel} nodes / ngày`;
+  const startDateLabel = formatDate(progressStats?.startDate);
+  const estimatedCompletionLabel = formatDate(progressStats?.estimatedCompletionDate);
 
   return (
     <div className="skill-tree-tab">
@@ -237,71 +261,66 @@ export function SkillTreeOverviewTab({
           </div>
 
           <div className="skill-tree-overview__progress-body">
-            {milestones.length === 0 ? (
-              <p className="skill-tree-muted-text">Chưa có milestone để hiển thị.</p>
-            ) : progressVariant === 'fixed' ? (
-              <div className="skill-tree-overview__milestone-layout skill-tree-overview__milestone-layout--fixed">
-                <div className="skill-tree-overview__bar-wrap">
-                  <div className="skill-tree-overview__cylinder" aria-hidden="true">
-                    <div className="skill-tree-overview__cylinder-body">
-                      {fixedSegments.map((segment) => (
-                        <div
-                          key={`milestone-segment-${segment.id}`}
-                          className="skill-tree-overview__cylinder-segment"
-                          style={{
-                            '--segment-color': segment.color,
-                            '--segment-fill': `${segment.fillPercent}%`,
-                          }}
-                        >
-                          <div className="skill-tree-overview__cylinder-segment-fill" />
-                        </div>
-                      ))}
+            {hasProgressStats ? (
+              <div className="skill-tree-overview__progress-dashboard">
+                <article className="skill-tree-overview__progress-card">
+                  <div className="skill-tree-overview__donut-wrap">
+                    <div className="skill-tree-overview__donut" aria-hidden="true">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={donutData} dataKey="value" innerRadius={52} outerRadius={72} paddingAngle={3}>
+                            {donutData.map((entry) => (
+                              <Cell key={entry.name} fill={entry.color} />
+                            ))}
+                            <Label
+                              value={`${progressStats.totalNodes}`}
+                              position="center"
+                              className="skill-tree-overview__donut-value"
+                            />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
-                </div>
-                <div className="skill-tree-overview__milestone-lines" aria-label="Milestones">
-                  {milestones.map((milestone) => (
-                    <div
-                      key={`milestone-${milestone.id}`}
-                      className={`skill-tree-overview__milestone-line ${milestone.percent === 100 ? 'is-top' : ''}`}
-                      style={{ top: `calc(100% - ${milestone.percent}%)` }}
-                    >
-                      <span className="skill-tree-overview__milestone-dash" aria-hidden="true" />
-                      <span className="skill-tree-overview__milestone-text">{milestone.title}</span>
+                  <p className="skill-tree-overview__donut-label">Tình trạng roadmap</p>
+                  <p className="skill-tree-overview__donut-meta">Tổng số node: {progressStats.totalNodes}</p>
+                  <div className="skill-tree-overview__donut-legend">
+                    <div className="skill-tree-overview__legend-item">
+                      <span className="skill-tree-overview__legend-dot" style={{ backgroundColor: '#22c55e' }} />
+                      <span>Hoàn thành</span>
+                      <strong>{progressStats.doneNodes}</strong>
                     </div>
-                  ))}
+                    <div className="skill-tree-overview__legend-item">
+                      <span className="skill-tree-overview__legend-dot" style={{ backgroundColor: '#f59e0b' }} />
+                      <span>Đang học</span>
+                      <strong>{progressStats.inProgressNodes}</strong>
+                    </div>
+                    <div className="skill-tree-overview__legend-item">
+                      <span className="skill-tree-overview__legend-dot" style={{ backgroundColor: '#94a3b8' }} />
+                      <span>Chưa học</span>
+                      <strong>{progressStats.pendingNodes}</strong>
+                    </div>
+                  </div>
+                </article>
+
+                <div className="skill-tree-overview__metric-grid">
+                  <article className="skill-tree-overview__metric-card">
+                    <p className="skill-tree-overview__metric-label">Tần suất học</p>
+                    <p className="skill-tree-overview__metric-value">{nodesPerDayText}</p>
+                    <p className="skill-tree-overview__metric-hint">Tỷ lệ đang học: {learningPercent}%</p>
+                  </article>
+                  <article className="skill-tree-overview__metric-card">
+                    <p className="skill-tree-overview__metric-label">Bắt đầu học</p>
+                    <p className="skill-tree-overview__metric-value">{startDateLabel}</p>
+                  </article>
+                  <article className="skill-tree-overview__metric-card">
+                    <p className="skill-tree-overview__metric-label">Dự đoán ngày hoàn thành</p>
+                    <p className="skill-tree-overview__metric-value">{estimatedCompletionLabel}</p>
+                  </article>
                 </div>
               </div>
             ) : (
-              <div className="skill-tree-overview__milestone-layout">
-                <div className="skill-tree-overview__bar-wrap">
-                  <div className="skill-tree-overview__bar-track" aria-hidden="true">
-                    <div
-                      className="skill-tree-overview__bar-fill"
-                      style={{ height: `${progressPercent}%` }}
-                    />
-                    {milestones.map((milestone) => (
-                      <span
-                        key={`milestone-marker-${milestone.id}`}
-                        className={`skill-tree-overview__bar-marker ${progressPercent >= milestone.percent ? 'is-reached' : ''}`}
-                        style={{ bottom: `${milestone.percent}%` }}
-                        aria-hidden="true"
-                      />
-                    ))}
-                  </div>
-                </div>
-                <ol className="skill-tree-overview__milestone-list">
-                  {milestones.map((milestone) => (
-                    <li
-                      key={`milestone-${milestone.id}`}
-                      className={progressPercent >= milestone.percent ? 'is-reached' : ''}
-                    >
-                      <p className="skill-tree-overview__milestone-title">{milestone.title}</p>
-                      <p className="skill-tree-overview__milestone-desc">{milestone.description}</p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              <p className="skill-tree-muted-text">Chưa có dữ liệu tiến độ để hiển thị biểu đồ.</p>
             )}
           </div>
         </section>

@@ -6,7 +6,6 @@ const roadmapService = require('./roadmap.service');
 const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
-const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');

@@ -5,7 +5,6 @@ const { DeletedEmail } = require('../auth/deletedEmail.model');
 const { SecurityAudit } = require('../auth/securityAudit.model');
 const { Notification } = require('../notifications/notification.model');
 const { StudentProfile } = require('../onboarding/onboarding.model');
-const { Roadmap } = require('../roadmap/roadmap.model');
 const { RoadmapProgress } = require('../roadmap/roadmapProgress.model');
 const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 const { AccountAuditEvent } = require('./account.model');
@@ -313,14 +312,13 @@ async function hardDeleteAccount(userId) {
     throw buildError(404, 'NOT_FOUND', 'User not found.');
   }
 
-  await Promise.all([
+    await Promise.all([
     StudentProfile.deleteMany({ userId }),
     RefreshToken.deleteMany({ userId }),
     Notification.deleteMany({ userId }),
     SecurityAudit.deleteMany({ userId }),
     AccountAuditEvent.deleteMany({ userId }),
     RoadmapProgress.deleteMany({ userId }),
-    Roadmap.deleteMany({ userId }),
     ManualRoadmap.deleteMany({ userId }),
   ]);
 

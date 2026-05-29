@@ -1,72 +1,15 @@
 'use strict';
 
 const { ManualRoadmap } = require('./manualRoadmap.model');
-const { Roadmap } = require('./roadmap.model');
 const { RoadmapProgress } = require('./roadmapProgress.model');
 const { RoadmapHistory } = require('./roadmapHistory.model');
 const RoadmapProgressCache = require('../progress/roadmapProgressCache.model');
 const RoadmapProgressActivity = require('../progress/roadmapProgressActivity.model');
-const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
 const { generateEdgesFromHierarchy, enrichNodes, validateHierarchy } = require('./graph.generator');
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-async function resolveStudentProfileId(userId) {
-    const profile = await StudentProfile.findOne({ userId }, { _id: 1 }).lean();
-    if (!profile?._id) {
-        throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'Please complete onboarding profile before saving a manual roadmap into primary roadmap collection.');
-    }
-    return profile._id;
-}
-
-function toRoadmapNode(node) {
-    const prerequisites = Array.isArray(node.prerequisites) ? node.prerequisites.filter(Boolean) : [];
-    const metadata = node && typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {};
-    const relatedCourses = Array.isArray(metadata.relatedCourses) ? metadata.relatedCourses : [];
-    const resources = Array.isArray(node.resources)
-        ? node.resources
-        : (Array.isArray(metadata.resources) ? metadata.resources : []);
-    const label = String(node.label || '').trim();
-
-    return {
-        nodeId: node.nodeId,
-        nodeType: prerequisites.length > 0 ? 'subtopic' : 'topic',
-        skillName: String(node.skillName || label).trim(),
-        parentNodeId: metadata.parentNodeId || prerequisites[0] || null,
-        relatedCourses,
-        reason: node.description || metadata.reason || `Learn ${label}`,
-        resources,
-    };
-}
-
-async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
-    const studentProfileId = await resolveStudentProfileId(userId);
-    const mappedNodes = Array.isArray(nodes) ? nodes.map(toRoadmapNode) : [];
-
-    await Roadmap.findOneAndUpdate(
-        { _id: roadmapId, userId },
-        {
-            $set: {
-                userId,
-                isPrimary: false,
-                studentProfileId,
-                roadmapName: title,
-                personalisationLevel: 'full',
-                nodes: mappedNodes,
-                acceptedAt: new Date(),
-                updatedAt: new Date(),
-            },
-            $setOnInsert: { _id: roadmapId, createdAt: new Date() },
-        },
-        {
-            upsert: true,
-            new: true,
-            runValidators: true,
-        }
-    );
 }
 
 async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
@@ -170,7 +113,6 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         throw new RoadmapError(400, ERROR_CODES.INVALID_DATA, `Hierarchy validation failed: ${validation.errors.join('; ')}`);
     }
 
-    const sharedAt = new Date();
     const manualRoadmap = await ManualRoadmap.create({
         userId,
         title,
@@ -182,26 +124,10 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         shared: true,
         isPublic: true,
         status: 'draft',
-        sharedAt,
+        sharedAt: new Date(),
     });
 
-    let syncSkipped = false;
-    try {
-        await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
-    } catch (err) {
-        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
-            // Log and continue — draft is still created and persisted in ManualRoadmap.
-             
-            console.warn('syncToRoadmapCollection skipped:', err.message);
-            syncSkipped = true;
-        } else {
-            throw err;
-        }
-    }
-
-    const result = typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
-    if (syncSkipped) result.syncSkipped = true;
-    return result;
+    return typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
 }
 
 async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes, tags = [] }) {
@@ -239,23 +165,7 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.updatedAt = new Date();
 
     await existing.save();
-    let syncSkippedOnUpdate = false;
-    try {
-        await syncToRoadmapCollection(existing._id, userId, { title, nodes: enrichedNodes });
-    } catch (err) {
-        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
-            // Allow update to succeed even if onboarding/profile is missing.
-             
-            console.warn('syncToRoadmapCollection skipped on update:', err.message);
-            syncSkippedOnUpdate = true;
-        } else {
-            throw err;
-        }
-    }
-
-    const out = existing.toObject();
-    if (syncSkippedOnUpdate) out.syncSkipped = true;
-    return out;
+    return existing.toObject();
 }
 
 function serializeTag(tag) {
@@ -316,7 +226,6 @@ async function deleteById(roadmapId, userId) {
 
     await Promise.all([
         ManualRoadmap.deleteOne({ _id: roadmapId, userId }),
-        Roadmap.deleteOne({ _id: roadmapId, userId }),
         RoadmapProgress.deleteOne({ roadmapId, userId }),
         RoadmapHistory.deleteMany({ roadmapId, userId }),
         RoadmapProgressCache.deleteOne({ roadmapId: String(roadmapId), userId: String(userId) }),

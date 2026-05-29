@@ -1,17 +1,25 @@
-const { Roadmap } = require('../roadmap/roadmap.model');
+const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 const AcademicDocument = require('../scraping/models/academicDocument.model');
 const LearningResource = require('../scraping/models/learningResource.model');
 const SkillTrendSnapshot = require('../scraping/models/skillTrendSnapshot.model');
 const { ACADEMIC_MAX_RESULTS, RESOURCE_MAX_RESULTS } = require('../scraping/adapters/tavily.adapter');
 
 async function resolveCourseName(courseCode) {
-  const roadmap = await Roadmap.findOne({ isPrimary: true, status: 'completed', 'nodes.courseCode': courseCode }, { nodes: 1 }).lean();
+  const roadmap = await ManualRoadmap.findOne(
+    { isPrimary: true, 'nodes.metadata.relatedCourses.courseCode': courseCode },
+    { nodes: 1 }
+  ).lean();
   if (!roadmap || !Array.isArray(roadmap.nodes)) {
     return null;
   }
 
-  const node = roadmap.nodes.find((item) => item.courseCode === courseCode);
-  return node?.courseName || null;
+  for (const node of roadmap.nodes) {
+    const courses = node.metadata?.relatedCourses;
+    if (!Array.isArray(courses)) continue;
+    const course = courses.find((rc) => rc.courseCode === courseCode);
+    if (course?.courseName) return course.courseName;
+  }
+  return null;
 }
 
 function normalizeAcademicToResource(item) {

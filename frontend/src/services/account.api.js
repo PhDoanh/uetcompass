@@ -42,6 +42,13 @@ export function getProfile(token) {
   return requestAuthed('/account/profile', token, { method: 'GET' });
 }
 
+export function getPublicProfile(userId) {
+  const safeUserId = String(userId || '').trim();
+  return request(`/account/public/${encodeURIComponent(safeUserId)}`, {
+    method: 'GET',
+  });
+}
+
 export function updateProfile(token, payload) {
   return requestAuthed('/account/profile', token, {
     method: 'PATCH',
@@ -64,6 +71,7 @@ export function deleteAccount(token) {
 
 export default {
   getProfile,
+  getPublicProfile,
   updateProfile,
   changePassword,
   deleteAccount,

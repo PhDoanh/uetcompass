@@ -9,7 +9,8 @@ function requireAuth(req, res, next) {
 		try {
 			const payload = verifyAccessToken(bearerToken);
 			userId = String(payload?.userId || '').trim();
-		} catch (_) {
+		} catch (error) {
+			console.error('Token verification error:', error);
 			return res.status(401).json({
 				error: {
 					code: 'UNAUTHORIZED',

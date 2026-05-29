@@ -470,11 +470,16 @@
 
 .course-checkbox-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   width: 100%;
-  line-height: 1.35;
+  line-height: 1.25;
   cursor: pointer;
+}
+
+.course-checkbox-item--selected {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .course-checkbox-item span {
@@ -482,7 +487,7 @@
 }
 
 .course-checkbox-input {
-  margin-top: 2px;
+  margin-top: 0;
   flex: 0 0 auto;
 }
 
@@ -634,6 +639,16 @@
 .secondary-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.02);
+  box-shadow: 0 12px 20px rgba(249, 115, 22, 0.14);
+}
+
+.primary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 88%, #ffffff);
+}
+
+.secondary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 12%, var(--surface-2));
+  color: #c2410c;
 }
 
 .primary-btn:disabled,
@@ -1262,6 +1277,16 @@ html[data-theme='dark'] .learning-expand-btn,
 html[data-theme='dark'] .secondary-btn {
   background: var(--surface-2);
   color: var(--color-primary);
+}
+
+html[data-theme='dark'] .primary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 86%, var(--surface-1));
+  color: #0b1220;
+}
+
+html[data-theme='dark'] .secondary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 16%, var(--surface-2));
+  color: #fde68a;
 }
 
 html[data-theme='dark'] .learning-profile-actions {

@@ -16,6 +16,15 @@ function sendError(res, err) {
 }
 
 const accountController = {
+  async getPublicProfile(req, res) {
+    try {
+      const result = await accountService.getPublicProfile(req.params.userId);
+      return res.status(200).json(result);
+    } catch (err) {
+      return sendError(res, err);
+    }
+  },
+
   async getProfile(req, res) {
     try {
       const result = await accountService.getProfile(req.user.userId);

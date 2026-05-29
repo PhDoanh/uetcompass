@@ -331,6 +331,7 @@ export default function ProgressDashboard() {
     roadmapPage * ROADMAPS_PER_PAGE,
     (roadmapPage + 1) * ROADMAPS_PER_PAGE
   );
+  const hasRoadmapItems = combinedRoadmaps.length > 0;
   const tagToneList = ['blue', 'orange', 'indigo', 'rose', 'emerald', 'amber'];
   const manualMissingData = detail?.manualMissingData;
 
@@ -344,289 +345,292 @@ export default function ProgressDashboard() {
 
   return (
     <>
-    <main className={styles.progressTracking}>
-      <header className={styles.progressTrackingHeader}>
-        <div>
-          <h1 className={styles.progressTrackingTitle}>Theo dõi tiến độ</h1>
-          <p className={styles.progressTrackingSubtitle}>Theo dõi tiến độ học tập trên tất cả roadmap của bạn.</p>
-        </div>
-      </header>
-
-      <section className={styles.sectionCard}>
-        <div className={styles.statsHeader}>
-          <h2 className={styles.statsTitle}>Tần suất học và tỷ lệ hoàn thành</h2>
-          <div className={styles.toggleGroup}>
-            <button
-              type="button"
-              className={`${styles.toggleButton} ${trackingGroupBy === 'daily' ? styles.isActive : ''}`}
-              onClick={() => setTrackingGroupBy('daily')}
-            >
-              Ngày
-            </button>
-            <button
-              type="button"
-              className={`${styles.toggleButton} ${trackingGroupBy === 'weekly' ? styles.isActive : ''}`}
-              onClick={() => setTrackingGroupBy('weekly')}
-            >
-              Tuần
-            </button>
-            <button
-              type="button"
-              className={`${styles.toggleButton} ${trackingGroupBy === 'monthly' ? styles.isActive : ''}`}
-              onClick={() => setTrackingGroupBy('monthly')}
-            >
-              Tháng
-            </button>
+      <main className={styles.progressTracking}>
+        <header className={styles.progressTrackingHeader}>
+          <div>
+            <h1 className={styles.progressTrackingTitle}>Theo dõi tiến độ</h1>
+            <p className={styles.progressTrackingSubtitle}>Theo dõi tiến độ học tập trên tất cả roadmap của bạn.</p>
           </div>
-        </div>
+        </header>
+
+        <section className={styles.sectionCard}>
+          <div className={styles.statsHeader}>
+            <h2 className={styles.statsTitle}>Tần suất học và tỷ lệ hoàn thành</h2>
+            <div className={styles.toggleGroup}>
+              <button
+                type="button"
+                className={`${styles.toggleButton} ${trackingGroupBy === 'daily' ? styles.isActive : ''}`}
+                onClick={() => setTrackingGroupBy('daily')}
+              >
+                Ngày
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleButton} ${trackingGroupBy === 'weekly' ? styles.isActive : ''}`}
+                onClick={() => setTrackingGroupBy('weekly')}
+              >
+                Tuần
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleButton} ${trackingGroupBy === 'monthly' ? styles.isActive : ''}`}
+                onClick={() => setTrackingGroupBy('monthly')}
+              >
+                Tháng
+              </button>
+            </div>
+          </div>
 
           <div className={styles.statsCards}>
-          <div className={styles.statsCard}>
-            <p className={styles.statsLabel}>Tổng số nốt</p>
-            <p className={styles.statsValue}>{summary.totalNodes ?? '--'}</p>
+            <div className={styles.statsCard}>
+              <p className={styles.statsLabel}>Tổng số nốt</p>
+              <p className={styles.statsValue}>{summary.totalNodes ?? '--'}</p>
+            </div>
+            <div className={styles.statsCard}>
+              <p className={styles.statsLabel}>Đã hoàn thành</p>
+              <p className={styles.statsValue}>{summary.completedNodes ?? '--'}</p>
+            </div>
+            <div className={styles.statsCard}>
+              <p className={styles.statsLabel}>Đang học</p>
+              <p className={styles.statsValue}>{summary.inProgressNodes ?? '--'}</p>
+            </div>
+            <div className={styles.statsCard}>
+              <p className={styles.statsLabel}>Tỷ lệ hoàn thành</p>
+              <p className={styles.statsValue}>{trackingLoading ? '--' : formatPercent(summary.completionRate)}</p>
+            </div>
           </div>
-          <div className={styles.statsCard}>
-            <p className={styles.statsLabel}>Đã hoàn thành</p>
-            <p className={styles.statsValue}>{summary.completedNodes ?? '--'}</p>
-          </div>
-          <div className={styles.statsCard}>
-            <p className={styles.statsLabel}>Đang học</p>
-            <p className={styles.statsValue}>{summary.inProgressNodes ?? '--'}</p>
-          </div>
-          <div className={styles.statsCard}>
-            <p className={styles.statsLabel}>Tỷ lệ hoàn thành</p>
-            <p className={styles.statsValue}>
-              {trackingLoading ? '--' : formatPercent(summary.completionRate)}
-            </p>
-          </div>
-        </div>
 
-        <div className={styles.statsTable}>
-          <div className={`${styles.statsRow} ${styles.statsRowHead}`}>
-            <span>Thời gian</span>
-            <span>Đang học</span>
-            <span>Hoàn thành</span>
-            <span>Tỷ lệ</span>
-          </div>
-          <div className={styles.statsBody}>
-            {trackingError ? (
-              <div className={styles.statsEmpty}>{trackingError.message || 'Không thể tải thống kê.'}</div>
-            ) : periods.length ? (
-              periods.map((period) => (
-                <div key={`${period.periodStart}-${period.periodEnd}`} className={styles.statsRow}>
-                  <span>{formatRange(period.periodStart, period.periodEnd)}</span>
-                  <span>{period.inProgressNodes ?? '--'}</span>
-                  <span>{period.completedNodes ?? '--'}</span>
-                  <span>{formatPercent(period.completionRate)}</span>
-                </div>
-              ))
-            ) : (
-              <div className={styles.statsEmpty}>{trackingLoading ? 'Đang tải...' : 'Chưa có dữ liệu.'}</div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section
-            id="my-roadmaps"
-            className="homepage-section homepage-section--plain"
-            aria-label="My roadmap gallery"
-          >
-        <div  className={styles.statsHeader}>
-          <div>
-            <h2 className={styles.statsTitle}> Các roadmap của tôi</h2>
-          </div>
-          <div className="homepage-roadmap-controls">
-            <button
-              type="button"
-              aria-label="Trước"
-              onClick={() => setRoadmapPage((prev) => Math.max(0, prev - 1))}
-              disabled={!canGoPrevRoadmapPage}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              aria-label="Sau"
-              onClick={() => setRoadmapPage((prev) => Math.min(totalRoadmapPages - 1, prev + 1))}
-              disabled={!canGoNextRoadmapPage}
-            >
-              ›
-            </button>
-          </div>
-        </div>
-
-        <div className="homepage-roadmap-grid">
-          {visibleRoadmaps.map((roadmap) => {
-            const percent = Number.isFinite(roadmap?.progressPercent)
-              ? roadmap.progressPercent
-              : roadmap?.totalNodes
-                ? Math.round((roadmap?.doneNodes || 0) / roadmap.totalNodes * 100)
-                : 0;
-            const tags = Array.isArray(roadmap?.tags) ? roadmap.tags.slice(0, 3) : [];
-            return (
-              <article key={roadmap.roadmapId} className="homepage-roadmap-card">
-                <div className="homepage-roadmap-card__image-wrap">
-                  {roadmap.thumbnail ? (
-                    <img
-                      src={roadmap.thumbnail}
-                      alt={roadmap.roadmapName || 'Roadmap'}
-                      className="homepage-roadmap-card__image"
-                    />
-                  ) : (
-                    <div className={styles.thumbnailPlaceholder} aria-hidden="true" />
-                  )}
-                  {tags.length ? (
-                    <div className="homepage-roadmap-card__chips">
-                      {tags.map((tag, index) => (
-                        <span
-                          key={`${roadmap.roadmapId}-${tag}`}
-                          className={`homepage-chip homepage-chip--${tagToneList[index % tagToneList.length]}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="homepage-roadmap-card__body">
-                  <h3 className="homepage-roadmap-card__title">{roadmap.roadmapName || 'Untitled Roadmap'}</h3>
-                  <div className={styles.roadmapProgressBlock}>
-                    <p className={`${styles.roadmapPercent} homepage-roadmap-card__description`}>
-                      Đã hoàn thành {percent}%
-                    </p>
-                    <p className={styles.roadmapSubtext}>
-                      Đang học {roadmap?.inProgressNodes ?? 0} node
-                    </p>
-                    <div className={styles.progressBar}>
-                      <span className={styles.progressBarFill} style={{ width: `${percent}%` }} />
-                    </div>
+          <div className={styles.statsTable}>
+            <div className={`${styles.statsRow} ${styles.statsRowHead}`}>
+              <span>Thời gian</span>
+              <span>Đang học</span>
+              <span>Hoàn thành</span>
+              <span>Tỷ lệ</span>
+            </div>
+            <div className={styles.statsBody}>
+              {trackingError ? (
+                <div className={styles.statsEmpty}>{trackingError.message || 'Không thể tải thống kê.'}</div>
+              ) : trackingLoading ? (
+                <div className={styles.statsEmpty}>Đang tải...</div>
+              ) : periods.length ? (
+                periods.map((period) => (
+                  <div key={period.periodStart} className={styles.statsRow}>
+                    <span>{period.periodStart || '--'}</span>
+                    <span>{period.inProgressNodes ?? '--'}</span>
+                    <span>{period.completedNodes ?? '--'}</span>
+                    <span>{formatPercent(period.completionRate)}</span>
                   </div>
-                  <div className="homepage-roadmap-card__meta">
-                    <small>{roadmap.totalNodes ?? '--'} nốt</small>
-                    <button
-                      type="button"
-                      className="homepage-card-action"
-                      onClick={() => {
-                        if (roadmap?.isManual) {
-                          navigateTo(`/skill-tree/${encodeURIComponent(roadmap.roadmapId)}`);
-                          return;
-                        }
-
-                        navigateTo('/skill-tree');
-                      }}
-                    >
-                      Chi tiết
-                    </button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      {detailRoadmapId ? (
-        <section className={styles.detailSection}>
-          <div className={styles.detailGrid}>
-            <div className={styles.detailColumn}>
-              <div className={styles.detailColumnHeader}>
-                <h3>Các node đã học</h3>
-                <span>{doneCount}</span>
-              </div>
-              <div className={styles.detailList}>
-                {detailLoading ? (
-                  <div className={styles.statsEmpty}>Đang tải...</div>
-                ) : manualMissingData ? (
-                  <div className={styles.statsEmpty}>Chưa có dữ liệu tiến độ cho roadmap thủ công.</div>
-                ) : doneNodes.length ? (
-                  doneNodes.map((node) => (
-                    <div key={node.id || node.nodeId || node.courseCode} className={styles.detailItem}>
-                      <strong>{node.name || node.skillName || node.courseName || 'Unknown'}</strong>
-                      <span>{node.courseCode || ''}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.statsEmpty}>Chưa có node hoàn thành.</div>
-                )}
-              </div>
-            </div>
-            <div className={styles.detailColumn}>
-              <div className={styles.detailColumnHeader}>
-                <h3>Các node chưa học</h3>
-                <span>{pendingCount}</span>
-              </div>
-              <div className={styles.detailList}>
-                {detailLoading ? (
-                  <div className={styles.statsEmpty}>Đang tải...</div>
-                ) : manualMissingData ? (
-                  <div className={styles.statsEmpty}>Chưa có dữ liệu tiến độ cho roadmap thủ công.</div>
-                ) : pendingNodes.length ? (
-                  pendingNodes.map((node) => (
-                    <div key={node.id || node.nodeId || node.courseCode} className={styles.detailItem}>
-                      <strong>{node.name || node.skillName || node.courseName || 'Unknown'}</strong>
-                      <span>{node.courseCode || ''}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.statsEmpty}>Chưa có node chưa học.</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.detailBottom}>
-            <div className={styles.donutCard}>
-              <div style={{ width: 160, height: 160 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={donutData} dataKey="value" innerRadius={52} outerRadius={70} paddingAngle={3}>
-                      {donutData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.color} />
-                      ))}
-                      <Label value={`${totalNodes}`} position="center" className={styles.donutValue} />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <p className={styles.donutLabel}>Tình trạng roadmap</p>
-              <p className={styles.donutMeta}>Tổng số node: {totalNodes}</p>
-              <div className={styles.donutLegend}>
-                <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#22c55e' }} />
-                  <span>Hoàn thành</span>
-                  <strong>{doneCount}</strong>
-                </div>
-                <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#f59e0b' }} />
-                  <span>Đang học</span>
-                  <strong>{inProgressCount}</strong>
-                </div>
-                <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#94a3b8' }} />
-                  <span>Chưa học</span>
-                  <strong>{pendingCount}</strong>
-                </div>
-              </div>
-            </div>
-            <div className={styles.metricCard}>
-              <p className={styles.metricLabel}>Tần suất học</p>
-              <p className={styles.metricValue}>{formatFrequency(studyFrequency)} nodes / ngày</p>
-              <p className={styles.metricHint}>Tỷ lệ đang học: {learningPercent}%</p>
-            </div>
-            <div className={styles.metricCard}>
-              <p className={styles.metricLabel}>Bắt đầu học</p>
-              <p className={styles.metricValue}>{formatDate(earliestLearningDate)}</p>
-            </div>
-            <div className={styles.metricCard}>
-              <p className={styles.metricLabel}>Dự đoán ngày hoàn thành</p>
-              <p className={styles.metricValue}>{formatDate(estimatedCompletionDate)}</p>
+                ))
+              ) : (
+                <div className={styles.statsEmpty}>Chưa có dữ liệu thống kê.</div>
+              )}
             </div>
           </div>
         </section>
-      ) : null}
-    </main>
-    <SiteFooter />
+
+        {hasRoadmapItems ? (
+          <section id="my-roadmaps" className="homepage-section homepage-section--plain" aria-label="My roadmap gallery">
+            <div className={styles.statsHeader}>
+              <div>
+                <h2 className={styles.statsTitle}>Các roadmap của tôi</h2>
+              </div>
+              <div className="homepage-roadmap-controls">
+                <button
+                  type="button"
+                  aria-label="Trước"
+                  onClick={() => setRoadmapPage((prev) => Math.max(0, prev - 1))}
+                  disabled={!canGoPrevRoadmapPage}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  aria-label="Sau"
+                  onClick={() => setRoadmapPage((prev) => Math.min(totalRoadmapPages - 1, prev + 1))}
+                  disabled={!canGoNextRoadmapPage}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+
+            <div className="homepage-roadmap-grid">
+              {visibleRoadmaps.map((roadmap) => {
+                const percent = Number.isFinite(roadmap?.progressPercent)
+                  ? roadmap.progressPercent
+                  : roadmap?.totalNodes
+                    ? Math.round(((roadmap?.doneNodes || 0) / roadmap.totalNodes) * 100)
+                    : 0;
+                const tags = Array.isArray(roadmap?.tags) ? roadmap.tags.slice(0, 3) : [];
+
+                return (
+                  <article key={roadmap.roadmapId} className="homepage-roadmap-card">
+                    <div className="homepage-roadmap-card__image-wrap">
+                      {roadmap.thumbnail ? (
+                        <img
+                          src={roadmap.thumbnail}
+                          alt={roadmap.roadmapName || 'Roadmap'}
+                          className="homepage-roadmap-card__image"
+                        />
+                      ) : (
+                        <div className={styles.thumbnailPlaceholder} aria-hidden="true" />
+                      )}
+                      {tags.length ? (
+                        <div className="homepage-roadmap-card__chips">
+                          {tags.map((tag, index) => (
+                            <span
+                              key={`${roadmap.roadmapId}-${tag}`}
+                              className={`homepage-chip homepage-chip--${tagToneList[index % tagToneList.length]}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="homepage-roadmap-card__body">
+                      <h3 className="homepage-roadmap-card__title">{roadmap.roadmapName || 'Untitled Roadmap'}</h3>
+                      <div className={styles.roadmapProgressBlock}>
+                        <p className={`${styles.roadmapPercent} homepage-roadmap-card__description`}>
+                          Đã hoàn thành {percent}%
+                        </p>
+                        <p className={styles.roadmapSubtext}>Đang học {roadmap?.inProgressNodes ?? 0} node</p>
+                        <div className={styles.progressBar}>
+                          <span className={styles.progressBarFill} style={{ width: `${percent}%` }} />
+                        </div>
+                      </div>
+                      <div className="homepage-roadmap-card__meta">
+                        <small>{roadmap.totalNodes ?? '--'} nốt</small>
+                        <button
+                          type="button"
+                          className="homepage-card-action"
+                          onClick={() => {
+                            if (detailRoadmapId === roadmap.roadmapId) {
+                              setDetailRoadmapId('');
+                              return;
+                            }
+
+                            setSelectedRoadmapId(roadmap.roadmapId);
+                            setDetailRoadmapId(roadmap.roadmapId);
+                          }}
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {detailRoadmapId ? (
+          <section className={styles.detailSection}>
+            <div className={styles.detailGrid}>
+              <div className={styles.detailColumn}>
+                <div className={styles.detailColumnHeader}>
+                  <h3>Các node đã học</h3>
+                  <span>{doneCount}</span>
+                </div>
+                <div className={styles.detailList}>
+                  {detailLoading ? (
+                    <div className={styles.statsEmpty}>Đang tải...</div>
+                  ) : manualMissingData ? (
+                    <div className={styles.statsEmpty}>Chưa có dữ liệu tiến độ cho roadmap thủ công.</div>
+                  ) : doneNodes.length ? (
+                    doneNodes.map((node) => (
+                      <div key={node.id || node.nodeId || node.courseCode} className={styles.detailItem}>
+                        <strong>{node.name || node.skillName || node.courseName || 'Unknown'}</strong>
+                        <span>{node.courseCode || ''}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={styles.statsEmpty}>Chưa có node hoàn thành.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailColumn}>
+                <div className={styles.detailColumnHeader}>
+                  <h3>Các node chưa học</h3>
+                  <span>{pendingCount}</span>
+                </div>
+                <div className={styles.detailList}>
+                  {detailLoading ? (
+                    <div className={styles.statsEmpty}>Đang tải...</div>
+                  ) : manualMissingData ? (
+                    <div className={styles.statsEmpty}>Chưa có dữ liệu tiến độ cho roadmap thủ công.</div>
+                  ) : pendingNodes.length ? (
+                    pendingNodes.map((node) => (
+                      <div key={node.id || node.nodeId || node.courseCode} className={styles.detailItem}>
+                        <strong>{node.name || node.skillName || node.courseName || 'Unknown'}</strong>
+                        <span>{node.courseCode || ''}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={styles.statsEmpty}>Chưa có node chưa học.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.detailBottom}>
+              <div className={styles.donutCard}>
+                <div style={{ width: 160, height: 160 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={donutData} dataKey="value" innerRadius={52} outerRadius={70} paddingAngle={3}>
+                        {donutData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                        <Label value={`${totalNodes}`} position="center" className={styles.donutValue} />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className={styles.donutLabel}>Tình trạng roadmap</p>
+                <p className={styles.donutMeta}>Tổng số node: {totalNodes}</p>
+                <div className={styles.donutLegend}>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendDot} style={{ backgroundColor: '#22c55e' }} />
+                    <span>Hoàn thành</span>
+                    <strong>{doneCount}</strong>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendDot} style={{ backgroundColor: '#f59e0b' }} />
+                    <span>Đang học</span>
+                    <strong>{inProgressCount}</strong>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendDot} style={{ backgroundColor: '#94a3b8' }} />
+                    <span>Chưa học</span>
+                    <strong>{pendingCount}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.metricCard}>
+                <p className={styles.metricLabel}>Tần suất học</p>
+                <p className={styles.metricValue}>{formatFrequency(studyFrequency)} nodes / ngày</p>
+                <p className={styles.metricHint}>Tỷ lệ đang học: {learningPercent}%</p>
+              </div>
+
+              <div className={styles.metricCard}>
+                <p className={styles.metricLabel}>Bắt đầu học</p>
+                <p className={styles.metricValue}>{formatDate(earliestLearningDate)}</p>
+              </div>
+
+              <div className={styles.metricCard}>
+                <p className={styles.metricLabel}>Dự đoán ngày hoàn thành</p>
+                <p className={styles.metricValue}>{formatDate(estimatedCompletionDate)}</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
+      </main>
+      <SiteFooter />
     </>
   );
 }

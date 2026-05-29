@@ -94,7 +94,7 @@ export default function CourseMultiSelect({ major, requiredCourseLink, options =
 						const key = `${major}::${course.courseCode}`;
 						const checked = selectedKeys.has(key);
 						return (
-							<label key={key} className="course-checkbox-item" style={{ color: checked ? '#38bdf8' : 'inherit', fontWeight: checked ? 700 : 500 }}>
+							<label key={key} className={`course-checkbox-item${checked ? ' course-checkbox-item--selected' : ''}`}>
 								<input
 									type="checkbox"
 									checked={checked}

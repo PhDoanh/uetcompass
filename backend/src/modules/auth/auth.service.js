@@ -18,6 +18,7 @@ function buildError(status, code, message, details) {
   const err = new Error(message);
   err.status = status;
   err.code = code;
+  err.details = details;
   return err;
 }
 
@@ -95,8 +96,8 @@ function clearPendingRegistrationsForTests() {
 async function safeEmit(eventType, payload) {
   try {
     await emitAuthEvent(eventType, payload);
-  } catch (_) {
-    // Audit failures must not break auth flows.
+  } catch (error) {
+    console.error('Audit event emission error:', error);
   }
 }
 
@@ -370,7 +371,8 @@ async function resolveOnboardingState(userId) {
   let profile = null;
   try {
     profile = await StudentProfile.findOne({ userId });
-  } catch (_) {
+  } catch (error) {
+    console.error('Error occurred while fetching student profile:', error);
     return {
       onboardingState: 'NEVER_STARTED',
       onboardingDraft: null,

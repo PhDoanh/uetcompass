@@ -69,9 +69,14 @@ async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
     );
 }
 
-async function listPublic({ q = '', tags = [], page = 1, limit = 20 } = {}) {
+async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
     const filter = { isPublic: true };
+
+    const normalizedUserId = String(userId || '').trim();
+    if (normalizedUserId) {
+        filter.userId = normalizedUserId;
+    }
 
     const normalizedQuery = String(q || '').trim();
     if (normalizedQuery) {
@@ -186,7 +191,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
     } catch (err) {
         if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
             // Log and continue — draft is still created and persisted in ManualRoadmap.
-            // eslint-disable-next-line no-console
+             
             console.warn('syncToRoadmapCollection skipped:', err.message);
             syncSkipped = true;
         } else {
@@ -240,7 +245,7 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     } catch (err) {
         if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
             // Allow update to succeed even if onboarding/profile is missing.
-            // eslint-disable-next-line no-console
+             
             console.warn('syncToRoadmapCollection skipped on update:', err.message);
             syncSkippedOnUpdate = true;
         } else {

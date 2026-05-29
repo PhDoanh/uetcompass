@@ -8,6 +8,7 @@ import { getCourseCatalog } from '../../services/onboarding.api';
 import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import { validateProfilePayload } from '../account/accountSettings.validation';
+import { navigateTo } from '../../shared/navigation';
 import './onboarding-panel.css';
 import '../account/account-settings-page.css';
 
@@ -392,6 +393,7 @@ export default function LearningProfilePage() {
 					const identityPayload = profilePayload?.identity || {};
 					setAvatarBroken(false);
 					setIdentity({
+						userId: String(identityPayload.userId || profilePayload?.userId || '').trim(),
 						email: String(identityPayload.email || '').trim(),
 						displayName: String(identityPayload.displayName || identityPayload.fullName || 'Sinh viên UET').trim(),
 						fullName: String(identityPayload.fullName || '').trim(),
@@ -657,7 +659,6 @@ export default function LearningProfilePage() {
 
 						<footer className="learning-profile-footer">
 							<div className="learning-profile-footer-left">
-								{hasChanges ? <span className="learning-profile-change-hint">Khi thông tin thay đổi</span> : null}
 							</div>
 							<div className="learning-profile-footer-center">
 								{hasChanges ? (
@@ -666,6 +667,9 @@ export default function LearningProfilePage() {
 										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 									</button>
 								) : null}
+								<button type="button" className="secondary-btn" onClick={() => navigateTo(identity?.userId ? `/public-profile/${identity.userId}` : '/public-profile')}>
+									Xem trang cá nhân công khai
+								</button>
 								{showRegenRoadmap ? (
 									<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 										<Sparkles size={17} />

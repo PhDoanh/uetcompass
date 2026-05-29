@@ -18,7 +18,8 @@ function addClient(userId, res) {
   const heartbeat = setInterval(() => {
     try {
       res.write(': heartbeat\\n\\n');
-    } catch (_) {
+    } catch (error) {
+      console.error('Error occurred while sending heartbeat:', error);
       clearInterval(heartbeat);
       removeClient(key, res);
     }
@@ -55,7 +56,8 @@ function notifyUser(userId, payload, eventName = 'progress:updated') {
     try {
       res.write(`event: ${eventName}\\n`);
       res.write(dataLine);
-    } catch (_) {
+    } catch (error) {
+      console.error('Error occurred while notifying user:', error);
       removeClient(key, res);
     }
   }

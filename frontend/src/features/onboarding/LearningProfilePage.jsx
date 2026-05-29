@@ -11,6 +11,7 @@ import { validateProfilePayload } from '../account/accountSettings.validation';
 import { navigateTo } from '../../shared/navigation';
 import './onboarding-panel.css';
 import '../account/account-settings-page.css';
+import DatePicker from '../../shared/DatePicker';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
@@ -590,8 +591,7 @@ export default function LearningProfilePage() {
 										</div>
 										<div className="learning-field">
 											<label htmlFor="timeline" className="learning-label">Dự kiến tốt nghiệp</label>
-											<input
-												type="date"
+											<DatePicker
 												id="timeline"
 												value={form?.careerGoal?.graduationTimeline || ''}
 												onChange={(event) =>
@@ -604,6 +604,8 @@ export default function LearningProfilePage() {
 													})
 												}
 												className="learning-input"
+												popperClassName="onboarding-datepicker-popper"
+												calendarClassName="onboarding-datepicker-calendar"
 											/>
 										</div>
 									</div>

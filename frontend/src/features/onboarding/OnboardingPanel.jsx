@@ -4,6 +4,7 @@ import { useOnboardingDraft } from './useOnboardingDraft';
 import { useRoadmapStatus } from './useRoadmapStatus';
 import { getCourseCatalog, postSubmit } from '../../services/onboarding.api';
 import { useNotification } from '../notification/NotificationContainer';
+import DatePicker from '../../shared/DatePicker';
 import './onboarding-panel.css';
 
 const EMPTY_FORM = {
@@ -33,20 +34,17 @@ function resolveDisplayNameFromToken(token) {
 	}
 }
 
-function toMonthValue(value) {
+function normalizeDateValue(value) {
 	const raw = String(value || '').trim();
 	if (!raw) {
 		return '';
 	}
-	return raw.length >= 7 ? raw.slice(0, 7) : '';
-}
 
-function fromMonthValue(value) {
-	const raw = String(value || '').trim();
-	if (!raw) {
-		return '';
+	if (/^\d{4}-\d{2}$/.test(raw)) {
+		return `${raw}-01`;
 	}
-	return `${raw}-01`;
+
+	return raw;
 }
 
 export default function OnboardingPanel({
@@ -477,20 +475,24 @@ export default function OnboardingPanel({
 
 						<div className="onboarding-modern-field">
 							<label htmlFor="onboarding-grad-month">Dự kiến tốt nghiệp</label>
-							<input
+							<DatePicker
 								id="onboarding-grad-month"
-								type="month"
-								value={toMonthValue(mergedForm?.careerGoal?.graduationTimeline)}
+								value={normalizeDateValue(mergedForm?.careerGoal?.graduationTimeline)}
 								onChange={(event) =>
 									patchForm({
 										...mergedForm,
 										careerGoal: {
 											...(mergedForm.careerGoal || {}),
-											graduationTimeline: fromMonthValue(event.target.value),
+											graduationTimeline: event.target.value,
 										},
 									})
 								}
 								disabled={isViewMode}
+								dateFormat="dd/MM/yyyy"
+								placeholder="dd/mm/yyyy"
+								className="onboarding-input"
+								popperClassName="onboarding-datepicker-popper"
+								calendarClassName="onboarding-datepicker-calendar"
 							/>
 						</div>
 					</div>
@@ -511,20 +513,23 @@ export default function OnboardingPanel({
 						</div>
 					) : null}
 
-					{!isViewMode ? (
-						<div className="onboarding-panel-actions">
-							<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
-								{submitState === 'submitting' ? submittingLabel : submitLabel}
-							</button>
-							{showDismissButton ? (
-								<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
-									Hoàn thiện sau
+					{!isViewMode && (
+						<div className="onboarding-panel-actions-wrap">
+							<div className="onboarding-panel-actions">
+								<button type="button" className="primary-btn" onClick={handleSubmit} disabled={!canSubmit || submitState === 'submitting'}>
+									{submitState === 'submitting' ? submittingLabel : submitLabel}
 								</button>
-							) : null}
+								{showDismissButton ? (
+									<button type="button" className="secondary-btn" onClick={closePanel} disabled={submitState === 'submitting'}>
+										Hoàn thiện sau
+									</button>
+								) : null}
+							</div>
+							<small className="onboarding-panel-note onboarding-save-status">
+								{saving ? 'Saving draft...' : ' '}
+							</small>
 						</div>
-					) : null}
-
-					{!isViewMode ? <small className="onboarding-panel-note onboarding-save-status">{saving ? 'Saving draft...' : ' '}</small> : null}
+					)}
 				</div>
 			</div>
 		</section>

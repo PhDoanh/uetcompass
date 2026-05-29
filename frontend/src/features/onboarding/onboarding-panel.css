@@ -15,14 +15,26 @@
 .onboarding-panel-shell--page {
   width: 100%;
   max-width: none;
-  min-height: calc(100vh - var(--navbar-height) - 20px);
+  min-height: 100%;
+  height: 100%;
   max-height: none;
+  border-radius: 0;
+  border: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .onboarding-panel-layout {
   display: grid;
   grid-template-columns: 1fr;
   min-height: 620px;
+}
+
+.onboarding-panel-shell--page .onboarding-panel-layout {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .onboarding-panel-aside {
@@ -108,6 +120,12 @@
 .onboarding-panel-form-wrap {
   padding: 1.5rem 1.2rem;
   background: var(--surface-1);
+}
+
+.onboarding-panel-shell--page .onboarding-panel-form-wrap,
+.onboarding-panel-shell--page .onboarding-panel-aside {
+  min-height: 0;
+  overflow: auto;
 }
 
 .onboarding-panel-form-head h3 {
@@ -233,9 +251,10 @@
 }
 
 .onboarding-modern-course-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
   padding: 0.48rem 0.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -249,10 +268,13 @@
   width: 15px;
   height: 15px;
   accent-color: var(--color-primary);
+  margin: 0;
+  justify-self: center;
 }
 
 .onboarding-modern-course-item span {
   font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .onboarding-modern-link {
@@ -446,6 +468,10 @@
 
   .onboarding-panel-form-wrap {
     padding: 2rem;
+  }
+
+  .onboarding-panel-shell--page .onboarding-panel-layout {
+    grid-template-columns: minmax(320px, 5fr) minmax(0, 7fr);
   }
 }
 
@@ -988,9 +1014,9 @@
   border: 1px solid var(--border-1);
   border-radius: 0.85rem;
   padding: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.8rem;
   align-items: center;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
@@ -1017,6 +1043,14 @@
   height: 1.2rem;
   accent-color: var(--color-primary);
   flex: 0 0 auto;
+  margin: 0;
+  align-self: center;
+  justify-self: end;
+}
+
+/* Dark theme tweak for checkbox visibility */
+html[data-theme='dark'] .learning-course-item input[type='checkbox'] {
+  accent-color: var(--button-secondary-border);
 }
 
 .learning-expand-btn {

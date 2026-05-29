@@ -78,6 +78,15 @@ export default function ProgressDashboard() {
     [combinedRoadmaps, selectedRoadmapId]
   );
 
+  const handleOpenSkillTree = useCallback((roadmapId) => {
+    const safeRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
+    if (!safeRoadmapId) {
+      return;
+    }
+
+    navigateTo(`/skill-tree/${safeRoadmapId}`);
+  }, []);
+
   const loadSummaries = useCallback(async () => {
     if (!accessToken) {
       setRoadmaps([]);
@@ -505,15 +514,7 @@ export default function ProgressDashboard() {
                         <button
                           type="button"
                           className="homepage-card-action"
-                          onClick={() => {
-                            if (detailRoadmapId === roadmap.roadmapId) {
-                              setDetailRoadmapId('');
-                              return;
-                            }
-
-                            setSelectedRoadmapId(roadmap.roadmapId);
-                            setDetailRoadmapId(roadmap.roadmapId);
-                          }}
+                          onClick={() => handleOpenSkillTree(roadmap.roadmapId)}
                         >
                           Chi tiết
                         </button>

@@ -308,6 +308,26 @@ async function share(roadmapId, userId) {
     return roadmap.toObject();
 }
 
+async function unshare(roadmapId, userId) {
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    if (!roadmap) {
+        throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+    }
+
+    if (roadmap.status !== 'published') {
+        throw new RoadmapError(409, ERROR_CODES.PUBLICATION_ERROR, 'Only published roadmaps can be unpublished.');
+    }
+
+    roadmap.shared = false;
+    roadmap.isPublic = false;
+    roadmap.status = 'draft';
+    roadmap.sharedAt = null;
+    roadmap.updatedAt = new Date();
+
+    await roadmap.save();
+    return roadmap.toObject();
+}
+
 async function deleteById(roadmapId, userId) {
     const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId }, { _id: 1 }).lean();
     if (!roadmap) {
@@ -334,6 +354,7 @@ module.exports = {
     createDraft,
     updateDraft,
     share,
+    unshare,
     deleteById,
     listPublic,
     getPublicPreviewById,

@@ -44,6 +44,19 @@ async function listRoadmaps(req, res) {
 	}
 }
 
+async function listManualRoadmaps(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await manualRoadmapService.listByUser(req.user.userId, {
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 async function getRoadmapById(req, res) {
 	try {
 		const roadmap = await roadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
@@ -161,6 +174,15 @@ async function updateManualRoadmap(req, res) {
 async function shareManualRoadmap(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.share(req.params.roadmapId, req.user.userId);
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function unshareManualRoadmap(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.unshare(req.params.roadmapId, req.user.userId);
 		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
@@ -341,6 +363,7 @@ module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
+	listManualRoadmaps,
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
@@ -348,6 +371,7 @@ module.exports = {
 	getManualRoadmapById,
 	updateManualRoadmap,
 	shareManualRoadmap,
+	unshareManualRoadmap,
 	deleteManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,

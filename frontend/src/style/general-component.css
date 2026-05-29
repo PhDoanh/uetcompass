@@ -1773,6 +1773,112 @@ html[data-theme='dark'] .homepage-feature-pill {
   flex: 1;
 }
 
+.homepage-roadmap-card__share {
+  margin: 0.65rem 0 0.85rem;
+  display: grid;
+  gap: 0.7rem;
+  flex: 1;
+}
+
+.homepage-roadmap-card__share-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.homepage-roadmap-card__share-meta {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.homepage-roadmap-card__share-label {
+  color: #5a6478;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.homepage-roadmap-card__share-state {
+  color: #8490a6;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.homepage-roadmap-share-toggle {
+  position: relative;
+  width: 54px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid #cdd9eb;
+  background: #e8eef7;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.homepage-roadmap-share-toggle:hover {
+  filter: brightness(1.03);
+}
+
+.homepage-roadmap-share-toggle.is-on {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+}
+
+.homepage-roadmap-share-toggle[aria-busy='true'] {
+  opacity: 0.85;
+  cursor: progress;
+}
+
+.homepage-roadmap-share-toggle__thumb {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  transform: translateY(-50%);
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.18);
+  transition: left 0.2s ease;
+}
+
+.homepage-roadmap-share-toggle.is-on .homepage-roadmap-share-toggle__thumb {
+  left: 28px;
+}
+
+.homepage-roadmap-share-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  border: 1px solid #d7e3f4;
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #0055a2;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  transition: transform 0.16s, border-color 0.16s, color 0.16s, background-color 0.16s;
+}
+
+.homepage-roadmap-share-copy:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.homepage-roadmap-share-copy:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .homepage-roadmap-card__meta {
   display: flex;
   align-items: center;
@@ -3114,6 +3220,10 @@ html[data-theme='dark'] .homepage-progress__cell {
   background: rgba(30, 41, 59, 0.9);
 }
 
+html[data-theme='dark'] .homepage-progress__cell-label {
+  color: rgba(203, 213, 225, 0.86);
+}
+
 html[data-theme='dark'] .homepage-progress__cell--1 {
   background: rgba(59, 130, 246, 0.25);
 }
@@ -3128,6 +3238,13 @@ html[data-theme='dark'] .homepage-progress__cell--3 {
 
 html[data-theme='dark'] .homepage-progress__cell--4 {
   background: #3b82f6;
+}
+
+html[data-theme='dark'] .homepage-progress__cell--1 .homepage-progress__cell-label,
+html[data-theme='dark'] .homepage-progress__cell--2 .homepage-progress__cell-label,
+html[data-theme='dark'] .homepage-progress__cell--3 .homepage-progress__cell-label,
+html[data-theme='dark'] .homepage-progress__cell--4 .homepage-progress__cell-label {
+  color: rgba(239, 246, 255, 0.95);
 }
 
 html[data-theme='dark'] .homepage-system__arrow {
@@ -4566,10 +4683,38 @@ html[data-theme='dark'] .homepage-card-action {
 
 html[data-theme='dark'] .homepage-roadmap-head p,
 html[data-theme='dark'] .homepage-roadmap-card__description,
+html[data-theme='dark'] .homepage-roadmap-card__share-label,
 html[data-theme='dark'] .homepage-roadmap-card__meta small,
+html[data-theme='dark'] .homepage-roadmap-card__share-state,
 html[data-theme='dark'] .homepage-bento__side p,
 html[data-theme='dark'] .homepage-bento__side a {
   color: #b2c5df;
+}
+
+html[data-theme='dark'] .homepage-roadmap-share-toggle {
+  border-color: rgba(117, 168, 235, 0.35);
+  background: rgba(22, 38, 64, 0.96);
+}
+
+html[data-theme='dark'] .homepage-roadmap-share-toggle.is-on {
+  border-color: rgba(59, 130, 246, 0.85);
+  background: #2563eb;
+}
+
+html[data-theme='dark'] .homepage-roadmap-share-toggle__thumb {
+  background: #eff6ff;
+}
+
+html[data-theme='dark'] .homepage-roadmap-share-copy {
+  border-color: rgba(117, 168, 235, 0.42);
+  background: rgba(18, 33, 56, 0.96);
+  color: #b7d7ff;
+}
+
+html[data-theme='dark'] .homepage-roadmap-share-copy:hover:not(:disabled) {
+  border-color: #60a5fa;
+  color: #e2e8f0;
+  background: rgba(96, 165, 250, 0.12);
 }
 
 html[data-theme='dark'] .homepage-roadmap-card {

@@ -659,7 +659,6 @@ export default function LearningProfilePage() {
 
 						<footer className="learning-profile-footer">
 							<div className="learning-profile-footer-left">
-								{hasChanges ? <span className="learning-profile-change-hint">Khi thông tin thay đổi</span> : null}
 							</div>
 							<div className="learning-profile-footer-center">
 								{hasChanges ? (

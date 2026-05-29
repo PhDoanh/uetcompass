@@ -102,6 +102,22 @@ function navigateToHomeSection(sectionId) {
   }
 }
 
+function scrollToHomeHashTarget() {
+  if (typeof window === 'undefined' || window.location.pathname !== '/') {
+    return;
+  }
+
+  const hash = String(window.location.hash || '').replace(/^#/, '').trim();
+  if (!hash) {
+    return;
+  }
+
+  const target = document.getElementById(hash);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
     return null;
@@ -251,6 +267,20 @@ export default function Homepage() {
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(scrollToHomeHashTarget);
+    window.addEventListener('hashchange', scrollToHomeHashTarget);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('hashchange', scrollToHomeHashTarget);
+    };
+  }, []);
   const [deletingManualRoadmapId, setDeletingManualRoadmapId] = useState('');
   const [pendingDeleteRoadmap, setPendingDeleteRoadmap] = useState(null);
   const [progressSummaries, setProgressSummaries] = useState([]);

@@ -294,16 +294,7 @@ export default function PublicProfilePage({ userId }) {
 	return (
 		<main className="public-profile-page">
 			<section className="public-profile-page__shell">
-				<header className="public-profile-page__hero">
-					<div className="public-profile-page__hero-actions">
-						<button type="button" className="public-profile-page__nav-btn" onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))} disabled={safePageIndex === 0 || loading} aria-label="Trang trước">
-							<ChevronLeft size={18} />
-						</button>
-						<button type="button" className="public-profile-page__nav-btn" onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))} disabled={safePageIndex >= totalPages - 1 || loading} aria-label="Trang sau">
-							<ChevronRight size={18} />
-						</button>
-					</div>
-				</header>
+				{/* header intentionally empty; controls moved into content header for correct placement */}
 
 				<div className="public-profile-page__layout">
 					<aside className="public-profile-page__sidebar">
@@ -388,7 +379,17 @@ export default function PublicProfilePage({ userId }) {
 								<p className="public-profile-page__eyebrow">Roadmaps công khai</p>
 								<h2>{roadmaps.length > 0 ? 'Danh sách roadmap' : 'Chưa có roadmap công khai'}</h2>
 							</div>
-							<span className="public-profile-page__page-indicator">{safePageIndex + 1} / {totalPages}</span>
+							<div className="public-profile-page__header-controls">
+								<div className="public-profile-page__hero-actions">
+									<button type="button" className="public-profile-page__nav-btn" onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))} disabled={safePageIndex === 0 || loading} aria-label="Trang trước">
+										<ChevronLeft size={18} />
+									</button>
+									<button type="button" className="public-profile-page__nav-btn" onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))} disabled={safePageIndex >= totalPages - 1 || loading} aria-label="Trang sau">
+										<ChevronRight size={18} />
+									</button>
+								</div>
+								<span className="public-profile-page__page-indicator">{safePageIndex + 1} / {totalPages}</span>
+							</div>
 						</div>
 
 						{loading ? (

@@ -1032,11 +1032,23 @@ html[data-theme='dark'] .navbar__notification-empty {
   border-color: #ffffff;
 }
 
+select,
+input[type='date'],
+input[type='month'] {
+  box-sizing: border-box;
+  min-height: var(--control-height-sm);
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-color: var(--input-bg);
   background-image:
     linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
@@ -1045,17 +1057,12 @@ select {
     calc(100% - 12px) calc(50% - 2px);
   background-repeat: no-repeat;
   background-size: 6px 6px, 6px 6px;
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  color: var(--input-text);
+  padding-right: 2.3rem;
 }
 
-input[type='date'],
-input[type='month'] {
-  background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  color: var(--input-text);
+select option {
+  background: var(--surface-1);
+  color: var(--text-1);
 }
 
 input[type='date']::-webkit-calendar-picker-indicator,
@@ -1078,11 +1085,22 @@ input[type='month']:focus {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+select:hover,
+input[type='date']:hover,
+input[type='month']:hover {
+  border-color: var(--border-2);
+}
+
 select:disabled,
 input[type='date']:disabled,
 input[type='month']:disabled {
   opacity: 0.72;
   cursor: not-allowed;
+}
+
+html[data-theme='dark'] select option {
+  background: var(--surface-1);
+  color: var(--text-1);
 }
 
 @media (max-width: 1180px) {
@@ -1483,6 +1501,13 @@ button.homepage-wire-btn {
 .homepage-wire-btn:hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Keep white/cta button readable on hover: darken the CTA instead of applying white overlay */
+.homepage-wire-btn--white:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-cta) 86%, black 14%);
+  color: #ffffff;
 }
 
 .homepage-outline-btn:hover {

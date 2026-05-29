@@ -4,6 +4,23 @@ import { getRoadmapNodes } from '../../services/progress.api';
 const MANUAL_ROADMAP_FETCH_LIMIT = 100;
 const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
 
+function dedupeByRoadmapId(items = []) {
+  const seen = new Set();
+  const result = [];
+
+  items.forEach((item) => {
+    const roadmapId = String(item?._id || item?.roadmapId || '').trim();
+    if (!roadmapId || seen.has(roadmapId)) {
+      return;
+    }
+
+    seen.add(roadmapId);
+    result.push(item);
+  });
+
+  return result;
+}
+
 function normalizeStatus(rawStatus) {
   const status = String(rawStatus || '').trim().toLowerCase();
   if (status === 'done' || status === 'completed') {
@@ -117,14 +134,15 @@ async function fetchAllManualRoadmaps(accessToken) {
     }
   }
 
-  return items;
+  return dedupeByRoadmapId(items);
 }
 
 export async function loadManualProgress(accessToken) {
   const manualRoadmaps = await fetchAllManualRoadmaps(accessToken);
   const detailsById = {};
+  const summariesById = new Map();
 
-  const summaries = await Promise.all(
+  await Promise.all(
     manualRoadmaps.map(async (roadmap) => {
       const roadmapId = String(roadmap?._id || '').trim();
       if (!roadmapId) {
@@ -164,12 +182,13 @@ export async function loadManualProgress(accessToken) {
       const summary = summaryData.summary;
       const detailPayload = summaryData.detail;
       detailsById[roadmapId] = detailPayload;
+      summariesById.set(roadmapId, summary);
       return summary;
     })
   );
 
   return {
-    summaries: summaries.filter(Boolean),
+    summaries: Array.from(summariesById.values()),
     detailsById,
   };
 }

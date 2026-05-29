@@ -269,6 +269,23 @@ function toRgba(hex, alpha) {
     }
     return streak;
   }
+
+  function dedupeRoadmapsById(items = []) {
+    const seen = new Set();
+    const uniqueItems = [];
+
+    items.forEach((item) => {
+      const roadmapId = String(item?.roadmapId || '').trim();
+      if (!roadmapId || seen.has(roadmapId)) {
+        return;
+      }
+
+      seen.add(roadmapId);
+      uniqueItems.push(item);
+    });
+
+    return uniqueItems;
+  }
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const { addNotification } = useNotification();
@@ -552,7 +569,7 @@ export default function Homepage() {
   }, [accessToken, logoutAndRedirect]);
 
   const combinedProgressSummaries = useMemo(
-    () => [...progressSummaries, ...manualProgressSummaries],
+    () => dedupeRoadmapsById([...progressSummaries, ...manualProgressSummaries]),
     [progressSummaries, manualProgressSummaries]
   );
 

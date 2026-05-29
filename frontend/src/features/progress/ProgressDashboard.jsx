@@ -3,7 +3,7 @@ import { Pie, PieChart, ResponsiveContainer, Cell, Label } from 'recharts';
 import { useAuth } from '../../providers/AuthProvider';
 import { getRoadmapNodes, getSummaries, getTrackingTables } from '../../services/progress.api';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
-import { computeManualProgressTotals, loadManualProgress } from './manualProgress.utils';
+import { loadManualProgress } from './manualProgress.utils';
 import { navigateTo } from '../../shared/navigation';
 import SiteFooter from '../general/SiteFooter';
 import styles from './progress.module.css';
@@ -50,6 +50,23 @@ function addDays(date, days) {
   return next;
 }
 
+function dedupeRoadmapsById(items = []) {
+  const seen = new Set();
+  const uniqueItems = [];
+
+  items.forEach((item) => {
+    const roadmapId = String(item?.roadmapId || '').trim();
+    if (!roadmapId || seen.has(roadmapId)) {
+      return;
+    }
+
+    seen.add(roadmapId);
+    uniqueItems.push(item);
+  });
+
+  return uniqueItems;
+}
+
 export default function ProgressDashboard() {
   const { accessToken } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -69,7 +86,7 @@ export default function ProgressDashboard() {
   const detailCacheRef = useRef(new Map());
 
   const combinedRoadmaps = useMemo(
-    () => [...roadmaps, ...manualProgressSummaries],
+    () => dedupeRoadmapsById([...roadmaps, ...manualProgressSummaries]),
     [roadmaps, manualProgressSummaries]
   );
 
@@ -78,13 +95,18 @@ export default function ProgressDashboard() {
     [combinedRoadmaps, selectedRoadmapId]
   );
 
-  const handleOpenSkillTree = useCallback((roadmapId) => {
-    const safeRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
-    if (!safeRoadmapId) {
+  const handleOpenSkillTree = useCallback((roadmap) => {
+    const roadmapId = String(roadmap?.roadmapId || '').trim();
+    if (!roadmapId) {
       return;
     }
 
-    navigateTo(`/skill-tree/${safeRoadmapId}`);
+    if (roadmap?.isManual) {
+      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+      return;
+    }
+
+    navigateTo('/skill-tree');
   }, []);
 
   const loadSummaries = useCallback(async () => {
@@ -261,22 +283,18 @@ export default function ProgressDashboard() {
     },
   });
 
-  const manualTotals = useMemo(
-    () => computeManualProgressTotals(manualProgressSummaries),
-    [manualProgressSummaries]
-  );
   const summaryBase = trackingData?.summary || {};
-  const summaryTotalNodes = (summaryBase.totalNodes || 0) + manualTotals.totalNodes;
-  const summaryCompletedNodes = (summaryBase.completedNodes || 0) + manualTotals.doneNodes;
-  const summaryInProgressNodes = (summaryBase.inProgressNodes || 0) + manualTotals.inProgressNodes;
+  const summaryTotalNodes = summaryBase.totalNodes || 0;
+  const summaryCompletedNodes = summaryBase.completedNodes || 0;
+  const summaryInProgressNodes = summaryBase.inProgressNodes || 0;
   const summaryActiveNodes = summaryBase.activeNodes || 0;
-  const summaryLearningRate = summaryTotalNodes ? summaryInProgressNodes / summaryTotalNodes : 0;
+  const summaryLearningRate = summaryBase.learningRate || (summaryTotalNodes ? summaryInProgressNodes / summaryTotalNodes : 0);
   const summary = {
     totalNodes: summaryTotalNodes,
     completedNodes: summaryCompletedNodes,
     inProgressNodes: summaryInProgressNodes,
     activeNodes: summaryActiveNodes,
-    completionRate: summaryTotalNodes ? summaryCompletedNodes / summaryTotalNodes : 0,
+    completionRate: summaryBase.completionRate || (summaryTotalNodes ? summaryCompletedNodes / summaryTotalNodes : 0),
     learningRate: summaryLearningRate,
     firstActivityDate: summaryBase.firstActivityDate || null,
   };
@@ -514,7 +532,7 @@ export default function ProgressDashboard() {
                         <button
                           type="button"
                           className="homepage-card-action"
-                          onClick={() => handleOpenSkillTree(roadmap.roadmapId)}
+                          onClick={() => handleOpenSkillTree(roadmap)}
                         >
                           Chi tiết
                         </button>

@@ -30,6 +30,7 @@ export default function RoadmapVersionHistoryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState('');
+  const [revertingVersionId, setRevertingVersionId] = useState(null);
 
   const [preview, setPreview] = useState({ nodes: [], edges: [] });
   const [layoutPositions, setLayoutPositions] = useState({});
@@ -174,10 +175,32 @@ export default function RoadmapVersionHistoryPage() {
 
   const handleBack = () => {
     if (typeof window !== 'undefined') {
-      const backUrl = roadmapId ? `/skill-tree/${roadmapId}` : '/';
+      const backUrl = roadmapId ? `/skill-tree/${roadmapId}?mine=1` : '/';
       window.location.href = backUrl;
     }
   };
+
+  const handleRevert = useCallback(
+    async (versionId) => {
+      if (!roadmapId || !accessToken) return;
+      setRevertingVersionId(versionId);
+      setError('');
+      try {
+        await manualRoadmapApi.revertRoadmapVersion(accessToken, roadmapId, versionId);
+        try {
+          window.sessionStorage.setItem('skillTree.pendingNotification', JSON.stringify({
+            message: 'Khôi phục phiên bản thành công.',
+            type: 'success',
+          }));
+        } catch (_) {}
+        window.location.href = `/skill-tree/${encodeURIComponent(roadmapId)}?mine=1`;
+      } catch (err) {
+        setError(err.message || 'Không thể khôi phục phiên bản.');
+        setRevertingVersionId(null);
+      }
+    },
+    [roadmapId, accessToken]
+  );
 
   const canvasWidth = layoutWidth > 0 ? Math.max(0, layoutWidth - sidebarWidth - DIVIDER_WIDTH) : 0;
 
@@ -226,6 +249,17 @@ export default function RoadmapVersionHistoryPage() {
                     <span className="roadmap-version-list__date">
                       {formatDate(v.updatedAt)}
                     </span>
+                    {selectedVersion?._id === v._id && (
+                      <button
+                        type="button"
+                        className="manual-roadmap-button manual-roadmap-button--secondary"
+                        style={{ marginTop: '6px', fontSize: '12px', padding: '2px 8px' }}
+                        disabled={revertingVersionId === v._id}
+                        onClick={(e) => { e.stopPropagation(); handleRevert(v._id); }}
+                      >
+                        {revertingVersionId === v._id ? 'Đang khôi phục...' : 'Khôi phục'}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ol>

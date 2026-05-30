@@ -386,6 +386,44 @@ async function getManualRoadmapVersion(req, res) {
 	}
 }
 
+async function revertManualRoadmapVersion(req, res) {
+	try {
+		const { roadmapId, versionId } = req.params;
+		const userId = req.user.userId;
+
+		// 1. Get the target version (includes yamlCode and progressState)
+		const version = await roadmapVersionService.getVersionById(roadmapId, versionId);
+
+		// 2. Validate/parse YAML from the version
+		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(version.yamlCode || ''));
+		const { title, description, nodes } = parsed;
+
+		// 3. Get current tags (tags are not stored in versions, keep them as-is)
+		const existing = await manualRoadmapService.getByIdForUser(roadmapId, userId);
+		if (!existing) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+		const tags = manualRoadmapValidation.validateAndNormalizeTags(existing.tags || []);
+
+		// 4. Update draft — this also snapshots the current progress into the new version
+		const updated = await manualRoadmapService.updateDraft(roadmapId, userId, {
+			title,
+			description,
+			yamlCode: String(version.yamlCode || '').trim(),
+			nodes,
+			tags,
+		});
+
+		// 5. Reconcile progress — keep valid node entries, add new nodes as pending (best-effort)
+		const validNodeIds = (updated.nodes || []).map(n => n.nodeId).filter(Boolean);
+		if (validNodeIds.length > 0) {
+			progressService.reconcileProgress(userId, roadmapId, validNodeIds).catch(() => {});
+		}
+
+		return res.json(updated);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
@@ -410,4 +448,5 @@ module.exports = {
 	getManualRoadmapTags,
 	listManualRoadmapVersions,
 	getManualRoadmapVersion,
+	revertManualRoadmapVersion,
 };

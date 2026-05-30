@@ -139,6 +139,14 @@ export function getRoadmapVersion(authToken, roadmapId, versionId) {
     );
 }
 
+export function revertRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}/revert`,
+        'POST',
+        authToken
+    );
+}
+
 const manualRoadmapApi = {
     listManualRoadmaps,
     getManualRoadmap,
@@ -154,6 +162,7 @@ const manualRoadmapApi = {
     getManualRoadmapTags,
     listRoadmapVersions,
     getRoadmapVersion,
+    revertRoadmapVersion,
 };
 
 export default manualRoadmapApi;

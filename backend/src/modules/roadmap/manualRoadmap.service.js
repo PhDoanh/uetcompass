@@ -128,23 +128,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         sharedAt: new Date(),
     });
 
-<<<<<<< HEAD
-    let syncSkipped = false;
-    try {
-        await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
-    } catch (err) {
-        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
-            // Log and continue — draft is still created and persisted in ManualRoadmap.
-            // console.warn('syncToRoadmapCollection skipped:', err.message);
-            syncSkipped = true;
-        } else {
-            throw err;
-        }
-    }
-=======
-    // Record initial version snapshot (best-effort — does not fail the create)
-    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode).catch(() => {});
->>>>>>> aebbdcb5275a85ae990af8c8a66582849be41107
+    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode, null).catch(() => {});
 
     return typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
 }
@@ -185,8 +169,13 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
 
     await existing.save();
 
-    // Record a version snapshot (best-effort — does not fail the save)
-    roadmapVersionService.createVersion(existing._id, existing.yamlCode).catch(() => {});
+    // Record a version snapshot with current progress state (best-effort — does not fail the save)
+    ;(async () => {
+        try {
+            const progressDoc = await RoadmapProgress.findOne({ userId, roadmapId: existing._id }).lean();
+            await roadmapVersionService.createVersion(existing._id, existing.yamlCode, progressDoc?.state ?? null);
+        } catch (_) {}
+    })();
 
     return existing.toObject();
 }

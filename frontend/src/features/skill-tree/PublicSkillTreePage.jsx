@@ -164,6 +164,21 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [activeNodeId, nodesForRender]
   );
   const normalizedRoadmapId = useMemo(() => String(roadmapId || '').trim(), [roadmapId]);
+  const isOwner = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('mine') === '1';
+
+  // Fire any cross-page notification stored before navigation (e.g. after revert)
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem('skillTree.pendingNotification');
+      if (raw) {
+        window.sessionStorage.removeItem('skillTree.pendingNotification');
+        const { message, type } = JSON.parse(raw);
+        if (message) addNotification(message, type || 'success');
+      }
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (activeNode) {
@@ -360,18 +375,20 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     <>
       <button
         type="button"
-        className="skill-tree-back-button"
-        onClick={() => { window.location.href = `/manual-roadmap/versions?id=${normalizedRoadmapId}`; }}
-      >
-        Lịch sử
-      </button>
-      <button
-        type="button"
         className="skill-tree-edit-button"
         onClick={handleOpenInEditor}
       >
         Chỉnh sửa Roadmap
       </button>
+      {isOwner && (
+        <button
+          type="button"
+          className="skill-tree-back-button"
+          onClick={() => window.location.assign(`/manual-roadmap/versions?id=${encodeURIComponent(normalizedRoadmapId)}`)}
+        >
+          Lịch sử
+        </button>
+      )}
       <button
         type="button"
         className="skill-tree-back-button"
@@ -496,6 +513,11 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   function handleOpenInEditor() {
     if (!isAuthenticated) {
       addNotification('Vui lòng đăng nhập để chỉnh sửa roadmap.', 'warning');
+      return;
+    }
+
+    if (isOwner) {
+      window.location.assign(`/manual-roadmap?id=${encodeURIComponent(normalizedRoadmapId)}`);
       return;
     }
 

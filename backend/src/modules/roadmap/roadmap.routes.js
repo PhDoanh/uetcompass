@@ -84,6 +84,7 @@ roadmapRouter.post('/manual-roadmaps/:roadmapId/share', controller.shareManualRo
 roadmapRouter.post('/manual-roadmaps/:roadmapId/unshare', controller.unshareManualRoadmap);
 roadmapRouter.get('/manual-roadmaps/:roadmapId/versions', controller.listManualRoadmapVersions);
 roadmapRouter.get('/manual-roadmaps/:roadmapId/versions/:versionId', controller.getManualRoadmapVersion);
+roadmapRouter.post('/manual-roadmaps/:roadmapId/versions/:versionId/revert', controller.revertManualRoadmapVersion);
 
 // roadmapRouter.get('/', controller.listRoadmaps); // Deprecated compatibility alias, now removed
 roadmapRouter.get('/:roadmapId', controller.getRoadmapById);

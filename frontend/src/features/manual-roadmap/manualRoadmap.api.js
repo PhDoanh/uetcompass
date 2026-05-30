@@ -25,7 +25,7 @@ async function request(path, method, authToken, body, { requireAuth = true } = {
     let payload = null;
     try {
         payload = await response.json();
-    } catch (err) {
+    } catch {
         payload = null;
     }
 

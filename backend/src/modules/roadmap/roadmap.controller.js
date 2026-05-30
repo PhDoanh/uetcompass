@@ -3,10 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 const roadmapService = require('./roadmap.service');
-const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
-const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
@@ -94,13 +92,13 @@ async function getPublicManualRoadmapPreviewById(req, res) {
 	}
 }
 
-async function listRoadmapComments(req, res) {
-	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
-}
+// async function listRoadmapComments(req, res) {
+// 	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
+// }
 
-async function createRoadmapComment(req, res) {
-	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
-}
+// async function createRoadmapComment(req, res) {
+// 	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
+// }
 
 async function getManualRoadmapById(req, res) {
 	try {

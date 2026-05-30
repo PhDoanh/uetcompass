@@ -91,8 +91,8 @@ function findNodeLine(yamlText, nodeId) {
   if (!yamlText || !nodeId) return 0;
   const lines = String(yamlText).split('\n');
   const escapedId = escapeRegExp(nodeId);
-  const nodeIdPattern = new RegExp(`^\\s*-\\s*nodeId:\\s*['\"]?${escapedId}['\"]?\\s*$`);
-  const idPattern = new RegExp(`^\\s*-\\s*id:\\s*['\"]?${escapedId}['\"]?\\s*$`);
+  const nodeIdPattern = new RegExp(`^\\s*-\\s*nodeId:\\s*['"]?${escapedId}['"]?\\s*$`);
+  const idPattern = new RegExp(`^\\s*-\\s*id:\\s*['"]?${escapedId}['"]?\\s*$`);
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -544,6 +544,7 @@ export default function ManualRoadmapPage() {
 
       const next = transform(parsed);
       const nextYaml = dump(next, { noRefs: true, lineWidth: 120, sortKeys: false });
+      setYamlCode(nextYaml);
       setApiError('');
     } catch (err) {
       setApiError(err.message || 'Không thể cập nhật học liệu trong YAML.');

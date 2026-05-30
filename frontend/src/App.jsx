@@ -32,6 +32,7 @@ const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel
 const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
 const PublicProfilePage = lazy(() => import('./features/public-profile/PublicProfilePage'));
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
+const RoadmapVersionHistoryPage = lazy(() => import('./features/manual-roadmap/RoadmapVersionHistoryPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
 
@@ -308,6 +309,16 @@ function AppContent() {
 					<p>To create your personalized roadmap, please log in or register.</p>
 				</div>
 			</main>
+		);
+	}
+
+	if (!content && pathname === '/manual-roadmap/versions') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', height: '100vh' }}>
+					<RoadmapVersionHistoryPage />
+				</main>
+			</AuthGuard>
 		);
 	}
 

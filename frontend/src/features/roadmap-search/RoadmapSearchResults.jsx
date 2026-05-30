@@ -1,6 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+/* eslint-disable react/prop-types */
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Star } from 'lucide-react';
+
+import {
+    ROADMAP_SEARCH_RESULTS_PAGE_SIZE,
+    clampRoadmapResultsStartIndex,
+    getPagedRoadmapResults,
+    getRoadmapResultsWindowStartIndex,
+} from './roadmapSearch.logic';
 
 
 
@@ -81,11 +89,44 @@ export default function RoadmapSearchResults({
 }) {
 
     const listRef = useRef(null);
+    const wheelResetTimerRef = useRef(null);
+    const [pageStartIndex, setPageStartIndex] = useState(0);
 
-
+    const visibleResults = useMemo(
+        () => getPagedRoadmapResults(results, pageStartIndex, ROADMAP_SEARCH_RESULTS_PAGE_SIZE),
+        [pageStartIndex, results]
+    );
 
     useEffect(() => {
+        setPageStartIndex(0);
+    }, [results]);
 
+    useEffect(() => {
+        if (!selectedRoadmapId) {
+            return;
+        }
+
+        const nextStartIndex = getRoadmapResultsWindowStartIndex(
+            results,
+            selectedRoadmapId,
+            ROADMAP_SEARCH_RESULTS_PAGE_SIZE
+        );
+
+        setPageStartIndex((currentStartIndex) =>
+            currentStartIndex === nextStartIndex ? currentStartIndex : nextStartIndex
+        );
+    }, [results, selectedRoadmapId]);
+
+    useEffect(
+        () => () => {
+            if (wheelResetTimerRef.current) {
+                clearTimeout(wheelResetTimerRef.current);
+            }
+        },
+        []
+    );
+
+    useEffect(() => {
         if (!selectedRoadmapId || !listRef.current) {
 
             return;
@@ -97,14 +138,42 @@ export default function RoadmapSearchResults({
         const card = Array.from(listRef.current.querySelectorAll('[data-result-id]')).find(
 
             (el) => el.getAttribute('data-result-id') === id
-
         );
 
         card?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-    }, [selectedRoadmapId, results]);
+    }, [selectedRoadmapId, visibleResults]);
 
+    function handleWheel(event) {
+        if (results.length <= ROADMAP_SEARCH_RESULTS_PAGE_SIZE || event.deltaY === 0) {
 
+            return;
+
+        }
+
+        if (wheelResetTimerRef.current) {
+
+            return;
+
+        }
+
+        event.preventDefault();
+
+        const direction = event.deltaY > 0 ? 1 : -1;
+
+        setPageStartIndex((currentStartIndex) => {
+            const nextStartIndex = currentStartIndex + direction * ROADMAP_SEARCH_RESULTS_PAGE_SIZE;
+            return clampRoadmapResultsStartIndex(
+                nextStartIndex,
+                results.length,
+                ROADMAP_SEARCH_RESULTS_PAGE_SIZE
+            );
+        });
+
+        wheelResetTimerRef.current = setTimeout(() => {
+            wheelResetTimerRef.current = null;
+        }, 140);
+    }
 
     if (resultsStatus === 'searching') {
 
@@ -152,9 +221,15 @@ export default function RoadmapSearchResults({
 
             ) : (
 
-                <div ref={listRef} className="roadmap-search-results__list" role="listbox" aria-label="Danh sách lộ trình">
+                <div
+                    ref={listRef}
+                    className="roadmap-search-results__list"
+                    role="listbox"
+                    aria-label="Danh sách lộ trình"
+                    onWheel={handleWheel}
+                >
 
-                    {results.map((result) => {
+                    {visibleResults.map((result) => {
 
                         const isSelected = result._id === selectedRoadmapId;
 

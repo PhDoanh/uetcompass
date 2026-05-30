@@ -3818,7 +3818,7 @@ html[data-theme='dark'] .homepage-system__arrow {
 /* Roadmap Search Page */
 .roadmap-search-overlay {
   position: fixed;
-  top: 70px;
+  top: var(--navbar-height);
   right: 0;
   bottom: 0;
   left: 0;
@@ -3827,6 +3827,7 @@ html[data-theme='dark'] .homepage-system__arrow {
   align-items: flex-start;
   justify-content: center;
   padding: 10px 0 12px;
+  overscroll-behavior: none;
 }
 
 .roadmap-search-overlay__backdrop {
@@ -3847,6 +3848,33 @@ html[data-theme='dark'] .homepage-system__arrow {
   background: #f8fafc;
 }
 
+.roadmap-search-overlay__panel--collapsed {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.roadmap-search-overlay__panel--expanded {
+  background: #f8fafc;
+}
+
+.roadmap-search-overlay__page-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.roadmap-search-overlay__page-mask--collapsed {
+  background: transparent;
+}
+
+.roadmap-search-overlay__page-mask--expanded {
+  background: transparent;
+}
+
 .roadmap-search-overlay__header {
   display: flex;
   align-items: center;
@@ -3855,6 +3883,14 @@ html[data-theme='dark'] .homepage-system__arrow {
   padding: 12px 16px;
   border-bottom: 1px solid #dbe3ef;
   background: #eef2f8;
+}
+
+.roadmap-search-overlay__header--collapsed {
+  display: none;
+}
+
+.roadmap-search-overlay__header--expanded {
+  display: flex;
 }
 
 .roadmap-search-overlay__title {
@@ -3886,6 +3922,11 @@ html[data-theme='dark'] .homepage-system__arrow {
   min-height: 0;
 }
 
+.roadmap-search-page--idle {
+  height: auto;
+  background: transparent;
+}
+
 .roadmap-search-page__top {
   flex: 0 0 auto;
   padding: 14px 16px 10px;
@@ -3894,10 +3935,17 @@ html[data-theme='dark'] .homepage-system__arrow {
   scroll-margin-top: 8px;
 }
 
+.roadmap-search-page--idle .roadmap-search-page__top {
+  padding: 10px 14px 12px;
+  border-bottom: none;
+  background: transparent;
+}
+
 .roadmap-search-page__body {
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .roadmap-search-page__left,
@@ -3917,6 +3965,7 @@ html[data-theme='dark'] .homepage-system__arrow {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #bfccdf transparent;
+  overscroll-behavior: contain;
 }
 
 .roadmap-search-page__left::-webkit-scrollbar {
@@ -3935,6 +3984,7 @@ html[data-theme='dark'] .homepage-system__arrow {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overscroll-behavior: contain;
 }
 
 .roadmap-search-query-bar {

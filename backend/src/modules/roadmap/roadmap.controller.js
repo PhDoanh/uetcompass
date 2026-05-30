@@ -3,12 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 const roadmapService = require('./roadmap.service');
-const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
-const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
+const roadmapVersionService = require('./roadmapVersion.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
 const { notifyClientByToken } = require('./roadmap.sse');
 const previewStore = require('./roadmap.preview.store');
@@ -359,6 +358,34 @@ async function getManualRoadmapTags(req, res) {
 	}
 }
 
+async function listManualRoadmapVersions(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await roadmapVersionService.listVersions(
+			req.params.roadmapId,
+			{
+				page: parsePositiveIntQuery(page, 'page'),
+				limit: parsePositiveIntQuery(limit, 'limit'),
+			}
+		);
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getManualRoadmapVersion(req, res) {
+	try {
+		const version = await roadmapVersionService.getVersionById(
+			req.params.roadmapId,
+			req.params.versionId
+		);
+		return res.json(version);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
@@ -381,4 +408,6 @@ module.exports = {
 	getProgressHandler,
 	updateNodeStateHandler,
 	getManualRoadmapTags,
+	listManualRoadmapVersions,
+	getManualRoadmapVersion,
 };

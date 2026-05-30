@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Clock } from 'lucide-react';
 import * as skillTreeApi from '../../services/skillTree.api';
 import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
@@ -9,6 +10,7 @@ import SkillTreeDetailPanel, { calculateProgress, buildFixedMilestones, SkillTre
 import MilestoneCelebrationModal from './MilestoneCelebrationModal';
 import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import './skill-tree.css';
+import '../manual-roadmap/manual-roadmap.css';
 
 const ZOOM_MIN = 0.6;
 const ZOOM_MAX = 1.8;
@@ -270,6 +272,18 @@ export default function SkillTreePage() {
           progressVariant="fixed"
           historyEvents={historyEvents}
           showHistory
+          actions={
+            roadmapId ? (
+              <button
+                type="button"
+                className="manual-roadmap-button manual-roadmap-button--secondary"
+                onClick={() => { window.location.href = `/manual-roadmap/versions?id=${roadmapId}`; }}
+              >
+                <Clock size={15} aria-hidden="true" style={{ marginRight: 4 }} />
+                Lịch sử phiên bản
+              </button>
+            ) : null
+          }
         />
       ),
     },

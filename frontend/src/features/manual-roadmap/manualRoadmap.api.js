@@ -123,6 +123,22 @@ export function createManualRoadmapComment(authToken, roadmapId, { content, rati
     );
 }
 
+export function listRoadmapVersions(authToken, roadmapId, { page = 1, limit = 50 } = {}) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions?page=${page}&limit=${limit}`,
+        'GET',
+        authToken
+    );
+}
+
+export function getRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}`,
+        'GET',
+        authToken
+    );
+}
+
 const manualRoadmapApi = {
     listManualRoadmaps,
     getManualRoadmap,
@@ -136,6 +152,8 @@ const manualRoadmapApi = {
     listPublicManualRoadmapComments,
     createManualRoadmapComment,
     getManualRoadmapTags,
+    listRoadmapVersions,
+    getRoadmapVersion,
 };
 
 export default manualRoadmapApi;

@@ -30,7 +30,7 @@ export default function useProgressSSE({ sseToken, onSummaryUpdated, onUnauthori
       try {
         const summary = JSON.parse(event.data);
         onSummaryUpdated?.(summary);
-      } catch (_) {
+      } catch {
         // Ignore malformed event payloads.
       }
     });
@@ -45,7 +45,7 @@ export default function useProgressSSE({ sseToken, onSummaryUpdated, onUnauthori
           source.close();
           onUnauthorized?.();
         }
-      } catch (_) {
+      } catch {
         // Network-level EventSource errors are auto-retried by browser.
       }
     });

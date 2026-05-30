@@ -143,7 +143,7 @@ export async function loadManualProgress(accessToken) {
           pending: Array.isArray(progressNodes.pending) ? progressNodes.pending : [],
         };
         hasProgressData = detail.done.length + detail.inProgress.length + detail.pending.length > 0;
-      } catch (_) {
+      } catch {
         detail = null;
         hasProgressData = false;
       }
@@ -154,7 +154,7 @@ export async function loadManualProgress(accessToken) {
           const nodes = Array.isArray(preview?.nodes) ? preview.nodes : [];
           detail = buildDetailNodes(nodes);
           hasProgressData = nodes.length > 0;
-        } catch (_) {
+        } catch {
           detail = { done: [], inProgress: [], pending: [] };
           hasProgressData = false;
         }

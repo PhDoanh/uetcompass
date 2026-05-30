@@ -73,11 +73,11 @@ function streamProgressEvents(req, res) {
     return;
   }
 
-  let userId = '';
+  let userId;
   try {
     const payload = verifyAccessToken(sseToken.trim());
     userId = String(payload?.userId || '').trim();
-  } catch (_) {
+  } catch {
     userId = '';
   }
 

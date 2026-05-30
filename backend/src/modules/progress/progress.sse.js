@@ -18,7 +18,7 @@ function addClient(userId, res) {
   const heartbeat = setInterval(() => {
     try {
       res.write(': heartbeat\\n\\n');
-    } catch (_) {
+    } catch {
       clearInterval(heartbeat);
       removeClient(key, res);
     }
@@ -55,7 +55,7 @@ function notifyUser(userId, payload, eventName = 'progress:updated') {
     try {
       res.write(`event: ${eventName}\\n`);
       res.write(dataLine);
-    } catch (_) {
+    } catch {
       removeClient(key, res);
     }
   }

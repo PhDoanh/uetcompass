@@ -9,7 +9,6 @@ import SiteFooter from '../general/SiteFooter';
 import styles from './progress.module.css';
 
 const ROADMAPS_PER_PAGE = 5;
-const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
 
 function formatDate(value) {
   if (!value) {
@@ -56,7 +55,6 @@ export default function ProgressDashboard() {
   const [error, setError] = useState(null);
   const [roadmaps, setRoadmaps] = useState([]);
   const [selectedRoadmapId, setSelectedRoadmapId] = useState('');
-  const [detailRoadmapId, setDetailRoadmapId] = useState('');
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [trackingGroupBy, setTrackingGroupBy] = useState('monthly');
@@ -223,8 +221,8 @@ export default function ProgressDashboard() {
   }, [accessToken]);
 
   useEffect(() => {
-    loadDetail(detailRoadmapId);
-  }, [detailRoadmapId, loadDetail]);
+    loadDetail(selectedRoadmapId);
+  }, [selectedRoadmapId, loadDetail]);
 
   useEffect(() => {
     if (!selectedRoadmapId && combinedRoadmaps[0]?.roadmapId) {
@@ -240,8 +238,8 @@ export default function ProgressDashboard() {
     sseToken: accessToken,
     onSummaryUpdated: (summary) => {
       setRoadmaps((current) => mergeSummaryIntoRoadmaps(current, summary));
-      if (summary?.roadmapId === detailRoadmapId) {
-        loadDetail(detailRoadmapId, { force: true });
+      if (summary?.roadmapId === selectedRoadmapId) {
+        loadDetail(selectedRoadmapId, { force: true });
       }
       loadTracking();
     },
@@ -526,7 +524,7 @@ export default function ProgressDashboard() {
         </div>
       </section>
 
-      {detailRoadmapId ? (
+        {selectedRoadmapId ? (
         <section className={styles.detailSection}>
           <div className={styles.detailGrid}>
             <div className={styles.detailColumn}>

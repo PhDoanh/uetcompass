@@ -87,7 +87,6 @@
 .statsTitle {
   margin-left: var(--space-lg);
   color: var(--text-main);
-  size: var(--space-xl);
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
 }

@@ -247,8 +247,8 @@ async function getTrackingTables(userId, { scope, roadmapId, groupBy }) {
 
   const completedNodes = activityDocs.filter((doc) => doc?.lastDoneAt).length;
   const activeNodes = new Set(activityDocs.map((doc) => doc?.nodeId).filter(Boolean)).size;
-  let inProgressNodes = 0;
-  let totalNodes = 0;
+  let inProgressNodes;
+  let totalNodes;
 
   if (normalizedScope === 'roadmap') {
     const cacheDoc = await RoadmapProgressCache.findOne({ userId: userKey, roadmapId: roadmapKey }).lean();

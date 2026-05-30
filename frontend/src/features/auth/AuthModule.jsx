@@ -46,9 +46,6 @@ export function AuthTabs({ items = [] }) {
 export function AuthShell({
   title,
   description,
-  isLoading,
-  error,
-  success,
   children,
   icon,
   tabs,

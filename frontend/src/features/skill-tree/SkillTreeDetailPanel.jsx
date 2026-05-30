@@ -704,10 +704,10 @@ export function SkillTreeReviewTab({ roadmapId = '', authToken = '', initialRevi
 
 export default function SkillTreeDetailPanel({
   title,
-  subtitle,
   tabs = [],
   activeTabId,
   onTabChange,
+  headerActions,
   style,
 }) {
   const resolvedTab = tabs.find((tab) => tab.id === activeTabId && !tab.disabled)
@@ -724,8 +724,13 @@ export default function SkillTreeDetailPanel({
         <div className="skill-tree-panel__title-row">
           <div className="skill-tree-panel__title-wrap">
             <h2 className="skill-tree-panel__title">{title}</h2>
-             
+            <p className="skill-tree-panel__subtitle">{subtitle}</p>
           </div>
+          {headerActions ? (
+            <div className="skill-tree-panel__title-actions">
+              {headerActions}
+            </div>
+          ) : null}
         </div>
         <div className="skill-tree-panel__tab-list">
           {tabs.map((tab) => (

@@ -3,43 +3,32 @@ import { Pie, PieChart, ResponsiveContainer, Cell, Label } from 'recharts';
 import { useAuth } from '../../providers/AuthProvider';
 import { getRoadmapNodes, getSummaries, getTrackingTables } from '../../services/progress.api';
 import useProgressSSE, { mergeSummaryIntoRoadmaps } from './useProgressSSE';
-import { computeManualProgressTotals, loadManualProgress } from './manualProgress.utils';
+import { loadManualProgress } from './manualProgress.utils';
 import { navigateTo } from '../../shared/navigation';
 import SiteFooter from '../general/SiteFooter';
 import styles from './progress.module.css';
 
 const ROADMAPS_PER_PAGE = 5;
-const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
 
 function formatDate(value) {
-  if (!value) {
-    return '--';
-  }
+  if (!value) return '--';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '--';
-  }
+  if (Number.isNaN(date.getTime())) return '--';
   return date.toLocaleDateString('vi-VN');
 }
 
 function formatRange(start, end) {
-  if (!start || !end) {
-    return '--';
-  }
+  if (!start || !end) return '--';
   return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
 function formatPercent(value) {
-  if (!Number.isFinite(value)) {
-    return '--';
-  }
+  if (!Number.isFinite(value)) return '--';
   return `${Math.round(value * 100)}%`;
 }
 
 function formatFrequency(value) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '--';
-  }
+  if (!Number.isFinite(value) || value <= 0) return '--';
   const rounded = Math.round(value * 100) / 100;
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
 }
@@ -50,13 +39,54 @@ function addDays(date, days) {
   return next;
 }
 
+function dedupeRoadmapsByRoadmapId(items = []) {
+  const finalById = new Map();
+
+  for (const item of items) {
+    const roadmapId = String(item?.roadmapId || item?._id || item?.id || '').trim();
+    if (!roadmapId) continue;
+
+    const existing = finalById.get(roadmapId);
+    if (!existing) {
+      finalById.set(roadmapId, item);
+      continue;
+    }
+
+    const existingUpdated = new Date(existing?.updatedAt || existing?.lastActivityDate || 0).getTime();
+    const nextUpdated = new Date(item?.updatedAt || item?.lastActivityDate || 0).getTime();
+
+    const existingIsPrimary = Boolean(existing?.isPrimary || existing?.roadmapSource === 'primary');
+    const nextIsPrimary = Boolean(item?.isPrimary || item?.roadmapSource === 'primary');
+
+    if (existingIsPrimary && nextIsPrimary) {
+      if (nextUpdated > existingUpdated) {
+        finalById.set(roadmapId, item);
+      }
+      continue;
+    }
+
+    if (nextIsPrimary && !existingIsPrimary) {
+      finalById.set(roadmapId, item);
+      continue;
+    }
+    if (existingIsPrimary && !nextIsPrimary) {
+      continue;
+    }
+
+    if (nextUpdated > existingUpdated) {
+      finalById.set(roadmapId, item);
+    }
+  }
+
+  return Array.from(finalById.values());
+}
+
 export default function ProgressDashboard() {
   const { accessToken } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roadmaps, setRoadmaps] = useState([]);
   const [selectedRoadmapId, setSelectedRoadmapId] = useState('');
-  const [detailRoadmapId, setDetailRoadmapId] = useState('');
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [trackingGroupBy, setTrackingGroupBy] = useState('monthly');
@@ -68,15 +98,73 @@ export default function ProgressDashboard() {
   const [manualProgressDetails, setManualProgressDetails] = useState({});
   const detailCacheRef = useRef(new Map());
 
-  const combinedRoadmaps = useMemo(
-    () => [...roadmaps, ...manualProgressSummaries],
-    [roadmaps, manualProgressSummaries]
-  );
+  const primaryProgressRoadmap = useMemo(() => {
+    const list = dedupeRoadmapsByRoadmapId(Array.isArray(roadmaps) ? roadmaps : []);
+    const allPrimaries = list.filter((item) => item?.isPrimary || item?.roadmapSource === 'primary');
+    
+    if (allPrimaries.length <= 1) {
+      return allPrimaries[0] || list[0] || null;
+    }
+
+    return allPrimaries.reduce((newest, current) => {
+      const newestTime = new Date(newest?.updatedAt || newest?.lastActivityDate || 0).getTime();
+      const currentTime = new Date(current?.updatedAt || current?.lastActivityDate || 0).getTime();
+      return currentTime > newestTime ? current : newest;
+    });
+  }, [roadmaps]);
+
+  const progressRoadmapCards = useMemo(() => {
+    const manualProgressById = new Map(
+      dedupeRoadmapsByRoadmapId(Array.isArray(manualProgressSummaries) ? manualProgressSummaries : [])
+        .map((summary) => [String(summary?.roadmapId || '').trim(), summary])
+        .filter(([roadmapId]) => Boolean(roadmapId))
+    );
+
+    const cards = [];
+    if (primaryProgressRoadmap) {
+      cards.push({
+        kind: 'personalized',
+        id: primaryProgressRoadmap.roadmapId,
+        roadmap: primaryProgressRoadmap,
+      });
+    }
+
+    for (const roadmap of dedupeRoadmapsByRoadmapId(Array.isArray(roadmaps) ? roadmaps : [])) {
+      const roadmapId = String(roadmap?.roadmapId || '').trim();
+      
+      if (!roadmapId || roadmapId === primaryProgressRoadmap?.roadmapId) {
+        continue;
+      }
+
+      if (roadmap?.roadmapName === primaryProgressRoadmap?.roadmapName) {
+        continue;
+      }
+
+      cards.push({
+        kind: roadmap?.isManual ? 'manual' : 'roadmap',
+        id: roadmapId,
+        roadmap: manualProgressById.get(roadmapId) || roadmap,
+      });
+    }
+
+    return dedupeRoadmapsByRoadmapId(cards.map((card) => card.roadmap));
+  }, [manualProgressSummaries, primaryProgressRoadmap, roadmaps]);
 
   const selectedRoadmap = useMemo(
-    () => combinedRoadmaps.find((item) => item.roadmapId === selectedRoadmapId) || null,
-    [combinedRoadmaps, selectedRoadmapId]
+    () => progressRoadmapCards.find((item) => item.roadmapId === selectedRoadmapId) || null,
+    [progressRoadmapCards, selectedRoadmapId]
   );
+
+  const handleOpenSkillTree = useCallback((roadmap) => {
+    const roadmapId = String(roadmap?.roadmapId || '').trim();
+    if (!roadmapId) return;
+
+    if (roadmap?.isManual) {
+      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+      return;
+    }
+    navigateTo('/skill-tree');
+  }, []);
 
   const loadSummaries = useCallback(async () => {
     if (!accessToken) {
@@ -89,10 +177,11 @@ export default function ProgressDashboard() {
     setError(null);
     try {
       const items = await getSummaries(accessToken);
-      setRoadmaps(items);
+      const uniqueItems = dedupeRoadmapsByRoadmapId(items);
+      setRoadmaps(uniqueItems);
 
-      if (!selectedRoadmapId && items[0]?.roadmapId) {
-        setSelectedRoadmapId(items[0].roadmapId);
+      if (!selectedRoadmapId && uniqueItems[0]?.roadmapId) {
+        setSelectedRoadmapId(uniqueItems[0].roadmapId);
       }
     } catch (err) {
       setError(err);
@@ -114,7 +203,7 @@ export default function ProgressDashboard() {
         return;
       }
 
-      const isManualRoadmap = combinedRoadmaps.some(
+      const isManualRoadmap = progressRoadmapCards.some(
         (item) => item.roadmapId === roadmapId && item.isManual
       );
       const manualDetail = manualProgressDetails[roadmapId];
@@ -149,7 +238,7 @@ export default function ProgressDashboard() {
         setDetailLoading(false);
       }
     },
-    [accessToken, combinedRoadmaps, manualProgressDetails, selectedRoadmap]
+    [accessToken, manualProgressDetails, progressRoadmapCards, selectedRoadmap]
   );
 
   const loadTracking = useCallback(async () => {
@@ -179,14 +268,9 @@ export default function ProgressDashboard() {
   }, [loadSummaries]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    if (!url.searchParams.has('roadmapId')) {
-      return;
-    }
+    if (!url.searchParams.has('roadmapId')) return;
 
     url.searchParams.delete('roadmapId');
     window.history.replaceState({}, '', `${url.pathname}${url.search}`);
@@ -203,16 +287,12 @@ export default function ProgressDashboard() {
 
     loadManualProgress(accessToken)
       .then(({ summaries, detailsById }) => {
-        if (!isMounted) {
-          return;
-        }
-        setManualProgressSummaries(summaries);
+        if (!isMounted) return;
+        setManualProgressSummaries(dedupeRoadmapsByRoadmapId(summaries));
         setManualProgressDetails(detailsById);
       })
       .catch(() => {
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         setManualProgressSummaries([]);
         setManualProgressDetails({});
       });
@@ -223,14 +303,14 @@ export default function ProgressDashboard() {
   }, [accessToken]);
 
   useEffect(() => {
-    loadDetail(detailRoadmapId);
-  }, [detailRoadmapId, loadDetail]);
+    loadDetail(selectedRoadmapId);
+  }, [selectedRoadmapId, loadDetail]);
 
   useEffect(() => {
-    if (!selectedRoadmapId && combinedRoadmaps[0]?.roadmapId) {
-      setSelectedRoadmapId(combinedRoadmaps[0].roadmapId);
+    if (!selectedRoadmapId && progressRoadmapCards[0]?.roadmapId) {
+      setSelectedRoadmapId(progressRoadmapCards[0].roadmapId);
     }
-  }, [combinedRoadmaps, selectedRoadmapId]);
+  }, [progressRoadmapCards, selectedRoadmapId]);
 
   useEffect(() => {
     loadTracking();
@@ -240,8 +320,8 @@ export default function ProgressDashboard() {
     sseToken: accessToken,
     onSummaryUpdated: (summary) => {
       setRoadmaps((current) => mergeSummaryIntoRoadmaps(current, summary));
-      if (summary?.roadmapId === detailRoadmapId) {
-        loadDetail(detailRoadmapId, { force: true });
+      if (summary?.roadmapId === selectedRoadmapId) {
+        loadDetail(selectedRoadmapId, { force: true });
       }
       loadTracking();
     },
@@ -252,29 +332,27 @@ export default function ProgressDashboard() {
     },
   });
 
-  const manualTotals = useMemo(
-    () => computeManualProgressTotals(manualProgressSummaries),
-    [manualProgressSummaries]
-  );
   const summaryBase = trackingData?.summary || {};
-  const summaryTotalNodes = (summaryBase.totalNodes || 0) + manualTotals.totalNodes;
-  const summaryCompletedNodes = (summaryBase.completedNodes || 0) + manualTotals.doneNodes;
-  const summaryInProgressNodes = (summaryBase.inProgressNodes || 0) + manualTotals.inProgressNodes;
+  const summaryTotalNodes = summaryBase.totalNodes || 0;
+  const summaryCompletedNodes = summaryBase.completedNodes || 0;
+  const summaryInProgressNodes = summaryBase.inProgressNodes || 0;
   const summaryActiveNodes = summaryBase.activeNodes || 0;
-  const summaryLearningRate = summaryTotalNodes ? summaryInProgressNodes / summaryTotalNodes : 0;
+  const summaryLearningRate = summaryBase.learningRate || (summaryTotalNodes ? summaryInProgressNodes / summaryTotalNodes : 0);
   const summary = {
     totalNodes: summaryTotalNodes,
     completedNodes: summaryCompletedNodes,
     inProgressNodes: summaryInProgressNodes,
     activeNodes: summaryActiveNodes,
-    completionRate: summaryTotalNodes ? summaryCompletedNodes / summaryTotalNodes : 0,
+    completionRate: summaryBase.completionRate || (summaryTotalNodes ? summaryCompletedNodes / summaryTotalNodes : 0),
     learningRate: summaryLearningRate,
     firstActivityDate: summaryBase.firstActivityDate || null,
   };
+
   const periods = (trackingData?.buckets || [])
     .slice()
     .sort((a, b) => (a.periodStart < b.periodStart ? 1 : -1))
     .slice(0, 3);
+
   const doneNodes = detail?.nodes?.done || detail?.doneNodes || [];
   const inProgressNodes = detail?.nodes?.inProgress || detail?.inProgressNodes || [];
   const pendingNodes = detail?.nodes?.pending || detail?.pendingNodes || [];
@@ -285,11 +363,13 @@ export default function ProgressDashboard() {
   const remainingCount = pendingCount;
   const learningRate = totalNodes > 0 ? inProgressCount / totalNodes : 0;
   const learningPercent = Math.round(learningRate * 100);
+
   const donutData = [
     { name: 'Hoàn thành', value: doneCount, color: '#22c55e' },
     { name: 'Đang học', value: inProgressCount, color: '#f59e0b' },
     { name: 'Chưa học', value: pendingCount, color: '#94a3b8' },
   ];
+
   const roadmapAcceptedAt = selectedRoadmap?.roadmapAcceptedAt;
   const roadmapCreatedAt = selectedRoadmap?.roadmapCreatedAt;
   const acceptedDate = roadmapAcceptedAt ? new Date(roadmapAcceptedAt) : null;
@@ -299,39 +379,43 @@ export default function ProgressDashboard() {
     .filter(Boolean)
     .map((value) => new Date(value))
     .filter((value) => !Number.isNaN(value.getTime()));
+
   const earliestNodeActivity = activityDates.length
     ? new Date(Math.min(...activityDates.map((value) => value.getTime())))
     : null;
   const summaryFirstActivity = summary.firstActivityDate
     ? new Date(summary.firstActivityDate)
     : null;
+
   const earliestLearningDate = earliestNodeActivity
     || (summaryFirstActivity && !Number.isNaN(summaryFirstActivity.getTime()) ? summaryFirstActivity : null)
     || (acceptedDate && !Number.isNaN(acceptedDate.getTime()) ? acceptedDate : null)
     || (createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate : null);
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const startOfLearning = earliestLearningDate ? new Date(earliestLearningDate) : null;
   if (startOfLearning) {
     startOfLearning.setHours(0, 0, 0, 0);
   }
+
   const learnedDays = startOfLearning
     ? Math.max(0, Math.floor((startOfToday - startOfLearning) / (24 * 60 * 60 * 1000)))
     : 0;
   const studyFrequency = learnedDays > 0 ? inProgressCount / learnedDays : 0;
-  const estimatedCompletionDate =
-    studyFrequency > 0
-      ? addDays(startOfToday, Math.ceil(remainingCount / studyFrequency))
-      : null;
+  const estimatedCompletionDate = studyFrequency > 0
+    ? addDays(startOfToday, Math.ceil(remainingCount / studyFrequency))
+    : null;
 
-  const totalRoadmapPages = Math.max(1, Math.ceil(combinedRoadmaps.length / ROADMAPS_PER_PAGE));
+  const totalRoadmapPages = Math.max(1, Math.ceil(progressRoadmapCards.length / ROADMAPS_PER_PAGE));
   const canGoPrevRoadmapPage = roadmapPage > 0;
   const canGoNextRoadmapPage = roadmapPage < totalRoadmapPages - 1;
-  const visibleRoadmaps = combinedRoadmaps.slice(
+  
+  const visibleRoadmaps = progressRoadmapCards.slice(
     roadmapPage * ROADMAPS_PER_PAGE,
     (roadmapPage + 1) * ROADMAPS_PER_PAGE
   );
-  const hasRoadmapItems = combinedRoadmaps.length > 0;
+  const hasRoadmapItems = progressRoadmapCards.length > 0;
   const tagToneList = ['blue', 'orange', 'indigo', 'rose', 'emerald', 'amber'];
   const manualMissingData = detail?.manualMissingData;
 
@@ -505,15 +589,7 @@ export default function ProgressDashboard() {
                         <button
                           type="button"
                           className="homepage-card-action"
-                          onClick={() => {
-                            if (detailRoadmapId === roadmap.roadmapId) {
-                              setDetailRoadmapId('');
-                              return;
-                            }
-
-                            setSelectedRoadmapId(roadmap.roadmapId);
-                            setDetailRoadmapId(roadmap.roadmapId);
-                          }}
+                          onClick={() => handleOpenSkillTree(roadmap)}
                         >
                           Chi tiết
                         </button>

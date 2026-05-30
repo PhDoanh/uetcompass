@@ -25,7 +25,7 @@ async function request(path, method, authToken, body, { requireAuth = true } = {
     let payload = null;
     try {
         payload = await response.json();
-    } catch (err) {
+    } catch {
         payload = null;
     }
 
@@ -65,6 +65,10 @@ export function deleteManualRoadmap(authToken, roadmapId) {
 
 export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
+}
+
+export function unshareManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}/unshare`, 'POST', authToken);
 }
 
 export function listPublicManualRoadmaps({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
@@ -150,6 +154,7 @@ const manualRoadmapApi = {
     updateManualRoadmap,
     deleteManualRoadmap,
     shareManualRoadmap,
+    unshareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
     listPublicManualRoadmapComments,

@@ -74,7 +74,7 @@ async function getPrimaryRoadmap(studentId) {
  * @deprecated Use Feature 009 endpoint directly
  * @param {string} studentId - User ID
  */
-async function triggerRepersonalize(studentId) {
+async function triggerRepersonalize() {
   // Feature 005 and 009 handle this directly
   // Skill Tree does not trigger repersonalization
   throw new Error('Use Feature 009 endpoint directly: POST /api/roadmaps/primary/regenerate');

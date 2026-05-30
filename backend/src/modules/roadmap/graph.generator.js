@@ -16,7 +16,6 @@
 function generateEdgesFromHierarchy(nodes, options = {}) {
     const {
         includePrerequisites = true,
-        deduplicateEdges = true,
     } = options;
 
     const edges = [];

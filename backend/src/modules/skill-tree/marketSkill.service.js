@@ -62,12 +62,20 @@ async function getLearningResources(skillName) {
   const free = normalized
     .filter((item) => item.isFree)
     .slice(0, RESOURCE_MAX_RESULTS)
-    .map(({ isFree, ...item }) => item);
+    .map((item) => {
+      const { isFree, ...rest } = item;
+      void isFree;
+      return rest;
+    });
 
   const paid = normalized
     .filter((item) => !item.isFree)
     .slice(0, RESOURCE_MAX_RESULTS)
-    .map(({ isFree, ...item }) => item);
+    .map((item) => {
+      const { isFree, ...rest } = item;
+      void isFree;
+      return rest;
+    });
 
   return {
     skill: skillName,

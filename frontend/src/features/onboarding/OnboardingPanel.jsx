@@ -29,7 +29,7 @@ function resolveDisplayNameFromToken(token) {
 		const decoded = window.atob(normalized);
 		const payload = JSON.parse(decoded);
 		return String(payload?.displayName || payload?.fullName || payload?.name || '').trim();
-	} catch (_) {
+	} catch {
 		return '';
 	}
 }
@@ -220,11 +220,6 @@ export default function OnboardingPanel({
 		}
 	}, [catalogMajors, mergedForm.programId, mergedForm.major]);
 
-	
-	const selectedMajorName = useMemo(() => {
-		const matched = catalogMajors.find((item) => item?.programId === mergedForm.programId);
-		return matched?.nameEN || mergedForm.major || '';
-	}, [catalogMajors, mergedForm.major, mergedForm.programId]);
 
 	const handleMajorChange = (programId) => {
 		const nextRoleOptions = roleOptionsByProgramId[programId] || [];

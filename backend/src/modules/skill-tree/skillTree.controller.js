@@ -17,7 +17,7 @@ const {
  * Skill Tree only displays the current roadmap from Feature 009
  */
 
-async function getTree(req, res, next) {
+async function getTree(req, res) {
   try {
     const userId = req.user.userId; // from auth middleware
     const tree = await skillTreeService.getSkillTree(userId);
@@ -27,7 +27,7 @@ async function getTree(req, res, next) {
   }
 }
 
-async function patchNodeStatus(req, res, next) {
+async function patchNodeStatus(req, res) {
   try {
     const userId = req.user.userId;
     const { roadmapId } = req.params;
@@ -109,7 +109,7 @@ async function getRoadmapHistory(req, res) {
   }
 }
 
-async function getNodeResources(req, res, next) {
+async function getNodeResources(req, res) {
   try {
     const { courseCode } = req.params;
 
@@ -120,7 +120,7 @@ async function getNodeResources(req, res, next) {
   }
 }
 
-async function getNodeWhy(req, res, next) {
+async function getNodeWhy(req, res) {
   try {
     const userId = req.user.userId;
     const { courseCode } = req.params;
@@ -156,7 +156,7 @@ async function getNodeWhy(req, res, next) {
   }
 }
 
-async function getNodeMarketSkills(req, res, next) {
+async function getNodeMarketSkills(req, res) {
   try {
     const { courseCode } = req.params;
 
@@ -167,7 +167,7 @@ async function getNodeMarketSkills(req, res, next) {
   }
 }
 
-async function getSkillLearningResources(req, res, next) {
+async function getSkillLearningResources(req, res) {
   try {
     const { skillName } = req.params;
 

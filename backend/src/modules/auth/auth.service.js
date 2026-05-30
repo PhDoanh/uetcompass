@@ -14,7 +14,7 @@ const LOGIN_LOCK_MINUTES = 15;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const pendingRegistrations = new Map();
 
-function buildError(status, code, message, details) {
+function buildError(status, code, message) {
   const err = new Error(message);
   err.status = status;
   err.code = code;
@@ -96,8 +96,13 @@ function clearPendingRegistrationsForTests() {
 async function safeEmit(eventType, payload) {
   try {
     await emitAuthEvent(eventType, payload);
+<<<<<<< HEAD
+  } catch {
+    // Audit failures must not break auth flows.
+=======
   } catch (error) {
     console.error('Audit event emission error:', error);
+>>>>>>> aebbdcb5275a85ae990af8c8a66582849be41107
   }
 }
 
@@ -368,11 +373,10 @@ function normalizeOnboardingDraft(profile) {
 }
 
 async function resolveOnboardingState(userId) {
-  let profile = null;
+  let profile;
   try {
     profile = await StudentProfile.findOne({ userId });
-  } catch (error) {
-    console.error('Error occurred while fetching student profile:', error);
+  } catch {
     return {
       onboardingState: 'NEVER_STARTED',
       onboardingDraft: null,

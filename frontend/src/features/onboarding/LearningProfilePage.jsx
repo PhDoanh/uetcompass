@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera } from 'lucide-react';
+import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera, Calendar } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import accountApi from '../../services/account.api';
 import { retryRoadmapGeneration } from '../../services/roadmap.api';
@@ -161,7 +161,6 @@ export default function LearningProfilePage() {
 		avatarUrl: '',
 	});
 	const [imageError, setImageError] = useState('');
-	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [regenerating, setRegenerating] = useState(false);
@@ -208,7 +207,7 @@ export default function LearningProfilePage() {
 					: ''
 			);
 			setIdentity((prev) => ({ ...prev, avatarUrl: dataUrl }));
-		} catch (_) {
+		} catch {
 			setImageError('Failed to import image');
 		}
 	}
@@ -392,7 +391,6 @@ export default function LearningProfilePage() {
 
 				if (isMounted) {
 					const identityPayload = profilePayload?.identity || {};
-					setAvatarBroken(false);
 					setIdentity({
 						userId: String(identityPayload.userId || profilePayload?.userId || '').trim(),
 						email: String(identityPayload.email || '').trim(),

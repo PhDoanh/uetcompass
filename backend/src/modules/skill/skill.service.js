@@ -108,7 +108,7 @@ async function crawlResourcesForSkill(skillName) {
 
     const query = `learn ${skillName} tutorial course documentation`;
 
-    let rawResults = [];
+    let rawResults;
     try {
         const response = await client.search(query, {
             max_results: MAX_RESOURCES_PER_SKILL,

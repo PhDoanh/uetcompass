@@ -76,8 +76,7 @@ async function updateAverageRating(roadmapId, averageRating) {
 	return result;
 }
 
-async function upsertFailed(userId, _message) {
-	// message is for logging only — NOT stored on the document (2026-04-08 decision)
+async function upsertFailed(userId) {
 	return ManualRoadmap.findOneAndUpdate(
 		{ userId, source: 'auto', acceptedAt: null },
 		{

@@ -1,7 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
 import pluginReact from "eslint-plugin-react";
-import pluginReactRecommended from "eslint-plugin-react/configs/recommended.js";
 import css from "@eslint/css";
 import { defineConfig } from "eslint/config";
 
@@ -29,6 +28,44 @@ export default defineConfig([
       ],
     },
   },
-  pluginReact.configs.flat.recommended,
-  { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"] },
+  {
+    ...pluginReact.configs.flat.recommended,
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    settings: {
+      react: { version: "detect" },
+    },
+  },
+  {
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    rules: {
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
+    },
+  },
+  {
+    files: [
+      "**/*.test.{js,jsx}",
+      "**/*.spec.{js,jsx}",
+      "**/*.integration.test.{js,jsx}",
+      "**/*.behavior.test.{js,jsx}",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.jest,
+      },
+    },
+  },
+  {
+    files: ["**/*.css"],
+    plugins: { css },
+    language: "css/css",
+    extends: ["css/recommended"],
+    rules: {
+      "css/no-invalid-properties": "off",
+      "css/no-important": "off",
+      "css/use-baseline": "off",
+      "css/font-family-fallbacks": "off",
+    },
+  },
 ]);

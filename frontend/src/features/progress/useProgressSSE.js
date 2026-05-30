@@ -1,20 +1,31 @@
 import { useEffect } from 'react';
 import { buildProgressSseUrl } from '../../services/progress.api';
 
+function getRoadmapKey(item) {
+  const roadmapId = String(item?.roadmapId || '').trim();
+  if (!roadmapId) {
+    return '';
+  }
+
+  const roadmapSource = String(item?.roadmapSource || (item?.isManual ? 'manual' : item?.isPrimary ? 'primary' : 'roadmap') || '').trim() || 'roadmap';
+  return item?.roadmapKey || `${roadmapSource}:${roadmapId}`;
+}
+
 export function mergeSummaryIntoRoadmaps(currentRoadmaps, incomingSummary) {
   const list = Array.isArray(currentRoadmaps) ? currentRoadmaps : [];
   const next = incomingSummary || null;
-  if (!next?.roadmapId) {
+  const nextKey = getRoadmapKey(next);
+  if (!nextKey) {
     return list;
   }
 
-  const index = list.findIndex((item) => item.roadmapId === next.roadmapId);
+  const index = list.findIndex((item) => getRoadmapKey(item) === nextKey);
   if (index < 0) {
-    return [next, ...list];
+    return [{ ...next, roadmapKey: nextKey }, ...list];
   }
 
   const updated = list.slice();
-  updated[index] = { ...updated[index], ...next };
+  updated[index] = { ...updated[index], ...next, roadmapKey: nextKey };
   return updated;
 }
 
@@ -30,7 +41,7 @@ export default function useProgressSSE({ sseToken, onSummaryUpdated, onUnauthori
       try {
         const summary = JSON.parse(event.data);
         onSummaryUpdated?.(summary);
-      } catch (_) {
+      } catch {
         // Ignore malformed event payloads.
       }
     });
@@ -45,7 +56,7 @@ export default function useProgressSSE({ sseToken, onSummaryUpdated, onUnauthori
           source.close();
           onUnauthorized?.();
         }
-      } catch (_) {
+      } catch {
         // Network-level EventSource errors are auto-retried by browser.
       }
     });

@@ -43,7 +43,6 @@ export default function AccountSettingsPage() {
 	const [currentPassword, setCurrentPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');
 	const [pageError, setPageError] = useState('');
-	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 	const [accountDeleteConfirm, setAccountDeleteConfirm] = useState('');
@@ -91,7 +90,6 @@ export default function AccountSettingsPage() {
 			try {
 				const result = await accountApi.getProfile(accessToken);
 				const nextIdentity = result?.identity || {};
-				setAvatarBroken(false);
 				setIdentity({
 					email: nextIdentity.email || '',
 					displayName: nextIdentity.displayName || '',
@@ -407,12 +405,13 @@ export default function AccountSettingsPage() {
 									<div>
 										<h3>External Notifications</h3>
 										<p>
-											Choose how you'd like to receive alerts outside of this application...
+											Choose how you would like to receive alerts outside of this application...
 										</p>
 									</div>
 									<label className="toggle-switch">
 										<input
 											type="checkbox"
+											aria-label="Enable external notifications"
 											checked={isNotificationEnabled}
 											onChange={() => setIsNotificationEnabled((prev) => !prev)}
 										/>
@@ -431,7 +430,7 @@ export default function AccountSettingsPage() {
 							<h2>Danger Zone</h2>
 						</div>
 						<p>
-							Remove this account and all related data. Type 'Delete' to confirm.
+							Remove this account and all related data. Type Delete to confirm.
 						</p>
 						<form onSubmit={onHardDeleteAccount}>
 							<div className="field">

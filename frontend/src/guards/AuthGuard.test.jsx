@@ -1,4 +1,4 @@
-function decidePostLoginRoute(onboardingState) {
+function decidePostLoginRoute() {
   return '/';
 }
 

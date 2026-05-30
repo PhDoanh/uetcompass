@@ -13,7 +13,7 @@ async function request(path, method = 'GET') {
     let payload = null;
     try {
         payload = await response.json();
-    } catch (_) {
+    } catch {
         payload = null;
     }
 

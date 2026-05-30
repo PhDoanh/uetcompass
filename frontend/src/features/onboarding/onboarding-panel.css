@@ -15,9 +15,14 @@
 .onboarding-panel-shell--page {
   width: 100%;
   max-width: none;
-  min-height: calc(100vh - var(--navbar-height) - 20px);
+  min-height: 100%;
+  height: 100%;
   max-height: none;
-  overflow: visible;
+  border-radius: 0;
+  border: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .onboarding-panel-layout {
@@ -25,6 +30,12 @@
   grid-template-columns: 1fr;
   min-height: 0;
     height: 100%;
+}
+
+.onboarding-panel-shell--page .onboarding-panel-layout {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .onboarding-panel-aside {
@@ -115,6 +126,12 @@
     flex-direction: column;
     gap: 0.65rem;
     min-height: 0;
+}
+
+.onboarding-panel-shell--page .onboarding-panel-form-wrap,
+.onboarding-panel-shell--page .onboarding-panel-aside {
+  min-height: 0;
+  overflow: auto;
 }
 
 .onboarding-panel-form-head h3 {
@@ -241,10 +258,11 @@
 }
 
 .onboarding-modern-course-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.4rem 0.45rem;
+  gap: 0.65rem;
+  padding: 0.48rem 0.5rem;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -254,11 +272,16 @@
 }
 
 .onboarding-modern-course-item input[type='checkbox'] {
-  --checkbox-size: 15px;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-primary);
+  margin: 0;
+  justify-self: center;
 }
 
 .onboarding-modern-course-item span {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .onboarding-modern-link {
@@ -460,6 +483,10 @@
   .onboarding-panel-form-wrap {
     padding: 1.6rem 1.6rem;
   }
+
+  .onboarding-panel-shell--page .onboarding-panel-layout {
+    grid-template-columns: minmax(320px, 5fr) minmax(0, 7fr);
+  }
 }
 
 .course-select-container {
@@ -481,11 +508,16 @@
 
 .course-checkbox-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   width: 100%;
-  line-height: 1.35;
+  line-height: 1.25;
   cursor: pointer;
+}
+
+.course-checkbox-item--selected {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .course-checkbox-item span {
@@ -493,7 +525,7 @@
 }
 
 .course-checkbox-input {
-  margin-top: 2px;
+  margin-top: 0;
   flex: 0 0 auto;
 }
 
@@ -578,6 +610,16 @@
 .secondary-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.02);
+  box-shadow: 0 12px 20px rgba(249, 115, 22, 0.14);
+}
+
+.primary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 88%, #ffffff);
+}
+
+.secondary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 12%, var(--surface-2));
+  color: #c2410c;
 }
 
 .primary-btn:disabled,
@@ -901,9 +943,9 @@
   border: 1px solid var(--border-1);
   border-radius: 0.85rem;
   padding: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.8rem;
   align-items: center;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
@@ -928,6 +970,14 @@
 .learning-course-item input[type='checkbox'] {
   --checkbox-size: 1.2rem;
   flex: 0 0 auto;
+  margin: 0;
+  align-self: center;
+  justify-self: end;
+}
+
+/* Dark theme tweak for checkbox visibility */
+html[data-theme='dark'] .learning-course-item input[type='checkbox'] {
+  accent-color: var(--button-secondary-border);
 }
 
 .learning-expand-btn {
@@ -1188,6 +1238,16 @@ html[data-theme='dark'] .learning-expand-btn,
 html[data-theme='dark'] .secondary-btn {
   background: var(--surface-2);
   color: var(--color-primary);
+}
+
+html[data-theme='dark'] .primary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 86%, var(--surface-1));
+  color: #0b1220;
+}
+
+html[data-theme='dark'] .secondary-btn:hover {
+  background: color-mix(in srgb, var(--color-cta) 16%, var(--surface-2));
+  color: #fde68a;
 }
 
 html[data-theme='dark'] .learning-profile-actions {

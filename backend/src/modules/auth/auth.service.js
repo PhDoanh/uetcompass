@@ -18,6 +18,7 @@ function buildError(status, code, message) {
   const err = new Error(message);
   err.status = status;
   err.code = code;
+  err.details = details;
   return err;
 }
 
@@ -95,8 +96,13 @@ function clearPendingRegistrationsForTests() {
 async function safeEmit(eventType, payload) {
   try {
     await emitAuthEvent(eventType, payload);
+<<<<<<< HEAD
   } catch {
     // Audit failures must not break auth flows.
+=======
+  } catch (error) {
+    console.error('Audit event emission error:', error);
+>>>>>>> aebbdcb5275a85ae990af8c8a66582849be41107
   }
 }
 

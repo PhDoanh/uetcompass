@@ -30,7 +30,9 @@ const AccountSettingsPage = lazy(() => import('./features/account/AccountSetting
 const Homepage = lazy(() => import('./features/general/Homepage'));
 const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel'));
 const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
+const PublicProfilePage = lazy(() => import('./features/public-profile/PublicProfilePage'));
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
+const RoadmapVersionHistoryPage = lazy(() => import('./features/manual-roadmap/RoadmapVersionHistoryPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
 
@@ -73,6 +75,7 @@ function RouteFrame({ routeKey, children, fallbackLabel }) {
 function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
+	const [isRoadmapSearchOverlayExpanded, setIsRoadmapSearchOverlayExpanded] = useState(false);
 	const [routeState, setRouteState] = useState(() => {
 		if (typeof window === 'undefined') {
 			return { pathname: '/', search: '' };
@@ -89,10 +92,13 @@ function AppContent() {
 	const routeKey = toRouteKey(routeState);
 	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
+	const publicProfileMatch = pathname.match(/^\/public-profile\/([^/]+)$/);
+	const publicProfileUserId = publicProfileMatch ? decodeURIComponent(publicProfileMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
 		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
+		Boolean(publicProfileUserId) ||
 		pathname.startsWith('/roadmaps/public/');
 
 	usePrefetch();
@@ -172,21 +178,29 @@ function AppContent() {
 
 		const handleCloseOverlay = () => {
 			setIsRoadmapSearchOverlayOpen(false);
+			setIsRoadmapSearchOverlayExpanded(false);
+		};
+
+		const handleSearchContentChange = (event) => {
+			setIsRoadmapSearchOverlayExpanded(Boolean(event?.detail?.hasSearchContent));
 		};
 
 		const handleEscClose = (event) => {
 			if (event.key === 'Escape') {
 				setIsRoadmapSearchOverlayOpen(false);
+				setIsRoadmapSearchOverlayExpanded(false);
 			}
 		};
 
 		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
 		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+		window.addEventListener('roadmap-search-content-change', handleSearchContentChange);
 		window.addEventListener('keydown', handleEscClose);
 
 		return () => {
 			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
 			window.removeEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+			window.removeEventListener('roadmap-search-content-change', handleSearchContentChange);
 			window.removeEventListener('keydown', handleEscClose);
 		};
 	}, [pathname]);
@@ -298,6 +312,16 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/manual-roadmap/versions') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', height: '100vh' }}>
+					<RoadmapVersionHistoryPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
 	if (!content && pathname === '/manual-roadmap') {
 		content = (
 			<AuthGuard>
@@ -360,6 +384,14 @@ function AppContent() {
 		);
 	}
 
+	if (!content && publicProfileUserId) {
+		content = <PublicProfilePage userId={publicProfileUserId} />;
+	}
+
+	if (!content && pathname === '/public-profile') {
+		content = <PublicProfilePage />;
+	}
+
 	if (!content && isAuthPopupPath) {
 		content = <Homepage />;
 	}
@@ -412,11 +444,14 @@ function AppContent() {
 					>
 						<div className="roadmap-search-overlay__backdrop" />
 						<div
+							className={`roadmap-search-overlay__page-mask${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__page-mask--expanded' : ' roadmap-search-overlay__page-mask--collapsed'}`}
+						/>
+						<div
 							ref={roadmapSearchPanelRef}
-							className="roadmap-search-overlay__panel"
+							className={`roadmap-search-overlay__panel${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__panel--expanded' : ' roadmap-search-overlay__panel--collapsed'}`}
 							onClick={(event) => event.stopPropagation()}
 						>
-							<div className="roadmap-search-overlay__header">
+							<div className={`roadmap-search-overlay__header${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__header--expanded' : ' roadmap-search-overlay__header--collapsed'}`}>
 								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
 								<button
 									type="button"

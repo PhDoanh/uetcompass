@@ -29,6 +29,7 @@ export default function RoadmapSearchQueryBar({
     placeholder = '',
     sortAscending = true,
     onToggleSort,
+    onHasSearchContentChange,
 }) {
     const [tagDraft, setTagDraft] = useState(null);
     const combinedRef = useRef(null);
@@ -210,6 +211,18 @@ export default function RoadmapSearchQueryBar({
 
     const showSuggestions = tagDraft !== null;
     const isSplit = tagDraft !== null;
+
+    useEffect(() => {
+        if (typeof onHasSearchContentChange !== 'function') {
+            return;
+        }
+
+        onHasSearchContentChange(
+            String(nameQuery || '').trim().length > 0 ||
+                selectedTags.length > 0 ||
+                tagDraft !== null
+        );
+    }, [nameQuery, onHasSearchContentChange, selectedTags.length, tagDraft]);
 
     const setCombinedEl = useCallback(
         (el) => {

@@ -18,7 +18,12 @@ function addClient(userId, res) {
   const heartbeat = setInterval(() => {
     try {
       res.write(': heartbeat\\n\\n');
+<<<<<<< HEAD
     } catch {
+=======
+    } catch (error) {
+      console.error('Error occurred while sending heartbeat:', error);
+>>>>>>> aebbdcb5275a85ae990af8c8a66582849be41107
       clearInterval(heartbeat);
       removeClient(key, res);
     }

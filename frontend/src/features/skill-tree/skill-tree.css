@@ -267,7 +267,7 @@
 
 .skill-tree-overview__progress-dashboard {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   width: 100%;
 }
@@ -278,6 +278,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px;
+  min-width: 0;
   border: 1px solid #dbeafe;
   border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
@@ -345,7 +346,9 @@
 
 .skill-tree-overview__metric-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .skill-tree-overview__metric-card {
@@ -353,6 +356,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 14px 16px;
+  min-width: 0;
   border: 1px solid #dbeafe;
   border-radius: 14px;
   background: #f8fbff;
@@ -1007,6 +1011,21 @@ html[data-theme='dark'] .skill-tree-layout__divider {
   border-left-color: rgba(95, 145, 210, 0.35);
   border-right-color: rgba(95, 145, 210, 0.35);
   background: linear-gradient(180deg, rgba(95, 145, 210, 0.2) 0%, rgba(95, 145, 210, 0.06) 100%);
+}
+
+html[data-theme='dark'] .skill-tree-layout__divider:focus-visible {
+  background: linear-gradient(180deg, rgba(117, 169, 239, 0.28) 0%, rgba(117, 169, 239, 0.12) 100%);
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider-handle {
+  border-color: rgba(95, 145, 210, 0.55);
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%);
+  box-shadow: 0 14px 26px rgba(2, 9, 20, 0.52);
+  color: var(--color-primary);
+}
+
+html[data-theme='dark'] .manual-roadmap-layout__divider-grip {
+  background: rgba(159, 191, 232, 0.45);
 }
 
 html[data-theme='dark'] .skill-tree-canvas-stage {
@@ -1837,6 +1856,7 @@ html[data-theme='dark'] .roadmap-node-sub .course-node__prerequisites {
   z-index: 40;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   animation: panelIn 220ms ease;
 }
 
@@ -1876,6 +1896,23 @@ html[data-theme='dark'] .skill-tree-panel {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+}
+
+.skill-tree-panel__title-wrap {
+  min-width: 0;
+}
+
+.skill-tree-panel__title-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.skill-tree-panel__share {
+  margin: 0;
+  max-width: 220px;
 }
 
 .skill-tree-panel__title {
@@ -1980,6 +2017,7 @@ html[data-theme='dark'] .skill-tree-panel {
 
 .skill-tree-panel__content {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 16px;
   display: flex;

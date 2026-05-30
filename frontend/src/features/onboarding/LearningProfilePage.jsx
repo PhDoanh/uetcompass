@@ -8,8 +8,10 @@ import { getCourseCatalog } from '../../services/onboarding.api';
 import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import { validateProfilePayload } from '../account/accountSettings.validation';
+import { navigateTo } from '../../shared/navigation';
 import './onboarding-panel.css';
 import '../account/account-settings-page.css';
+import DatePicker from '../../shared/DatePicker';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
@@ -390,6 +392,7 @@ export default function LearningProfilePage() {
 				if (isMounted) {
 					const identityPayload = profilePayload?.identity || {};
 					setIdentity({
+						userId: String(identityPayload.userId || profilePayload?.userId || '').trim(),
 						email: String(identityPayload.email || '').trim(),
 						displayName: String(identityPayload.displayName || identityPayload.fullName || 'Sinh viên UET').trim(),
 						fullName: String(identityPayload.fullName || '').trim(),
@@ -586,24 +589,22 @@ export default function LearningProfilePage() {
 										</div>
 										<div className="learning-field">
 											<label htmlFor="timeline" className="learning-label">Dự kiến tốt nghiệp</label>
-											<div className="learning-input-wrap learning-input-wrap--icon">
-												<input
-													type="date"
-													id="timeline"
-													value={form?.careerGoal?.graduationTimeline || ''}
-													onChange={(event) =>
-														patchForm({
-															...form,
-															careerGoal: {
-																...(form.careerGoal || {}),
-																graduationTimeline: event.target.value,
-															},
-														})
-													}
-													className="learning-input learning-input--with-icon"
-												/>
-												<Calendar size={18} className="learning-input-icon" aria-hidden="true" />
-											</div>
+											<DatePicker
+												id="timeline"
+												value={form?.careerGoal?.graduationTimeline || ''}
+												onChange={(event) =>
+													patchForm({
+														...form,
+														careerGoal: {
+															...(form.careerGoal || {}),
+															graduationTimeline: event.target.value,
+														},
+													})
+												}
+												className="learning-input"
+												popperClassName="onboarding-datepicker-popper"
+												calendarClassName="onboarding-datepicker-calendar"
+											/>
 										</div>
 									</div>
 								</section>
@@ -658,7 +659,6 @@ export default function LearningProfilePage() {
 
 						<footer className="learning-profile-footer">
 							<div className="learning-profile-footer-left">
-								{hasChanges ? <span className="learning-profile-change-hint">Khi thông tin thay đổi</span> : null}
 							</div>
 							<div className="learning-profile-footer-center">
 								{hasChanges ? (
@@ -667,6 +667,9 @@ export default function LearningProfilePage() {
 										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 									</button>
 								) : null}
+								<button type="button" className="secondary-btn" onClick={() => navigateTo(identity?.userId ? `/public-profile/${identity.userId}` : '/public-profile')}>
+									Xem trang cá nhân công khai
+								</button>
 								{showRegenRoadmap ? (
 									<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 										<Sparkles size={17} />

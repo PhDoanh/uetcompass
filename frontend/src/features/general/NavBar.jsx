@@ -256,12 +256,11 @@ export default function NavBar() {
         const result = await accountApi.getProfile(accessToken);
         const next = getAvatarState(result?.identity || {});
         if (isMounted) {
-          setAvatarUrl(next.avatarUrl);
+          setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
           setAvatarFallback(next.avatarFallback);
         }
       } catch {
         if (isMounted) {
-          setAvatarUrl('');
           setAvatarFallback('U');
         }
       }
@@ -269,7 +268,7 @@ export default function NavBar() {
 
     function handleProfileUpdated(event) {
       const next = getAvatarState(event?.detail?.profile || {});
-      setAvatarUrl(next.avatarUrl);
+      setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
       setAvatarFallback(next.avatarFallback);
     }
 

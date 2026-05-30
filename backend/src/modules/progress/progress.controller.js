@@ -82,6 +82,7 @@ function streamProgressEvents(req, res) {
   }
 
   if (!userId) {
+    console.error('Invalid or missing user ID from SSE token');
     res.write('event: error\n');
     res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\n\n');
     res.end();

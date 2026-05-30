@@ -167,6 +167,29 @@ const ManualRoadmapSchema = new mongoose.Schema(
             ],
             default: [],
         },
+        isPrimary: {
+            type: Boolean,
+            default: false,
+        },
+        studentProfileId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'StudentProfile',
+            default: null,
+        },
+        personalisationLevel: {
+            type: String,
+            enum: ['full', 'low', 'manual'],
+            default: 'manual',
+        },
+        acceptedAt: {
+            type: Date,
+            default: null,
+        },
+        source: {
+            type: String,
+            enum: ['auto', 'manual'],
+            default: 'manual',
+        },
     },
     {
         collection: 'manual_roadmaps',
@@ -177,6 +200,14 @@ const ManualRoadmapSchema = new mongoose.Schema(
 
 ManualRoadmapSchema.index({ userId: 1, updatedAt: -1 }, { name: 'manual_roadmap_by_user' });
 ManualRoadmapSchema.index({ isPublic: 1, updatedAt: -1 }, { name: 'manual_roadmap_public' });
+ManualRoadmapSchema.index(
+    { userId: 1, isPrimary: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { isPrimary: true },
+        name: 'manual_roadmap_primary_per_user',
+    }
+);
 
 const ManualRoadmap = mongoose.models.ManualRoadmap || mongoose.model('ManualRoadmap', ManualRoadmapSchema);
 

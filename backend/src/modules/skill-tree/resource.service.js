@@ -1,7 +1,7 @@
 'use strict';
 
 const skillService = require('../skill/skill.service');
-const { Roadmap } = require('../roadmap/roadmap.model');
+const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 
 /**
  * Resolve all skillNames attached to nodes that contain `courseCode`
@@ -11,15 +11,15 @@ const { Roadmap } = require('../roadmap/roadmap.model');
  * @returns {Promise<string[]>}
  */
 async function resolveSkillNamesForCourse(courseCode) {
-    const roadmap = await Roadmap.findOne(
-        { isPrimary: true, 'nodes.relatedCourses.courseCode': courseCode },
+    const roadmap = await ManualRoadmap.findOne(
+        { isPrimary: true, 'nodes.metadata.relatedCourses.courseCode': courseCode },
         { 'nodes.$': 1 }
     ).lean();
 
     if (!roadmap || !Array.isArray(roadmap.nodes)) return [];
 
     return roadmap.nodes
-        .map((n) => n.skillName)
+        .map((n) => n.skillName || n.label)
         .filter(Boolean);
 }
 

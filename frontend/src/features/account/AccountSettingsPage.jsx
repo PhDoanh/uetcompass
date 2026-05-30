@@ -142,7 +142,7 @@ export default function AccountSettingsPage() {
 				displayName: profile.displayName || '',
 				fullName: profile.fullName || prev.fullName,
 				privacySetting: profile.privacySetting || prev.privacySetting,
-				avatarUrl: profile.avatarUrl || '',
+				avatarUrl: profile.avatarUrl || prev.avatarUrl,
 				effectiveDisplayName: profile.effectiveDisplayName || prev.effectiveDisplayName,
 			}));
 			if (typeof window !== 'undefined') {
@@ -154,7 +154,7 @@ export default function AccountSettingsPage() {
 								displayName: profile.displayName || identity.displayName,
 								fullName: profile.fullName || identity.fullName,
 								effectiveDisplayName: profile.effectiveDisplayName || identity.effectiveDisplayName,
-								avatarUrl: profile.avatarUrl || '',
+								avatarUrl: profile.avatarUrl || identity.avatarUrl,
 							},
 						},
 					})

@@ -47,26 +47,6 @@ const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
 const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
-const MANUAL_ROADMAP_FETCH_LIMIT = 100;
-const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
-const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
-  const day = index + 1;
-  const base = Math.min(10, Math.max(0, Math.round(day / 3 + (day % 5 === 0 ? 2 : 0))));
-  const value = Math.min(10, Math.max(0, base - (day % 7 === 0 ? 2 : 0)));
-  return { day, value };
-});
-const TOPIC_DISTRIBUTION = [
-  { name: 'Web', value: 35, color: '#38BDF8' },
-  { name: 'AI/ML', value: 25, color: '#0EA5E9' },
-  { name: 'DevOps', value: 20, color: '#F97316' },
-  { name: 'Khác', value: 20, color: '#94A3B8' },
-];
-const HEATMAP_VALUES = [
-  0, 1, 2, 3, 1, 0, 2,
-  2, 3, 4, 3, 2, 1, 0,
-  1, 2, 3, 4, 2, 1, 1,
-  0, 1, 2, 3, 2, 1, 0,
-];
 const HERO_LEFT_ICONS = [
   { key: 'left-1', top: '12%', left: '8%', size: '62px', rotate: '-8deg', icon: GraduationCap },
   { key: 'left-2', top: '24%', left: '18%', size: '46px', rotate: '6deg', icon: FlaskConical },
@@ -84,23 +64,6 @@ const HERO_RIGHT_ICONS = [
   { key: 'right-6', top: '84%', right: '6%', size: '40px', rotate: '-10deg', icon: Users },
 ];
 
-function navigateToHomeSection(sectionId) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const pathname = window.location.pathname;
-  if (pathname !== '/') {
-    window.location.assign(`/#${sectionId}`);
-    return;
-  }
-
-  const target = document.getElementById(sectionId);
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window.history.replaceState(null, '', `/#${sectionId}`);
-  }
-}
 
 function resolveDisplayName(accessToken) {
   if (!accessToken || typeof window === 'undefined') {
@@ -122,7 +85,7 @@ function resolveDisplayName(accessToken) {
     if (email.includes('@')) {
       return email.split('@')[0];
     }
-  } catch (_) {
+  } catch {
     return null;
   }
 
@@ -141,7 +104,7 @@ function resolveUserId(accessToken) {
     const payload = JSON.parse(decoded);
     const userId = String(payload?.userId || payload?.sub || '').trim();
     return userId || null;
-  } catch (_) {
+  } catch {
     return null;
   }
 }
@@ -249,7 +212,6 @@ export default function Homepage() {
   const [profileDisplayName, setProfileDisplayName] = useState('');
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
-  const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
   const [deletingManualRoadmapId, setDeletingManualRoadmapId] = useState('');
   const [pendingDeleteRoadmap, setPendingDeleteRoadmap] = useState(null);
@@ -313,7 +275,7 @@ export default function Homepage() {
         if (isMounted) {
           setPublicRoadmaps(result.items || []);
         }
-      } catch (err) {
+      } catch {
         // Silently fail for public roadmaps
         if (isMounted) {
           setPublicRoadmaps([]);
@@ -355,13 +317,8 @@ export default function Homepage() {
       if (!accessToken) {
         if (isMounted) {
           setMyManualRoadmaps([]);
-          setIsLoadingMyManualRoadmaps(false);
         }
         return;
-      }
-
-      if (isMounted) {
-        setIsLoadingMyManualRoadmaps(true);
       }
 
       try {
@@ -389,14 +346,10 @@ export default function Homepage() {
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
           }
-        } catch (_) {
+        } catch {
           if (isMounted) {
             setMyManualRoadmaps([]);
           }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingMyManualRoadmaps(false);
         }
       }
     }
@@ -557,7 +510,7 @@ export default function Homepage() {
             completionPercent,
             color: colorList[index % colorList.length],
           };
-        } catch (_) {
+        } catch {
           const totalNodes = roadmap?.totalNodes || 0;
           const doneNodes = roadmap?.doneNodes || 0;
           const completionPercent = totalNodes > 0
@@ -632,8 +585,8 @@ export default function Homepage() {
       }
 
       navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
-    } catch (_) {
-      setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
+    } catch {
+      addNotification('Không thể mở roadmap lúc này. Vui lòng thử lại sau.', 'error');
     } finally {
       setOpeningRoadmapTitle('');
     }
@@ -686,7 +639,6 @@ export default function Homepage() {
     setPendingDeleteRoadmap(null);
   };
 
-  const roadmapTags = ['Fullstack Engineer', 'DevOps', 'Game Developer', 'Project Manager', 'Software Architect'];
   const socialAvatars = [
     'https://lh3.googleusercontent.com/aida-public/AB6AXuAm3OZLEw_e4IktWDFZy2iAf8Cw1jTHvNOWvTQHGiNA3g6ZsV_radMO5HphkK6j_SVRQviUpbVRZpvTMyJliwOY2u7BrUoe_wJYBxLT5DB0AfyaUIasLCU2U2o3QiEGu6AfX947BwgkHovy7yugGuVY8qr-XDaJ-FbiEh2WzepR-0yCbMW0zJ0ptnst2hC86wDY6_4XC0VXSuMSSJXTQrob_LI76RHptUioHV6uOAQe5FNsrtUQEJLC8hbeprscLaunOelKDECmoAs',
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBE4ZG-Jjw72WlNfuIVexhs5C8Mm_da1cflBQY_DCKqsS2xnQ44MRodSBQPPVmckSQcSYDnZbVa2Z01yUvJ9bjko2eHXnHh2AIfiOoCouhalixD_NhlElp1fS39nmFm46N_Bc7jsrLIY7WeSr9OX3rdispw5DdhGpbRQKl0VKl5y-AyCreS3YVZe8-5zrB4ZxE-aQfWVNQS-R6O5Q8TCHDZHBZfUgHe0P0N-8SQQCOr7migcmOcGnfhpO5OlaxeKKcCNCDUKQGyZ_4',
@@ -1442,16 +1394,19 @@ export default function Homepage() {
         <SiteFooter />
       </main>
 
-      {showOnboardingPanel && (
-        <div className="homepage-onboarding-overlay">
-          <OnboardingPanel
-            authToken={accessToken}
-            onUnauthorized={logoutAndRedirect}
-            onCompleted={handleCloseOnboarding}
-            onClose={handleCloseOnboarding}
-          />
-        </div>
-      )}
+      {showOnboardingPanel && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="homepage-onboarding-overlay">
+            <OnboardingPanel
+              authToken={accessToken}
+              onUnauthorized={logoutAndRedirect}
+              onCompleted={handleCloseOnboarding}
+              onClose={handleCloseOnboarding}
+            />
+          </div>,
+          document.body
+        )
+        : null}
       {pendingDeleteRoadmap && typeof document !== 'undefined'
         ? createPortal(
           <div
@@ -1459,6 +1414,7 @@ export default function Homepage() {
             onClick={handleCancelDeleteManualRoadmap}
             role="dialog"
             aria-modal="true"
+            aria-label="Xác nhận xóa roadmap"
           >
             <div
               className="account-delete-modal"
@@ -1470,7 +1426,7 @@ export default function Homepage() {
                 <h3>Xác nhận xóa roadmap</h3>
               </div>
               <p>
-                Bạn có chắc muốn xóa roadmap "{pendingDeleteRoadmap.title}"?
+                Bạn có chắc muốn xóa roadmap &quot;{pendingDeleteRoadmap.title}&quot;?
                 <br />
                 Dữ liệu và tiến độ liên quan sẽ bị xóa vĩnh viễn.
               </p>

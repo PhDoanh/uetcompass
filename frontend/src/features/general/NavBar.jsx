@@ -45,14 +45,6 @@ function dispatchOpenRoadmapSearchOverlay() {
   window.dispatchEvent(new CustomEvent('roadmap-search-overlay-open'));
 }
 
-function navigateToPath(path) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.location.assign(path);
-}
-
 function navigateToHomeSection(sectionId) {
   if (typeof window === 'undefined') {
     return;

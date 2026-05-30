@@ -38,6 +38,23 @@
     --input-border: #d7deea;
     --input-text: #0c1a2b;
     --input-placeholder: #8991a4;
+    --scrollbar-size: 10px;
+    --scrollbar-track: rgba(12, 74, 110, 0.08);
+    --scrollbar-thumb: rgba(12, 74, 110, 0.32);
+    --scrollbar-thumb-hover: rgba(12, 74, 110, 0.48);
+    --checkbox-bg: var(--surface-1);
+    --checkbox-border: rgba(12, 74, 110, 0.35);
+    --checkbox-checked-bg: var(--color-primary);
+    --checkbox-checked-border: var(--color-primary);
+    --checkbox-check: var(--text-on-accent);
+    --datepicker-bg: var(--surface-1);
+    --datepicker-border: var(--border-1);
+    --datepicker-header-bg: var(--surface-2);
+    --datepicker-day-hover: rgba(14, 165, 233, 0.16);
+    --datepicker-day-selected: var(--color-primary);
+    --datepicker-day-selected-text: var(--text-on-accent);
+    --datepicker-day-muted: var(--text-3);
+    --datepicker-today-border: rgba(14, 165, 233, 0.5);
     --card-bg: var(--surface-1);
     --card-border: rgba(12, 74, 110, 0.15);
     --button-primary-bg: var(--color-cta);
@@ -107,6 +124,22 @@ html[data-theme='dark'] {
     --input-border: rgba(96, 143, 203, 0.45);
     --input-text: #e6eefb;
     --input-placeholder: #86a2c9;
+    --scrollbar-track: rgba(9, 18, 31, 0.7);
+    --scrollbar-thumb: rgba(92, 145, 214, 0.42);
+    --scrollbar-thumb-hover: rgba(127, 168, 224, 0.65);
+    --checkbox-bg: var(--surface-2);
+    --checkbox-border: rgba(96, 143, 203, 0.6);
+    --checkbox-checked-bg: var(--color-primary);
+    --checkbox-checked-border: var(--color-primary);
+    --checkbox-check: var(--text-on-accent);
+    --datepicker-bg: var(--surface-1);
+    --datepicker-border: var(--border-1);
+    --datepicker-header-bg: var(--surface-2);
+    --datepicker-day-hover: rgba(56, 189, 248, 0.22);
+    --datepicker-day-selected: var(--color-primary);
+    --datepicker-day-selected-text: var(--text-on-accent);
+    --datepicker-day-muted: var(--text-3);
+    --datepicker-today-border: rgba(56, 189, 248, 0.65);
     --card-bg: #14243a;
     --card-border: rgba(98, 149, 219, 0.35);
     --button-primary-bg: var(--color-cta);
@@ -161,6 +194,164 @@ html[data-theme='dark'] body {
   color: var(--text-1);
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+input[type='checkbox'] {
+  --checkbox-size: 16px;
+  --checkbox-radius: 4px;
+  inline-size: var(--checkbox-size);
+  block-size: var(--checkbox-size);
+  border-radius: var(--checkbox-radius);
+  border: 1.5px solid var(--checkbox-border);
+  background: var(--checkbox-bg);
+  display: inline-grid;
+  place-content: center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+input[type='checkbox']::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+  background: var(--checkbox-check);
+  clip-path: polygon(14% 44%, 0 65%, 44% 100%, 100% 20%, 80% 0%, 43% 62%);
+}
+
+input[type='checkbox']:checked {
+  background: var(--checkbox-checked-bg);
+  border-color: var(--checkbox-checked-border);
+}
+
+input[type='checkbox']:checked::after {
+  transform: scale(1);
+}
+
+input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input[type='checkbox']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input[type='date'],
+input[type='month'],
+input[type='datetime-local'] {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] input[type='date'],
+html[data-theme='dark'] input[type='month'],
+html[data-theme='dark'] input[type='datetime-local'] {
+  color-scheme: dark;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='month']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: saturate(0.8);
+}
+
+html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] input[type='month']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+  filter: invert(0.9) saturate(0.8);
+}
+
+body .react-datepicker,
+body .onboarding-datepicker-calendar {
+  border: 1px solid var(--datepicker-border);
+  border-radius: 14px;
+  background: var(--datepicker-bg);
+  color: var(--text-1);
+  box-shadow: var(--shadow-lg);
+  font-family: inherit;
+}
+
+body .react-datepicker__header {
+  background: var(--datepicker-header-bg);
+  border-bottom: 1px solid var(--datepicker-border);
+}
+
+body .react-datepicker__current-month,
+body .react-datepicker-time__header,
+body .react-datepicker-year-header,
+body .react-datepicker__day-name {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+body .react-datepicker__day {
+  color: var(--text-2);
+  border-radius: 8px;
+}
+
+body .react-datepicker__day--outside-month,
+body .react-datepicker__day--disabled {
+  color: var(--datepicker-day-muted);
+}
+
+body .react-datepicker__day:hover {
+  background: var(--datepicker-day-hover);
+}
+
+body .react-datepicker__day--selected,
+body .react-datepicker__day--keyboard-selected {
+  background: var(--datepicker-day-selected);
+  color: var(--datepicker-day-selected-text);
+}
+
+body .react-datepicker__day--today {
+  border: 1px solid var(--datepicker-today-border);
+}
+
+body .react-datepicker__navigation-icon::before {
+  border-color: var(--text-2);
+}
+
+body .react-datepicker__triangle {
+  display: none;
+}
+
+body .react-datepicker-popper,
+body .onboarding-datepicker-popper {
+  z-index: 3600;
+}
+
 /* NavBar */
 .navbar {
   position: fixed;
@@ -191,7 +382,6 @@ html[data-theme='dark'] body {
 .navbar__right {
   justify-content: flex-end;
   margin-left: auto;
-  padding-right: 24px;
 }
 
 .navbar__icon {
@@ -1432,7 +1622,7 @@ button.homepage-wire-btn {
 
 .homepage-roadmap-head h2 {
   margin: 0;
-  color: #0055a2;
+  color: var(--text-1);
   font-size: clamp(1.7rem, 3vw, 2.25rem);
   font-weight: 800;
 }
@@ -3647,17 +3837,6 @@ html[data-theme='dark'] .homepage-system__arrow {
   background: linear-gradient(180deg, #eff4fb 0%, #edf2f7 100%);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #bfccdf transparent;
-}
-
-.roadmap-search-page__left::-webkit-scrollbar {
-  width: 8px;
-}
-
-.roadmap-search-page__left::-webkit-scrollbar-thumb {
-  background: #bfccdf;
-  border-radius: 999px;
 }
 
 .roadmap-search-page__right {
@@ -4501,11 +4680,6 @@ html[data-theme='dark'] .roadmap-search-page {
 html[data-theme='dark'] .roadmap-search-page__left {
   border-right: 1px solid rgba(95, 145, 210, 0.35);
   background: linear-gradient(180deg, #142740 0%, #122338 100%);
-  scrollbar-color: rgba(105, 152, 216, 0.6) transparent;
-}
-
-html[data-theme='dark'] .roadmap-search-page__left::-webkit-scrollbar-thumb {
-  background: rgba(105, 152, 216, 0.6);
 }
 
 html[data-theme='dark'] .roadmap-search-page__right {

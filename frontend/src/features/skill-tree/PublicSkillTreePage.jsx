@@ -7,6 +7,7 @@ import * as skillTreeApi from '../../services/skillTree.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../notification/NotificationContainer';
 import { navigateTo } from '../../shared/navigation';
+import { Copy } from 'lucide-react';
 import './skill-tree.css';
 import { useSplitLayout } from './useSplitLayout';
 import ReviewTab from './ReviewTab';
@@ -128,6 +129,15 @@ function addDays(date, days) {
   return next;
 }
 
+function buildManualRoadmapHref(roadmapId) {
+  const normalizedRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
+  return normalizedRoadmapId ? `/manual-roadmap?id=${normalizedRoadmapId}` : '/manual-roadmap';
+}
+
+function isManualRoadmapShared(roadmap) {
+  return Boolean(roadmap?.shared || roadmap?.isPublic || roadmap?.sharedAt || roadmap?.status === 'published');
+}
+
 export default function PublicSkillTreePage({ roadmapId = '' }) {
   const { isAuthenticated, accessToken } = useAuth();
   const { addNotification } = useNotification();
@@ -140,6 +150,8 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [nodeStates, setNodeStates] = useState({});
   const [activeTab, setActiveTab] = useState('overview');
   const [focusNodeId, setFocusNodeId] = useState('');
+  const [isTogglingShare, setIsTogglingShare] = useState(false);
+  const [isCopyingShareLink, setIsCopyingShareLink] = useState(false);
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -228,10 +240,125 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     ? new Date(previewData.sharedAt).toLocaleString()
     : 'Chưa có';
 
+  const isShared = useMemo(
+    () => isManualRoadmapShared(previewData),
+    [previewData]
+  );
+
+  const handleToggleShareRoadmap = useCallback(async () => {
+    if (!accessToken || !normalizedRoadmapId || isTogglingShare) {
+      return;
+    }
+
+    setIsTogglingShare(true);
+
+    try {
+      if (isShared) {
+        await manualRoadmapApi.unshareManualRoadmap(accessToken, normalizedRoadmapId);
+        setPreviewData((current) => ({
+          ...(current || {}),
+          shared: false,
+          isPublic: false,
+          status: 'draft',
+          sharedAt: null,
+        }));
+        addNotification('Đã tắt chia sẻ cho manual roadmap.', 'success');
+      } else {
+        const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
+        setPreviewData((current) => ({
+          ...(current || {}),
+          ...(updatedRoadmap || {}),
+          shared: true,
+          isPublic: true,
+          status: 'published',
+          sharedAt: updatedRoadmap?.sharedAt || current?.sharedAt || new Date().toISOString(),
+        }));
+        addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
+      }
+    } catch (error) {
+      if (error?.status === 401) {
+        await window.location.assign('/login');
+        return;
+      }
+
+      addNotification(error?.message || 'Không thể thay đổi trạng thái chia sẻ cho roadmap này.', 'error');
+    } finally {
+      setIsTogglingShare(false);
+    }
+  }, [accessToken, addNotification, isShared, isTogglingShare, normalizedRoadmapId]);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!isShared || typeof window === 'undefined') {
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}${buildManualRoadmapHref(normalizedRoadmapId)}`;
+    setIsCopyingShareLink(true);
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.setAttribute('readonly', 'true');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      addNotification('Đã sao chép link manual roadmap.', 'success');
+    } catch (error) {
+      addNotification(error?.message || 'Không thể sao chép link lúc này.', 'error');
+    } finally {
+      setIsCopyingShareLink(false);
+    }
+  }, [addNotification, isShared, normalizedRoadmapId]);
+
   const overviewMetaItems = useMemo(() => ([
     { label: 'Ngày chia sẻ', value: sharedAtLabel },
     { label: 'Số node', value: nodesForRender.length ? `${nodesForRender.length}` : '0' },
   ]), [sharedAtLabel, nodesForRender.length]);
+
+  const headerActions = (
+    <div className="homepage-roadmap-card__share skill-tree-panel__share">
+      <div className="homepage-roadmap-card__share-row">
+        <div className="homepage-roadmap-card__share-meta">
+          <span className="homepage-roadmap-card__share-label">Chia sẻ</span>
+          <span className="homepage-roadmap-card__share-state">
+            {isShared ? 'Đang mở công khai' : 'Chỉ mình bạn xem'}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isShared}
+          aria-label="Chia sẻ roadmap"
+          className={`homepage-roadmap-share-toggle${isShared ? ' is-on' : ''}`}
+          onClick={handleToggleShareRoadmap}
+          aria-busy={isTogglingShare}
+          disabled={!accessToken}
+        >
+          <span className="homepage-roadmap-share-toggle__thumb" />
+        </button>
+      </div>
+
+      {isShared ? (
+        <button
+          type="button"
+          className="homepage-roadmap-share-copy"
+          onClick={handleCopyShareLink}
+          disabled={isCopyingShareLink}
+        >
+          <Copy size={14} aria-hidden="true" />
+          <span>{isCopyingShareLink ? 'Đang sao chép...' : 'Sao chép link'}</span>
+        </button>
+      ) : null}
+    </div>
+  );
 
   const overviewActions = (
     <>
@@ -595,6 +722,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           tabs={detailTabs}
           activeTabId={activeTab}
           onTabChange={setActiveTab}
+          headerActions={headerActions}
         />
       </div>
     </div>

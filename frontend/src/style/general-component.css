@@ -863,7 +863,7 @@ html[data-theme='dark'] .navbar__notification-dot {
   right: 0;
   top: calc(100% + 8px);
   width: min(320px, 80vw);
-  max-height: 360px;
+  max-height: none;
   overflow: hidden;
   border-radius: var(--radius-md);
   border: 1px solid #dbe3ef;
@@ -896,7 +896,8 @@ html[data-theme='dark'] .navbar__notification-header {
 .navbar__notification-list {
   display: grid;
   gap: 0.4rem;
-  height: calc(3 * 62px);
+  height: auto;
+  max-height: calc((3 * 62px) + (2 * 0.4rem));
   overflow-y: auto;
   padding-right: 0.2rem;
 }

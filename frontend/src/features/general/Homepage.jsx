@@ -78,6 +78,16 @@ function isManualRoadmapShared(roadmap) {
   return Boolean(roadmap?.shared || roadmap?.isPublic || roadmap?.sharedAt || roadmap?.status === 'published');
 }
 
+function getRoadmapKey(item) {
+  const roadmapId = String(item?.roadmapId || '').trim();
+  if (!roadmapId) {
+    return '';
+  }
+
+  const roadmapSource = String(item?.roadmapSource || (item?.isManual ? 'manual' : item?.isPrimary ? 'primary' : 'roadmap') || '').trim() || 'roadmap';
+  return item?.roadmapKey || `${roadmapSource}:${roadmapId}`;
+}
+
 const HERO_LEFT_ICONS = [
   { key: 'left-1', top: '12%', left: '8%', size: '62px', rotate: '-8deg', icon: GraduationCap },
   { key: 'left-2', top: '24%', left: '18%', size: '46px', rotate: '6deg', icon: FlaskConical },
@@ -270,21 +280,55 @@ function toRgba(hex, alpha) {
     return streak;
   }
 
-  function dedupeRoadmapsById(items = []) {
+  function dedupeRoadmapsByKey(items = []) {
     const seen = new Set();
     const uniqueItems = [];
 
     items.forEach((item) => {
-      const roadmapId = String(item?.roadmapId || '').trim();
-      if (!roadmapId || seen.has(roadmapId)) {
+      const roadmapKey = getRoadmapKey(item);
+      if (!roadmapKey || seen.has(roadmapKey)) {
         return;
       }
 
-      seen.add(roadmapId);
+      seen.add(roadmapKey);
       uniqueItems.push(item);
     });
 
     return uniqueItems;
+  }
+
+  function dedupeRoadmapsByRoadmapId(items = []) {
+    const byId = new Map();
+
+    for (const item of Array.isArray(items) ? items : []) {
+      const roadmapId = String(item?.roadmapId || item?._id || '').trim();
+      if (!roadmapId) {
+        continue;
+      }
+
+      const existing = byId.get(roadmapId);
+      if (!existing) {
+        byId.set(roadmapId, item);
+        continue;
+      }
+
+      const nextIsPrimary = Boolean(item?.isPrimary);
+      const existingIsPrimary = Boolean(existing?.isPrimary);
+      if (nextIsPrimary && !existingIsPrimary) {
+        byId.set(roadmapId, item);
+        continue;
+      }
+
+      if (nextIsPrimary === existingIsPrimary) {
+        const nextUpdatedAt = new Date(item?.updatedAt || item?.lastActivityDate || 0).getTime();
+        const existingUpdatedAt = new Date(existing?.updatedAt || existing?.lastActivityDate || 0).getTime();
+        if (nextUpdatedAt > existingUpdatedAt) {
+          byId.set(roadmapId, item);
+        }
+      }
+    }
+
+    return Array.from(byId.values());
   }
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
@@ -429,8 +473,7 @@ export default function Homepage() {
           page: 1,
           limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
         });
-        const items = Array.isArray(result?.items) ? result.items : [];
-        console.log('Loaded my manual roadmaps:', items);
+        const items = dedupeRoadmapsByRoadmapId(Array.isArray(result?.items) ? result.items : []);
         if (isMounted) {
           setMyManualRoadmaps(items);
         }
@@ -443,9 +486,9 @@ export default function Homepage() {
         try {
           const fallback = await manualRoadmapApi.listPublicManualRoadmaps({ page: 1, limit: 100 });
           const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
-          const ownRoadmaps = fallbackItems
+          const ownRoadmaps = dedupeRoadmapsByRoadmapId(fallbackItems
             .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
-            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
+            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT));
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
           }
@@ -568,15 +611,48 @@ export default function Homepage() {
     };
   }, [accessToken, logoutAndRedirect]);
 
-  const combinedProgressSummaries = useMemo(
-    () => dedupeRoadmapsById([...progressSummaries, ...manualProgressSummaries]),
-    [progressSummaries, manualProgressSummaries]
-  );
+  const primaryProgressRoadmap = useMemo(() => {
+    const list = dedupeRoadmapsByRoadmapId(Array.isArray(progressSummaries) ? progressSummaries : []);
+    return list.find((item) => item?.isPrimary) || list[0] || null;
+  }, [progressSummaries]);
+
+  const progressRoadmapCards = useMemo(() => {
+    const manualProgressById = new Map(
+      dedupeRoadmapsByRoadmapId(Array.isArray(manualProgressSummaries) ? manualProgressSummaries : [])
+        .map((summary) => [String(summary?.roadmapId || '').trim(), summary])
+        .filter(([roadmapId]) => Boolean(roadmapId))
+    );
+
+    const cards = [];
+
+    if (primaryProgressRoadmap) {
+      cards.push({
+        kind: 'personalized',
+        id: primaryProgressRoadmap.roadmapId,
+        roadmap: primaryProgressRoadmap,
+      });
+    }
+
+    for (const roadmap of dedupeRoadmapsByRoadmapId(Array.isArray(myManualRoadmaps) ? myManualRoadmaps : [])) {
+      const roadmapId = String(roadmap?._id || '').trim();
+      if (!roadmapId) {
+        continue;
+      }
+
+      cards.push({
+        kind: 'manual',
+        id: roadmapId,
+        roadmap: manualProgressById.get(roadmapId) || roadmap,
+      });
+    }
+
+    return dedupeRoadmapsByRoadmapId(cards.map((card) => card.roadmap));
+  }, [manualProgressSummaries, myManualRoadmaps, primaryProgressRoadmap]);
 
   useEffect(() => {
     let isMounted = true;
 
-    if (!accessToken || combinedProgressSummaries.length === 0) {
+    if (!accessToken || progressRoadmapCards.length === 0) {
       if (isMounted) {
         setMonthlyRoadmapStats([]);
         setMonthlyRoadmapLoading(false);
@@ -590,7 +666,7 @@ export default function Homepage() {
     setMonthlyRoadmapLoading(true);
 
     Promise.allSettled(
-      combinedProgressSummaries.map(async (roadmap, index) => {
+      progressRoadmapCards.map(async (roadmap, index) => {
         const roadmapId = roadmap?.roadmapId;
         if (!roadmapId) {
           return null;
@@ -612,6 +688,7 @@ export default function Homepage() {
 
           return {
             roadmapId,
+            roadmapKey: getRoadmapKey(roadmap) || `${roadmap?.isManual ? 'manual' : roadmap?.isPrimary ? 'primary' : 'roadmap'}:${roadmapId}`,
             roadmapName: roadmap?.roadmapName || 'Roadmap',
             completedNodes,
             completionPercent,
@@ -626,6 +703,7 @@ export default function Homepage() {
 
           return {
             roadmapId,
+            roadmapKey: getRoadmapKey(roadmap) || `${roadmap?.isManual ? 'manual' : roadmap?.isPrimary ? 'primary' : 'roadmap'}:${roadmapId}`,
             roadmapName: roadmap?.roadmapName || 'Roadmap',
             completedNodes: 0,
             completionPercent,
@@ -648,7 +726,7 @@ export default function Homepage() {
     return () => {
       isMounted = false;
     };
-  }, [accessToken, combinedProgressSummaries]);
+  }, [accessToken, progressRoadmapCards]);
 
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
@@ -983,9 +1061,8 @@ export default function Homepage() {
   );
   const isSingleRoadmapCardPage = visibleRoadmapCards.length === 1;
   const hasPersonalizedRoadmap = onboardingState === 'COMPLETED' && Boolean(accessToken);
-  const myManualRoadmapCards = Array.isArray(myManualRoadmaps)
-    ? myManualRoadmaps.filter((roadmap) => String(roadmap?._id || '').trim())
-    : [];
+  const myManualRoadmapCards = dedupeRoadmapsByRoadmapId(Array.isArray(myManualRoadmaps) ? myManualRoadmaps : [])
+    .filter((roadmap) => String(roadmap?._id || '').trim());
   const myRoadmapCards = [
     ...(hasPersonalizedRoadmap ? [{ kind: 'personalized', id: 'personalized' }] : []),
     ...myManualRoadmapCards.map((roadmap) => ({ kind: 'manual', id: String(roadmap?._id || '').trim(), roadmap })),
@@ -998,10 +1075,6 @@ export default function Homepage() {
     (myRoadmapPage + 1) * MY_ROADMAPS_PER_PAGE
   );
   const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
-  const primaryProgressRoadmap = useMemo(() => {
-    const list = Array.isArray(combinedProgressSummaries) ? combinedProgressSummaries : [];
-    return list.find((item) => item?.isPrimary) || list[0] || null;
-  }, [combinedProgressSummaries]);
   const monthlyTotalNodes = useMemo(
     () => monthlyRoadmapStats.reduce((sum, item) => sum + (item.completedNodes || 0), 0),
     [monthlyRoadmapStats]
@@ -1016,8 +1089,8 @@ export default function Homepage() {
     [monthlyRoadmapStats]
   );
   const roadmapProgressStack = useMemo(
-    () => combinedProgressSummaries.map((roadmap, index) => {
-      const stats = monthlyRoadmapStats.find((item) => item.roadmapId === roadmap.roadmapId);
+    () => progressRoadmapCards.map((roadmap, index) => {
+      const stats = monthlyRoadmapStats.find((item) => getRoadmapKey(item) === getRoadmapKey(roadmap));
       const totalNodes = roadmap?.totalNodes || (roadmap?.doneNodes || 0) + (roadmap?.pendingNodes || 0);
       const doneNodes = roadmap?.doneNodes || 0;
       const completionPercent = totalNodes > 0
@@ -1035,7 +1108,7 @@ export default function Homepage() {
         color,
       };
     }),
-    [combinedProgressSummaries, monthlyRoadmapStats]
+    [progressRoadmapCards, monthlyRoadmapStats]
   );
   const totalStackNodes = useMemo(
     () => roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0),

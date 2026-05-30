@@ -15,7 +15,7 @@ function escapeRegex(value) {
 
 async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = { isPublic: true };
+    const filter = { isPublic: true, isPrimary: { $ne: true } };
 
     const normalizedUserId = String(userId || '').trim();
     if (normalizedUserId) {
@@ -48,7 +48,7 @@ async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20
 
 async function getPublicPreviewById(roadmapId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId },
+        { _id: roadmapId, isPrimary: { $ne: true } },
         { title: 1, description: 1, nodes: 1, edges: 1, yamlCode: 1, sharedAt: 1 }
     ).lean();
 }
@@ -59,7 +59,7 @@ async function getPublicPreviewById(roadmapId) {
  */
 async function getByIdForEdit(roadmapId, userId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId, userId },
+        { _id: roadmapId, userId, isPrimary: { $ne: true } },
         { yamlCode: 1, title: 1, description: 1, status: 1 }
     ).lean();
 }
@@ -70,7 +70,7 @@ async function getByIdForEdit(roadmapId, userId) {
  */
 async function getByIdForView(roadmapId, userId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId, userId },
+        { _id: roadmapId, userId, isPrimary: { $ne: true } },
         { title: 1, description: 1, nodes: 1, edges: 1, positions: 1 }
     ).lean();
 }
@@ -84,7 +84,7 @@ async function getByIdForUser(roadmapId, userId) {
 
 async function listByUser(userId, { page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = { userId };
+    const filter = { userId, isPrimary: { $ne: true } };
 
     const [items, total] = await Promise.all([
         ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0, edges: 0 })
@@ -135,7 +135,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
 }
 
 async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes, tags = [] }) {
-    const existing = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    const existing = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
     if (!existing) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
@@ -208,7 +208,7 @@ async function getDistinctTags() {
 }
 
 async function share(roadmapId, userId) {
-    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
     if (!roadmap) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
@@ -227,7 +227,7 @@ async function share(roadmapId, userId) {
 }
 
 async function unshare(roadmapId, userId) {
-    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
     if (!roadmap) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
@@ -247,7 +247,7 @@ async function unshare(roadmapId, userId) {
 }
 
 async function deleteById(roadmapId, userId) {
-    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId }, { _id: 1 }).lean();
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } }, { _id: 1 }).lean();
     if (!roadmap) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }

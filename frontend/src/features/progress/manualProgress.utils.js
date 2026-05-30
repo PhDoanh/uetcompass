@@ -77,6 +77,8 @@ function buildManualSummaryFromDetail(roadmap, detail, hasProgressData) {
   return {
     summary: {
       roadmapId,
+      roadmapSource: 'manual',
+      roadmapKey: `manual:${roadmapId}`,
       roadmapName,
       isPrimary: false,
       isManual: true,
@@ -92,6 +94,8 @@ function buildManualSummaryFromDetail(roadmap, detail, hasProgressData) {
     },
     detail: {
       roadmapId,
+      roadmapSource: 'manual',
+      roadmapKey: `manual:${roadmapId}`,
       roadmapName,
       nodes: detail,
       manualMissingData: !hasProgressData,

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as skillTreeApi from '../../services/skillTree.api';
 import { useSkillTree } from './useSkillTree';
 import SkillTreeCanvas from './SkillTreeCanvas';
-import CourseDetailPanel from './CourseDetailPanel';
 import { useNotification } from '../notification/NotificationContainer';
 import { useSplitLayout } from './useSplitLayout';
 import SkillTreeDetailPanel, { calculateProgress, buildFixedMilestones, SkillTreeOverviewTab, SkillTreeNodeDetailTab } from './SkillTreeDetailPanel';
@@ -31,28 +30,6 @@ function isInProgressState(state) {
 
 function isCompletedState(state) {
   return String(state || '').toLowerCase() === 'completed';
-}
-
-function formatDateLabel(value) {
-  if (!value) {
-    return '--';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '--';
-  }
-
-  return date.toLocaleDateString('vi-VN');
-}
-
-function formatFrequencyLabel(value) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '--';
-  }
-
-  const rounded = Math.round(value * 100) / 100;
-  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
 }
 
 export default function SkillTreePage() {
@@ -96,7 +73,6 @@ export default function SkillTreePage() {
   const {
     layoutRef,
     ratio,
-    isCompactLayout,
     minRatio,
     maxRatio,
     handleResizePointerDown,

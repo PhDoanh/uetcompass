@@ -4,13 +4,10 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import * as skillTreeApi from '../../services/skillTree.api';
-import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../notification/NotificationContainer';
-import { navigateTo } from '../../shared/navigation';
 import './skill-tree.css';
 import { useSplitLayout } from './useSplitLayout';
 import ReviewTab from './ReviewTab';
-import MilestoneCelebrationModal from './MilestoneCelebrationModal';
 import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import SkillTreeDetailPanel, {
   SkillTreeOverviewTab,
@@ -178,7 +175,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const {
     layoutRef,
     ratio,
-    isCompactLayout,
     minRatio,
     maxRatio,
     handleResizePointerDown,

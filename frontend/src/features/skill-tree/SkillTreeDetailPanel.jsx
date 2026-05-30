@@ -704,7 +704,6 @@ export function SkillTreeReviewTab({ roadmapId = '', authToken = '', initialRevi
 
 export default function SkillTreeDetailPanel({
   title,
-  subtitle,
   tabs = [],
   activeTabId,
   onTabChange,

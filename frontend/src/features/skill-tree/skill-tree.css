@@ -2253,18 +2253,6 @@ html[data-theme='dark'] .sample-resource-list__open {
   color: #5d6470;
 }
 
-.skill-tree-layout__canvas::-webkit-scrollbar,
-.skill-tree-panel__content::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.skill-tree-layout__canvas::-webkit-scrollbar-thumb,
-.skill-tree-panel__content::-webkit-scrollbar-thumb {
-  background: #b6c7e2;
-  border-radius: 999px;
-}
-
 @keyframes spin {
   from {
     transform: rotate(0);

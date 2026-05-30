@@ -129,7 +129,7 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
     });
 
     // Record initial version snapshot (best-effort — does not fail the create)
-    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode).catch(() => {});
+    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode, null).catch(() => {});
 
     return typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
 }
@@ -170,8 +170,13 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
 
     await existing.save();
 
-    // Record a version snapshot (best-effort — does not fail the save)
-    roadmapVersionService.createVersion(existing._id, existing.yamlCode).catch(() => {});
+    // Record a version snapshot with current progress state (best-effort — does not fail the save)
+    ;(async () => {
+        try {
+            const progressDoc = await RoadmapProgress.findOne({ userId, roadmapId: existing._id }).lean();
+            await roadmapVersionService.createVersion(existing._id, existing.yamlCode, progressDoc?.state ?? null);
+        } catch (_) {}
+    })();
 
     return existing.toObject();
 }

@@ -4,12 +4,21 @@ const { RoadmapVersion } = require('./roadmapVersion.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
 
 /**
- * Append a new {yamlCode, updatedAt} entry to the roadmap's version list.
+ * Append a new {yamlCode, progressState, updatedAt} entry to the roadmap's version list.
  */
-async function createVersion(roadmapId, yamlCode) {
+async function createVersion(roadmapId, yamlCode, progressState = null) {
+	const entry = { yamlCode: yamlCode || '', updatedAt: new Date() };
+	if (progressState && typeof progressState === 'object') {
+		entry.progressState = {
+			pending: Array.isArray(progressState.pending) ? progressState.pending : [],
+			inProgress: Array.isArray(progressState.inProgress) ? progressState.inProgress : [],
+			completed: Array.isArray(progressState.completed) ? progressState.completed : [],
+			skip: Array.isArray(progressState.skip) ? progressState.skip : [],
+		};
+	}
 	await RoadmapVersion.updateOne(
 		{ roadmapId },
-		{ $push: { versions: { yamlCode: yamlCode || '', updatedAt: new Date() } } },
+		{ $push: { versions: entry } },
 		{ upsert: true }
 	);
 }
@@ -21,7 +30,7 @@ async function createVersion(roadmapId, yamlCode) {
 async function listVersions(roadmapId, { page = 1, limit = 20 } = {}) {
 	limit = Math.min(limit, 100);
 
-	const doc = await RoadmapVersion.findOne({ roadmapId }, { 'versions.yamlCode': 0 }).lean();
+	const doc = await RoadmapVersion.findOne({ roadmapId }, { 'versions.yamlCode': 0, 'versions.progressState': 0 }).lean();
 	if (!doc) return { items: [], pagination: { page, limit, total: 0 } };
 
 	const all = doc.versions.slice().reverse(); // newest first

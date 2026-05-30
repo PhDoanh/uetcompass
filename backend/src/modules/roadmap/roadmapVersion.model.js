@@ -2,9 +2,20 @@
 
 const mongoose = require('mongoose');
 
+const ProgressStateSchema = new mongoose.Schema(
+	{
+		pending: { type: [String], default: [] },
+		inProgress: { type: [String], default: [] },
+		completed: { type: [String], default: [] },
+		skip: { type: [String], default: [] },
+	},
+	{ _id: false, versionKey: false }
+);
+
 const VersionEntrySchema = new mongoose.Schema(
 	{
 		yamlCode: { type: String, default: '' },
+		progressState: { type: ProgressStateSchema, default: null },
 		updatedAt: { type: Date, default: Date.now },
 	},
 	{ versionKey: false }

@@ -1353,7 +1353,7 @@ export default function Homepage() {
                             className="homepage-card-action"
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+                                navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}?mine=1`);
                               }
                             }}
                             disabled={isDeleting}

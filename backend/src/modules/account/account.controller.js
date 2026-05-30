@@ -18,7 +18,28 @@ function sendError(res, err) {
 const accountController = {
   async getPublicProfile(req, res) {
     try {
-      const result = await accountService.getPublicProfile(req.params.userId);
+      const result = await accountService.getPublicProfile(
+        req.params.userId,
+        accountService.resolveOptionalViewerUserId(req)
+      );
+      return res.status(200).json(result);
+    } catch (err) {
+      return sendError(res, err);
+    }
+  },
+
+  async followPublicProfile(req, res) {
+    try {
+      const result = await accountService.followPublicProfile(req.user.userId, req.params.userId);
+      return res.status(200).json(result);
+    } catch (err) {
+      return sendError(res, err);
+    }
+  },
+
+  async unfollowPublicProfile(req, res) {
+    try {
+      const result = await accountService.unfollowPublicProfile(req.user.userId, req.params.userId);
       return res.status(200).json(result);
     } catch (err) {
       return sendError(res, err);

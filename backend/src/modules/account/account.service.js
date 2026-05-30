@@ -8,8 +8,10 @@ const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapProgress } = require('../roadmap/roadmapProgress.model');
 const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 const { AccountAuditEvent } = require('./account.model');
+const { UserFollow } = require('./userFollow.model');
 const accountAuditService = require('./accountAudit.service');
 const { resolveEffectiveDisplayName, resolvePublicIdentity } = require('./identity.policy');
+const { verifyAccessToken } = require('../auth/token.service');
 
 const BCRYPT_ROUNDS = 12;
 const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -35,6 +37,8 @@ function mapIdentity(user) {
     fullName: user.fullName,
     privacySetting: user.privacySetting,
     avatarUrl: user.avatarUrl || null,
+    followersCount: Number(user.followersCount || 0),
+    followingCount: Number(user.followingCount || 0),
     joinedAt: user.createdAt || null,
     effectiveDisplayName: resolveEffectiveDisplayName({
       displayName: user.displayName,
@@ -44,7 +48,49 @@ function mapIdentity(user) {
   };
 }
 
-async function getPublicProfile(userId) {
+function normalizeCount(value) {
+  const count = Number(value || 0);
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
+function resolveOptionalViewerUserId(req = {}) {
+  const authHeader = req.header?.('authorization') || req.header?.('Authorization') || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+  if (!bearerToken) {
+    return '';
+  }
+
+  try {
+    const payload = verifyAccessToken(bearerToken);
+    return String(payload?.userId || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+async function initializeUserSocialStats() {
+  await User.updateMany(
+    {
+      $or: [
+        { followersCount: { $exists: false } },
+        { followingCount: { $exists: false } },
+      ],
+    },
+    {
+      $set: {
+        followersCount: 0,
+        followingCount: 0,
+      },
+    }
+  );
+}
+
+async function getFollowRelation(followerUserId, followingUserId) {
+  return UserFollow.findOne({ followerUserId, followingUserId }).lean();
+}
+
+async function getPublicProfile(userId, viewerUserId = '') {
   const user = await User.findById(userId);
   if (!user) {
     throw buildError(404, 'NOT_FOUND', 'User profile not found.');
@@ -52,6 +98,13 @@ async function getPublicProfile(userId) {
 
   const identity = mapIdentity(user);
   const visible = user.privacySetting !== 'anonymous';
+  const resolvedViewerUserId = String(viewerUserId || '').trim();
+  const isSelf = Boolean(resolvedViewerUserId && resolvedViewerUserId === String(userId));
+  let viewerIsFollowing = false;
+
+  if (resolvedViewerUserId && !isSelf) {
+    viewerIsFollowing = Boolean(await getFollowRelation(resolvedViewerUserId, userId));
+  }
 
   if (!visible) {
     return {
@@ -66,8 +119,14 @@ async function getPublicProfile(userId) {
         }),
         privacySetting: user.privacySetting,
         avatarUrl: identity.avatarUrl,
+        followersCount: identity.followersCount,
+        followingCount: identity.followingCount,
       },
       profile: null,
+      followersCount: identity.followersCount,
+      followingCount: identity.followingCount,
+      viewerIsFollowing,
+      viewerIsSelf: isSelf,
     };
   }
 
@@ -76,6 +135,10 @@ async function getPublicProfile(userId) {
   return {
     visible: true,
     identity,
+    followersCount: identity.followersCount,
+    followingCount: identity.followingCount,
+    viewerIsFollowing,
+    viewerIsSelf: isSelf,
     profile: normalizeProfileDraft({
       major: studentProfile?.major,
       completedCourseIds: Array.isArray(studentProfile?.completedCourses)
@@ -84,6 +147,101 @@ async function getPublicProfile(userId) {
       careerGoal: studentProfile?.careerGoal,
       personalAspirations: studentProfile?.personalAspirations,
     }),
+  };
+}
+
+async function followPublicProfile(followerUserId, targetUserId) {
+  const normalizedFollowerUserId = String(followerUserId || '').trim();
+  const normalizedTargetUserId = String(targetUserId || '').trim();
+
+  if (!normalizedFollowerUserId || !normalizedTargetUserId) {
+    throw buildError(400, 'INVALID_INPUT', 'Missing user id.');
+  }
+
+  if (normalizedFollowerUserId === normalizedTargetUserId) {
+    throw buildError(400, 'INVALID_INPUT', 'Cannot follow yourself.');
+  }
+
+  const [followerUser, targetUser] = await Promise.all([
+    User.findById(normalizedFollowerUserId),
+    User.findById(normalizedTargetUserId),
+  ]);
+
+  if (!followerUser || !targetUser) {
+    throw buildError(404, 'NOT_FOUND', 'User profile not found.');
+  }
+
+  const existingRelation = await UserFollow.findOne({
+    followerUserId: normalizedFollowerUserId,
+    followingUserId: normalizedTargetUserId,
+  });
+
+  if (!existingRelation) {
+    await UserFollow.create({
+      followerUserId: normalizedFollowerUserId,
+      followingUserId: normalizedTargetUserId,
+    });
+
+    await Promise.all([
+      User.updateOne({ _id: normalizedTargetUserId }, { $inc: { followersCount: 1 } }),
+      User.updateOne({ _id: normalizedFollowerUserId }, { $inc: { followingCount: 1 } }),
+    ]);
+  }
+
+  const refreshedTarget = await User.findById(normalizedTargetUserId).lean();
+  const refreshedFollower = await User.findById(normalizedFollowerUserId).lean();
+
+  return {
+    message: 'Followed successfully',
+    isFollowing: true,
+    followersCount: normalizeCount(refreshedTarget?.followersCount),
+    followingCount: normalizeCount(refreshedFollower?.followingCount),
+  };
+}
+
+async function unfollowPublicProfile(followerUserId, targetUserId) {
+  const normalizedFollowerUserId = String(followerUserId || '').trim();
+  const normalizedTargetUserId = String(targetUserId || '').trim();
+
+  if (!normalizedFollowerUserId || !normalizedTargetUserId) {
+    throw buildError(400, 'INVALID_INPUT', 'Missing user id.');
+  }
+
+  if (normalizedFollowerUserId === normalizedTargetUserId) {
+    throw buildError(400, 'INVALID_INPUT', 'Cannot unfollow yourself.');
+  }
+
+  const [followerUser, targetUser] = await Promise.all([
+    User.findById(normalizedFollowerUserId),
+    User.findById(normalizedTargetUserId),
+  ]);
+
+  if (!followerUser || !targetUser) {
+    throw buildError(404, 'NOT_FOUND', 'User profile not found.');
+  }
+
+  const existingRelation = await UserFollow.findOne({
+    followerUserId: normalizedFollowerUserId,
+    followingUserId: normalizedTargetUserId,
+  });
+
+  if (existingRelation) {
+    await UserFollow.deleteOne({ _id: existingRelation._id });
+
+    await Promise.all([
+      User.updateOne({ _id: normalizedTargetUserId }, { $inc: { followersCount: -1 } }),
+      User.updateOne({ _id: normalizedFollowerUserId }, { $inc: { followingCount: -1 } }),
+    ]);
+  }
+
+  const refreshedTarget = await User.findById(normalizedTargetUserId).lean();
+  const refreshedFollower = await User.findById(normalizedFollowerUserId).lean();
+
+  return {
+    message: 'Unfollowed successfully',
+    isFollowing: false,
+    followersCount: normalizeCount(refreshedTarget?.followersCount),
+    followingCount: normalizeCount(refreshedFollower?.followingCount),
   };
 }
 
@@ -346,4 +504,8 @@ module.exports = {
   hardDeleteAccount,
   validatePasswordPolicy,
   getPublicProfile,
+  followPublicProfile,
+  unfollowPublicProfile,
+  initializeUserSocialStats,
+  resolveOptionalViewerUserId,
 };

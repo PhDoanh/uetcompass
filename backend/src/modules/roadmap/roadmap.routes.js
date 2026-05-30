@@ -76,10 +76,12 @@ roadmapRouter.post('/primary/accept', controller.acceptRoadmapHandler);
 roadmapRouter.post('/primary/reject', controller.rejectRoadmap);
 
 roadmapRouter.post('/manual-roadmaps', controller.createManualRoadmap);
+roadmapRouter.get('/manual-roadmaps', controller.listManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/:roadmapId', controller.getManualRoadmapById);
 roadmapRouter.patch('/manual-roadmaps/:roadmapId', controller.updateManualRoadmap);
 roadmapRouter.delete('/manual-roadmaps/:roadmapId', controller.deleteManualRoadmap);
 roadmapRouter.post('/manual-roadmaps/:roadmapId/share', controller.shareManualRoadmap);
+roadmapRouter.post('/manual-roadmaps/:roadmapId/unshare', controller.unshareManualRoadmap);
 roadmapRouter.get('/manual-roadmaps/:roadmapId/versions', controller.listManualRoadmapVersions);
 roadmapRouter.get('/manual-roadmaps/:roadmapId/versions/:versionId', controller.getManualRoadmapVersion);
 

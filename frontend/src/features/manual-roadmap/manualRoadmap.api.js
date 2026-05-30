@@ -67,6 +67,10 @@ export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
 }
 
+export function unshareManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}/unshare`, 'POST', authToken);
+}
+
 export function listPublicManualRoadmaps({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
@@ -142,6 +146,7 @@ const manualRoadmapApi = {
     updateManualRoadmap,
     deleteManualRoadmap,
     shareManualRoadmap,
+    unshareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
     listPublicManualRoadmapComments,

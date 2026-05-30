@@ -494,14 +494,20 @@
 }
 
 .auth-modal-shell {
-  width: min(460px, calc(100vw - 16px));
+  width: min(440px, calc(100vw - 24px));
   position: relative;
+  background: transparent;
 }
 
 .auth-modal-shell .auth-shell {
   min-height: auto;
     padding: 0;
   background: transparent;
+}
+
+.auth-modal-shell .auth-card {
+  width: 100%;
+  border: 0;
 }
 
 .auth-modal-close {
@@ -562,4 +568,8 @@ html[data-theme='dark'] .auth-otp-grid input:focus {
 
 html[data-theme='dark'] .auth-modal-overlay {
   background: var(--overlay-scrim);
+}
+
+html[data-theme='dark'] .auth-modal-shell {
+  background: transparent !important;
 }

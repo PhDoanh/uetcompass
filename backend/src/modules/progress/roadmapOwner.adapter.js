@@ -24,14 +24,31 @@ async function listOwnedRoadmaps(userId) {
     .limit(200)
     .lean();
 
-  return roadmaps.map(normalizeRoadmap).filter(Boolean);
+  const seenRoadmapIds = new Set();
+  const normalizedRoadmaps = [];
+
+  for (const roadmap of roadmaps.sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)))) {
+    const normalized = normalizeRoadmap(roadmap);
+    if (!normalized || seenRoadmapIds.has(normalized.roadmapId)) {
+      continue;
+    }
+
+    seenRoadmapIds.add(normalized.roadmapId);
+    normalizedRoadmaps.push(normalized);
+  }
+
+  return normalizedRoadmaps;
 }
 
 async function getOwnedRoadmap(userId, roadmapId) {
   const roadmap = await ManualRoadmap.findOne(
-    { _id: roadmapId, userId },
+    { _id: roadmapId, userId, isPrimary: true },
     { title: 1, isPrimary: 1, createdAt: 1, updatedAt: 1, acceptedAt: 1 }
-  ).lean();
+  ).lean()
+    || await ManualRoadmap.findOne(
+      { _id: roadmapId, userId, isPrimary: { $ne: true } },
+      { title: 1, isPrimary: 1, createdAt: 1, updatedAt: 1, acceptedAt: 1 }
+    ).lean();
   return normalizeRoadmap(roadmap);
 }
 

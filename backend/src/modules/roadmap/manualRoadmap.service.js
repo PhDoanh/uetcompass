@@ -6,6 +6,7 @@ const { RoadmapHistory } = require('./roadmapHistory.model');
 const RoadmapProgressCache = require('../progress/roadmapProgressCache.model');
 const RoadmapProgressActivity = require('../progress/roadmapProgressActivity.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
+const roadmapVersionService = require('./roadmapVersion.service');
 const { generateEdgesFromHierarchy, enrichNodes, validateHierarchy } = require('./graph.generator');
 
 function escapeRegex(value) {
@@ -127,6 +128,9 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         sharedAt: new Date(),
     });
 
+    // Record initial version snapshot (best-effort — does not fail the create)
+    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode).catch(() => {});
+
     return typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
 }
 
@@ -165,6 +169,10 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.updatedAt = new Date();
 
     await existing.save();
+
+    // Record a version snapshot (best-effort — does not fail the save)
+    roadmapVersionService.createVersion(existing._id, existing.yamlCode).catch(() => {});
+
     return existing.toObject();
 }
 
@@ -230,6 +238,7 @@ async function deleteById(roadmapId, userId) {
         RoadmapHistory.deleteMany({ roadmapId, userId }),
         RoadmapProgressCache.deleteOne({ roadmapId: String(roadmapId), userId: String(userId) }),
         RoadmapProgressActivity.deleteMany({ roadmapId: String(roadmapId), userId: String(userId) }),
+        roadmapVersionService.deleteAllForRoadmap(roadmapId),
     ]);
 
     return { deleted: true, roadmapId };

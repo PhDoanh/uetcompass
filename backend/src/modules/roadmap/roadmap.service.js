@@ -76,7 +76,7 @@ async function updateAverageRating(roadmapId, averageRating) {
 	return result;
 }
 
-async function upsertFailed(userId, message) {
+async function upsertFailed(userId, _message) {
 	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return ManualRoadmap.findOneAndUpdate(
 		{ userId, source: 'auto', acceptedAt: null },
@@ -97,7 +97,7 @@ async function upsertFailed(userId, message) {
 	);
 }
 
-async function upsertFailedWithProfile(userId, studentProfileId, message, personalisationLevel = 'full') {
+async function upsertFailedWithProfile(userId, studentProfileId, _message, personalisationLevel = 'full') {
 	// message is for logging only — NOT stored on the document (2026-04-08 decision)
 	return ManualRoadmap.findOneAndUpdate(
 		{ userId, source: 'auto', acceptedAt: null },

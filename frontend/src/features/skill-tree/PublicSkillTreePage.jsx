@@ -237,6 +237,13 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     <>
       <button
         type="button"
+        className="skill-tree-back-button"
+        onClick={() => { window.location.href = `/manual-roadmap/versions?id=${normalizedRoadmapId}`; }}
+      >
+        Lịch sử
+      </button>
+      <button
+        type="button"
         className="skill-tree-edit-button"
         onClick={handleOpenInEditor}
       >

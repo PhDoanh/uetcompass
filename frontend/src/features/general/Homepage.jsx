@@ -69,9 +69,9 @@ const HEATMAP_VALUES = [
   0, 1, 2, 3, 2, 1, 0,
 ];
 
-function buildManualRoadmapHref(roadmapId) {
+function buildPublicSkillTreeHref(roadmapId) {
   const normalizedRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
-  return normalizedRoadmapId ? `/manual-roadmap?id=${normalizedRoadmapId}` : '/manual-roadmap';
+  return normalizedRoadmapId ? `/skill-tree/${normalizedRoadmapId}` : '/skill-tree';
 }
 
 function isManualRoadmapShared(roadmap) {
@@ -801,7 +801,7 @@ export default function Homepage() {
       return;
     }
 
-    const shareUrl = `${window.location.origin}${buildManualRoadmapHref(normalizedRoadmapId)}`;
+    const shareUrl = `${window.location.origin}${buildPublicSkillTreeHref(normalizedRoadmapId)}`;
     setCopyingManualRoadmapId(normalizedRoadmapId);
 
     try {
@@ -819,7 +819,7 @@ export default function Homepage() {
         document.body.removeChild(textArea);
       }
 
-      addNotification('Đã sao chép link manual roadmap.', 'success');
+      addNotification('Đã sao chép link public skill tree.', 'success');
     } catch (err) {
       addNotification(err?.message || 'Không thể sao chép link lúc này.', 'error');
     } finally {

@@ -73,6 +73,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    followersCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      required: true,
+    },
+    followingCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      required: true,
+    },
     status: {
       type: String,
       enum: ['pending-verification', 'active', 'locked', 'soft-deleted'],

@@ -129,9 +129,9 @@ function addDays(date, days) {
   return next;
 }
 
-function buildManualRoadmapHref(roadmapId) {
+function buildPublicSkillTreeHref(roadmapId) {
   const normalizedRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
-  return normalizedRoadmapId ? `/manual-roadmap?id=${normalizedRoadmapId}` : '/manual-roadmap';
+  return normalizedRoadmapId ? `/skill-tree/${normalizedRoadmapId}` : '/skill-tree';
 }
 
 function isManualRoadmapShared(roadmap) {
@@ -292,7 +292,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       return;
     }
 
-    const shareUrl = `${window.location.origin}${buildManualRoadmapHref(normalizedRoadmapId)}`;
+    const shareUrl = `${window.location.origin}${buildPublicSkillTreeHref(normalizedRoadmapId)}`;
     setIsCopyingShareLink(true);
 
     try {

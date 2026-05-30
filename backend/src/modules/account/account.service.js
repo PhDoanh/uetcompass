@@ -470,35 +470,7 @@ async function hardDeleteAccount(userId) {
     throw buildError(404, 'NOT_FOUND', 'User not found.');
   }
 
-<<<<<<< HEAD
     await Promise.all([
-=======
-  const outgoingRelations = await UserFollow.find({ followerUserId: userId }).select('followingUserId').lean();
-  const incomingRelations = await UserFollow.find({ followingUserId: userId }).select('followerUserId').lean();
-
-  if (outgoingRelations.length > 0 || incomingRelations.length > 0) {
-    await UserFollow.deleteMany({
-      $or: [
-        { followerUserId: userId },
-        { followingUserId: userId },
-      ],
-    });
-
-    const outgoingTargets = outgoingRelations.map((relation) => relation.followingUserId).filter(Boolean);
-    const incomingFollowers = incomingRelations.map((relation) => relation.followerUserId).filter(Boolean);
-
-    await Promise.all([
-      outgoingTargets.length > 0
-        ? User.updateMany({ _id: { $in: outgoingTargets } }, { $inc: { followersCount: -1 } })
-        : Promise.resolve(),
-      incomingFollowers.length > 0
-        ? User.updateMany({ _id: { $in: incomingFollowers } }, { $inc: { followingCount: -1 } })
-        : Promise.resolve(),
-    ]);
-  }
-
-  await Promise.all([
->>>>>>> 425049c (Feat(Share) Backend for public profile page)
     StudentProfile.deleteMany({ userId }),
     RefreshToken.deleteMany({ userId }),
     Notification.deleteMany({ userId }),

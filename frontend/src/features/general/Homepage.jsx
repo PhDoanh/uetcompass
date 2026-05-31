@@ -246,22 +246,22 @@ function toRgba(hex, alpha) {
     return streak;
   }
 
-  function dedupeRoadmapsByKey(items = []) {
-    const seen = new Set();
-    const uniqueItems = [];
+  // function dedupeRoadmapsByKey(items = []) {
+  //   const seen = new Set();
+  //   const uniqueItems = [];
 
-    items.forEach((item) => {
-      const roadmapKey = getRoadmapKey(item);
-      if (!roadmapKey || seen.has(roadmapKey)) {
-        return;
-      }
+  //   items.forEach((item) => {
+  //     const roadmapKey = getRoadmapKey(item);
+  //     if (!roadmapKey || seen.has(roadmapKey)) {
+  //       return;
+  //     }
 
-      seen.add(roadmapKey);
-      uniqueItems.push(item);
-    });
+  //     seen.add(roadmapKey);
+  //     uniqueItems.push(item);
+  //   });
 
-    return uniqueItems;
-  }
+  //   return uniqueItems;
+  // }
 
   function dedupeRoadmapsByRoadmapId(items = []) {
     const byId = new Map();
@@ -302,7 +302,6 @@ export default function Homepage() {
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
-  const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -680,42 +679,40 @@ export default function Homepage() {
     setShowOnboardingPanel(true);
   };
 
-  const handleOpenRoadmapCard = async (cardTitle) => {
-    const normalizedTitle = String(cardTitle || '').trim();
-    if (!normalizedTitle || typeof window === 'undefined') {
-      return;
-    }
+  // const handleOpenRoadmapCard = async (cardTitle) => {
+  //   const normalizedTitle = String(cardTitle || '').trim();
+  //   if (!normalizedTitle || typeof window === 'undefined') {
+  //     return;
+  //   }
 
-    setOpeningRoadmapTitle(normalizedTitle);
+  //   try {
+  //     const localMatch = publicRoadmaps.find(
+  //       (roadmap) => String(roadmap?.title || '').trim().toLowerCase() === normalizedTitle.toLowerCase()
+  //     );
 
-    try {
-      const localMatch = publicRoadmaps.find(
-        (roadmap) => String(roadmap?.title || '').trim().toLowerCase() === normalizedTitle.toLowerCase()
-      );
+  //     let matchedRoadmap = localMatch || null;
 
-      let matchedRoadmap = localMatch || null;
+  //     if (!matchedRoadmap) {
+  //       const searchResult = await manualRoadmapApi.listPublicManualRoadmaps({ q: normalizedTitle, page: 1, limit: 20 });
+  //       const items = Array.isArray(searchResult?.items) ? searchResult.items : [];
 
-      if (!matchedRoadmap) {
-        const searchResult = await manualRoadmapApi.listPublicManualRoadmaps({ q: normalizedTitle, page: 1, limit: 20 });
-        const items = Array.isArray(searchResult?.items) ? searchResult.items : [];
+  //       matchedRoadmap = items.find(
+  //         (roadmap) => String(roadmap?.title || '').trim().toLowerCase() === normalizedTitle.toLowerCase()
+  //       ) || items[0] || null;
+  //     }
 
-        matchedRoadmap = items.find(
-          (roadmap) => String(roadmap?.title || '').trim().toLowerCase() === normalizedTitle.toLowerCase()
-        ) || items[0] || null;
-      }
+  //     const roadmapId = String(matchedRoadmap?._id || '').trim();
+  //     if (!roadmapId) {
+  //       throw new Error('Không tìm thấy roadmap công khai phù hợp.');
+  //     }
 
-      const roadmapId = String(matchedRoadmap?._id || '').trim();
-      if (!roadmapId) {
-        throw new Error('Không tìm thấy roadmap công khai phù hợp.');
-      }
-
-      navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
-    } catch (_) {
-      addNotification('Không thể mở roadmap lúc này. Vui lòng thử lại sau.', 'error');
-    } finally {
-      setOpeningRoadmapTitle('');
-    }
-  };
+  //     navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+  //   } catch {
+  //     addNotification('Không thể mở roadmap lúc này. Vui lòng thử lại sau.', 'error');
+  //   } finally {
+  //     // No cleanup needed
+  //   }
+  // };
 
   const handleRequestDeleteManualRoadmap = (roadmapId, roadmapTitle) => {
     const normalizedId = String(roadmapId || '').trim();
@@ -726,40 +723,40 @@ export default function Homepage() {
     setPendingDeleteRoadmap({ id: normalizedId, title: roadmapTitle || 'này' });
   };
 
-  const handleShareManualRoadmap = useCallback(async (roadmapId) => {
-    const normalizedRoadmapId = String(roadmapId || '').trim();
-    if (!normalizedRoadmapId || !accessToken || typeof window === 'undefined') {
-      return;
-    }
+  // const handleShareManualRoadmap = useCallback(async (roadmapId) => {
+  //   const normalizedRoadmapId = String(roadmapId || '').trim();
+  //   if (!normalizedRoadmapId || !accessToken || typeof window === 'undefined') {
+  //     return;
+  //   }
 
-    setSharingManualRoadmapId(normalizedRoadmapId);
+  //   setSharingManualRoadmapId(normalizedRoadmapId);
 
-    try {
-      const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
-      setMyManualRoadmaps((current) => current.map((roadmap) => (
-        String(roadmap?._id || '').trim() === normalizedRoadmapId
-          ? {
-              ...roadmap,
-              ...updatedRoadmap,
-              shared: true,
-              isPublic: true,
-              status: 'published',
-              sharedAt: updatedRoadmap?.sharedAt || roadmap?.sharedAt || new Date().toISOString(),
-            }
-          : roadmap
-      )));
-      addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
-    } catch (err) {
-      if (err?.status === 401) {
-        await logoutAndRedirect();
-        return;
-      }
+  //   try {
+  //     const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
+  //     setMyManualRoadmaps((current) => current.map((roadmap) => (
+  //       String(roadmap?._id || '').trim() === normalizedRoadmapId
+  //         ? {
+  //             ...roadmap,
+  //             ...updatedRoadmap,
+  //             shared: true,
+  //             isPublic: true,
+  //             status: 'published',
+  //             sharedAt: updatedRoadmap?.sharedAt || roadmap?.sharedAt || new Date().toISOString(),
+  //           }
+  //         : roadmap
+  //     )));
+  //     addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
+  //   } catch (err) {
+  //     if (err?.status === 401) {
+  //       await logoutAndRedirect();
+  //       return;
+  //     }
 
-      addNotification(err?.message || 'Không thể bật chia sẻ cho roadmap này.', 'error');
-    } finally {
-      setSharingManualRoadmapId('');
-    }
-  }, [accessToken, addNotification, logoutAndRedirect]);
+  //     addNotification(err?.message || 'Không thể bật chia sẻ cho roadmap này.', 'error');
+  //   } finally {
+  //     setSharingManualRoadmapId('');
+  //   }
+  // }, [accessToken, addNotification, logoutAndRedirect]);
 
   const handleToggleShareManualRoadmap = useCallback(async (roadmapId, currentlyShared) => {
     const normalizedRoadmapId = String(roadmapId || '').trim();

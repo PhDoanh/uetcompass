@@ -36,7 +36,6 @@ function ReviewCard({ review }) {
 export default function ReviewCarousel({ visible = true }) {
 	const [items, setItems] = useState([]);
 	const [loading, setLoading] = useState(false);
-	const [isPaused, setIsPaused] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 	const [reduceMotion, setReduceMotion] = useState(false);
 	const forwardRowRef = useRef(null);
@@ -202,7 +201,6 @@ export default function ReviewCarousel({ visible = true }) {
 		velocityRef.current[type] = 0;
 		row.setPointerCapture(event.pointerId);
 		setIsDragging(true);
-		setIsPaused(true);
 	};
 
 	const handlePointerMove = (event, rowRef) => {
@@ -247,7 +245,6 @@ export default function ReviewCarousel({ visible = true }) {
 		isDraggingRef.current = false;
 		dragStateRef.current = { active: false, startX: 0, startScroll: 0, lastX: 0, lastTime: 0, pointerId: null, activeRow: null };
 		setIsDragging(false);
-		setIsPaused(false);
 	};
 
 	return (
@@ -268,10 +265,10 @@ export default function ReviewCarousel({ visible = true }) {
 					onPointerUp={(event) => handlePointerUp(event, forwardRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, forwardRowRef)}
 					onPointerLeave={(event) => handlePointerUp(event, forwardRowRef)}
-					onMouseEnter={() => { rowHoverRef.current.forward = true; setIsPaused(true); }}
-					onMouseLeave={() => { rowHoverRef.current.forward = false; setIsPaused(false); }}
-					onFocus={() => { rowHoverRef.current.forward = true; setIsPaused(true); }}
-					onBlur={() => { rowHoverRef.current.forward = false; setIsPaused(false); }}
+					onMouseEnter={() => { rowHoverRef.current.forward = true }}
+					onMouseLeave={() => { rowHoverRef.current.forward = false }}
+					onFocus={() => { rowHoverRef.current.forward = true }}
+					onBlur={() => { rowHoverRef.current.forward = false }}
 					aria-label="Hàng đánh giá số 1"
 					tabIndex={0}
 				>
@@ -290,10 +287,10 @@ export default function ReviewCarousel({ visible = true }) {
 					onPointerUp={(event) => handlePointerUp(event, reverseRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, reverseRowRef)}
 					onPointerLeave={(event) => handlePointerUp(event, reverseRowRef)}
-					onMouseEnter={() => { rowHoverRef.current.reverse = true; setIsPaused(true); }}
-					onMouseLeave={() => { rowHoverRef.current.reverse = false; setIsPaused(false); }}
-					onFocus={() => { rowHoverRef.current.reverse = true; setIsPaused(true); }}
-					onBlur={() => { rowHoverRef.current.reverse = false; setIsPaused(false); }}
+					onMouseEnter={() => { rowHoverRef.current.reverse = true }}
+					onMouseLeave={() => { rowHoverRef.current.reverse = false }}
+					onFocus={() => { rowHoverRef.current.reverse = true }}
+					onBlur={() => { rowHoverRef.current.reverse = false }}
 					aria-label="Hàng đánh giá số 2"
 					tabIndex={0}
 				>

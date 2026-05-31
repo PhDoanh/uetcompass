@@ -23,7 +23,7 @@
 
 .auth-card {
   width: min(440px, calc(100vw - 24px));
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--auth-outline);
   background: var(--auth-surface);
   box-shadow: var(--auth-card-shadow);
@@ -54,9 +54,9 @@
 }
 
 .auth-brand-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
+  width: var(--avatar-size-md);
+  height: var(--avatar-size-md);
+  border-radius: var(--radius-pill);
   display: inline-grid;
   place-items: center;
   margin-bottom: 0.9rem;
@@ -84,7 +84,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border-top: 1px solid color-mix(in srgb, var(--border-1) 60%, transparent);
     border-bottom: 1px solid color-mix(in srgb, var(--border-1) 60%, transparent);
-  padding: 0 1.7rem;
+  padding: 0 var(--space-lg);
 }
 
 .auth-tab {
@@ -187,9 +187,9 @@
   top: 50%;
   right: 8px;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
+  width: var(--control-height-xs);
+  height: var(--control-height-xs);
+  border-radius: var(--radius-pill);
   border: 0;
     background: transparent;
     color: var(--text-3);
@@ -204,13 +204,13 @@
 }
 
 .auth-eye-icon {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
 }
 
 .auth-button {
-  min-height: 46px;
-  border-radius: 10px;
+  min-height: var(--control-height-md);
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
   font-size: 0.9rem;
@@ -494,14 +494,20 @@
 }
 
 .auth-modal-shell {
-  width: min(460px, calc(100vw - 16px));
+  width: min(440px, calc(100vw - 24px));
   position: relative;
+  background: transparent;
 }
 
 .auth-modal-shell .auth-shell {
   min-height: auto;
     padding: 0;
   background: transparent;
+}
+
+.auth-modal-shell .auth-card {
+  width: 100%;
+  border: 0;
 }
 
 .auth-modal-close {
@@ -512,11 +518,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--control-height-2xs);
+  height: var(--control-height-2xs);
   padding: 0;
   line-height: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--border-1) 60%, transparent);
     background: color-mix(in srgb, var(--surface-2) 70%, transparent);
     color: var(--text-2);
@@ -524,8 +530,8 @@
 }
 
 .auth-modal-close svg {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
 }
 
 .auth-modal-close:hover {
@@ -562,4 +568,8 @@ html[data-theme='dark'] .auth-otp-grid input:focus {
 
 html[data-theme='dark'] .auth-modal-overlay {
   background: var(--overlay-scrim);
+}
+
+html[data-theme='dark'] .auth-modal-shell {
+  background: transparent !important;
 }

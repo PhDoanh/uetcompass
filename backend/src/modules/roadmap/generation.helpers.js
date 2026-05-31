@@ -109,7 +109,6 @@ function buildNodesTopologically(approvedSkills, candidateSkillsMap, allCourseUn
 	}
 
 	// Collect approved skills with their rank = max topological position of related courses
-	const approvedSet = new Set(approvedSkills.map((s) => s.skillName));
 	const skillEntries = [];
 
 	for (const { skillName, reason } of approvedSkills) {

@@ -5,6 +5,7 @@
 
 const LearningResource = require('../models/learningResource.model');
 const curationPipeline = require('../services/curationPipeline.service');
+const skillService = require('../../skill/skill.service');
 
 /**
  * GET /api/resources/skills/:skillName
@@ -13,6 +14,16 @@ const curationPipeline = require('../services/curationPipeline.service');
 async function getResourcesBySkillName(req, res) {
   try {
     const { skillName } = req.params;
+
+    const curated = await skillService.getLearningResourcesBySkill(skillName);
+    if (curated.resources.free.length > 0 || curated.relatedJobs.length > 0) {
+      return res.json({
+        skillName,
+        resourceCount: curated.resources.free.length,
+        resources: curated.resources.free,
+        relatedJobs: curated.relatedJobs,
+      });
+    }
 
     // Find resources, sorted by quality signal descending
     const resources = await LearningResource
@@ -55,11 +66,19 @@ async function getResourcesBySkillName(req, res) {
  */
 async function triggerCurationFromRoadmap(req, res) {
   try {
-    const { nodes, studentProfileId = null, sourceFeature = '009-roadmap-generator' } = req.body || {};
+    const {
+      nodes,
+      force = false,
+      includeResources = true,
+      includeJobs = true,
+      sourceFeature = 'manual-resource-curation',
+    } = req.body || {};
 
     const pipelineResult = await curationPipeline.runTriggeredPipeline({
       nodes,
-      studentProfileId
+      force: force === true,
+      includeResources: includeResources !== false,
+      includeJobs: includeJobs !== false,
     });
 
     return res.status(200).json({

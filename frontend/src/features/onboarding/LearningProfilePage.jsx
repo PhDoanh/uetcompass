@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera } from 'lucide-react';
+import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera, Calendar } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import accountApi from '../../services/account.api';
 import { retryRoadmapGeneration } from '../../services/roadmap.api';
@@ -8,8 +8,10 @@ import { getCourseCatalog } from '../../services/onboarding.api';
 import { useNotification } from '../notification/NotificationContainer';
 import SiteFooter from '../general/SiteFooter';
 import { validateProfilePayload } from '../account/accountSettings.validation';
+import { navigateTo } from '../../shared/navigation';
 import './onboarding-panel.css';
 import '../account/account-settings-page.css';
+import DatePicker from '../../shared/DatePicker';
 
 const AVATAR_MAX_DIMENSION = 512;
 const AVATAR_MAX_BYTES = 350 * 1024;
@@ -159,7 +161,6 @@ export default function LearningProfilePage() {
 		avatarUrl: '',
 	});
 	const [imageError, setImageError] = useState('');
-	const [avatarBroken, setAvatarBroken] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [regenerating, setRegenerating] = useState(false);
@@ -206,7 +207,7 @@ export default function LearningProfilePage() {
 					: ''
 			);
 			setIdentity((prev) => ({ ...prev, avatarUrl: dataUrl }));
-		} catch (_) {
+		} catch {
 			setImageError('Failed to import image');
 		}
 	}
@@ -390,8 +391,8 @@ export default function LearningProfilePage() {
 
 				if (isMounted) {
 					const identityPayload = profilePayload?.identity || {};
-					setAvatarBroken(false);
 					setIdentity({
+						userId: String(identityPayload.userId || profilePayload?.userId || '').trim(),
 						email: String(identityPayload.email || '').trim(),
 						displayName: String(identityPayload.displayName || identityPayload.fullName || 'Sinh viên UET').trim(),
 						fullName: String(identityPayload.fullName || '').trim(),
@@ -588,8 +589,7 @@ export default function LearningProfilePage() {
 										</div>
 										<div className="learning-field">
 											<label htmlFor="timeline" className="learning-label">Dự kiến tốt nghiệp</label>
-											<input
-												type="date"
+											<DatePicker
 												id="timeline"
 												value={form?.careerGoal?.graduationTimeline || ''}
 												onChange={(event) =>
@@ -602,6 +602,8 @@ export default function LearningProfilePage() {
 													})
 												}
 												className="learning-input"
+												popperClassName="onboarding-datepicker-popper"
+												calendarClassName="onboarding-datepicker-calendar"
 											/>
 										</div>
 									</div>
@@ -657,7 +659,6 @@ export default function LearningProfilePage() {
 
 						<footer className="learning-profile-footer">
 							<div className="learning-profile-footer-left">
-								{hasChanges ? <span className="learning-profile-change-hint">Khi thông tin thay đổi</span> : null}
 							</div>
 							<div className="learning-profile-footer-center">
 								{hasChanges ? (
@@ -666,6 +667,9 @@ export default function LearningProfilePage() {
 										{saving ? 'Đang lưu...' : 'Lưu thông tin'}
 									</button>
 								) : null}
+								<button type="button" className="secondary-btn" onClick={() => navigateTo(identity?.userId ? `/public-profile/${identity.userId}` : '/public-profile')}>
+									Xem trang cá nhân công khai
+								</button>
 								{showRegenRoadmap ? (
 									<button type="button" className="secondary-btn" onClick={handleRegenRoadmap} disabled={regenerating}>
 										<Sparkles size={17} />

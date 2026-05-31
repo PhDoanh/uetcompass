@@ -66,7 +66,7 @@ export function useSkillTree() {
       hiddenRetryLastAtRef.current = Date.now();
       setRepersonalizing(true);
       await retryRoadmapGeneration(authTokenRef.current);
-    } catch (_) {
+    } catch {
       // Ignore CONFLICT/other transient errors; polling loop keeps trying in background.
     } finally {
       hiddenRetryInFlightRef.current = false;
@@ -115,7 +115,7 @@ export function useSkillTree() {
         hiddenRetryLastAtRef.current = Date.now();
         setRepersonalizing(true);
         await retryRoadmapGeneration(authTokenRef.current);
-      } catch (_) {
+      } catch {
         // Keep status visible; another hidden retry attempt will be scheduled later.
         setRepersonalizing(false);
       } finally {

@@ -3,20 +3,17 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import * as skillTreeApi from '../../services/skillTree.api';
 import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../notification/NotificationContainer';
-import { navigateTo } from '../../shared/navigation';
+import { Copy } from 'lucide-react';
 import './skill-tree.css';
 import { useSplitLayout } from './useSplitLayout';
 import ReviewTab from './ReviewTab';
-import MilestoneCelebrationModal from './MilestoneCelebrationModal';
 import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import SkillTreeDetailPanel, {
   SkillTreeOverviewTab,
   SkillTreeNodeDetailTab,
   calculateProgress,
-  buildFixedMilestones,
 } from './SkillTreeDetailPanel';
 
 const ROADMAP_EDITOR_PREFILL_STORAGE_KEY = 'manualRoadmap.editorPrefill';
@@ -31,40 +28,6 @@ function normalizeNodeState(state) {
     return normalized;
   }
   return 'pending';
-}
-
-function buildNodeStatesFromProgress(progressState, nodes = []) {
-  const next = {};
-  const pending = new Set(progressState?.pending || []);
-  const inProgress = new Set(progressState?.inProgress || []);
-  const completed = new Set(progressState?.completed || []);
-  const skip = new Set(progressState?.skip || []);
-
-  nodes.forEach((node) => {
-    const nodeId = node.nodeId;
-    if (!nodeId) {
-      return;
-    }
-    if (completed.has(nodeId)) {
-      next[nodeId] = 'completed';
-      return;
-    }
-    if (inProgress.has(nodeId)) {
-      next[nodeId] = 'inProgress';
-      return;
-    }
-    if (skip.has(nodeId)) {
-      next[nodeId] = 'skip';
-      return;
-    }
-    if (pending.has(nodeId)) {
-      next[nodeId] = 'pending';
-      return;
-    }
-    next[nodeId] = normalizeNodeState(node.status);
-  });
-
-  return next;
 }
 
 function normalizePreviewNodes(nodes = []) {
@@ -84,6 +47,10 @@ function normalizePreviewNodes(nodes = []) {
       const prerequisites = Array.isArray(node?.prerequisites)
         ? node.prerequisites.map((id) => String(id || '').trim()).filter(Boolean)
         : (parentNodeId ? [parentNodeId] : []);
+      const rawType = String(node?.type || '').trim();
+      const type = parentNodeId
+        ? (rawType === 'choice_item' ? 'choice_item' : 'sub_topic')
+        : (rawType || 'main_topic');
 
       return {
         nodeId,
@@ -91,7 +58,7 @@ function normalizePreviewNodes(nodes = []) {
         description: String(node?.description || node?.reason || '').trim(),
         parent: parentNodeId || undefined,
         parentNodeId: parentNodeId || undefined,
-        type: String(node?.type || '').trim() || (parentNodeId ? 'sub_topic' : 'main_topic'),
+        type,
         prerequisites,
         status: String(node?.status || 'pending').trim() || 'pending',
         resources: Array.isArray(node?.resources) ? node.resources : [],
@@ -123,8 +90,23 @@ function normalizePreviewNodes(nodes = []) {
   return [...rootNodes, ...childNodes];
 }
 
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function buildPublicSkillTreeHref(roadmapId) {
+  const normalizedRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
+  return normalizedRoadmapId ? `/skill-tree/${normalizedRoadmapId}` : '/skill-tree';
+}
+
+function isManualRoadmapShared(roadmap) {
+  return Boolean(roadmap?.shared || roadmap?.isPublic || roadmap?.sharedAt || roadmap?.status === 'published');
+}
+
 export default function PublicSkillTreePage({ roadmapId = '' }) {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);
@@ -135,6 +117,8 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const [nodeStates, setNodeStates] = useState({});
   const [activeTab, setActiveTab] = useState('overview');
   const [focusNodeId, setFocusNodeId] = useState('');
+  const [isTogglingShare, setIsTogglingShare] = useState(false);
+  const [isCopyingShareLink, setIsCopyingShareLink] = useState(false);
 
   const normalizedNodes = useMemo(() => normalizePreviewNodes(previewData?.nodes || []), [previewData]);
   const previewEdges = useMemo(() => (Array.isArray(previewData?.edges) ? previewData.edges : []), [previewData]);
@@ -150,6 +134,21 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [activeNodeId, nodesForRender]
   );
   const normalizedRoadmapId = useMemo(() => String(roadmapId || '').trim(), [roadmapId]);
+  const isOwner = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('mine') === '1';
+
+  // Fire any cross-page notification stored before navigation (e.g. after revert)
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem('skillTree.pendingNotification');
+      if (raw) {
+        window.sessionStorage.removeItem('skillTree.pendingNotification');
+        const { message, type } = JSON.parse(raw);
+        if (message) addNotification(message, type || 'success');
+      }
+    } catch (_) {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (activeNode) {
@@ -173,7 +172,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   const {
     layoutRef,
     ratio,
-    isCompactLayout,
     minRatio,
     maxRatio,
     handleResizePointerDown,
@@ -185,16 +183,163 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     [nodesForRender]
   );
 
-  const milestones = useMemo(() => buildFixedMilestones(), []);
+  const progressStats = useMemo(() => {
+    const totalNodes = nodesForRender.length;
+    const doneNodes = nodesForRender.filter((node) => node.status === 'completed').length;
+    const inProgressNodes = nodesForRender.filter((node) => node.status === 'inProgress').length;
+    const pendingNodes = Math.max(0, totalNodes - doneNodes - inProgressNodes);
+    const startDate = previewData?.sharedAt || previewData?.createdAt || null;
+
+    const start = startDate ? new Date(startDate) : null;
+    if (start) {
+      start.setHours(0, 0, 0, 0);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const learnedDays = start
+      ? Math.max(0, Math.floor((today - start) / (24 * 60 * 60 * 1000)))
+      : 0;
+    const nodesPerDay = learnedDays > 0 ? inProgressNodes / learnedDays : 0;
+    const estimatedCompletionDate = nodesPerDay > 0
+      ? addDays(today, Math.ceil(pendingNodes / nodesPerDay))
+      : null;
+
+    return {
+      totalNodes,
+      doneNodes,
+      inProgressNodes,
+      pendingNodes,
+      nodesPerDay,
+      startDate,
+      estimatedCompletionDate,
+    };
+  }, [nodesForRender, previewData]);
 
   const sharedAtLabel = previewData?.sharedAt
     ? new Date(previewData.sharedAt).toLocaleString()
     : 'Chưa có';
 
+  const isShared = useMemo(
+    () => isManualRoadmapShared(previewData),
+    [previewData]
+  );
+
+  const handleToggleShareRoadmap = useCallback(async () => {
+    if (!accessToken || !normalizedRoadmapId || isTogglingShare) {
+      return;
+    }
+
+    setIsTogglingShare(true);
+
+    try {
+      if (isShared) {
+        await manualRoadmapApi.unshareManualRoadmap(accessToken, normalizedRoadmapId);
+        setPreviewData((current) => ({
+          ...(current || {}),
+          shared: false,
+          isPublic: false,
+          status: 'draft',
+          sharedAt: null,
+        }));
+        addNotification('Đã tắt chia sẻ cho manual roadmap.', 'success');
+      } else {
+        const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
+        setPreviewData((current) => ({
+          ...(current || {}),
+          ...(updatedRoadmap || {}),
+          shared: true,
+          isPublic: true,
+          status: 'published',
+          sharedAt: updatedRoadmap?.sharedAt || current?.sharedAt || new Date().toISOString(),
+        }));
+        addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
+      }
+    } catch (error) {
+      if (error?.status === 401) {
+        await window.location.assign('/login');
+        return;
+      }
+
+      addNotification(error?.message || 'Không thể thay đổi trạng thái chia sẻ cho roadmap này.', 'error');
+    } finally {
+      setIsTogglingShare(false);
+    }
+  }, [accessToken, addNotification, isShared, isTogglingShare, normalizedRoadmapId]);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!isShared || typeof window === 'undefined') {
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}${buildPublicSkillTreeHref(normalizedRoadmapId)}`;
+    setIsCopyingShareLink(true);
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.setAttribute('readonly', 'true');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      addNotification('Đã sao chép link manual roadmap.', 'success');
+    } catch (error) {
+      addNotification(error?.message || 'Không thể sao chép link lúc này.', 'error');
+    } finally {
+      setIsCopyingShareLink(false);
+    }
+  }, [addNotification, isShared, normalizedRoadmapId]);
+
   const overviewMetaItems = useMemo(() => ([
     { label: 'Ngày chia sẻ', value: sharedAtLabel },
     { label: 'Số node', value: nodesForRender.length ? `${nodesForRender.length}` : '0' },
   ]), [sharedAtLabel, nodesForRender.length]);
+
+  const headerActions = (
+    <div className="homepage-roadmap-card__share skill-tree-panel__share">
+      <div className="homepage-roadmap-card__share-row">
+        <div className="homepage-roadmap-card__share-meta">
+          <span className="homepage-roadmap-card__share-label">Chia sẻ</span>
+          <span className="homepage-roadmap-card__share-state">
+            {isShared ? 'Đang mở công khai' : 'Chỉ mình bạn xem'}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isShared}
+          aria-label="Chia sẻ roadmap"
+          className={`homepage-roadmap-share-toggle${isShared ? ' is-on' : ''}`}
+          onClick={handleToggleShareRoadmap}
+          aria-busy={isTogglingShare}
+          disabled={!accessToken}
+        >
+          <span className="homepage-roadmap-share-toggle__thumb" />
+        </button>
+      </div>
+
+      {isShared ? (
+        <button
+          type="button"
+          className="homepage-roadmap-share-copy"
+          onClick={handleCopyShareLink}
+          disabled={isCopyingShareLink}
+        >
+          <Copy size={14} aria-hidden="true" />
+          <span>{isCopyingShareLink ? 'Đang sao chép...' : 'Sao chép link'}</span>
+        </button>
+      ) : null}
+    </div>
+  );
 
   const overviewActions = (
     <>
@@ -205,6 +350,15 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       >
         Chỉnh sửa Roadmap
       </button>
+      {isOwner && (
+        <button
+          type="button"
+          className="skill-tree-back-button"
+          onClick={() => window.location.assign(`/manual-roadmap/versions?id=${encodeURIComponent(normalizedRoadmapId)}`)}
+        >
+          Lịch sử
+        </button>
+      )}
       <button
         type="button"
         className="skill-tree-back-button"
@@ -214,10 +368,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       </button>
     </>
   );
-
-  const applyProgressState = useCallback((progressState) => {
-    setNodeStates(buildNodeStatesFromProgress(progressState, normalizedNodes));
-  }, [normalizedNodes]);
 
   const handleNodeTransition = useCallback(async (node, toState) => {
     if (!node?.nodeId) {
@@ -229,40 +379,11 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       return;
     }
 
-    if (!accessToken) {
-      setNodeStates((prev) => ({
-        ...prev,
-        [node.nodeId]: toState,
-      }));
-      return;
-    }
-
-    try {
-      const updated = await skillTreeApi.patchNodeStatus(
-        accessToken,
-        normalizedRoadmapId,
-        node.nodeId,
-        fromState,
-        toState
-      );
-
-      if (updated?.state) {
-        applyProgressState(updated.state);
-      } else {
-        setNodeStates((prev) => ({
-          ...prev,
-          [node.nodeId]: toState,
-        }));
-      }
-    } catch (error) {
-      if (error?.code === 'ROADMAP_NOT_FOUND') {
-        addNotification('Roadmap thủ công chưa được đồng bộ để lưu tiến độ. Hãy hoàn tất onboarding rồi thử lại.', 'warning');
-        return;
-      }
-
-      addNotification(error?.message || 'Không thể cập nhật tiến độ roadmap.', 'error');
-    }
-  }, [accessToken, addNotification, applyProgressState, nodeStates, normalizedRoadmapId]);
+    setNodeStates((prev) => ({
+      ...prev,
+      [node.nodeId]: toState,
+    }));
+  }, [nodeStates]);
 
   const handleRightClickToggle = useCallback((nodeId) => {
     const target = nodesForRender.find((node) => node.nodeId === nodeId);
@@ -283,7 +404,8 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           title={previewData?.title || 'Roadmap'}
           description={previewData?.description || 'Chưa có mô tả.'}
           metaItems={overviewMetaItems}
-          progressVariant="fixed"
+          progress={progressSummary}
+          progressStats={progressStats}
           actions={overviewActions}
         />
       ),
@@ -328,6 +450,11 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
   function handleOpenInEditor() {
     if (!isAuthenticated) {
       addNotification('Vui lòng đăng nhập để chỉnh sửa roadmap.', 'warning');
+      return;
+    }
+
+    if (isOwner) {
+      window.location.assign(`/manual-roadmap?id=${encodeURIComponent(normalizedRoadmapId)}`);
       return;
     }
 
@@ -403,38 +530,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     setNodeStates(initialStates);
     setActiveNodeId('');
   }, [normalizedNodes]);
-
-  useEffect(() => {
-    if (!accessToken || !normalizedRoadmapId || normalizedNodes.length === 0) {
-      return undefined;
-    }
-
-    let isActive = true;
-
-    (async () => {
-      try {
-        const progress = await skillTreeApi.getRoadmapProgress(accessToken, normalizedRoadmapId);
-        if (!isActive) {
-          return;
-        }
-
-        if (progress?.state) {
-          applyProgressState(progress.state);
-        }
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-        if (error?.code === 'ROADMAP_NOT_FOUND') {
-          return;
-        }
-      }
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [accessToken, applyProgressState, normalizedNodes, normalizedRoadmapId]);
 
   useEffect(() => {
     if (!focusNodeId || normalizedNodes.length === 0) {
@@ -557,6 +652,7 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
           tabs={detailTabs}
           activeTabId={activeTab}
           onTabChange={setActiveTab}
+          headerActions={headerActions}
         />
       </div>
     </div>

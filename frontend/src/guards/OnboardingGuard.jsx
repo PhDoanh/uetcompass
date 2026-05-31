@@ -5,6 +5,10 @@ import { navigateTo } from '../shared/navigation';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
 
+function isInvalidSessionError(error) {
+	return error?.status === 401 || (error?.status === 403 && error?.code === 'FORBIDDEN');
+}
+
 export default function OnboardingGuard({ children }) {
 	const { accessToken, onboardingState, updateAuthInfo, logoutAndRedirect } = useAuth();
 	const [resolvedCompleted, setResolvedCompleted] = useState(onboardingState === 'COMPLETED');
@@ -66,7 +70,7 @@ export default function OnboardingGuard({ children }) {
 					return;
 				}
 
-				if (error?.status === 401) {
+				if (isInvalidSessionError(error)) {
 					logoutAndRedirect?.();
 					return;
 				}

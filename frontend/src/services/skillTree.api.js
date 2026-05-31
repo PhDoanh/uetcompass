@@ -108,6 +108,14 @@ export async function getLearningResources(authToken, skillName) {
   });
 }
 
+export async function curateResources(authToken, options = {}) {
+  return request('/skill-tree/resources/curate', {
+    method: 'POST',
+    headers: createHeaders(authToken),
+    body: JSON.stringify(options),
+  });
+}
+
 // Backward-compatible aliases for older call sites.
 export const getNodeResources = getResources;
 export const getNodeWhy = getWhyCourse;
@@ -136,6 +144,7 @@ const skillTreeApi = {
   getWhyCourse,
   getMarketSkills,
   getLearningResources,
+  curateResources,
   getNodeResources,
   getNodeWhy,
   getNodeMarketSkills,

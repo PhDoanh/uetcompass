@@ -45,14 +45,6 @@ function dispatchOpenRoadmapSearchOverlay() {
   window.dispatchEvent(new CustomEvent('roadmap-search-overlay-open'));
 }
 
-function navigateToPath(path) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.location.assign(path);
-}
-
 function navigateToHomeSection(sectionId) {
   if (typeof window === 'undefined') {
     return;
@@ -84,6 +76,10 @@ function scrollToMyRoadmapsSection() {
   target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   window.history.replaceState(null, '', '/#my-roadmaps');
   return true;
+}
+
+function isInvalidSessionError(error) {
+  return error?.status === 401 || (error?.status === 403 && error?.code === 'FORBIDDEN');
 }
 
 export default function NavBar() {
@@ -186,7 +182,7 @@ export default function NavBar() {
           updateAuthInfo?.({ onboardingState: resolvedState });
         }
       } catch (error) {
-        if (error?.status === 401) {
+        if (isInvalidSessionError(error)) {
           logoutAndRedirect?.();
           return;
         }
@@ -264,12 +260,16 @@ export default function NavBar() {
         const result = await accountApi.getProfile(accessToken);
         const next = getAvatarState(result?.identity || {});
         if (isMounted) {
-          setAvatarUrl(next.avatarUrl);
+          setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
           setAvatarFallback(next.avatarFallback);
         }
-      } catch {
+      } catch (error) {
+        if (isInvalidSessionError(error)) {
+          logoutAndRedirect?.();
+          return;
+        }
+
         if (isMounted) {
-          setAvatarUrl('');
           setAvatarFallback('U');
         }
       }
@@ -277,7 +277,7 @@ export default function NavBar() {
 
     function handleProfileUpdated(event) {
       const next = getAvatarState(event?.detail?.profile || {});
-      setAvatarUrl(next.avatarUrl);
+      setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
       setAvatarFallback(next.avatarFallback);
     }
 
@@ -307,6 +307,11 @@ export default function NavBar() {
         label: 'Lộ trình cộng đồng',
         onClick: () => navigateToHomeSection('roadmap-community'),
       },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateToPath('/job-market'),
+      },
     ]
     : [
       {
@@ -323,6 +328,11 @@ export default function NavBar() {
         key: 'how-it-works',
         label: 'Cách hoạt động',
         onClick: () => navigateToHomeSection('system-flow'),
+      },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateToPath('/job-market'),
       },
     ];
 

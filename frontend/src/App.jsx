@@ -29,9 +29,12 @@ const AccountSettingsPage = lazy(() => import('./features/account/AccountSetting
 const Homepage = lazy(() => import('./features/general/Homepage'));
 const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel'));
 const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
+const PublicProfilePage = lazy(() => import('./features/public-profile/PublicProfilePage'));
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
+const RoadmapVersionHistoryPage = lazy(() => import('./features/manual-roadmap/RoadmapVersionHistoryPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
+const JobMarketPage = lazy(() => import('./features/job-market/JobMarketPage'));
 
 function shouldUseReducedMotion() {
 	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -89,10 +92,13 @@ function AppContent() {
 	const routeKey = toRouteKey(routeState);
 	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
+	const publicProfileMatch = pathname.match(/^\/public-profile\/([^/]+)$/);
+	const publicProfileUserId = publicProfileMatch ? decodeURIComponent(publicProfileMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement', '/job-market'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
+		Boolean(publicProfileUserId) ||
 		pathname.startsWith('/roadmaps/public/');
 
 	usePrefetch();
@@ -306,6 +312,14 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/job-market') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<JobMarketPage />
+			</main>
+		);
+	}
+
 	if (!content && pathname === '/manual-roadmap') {
 		content = (
 			<AuthGuard>
@@ -366,6 +380,14 @@ function AppContent() {
 				</OnboardingGuard>
 			</AuthGuard>
 		);
+	}
+
+	if (!content && publicProfileUserId) {
+		content = <PublicProfilePage userId={publicProfileUserId} />;
+	}
+
+	if (!content && pathname === '/public-profile') {
+		content = <PublicProfilePage />;
 	}
 
 	if (!content && isAuthPopupPath) {

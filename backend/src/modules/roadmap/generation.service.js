@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-const roadmapValidation = require('./roadmapValidation.service');
+// const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
@@ -13,7 +13,6 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const {
 	toKebabCase,
 	uniqueNodeId,
-	sortCourseUnitsTopologically,
 	buildCandidateSkills,
 	buildNodesTopologically,
 } = require('./generation.helpers');
@@ -95,8 +94,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 			if (personalisationLevel === 'full') {
 				// Identify course skills NOT already in the template (compare by nodeId)
-				const templateNodeIds = new Set(templateNodes.map((n) => n.nodeId));
-				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
+				// const offTemplateSkills = candidateSkills.filter((c) => !templateNodes.some((n) => n.nodeId === toKebabCase(c.skillName)));
 
 				// AI evaluates relevance of off-template skills to the career goal
 				const approvedExtras = []; //await evaluateOffTemplateSkills(offTemplateSkills, profile);

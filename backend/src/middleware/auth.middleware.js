@@ -9,7 +9,7 @@ function requireAuth(req, res, next) {
 		try {
 			const payload = verifyAccessToken(bearerToken);
 			userId = String(payload?.userId || '').trim();
-		} catch (_) {
+		} catch {
 			return res.status(401).json({
 				error: {
 					code: 'UNAUTHORIZED',

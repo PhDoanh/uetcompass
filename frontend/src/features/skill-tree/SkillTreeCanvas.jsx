@@ -22,7 +22,6 @@ function getRowWidth(topicCount) {
 
 export default function SkillTreeCanvas({
   nodes = [],
-  edges = [],
   onSelectNode = () => {},
   onToggleNodeStatus = () => {},
 }) {

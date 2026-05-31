@@ -31,7 +31,7 @@ function parseSalaryRange(snippet) {
     }
 
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

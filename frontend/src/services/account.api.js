@@ -42,6 +42,27 @@ export function getProfile(token) {
   return requestAuthed('/account/profile', token, { method: 'GET' });
 }
 
+export function getPublicProfile(userId, token = '') {
+  const safeUserId = String(userId || '').trim();
+  return requestAuthed(`/account/public/${encodeURIComponent(safeUserId)}`, token, {
+    method: 'GET',
+  });
+}
+
+export function followPublicProfile(token, userId) {
+  const safeUserId = String(userId || '').trim();
+  return requestAuthed(`/account/public/${encodeURIComponent(safeUserId)}/follow`, token, {
+    method: 'POST',
+  });
+}
+
+export function unfollowPublicProfile(token, userId) {
+  const safeUserId = String(userId || '').trim();
+  return requestAuthed(`/account/public/${encodeURIComponent(safeUserId)}/unfollow`, token, {
+    method: 'POST',
+  });
+}
+
 export function updateProfile(token, payload) {
   return requestAuthed('/account/profile', token, {
     method: 'PATCH',
@@ -64,6 +85,9 @@ export function deleteAccount(token) {
 
 export default {
   getProfile,
+  getPublicProfile,
+  followPublicProfile,
+  unfollowPublicProfile,
   updateProfile,
   changePassword,
   deleteAccount,

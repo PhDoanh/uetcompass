@@ -4,7 +4,7 @@ const { User } = require('./user.model');
 const { RefreshToken } = require('./refreshToken.model');
 const { sendResetOtpEmail } = require('./auth.email');
 const { emitAuthEvent } = require('./audit.service');
-const { enforceOtpResendPolicy, hashRefreshToken } = require('./token.service');
+const { enforceOtpResendPolicy } = require('./token.service');
 
 const PASSWORD_HASH_ROUNDS = 12;
 const RESET_OTP_EXPIRY_MS = 2 * 60 * 1000;
@@ -83,7 +83,7 @@ async function requestPasswordReset({ email, requestIp }) {
       outcome: 'success',
       metadata: { flowType: 'forgot_password', email: normalizedEmail },
     });
-  } catch (_) {
+  } catch {
     // Ignore audit emission failures.
   }
 
@@ -124,7 +124,7 @@ async function verifyResetOtp({ email, otp }) {
         outcome: 'fail',
         metadata: { flowType: 'forgot_password', reason: 'otp_mismatch' },
       });
-    } catch (_) {
+    } catch {
       // Ignore audit emission failures.
     }
 
@@ -209,7 +209,7 @@ async function resetPasswordWithToken({ resetToken, newPassword, currentSessionI
       outcome: 'success',
       metadata: {},
     });
-  } catch (_) {
+  } catch {
     // Ignore audit emission failures.
   }
 

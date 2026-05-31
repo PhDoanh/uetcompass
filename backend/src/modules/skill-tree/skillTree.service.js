@@ -4,6 +4,7 @@ const roadmapHistoryService = require('../roadmap/roadmapHistory.service');
 const roadmapService = require('../roadmap/roadmap.service');
 const previewStore = require('../roadmap/roadmap.preview.store');
 const { isGenerating } = require('../roadmap/generation.service');
+const skillService = require('../skill/skill.service');
 
 /**
  * Contract-first Skill Tree service.
@@ -43,6 +44,8 @@ async function getSkillTree(studentId) {
         };
       }
     }
+
+    effectiveNodes = await skillService.hydrateNodesWithSkillCuration(effectiveNodes);
 
     let progressState = buildDefaultProgressState(effectiveNodes);
     if (roadmap.acceptedAt) {
@@ -113,13 +116,6 @@ async function updateNodeState(studentId, roadmapId, { nodeId, fromState, toStat
       await progressService.refreshCache(studentId, roadmapId);
     } catch (err) {
       console.error('[progress] refreshCache failed:', err.message);
-    }
-
-    try {
-      const progressTrackingService = require('../progress/progress.tracking.service');
-      await progressTrackingService.updateNodeActivity(studentId, roadmapId, nodeId, toState);
-    } catch (err) {
-      console.error('[progress] updateNodeActivity failed:', err.message);
     }
 
     return {

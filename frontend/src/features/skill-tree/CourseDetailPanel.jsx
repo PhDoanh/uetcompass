@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { getNextTransitionOptions } from './skillTree.types';
 import ReviewTab from './ReviewTab';
+import NodeResourcesList from './NodeResourcesList';
 
 function toLabel(state) {
   if (state === 'inProgress') return 'In Progress';
@@ -85,20 +86,7 @@ export default function CourseDetailPanel({
           {node.reason ? <p className="why-tab__content">{node.reason}</p> : <p className="skill-tree-muted-text">No reason available</p>}
         </section>
 
-        <section className="resources-tab__section">
-          <h4 className="resources-tab__heading">Resources</h4>
-          {(node.resources || []).length === 0 ? (
-            <p className="skill-tree-muted-text">No resources available</p>
-          ) : (
-            <ul className="resources-tab__list">
-              {(node.resources || []).map((resource, idx) => (
-                <li key={`resource-${idx}`} className="resources-tab__item">
-                  <pre className="skill-tree-json-preview">{JSON.stringify(resource, null, 2)}</pre>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <NodeResourcesList resources={node.resources || []} relatedJobs={node.relatedJobs || []} />
 
         <section className="resources-tab__section">
           <h4 className="resources-tab__heading">Related Courses</h4>

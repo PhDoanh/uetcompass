@@ -14,7 +14,7 @@ function sanitizeOnboardingDraft(draft) {
   };
 }
 
-function decidePostLoginRoute(onboardingState) {
+function decidePostLoginRoute() {
   return '/';
 }
 

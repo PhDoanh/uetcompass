@@ -312,7 +312,7 @@ async function getCourseCatalog() {
 		requiredLinkByProgramId.set(programId, url);
 	}
 
-	for (const [programId, majorName] of programById.entries()) {
+	for (const [programId] of programById.entries()) {
 		requiredCourseLinks[programId] = requiredLinkByProgramId.get(programId) || null;
 	}
 

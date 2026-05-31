@@ -1,0 +1,1041 @@
+{
+  "userId": "",
+  "studentProfileId": "",
+  "isPrimary": true,
+  "roadmapName": "Software Engineer Japan",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "software-architecture-basics",
+      "nodeType": "topic",
+      "skillName": "Software Architecture Basics",
+      "parentNodeId": null,
+      "reason": "Build a general engineering foundation for understanding architecture decisions and system structure.",
+      "resources": []
+    },
+    {
+      "nodeId": "what-is-software-architecture",
+      "nodeType": "subtopic",
+      "skillName": "What is Software Architecture",
+      "parentNodeId": "software-architecture-basics",
+      "reason": "Understand how components, constraints, interfaces, and quality attributes shape a system.",
+      "resources": []
+    },
+    {
+      "nodeId": "what-is-software-architect",
+      "nodeType": "subtopic",
+      "skillName": "What is a Software Architect",
+      "parentNodeId": "software-architecture-basics",
+      "reason": "Recognize how high-level design choices, standards, and technical direction are made.",
+      "resources": []
+    },
+    {
+      "nodeId": "levels-of-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Levels of Architecture",
+      "parentNodeId": "software-architecture-basics",
+      "reason": "Distinguish architecture concerns across application, solution, and enterprise scopes.",
+      "resources": []
+    },
+    {
+      "nodeId": "application-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Application Architecture",
+      "parentNodeId": "levels-of-architecture",
+      "reason": "Design internal application structure, modules, dependencies, and runtime behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "solution-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Solution Architecture",
+      "parentNodeId": "levels-of-architecture",
+      "reason": "Connect multiple applications, platforms, and integrations into a coherent solution.",
+      "resources": []
+    },
+    {
+      "nodeId": "enterprise-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Enterprise Architecture",
+      "parentNodeId": "levels-of-architecture",
+      "reason": "Align systems, capabilities, data, and technology choices with organization-level goals.",
+      "resources": []
+    },
+    {
+      "nodeId": "architect-responsibilities",
+      "nodeType": "topic",
+      "skillName": "Architect Responsibilities",
+      "parentNodeId": null,
+      "reason": "Understand the responsibilities expected from senior generalist engineers and architects.",
+      "resources": []
+    },
+    {
+      "nodeId": "important-skills",
+      "nodeType": "topic",
+      "skillName": "Important Skills",
+      "parentNodeId": null,
+      "reason": "Develop the judgment and collaboration skills needed to guide software systems beyond coding alone.",
+      "resources": []
+    },
+    {
+      "nodeId": "design-and-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Design and Architecture",
+      "parentNodeId": "important-skills",
+      "reason": "Turn requirements into maintainable system shapes and defensible technical designs.",
+      "resources": []
+    },
+    {
+      "nodeId": "decision-making",
+      "nodeType": "subtopic",
+      "skillName": "Decision Making",
+      "parentNodeId": "important-skills",
+      "reason": "Make tradeoffs with incomplete information while documenting assumptions and consequences.",
+      "resources": []
+    },
+    {
+      "nodeId": "simplifying-things",
+      "nodeType": "subtopic",
+      "skillName": "Simplifying Things",
+      "parentNodeId": "important-skills",
+      "reason": "Reduce unnecessary complexity so systems remain understandable and changeable.",
+      "resources": []
+    },
+    {
+      "nodeId": "how-to-code",
+      "nodeType": "subtopic",
+      "skillName": "How to Code",
+      "parentNodeId": "important-skills",
+      "reason": "Maintain enough coding depth to evaluate implementation quality and technical feasibility.",
+      "resources": []
+    },
+    {
+      "nodeId": "documentation",
+      "nodeType": "subtopic",
+      "skillName": "Documentation",
+      "parentNodeId": "important-skills",
+      "reason": "Record decisions, interfaces, diagrams, and operating knowledge for long-term maintainability.",
+      "resources": []
+    },
+    {
+      "nodeId": "communication",
+      "nodeType": "subtopic",
+      "skillName": "Communication",
+      "parentNodeId": "important-skills",
+      "reason": "Explain technical decisions clearly to engineers, stakeholders, and non-technical partners.",
+      "resources": []
+    },
+    {
+      "nodeId": "estimate-and-evaluate",
+      "nodeType": "subtopic",
+      "skillName": "Estimate and Evaluate",
+      "parentNodeId": "important-skills",
+      "reason": "Estimate effort, risk, cost, and value before committing to technical direction.",
+      "resources": []
+    },
+    {
+      "nodeId": "balance",
+      "nodeType": "subtopic",
+      "skillName": "Balance",
+      "parentNodeId": "important-skills",
+      "reason": "Balance delivery speed, quality, maintainability, security, and business constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "consult-and-coach",
+      "nodeType": "subtopic",
+      "skillName": "Consult and Coach",
+      "parentNodeId": "important-skills",
+      "reason": "Support teams through technical guidance, review, mentoring, and constructive feedback.",
+      "resources": []
+    },
+    {
+      "nodeId": "marketing-skills",
+      "nodeType": "subtopic",
+      "skillName": "Marketing Skills",
+      "parentNodeId": "important-skills",
+      "reason": "Present technical ideas in ways that connect to value, adoption, and stakeholder priorities.",
+      "resources": []
+    },
+    {
+      "nodeId": "technical-skills",
+      "nodeType": "topic",
+      "skillName": "Technical Skills",
+      "parentNodeId": null,
+      "reason": "Keep broad technical literacy across languages, architecture styles, design principles, and security.",
+      "resources": []
+    },
+    {
+      "nodeId": "programming-languages",
+      "nodeType": "subtopic",
+      "skillName": "Programming Languages",
+      "parentNodeId": "technical-skills",
+      "reason": "Compare language ecosystems and choose appropriate tools for product and team constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "dotnet-framework",
+      "nodeType": "subtopic",
+      "skillName": ".NET Framework",
+      "parentNodeId": "programming-languages",
+      "reason": "Understand the Microsoft ecosystem for enterprise and backend application development.",
+      "resources": []
+    },
+    {
+      "nodeId": "javascript-typescript",
+      "nodeType": "subtopic",
+      "skillName": "JavaScript / TypeScript",
+      "parentNodeId": "programming-languages",
+      "reason": "Work across frontend, backend, tooling, and typed JavaScript application stacks.",
+      "resources": []
+    },
+    {
+      "nodeId": "python",
+      "nodeType": "subtopic",
+      "skillName": "Python",
+      "parentNodeId": "programming-languages",
+      "reason": "Use a versatile language for backend services, automation, data, and scripting tasks.",
+      "resources": []
+    },
+    {
+      "nodeId": "ruby",
+      "nodeType": "subtopic",
+      "skillName": "Ruby",
+      "parentNodeId": "programming-languages",
+      "reason": "Recognize Ruby and Rails conventions used in web products and legacy systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "go",
+      "nodeType": "subtopic",
+      "skillName": "Go",
+      "parentNodeId": "programming-languages",
+      "reason": "Use Go's concurrency, simplicity, and deployment model for services and infrastructure tooling.",
+      "resources": []
+    },
+    {
+      "nodeId": "java-kotlin-scala",
+      "nodeType": "subtopic",
+      "skillName": "Java / Kotlin / Scala",
+      "parentNodeId": "programming-languages",
+      "reason": "Understand JVM ecosystems for enterprise, backend, and large-scale service platforms.",
+      "resources": []
+    },
+    {
+      "nodeId": "patterns-and-design-principles",
+      "nodeType": "subtopic",
+      "skillName": "Patterns and Design Principles",
+      "parentNodeId": "technical-skills",
+      "reason": "Use proven principles and patterns to create maintainable and evolvable software.",
+      "resources": []
+    },
+    {
+      "nodeId": "mvc-mvp-mvvm",
+      "nodeType": "subtopic",
+      "skillName": "MVC / MVP / MVVM",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Separate presentation, state, and business concerns in user-facing applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "cqrs-eventual-consistency",
+      "nodeType": "subtopic",
+      "skillName": "CQRS and Eventual Consistency",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Separate read and write models while handling asynchronous consistency tradeoffs.",
+      "resources": []
+    },
+    {
+      "nodeId": "oop",
+      "nodeType": "subtopic",
+      "skillName": "OOP",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Model behavior and state through objects, encapsulation, and polymorphism where appropriate.",
+      "resources": []
+    },
+    {
+      "nodeId": "actors",
+      "nodeType": "subtopic",
+      "skillName": "Actors",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Design concurrent systems around isolated state and message passing.",
+      "resources": []
+    },
+    {
+      "nodeId": "acid-cap-theorem",
+      "nodeType": "subtopic",
+      "skillName": "ACID and CAP Theorem",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Reason about transaction guarantees and distributed system tradeoffs.",
+      "resources": []
+    },
+    {
+      "nodeId": "solid",
+      "nodeType": "subtopic",
+      "skillName": "SOLID",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Apply object-oriented design principles that improve maintainability and change isolation.",
+      "resources": []
+    },
+    {
+      "nodeId": "tdd",
+      "nodeType": "subtopic",
+      "skillName": "TDD",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Use tests to shape behavior, clarify design, and protect future changes.",
+      "resources": []
+    },
+    {
+      "nodeId": "ddd",
+      "nodeType": "subtopic",
+      "skillName": "DDD",
+      "parentNodeId": "patterns-and-design-principles",
+      "reason": "Align software models with business domains and bounded contexts.",
+      "resources": []
+    },
+    {
+      "nodeId": "architect-tools",
+      "nodeType": "subtopic",
+      "skillName": "Architect Tools",
+      "parentNodeId": "technical-skills",
+      "reason": "Use collaboration and delivery tools that support design, tracking, and team alignment.",
+      "resources": []
+    },
+    {
+      "nodeId": "git",
+      "nodeType": "subtopic",
+      "skillName": "Git",
+      "parentNodeId": "architect-tools",
+      "reason": "Track source changes, review work, and manage collaboration safely.",
+      "resources": []
+    },
+    {
+      "nodeId": "slack",
+      "nodeType": "subtopic",
+      "skillName": "Slack",
+      "parentNodeId": "architect-tools",
+      "reason": "Coordinate technical discussions, incidents, and team communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "trello",
+      "nodeType": "subtopic",
+      "skillName": "Trello",
+      "parentNodeId": "architect-tools",
+      "reason": "Organize lightweight planning, task tracking, and delivery visibility.",
+      "resources": []
+    },
+    {
+      "nodeId": "atlassian-tools",
+      "nodeType": "subtopic",
+      "skillName": "Atlassian Tools",
+      "parentNodeId": "architect-tools",
+      "reason": "Work with Jira, Confluence, and related tools common in software organizations.",
+      "resources": []
+    },
+    {
+      "nodeId": "architectures",
+      "nodeType": "subtopic",
+      "skillName": "Architectures",
+      "parentNodeId": "technical-skills",
+      "reason": "Compare major architecture styles and understand where each one fits.",
+      "resources": []
+    },
+    {
+      "nodeId": "serverless",
+      "nodeType": "subtopic",
+      "skillName": "Serverless",
+      "parentNodeId": "architectures",
+      "reason": "Use managed compute and event-driven execution while understanding operational tradeoffs.",
+      "resources": []
+    },
+    {
+      "nodeId": "client-server-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Client-server Architecture",
+      "parentNodeId": "architectures",
+      "reason": "Understand the classic split between clients, servers, APIs, and shared resources.",
+      "resources": []
+    },
+    {
+      "nodeId": "layered-architecture",
+      "nodeType": "subtopic",
+      "skillName": "Layered Architecture",
+      "parentNodeId": "architectures",
+      "reason": "Separate concerns into presentation, business, data, and infrastructure layers.",
+      "resources": []
+    },
+    {
+      "nodeId": "distributed-systems",
+      "nodeType": "subtopic",
+      "skillName": "Distributed Systems",
+      "parentNodeId": "architectures",
+      "reason": "Design systems that coordinate across network, time, failure, and consistency boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "service-oriented",
+      "nodeType": "subtopic",
+      "skillName": "Service-oriented Architecture",
+      "parentNodeId": "architectures",
+      "reason": "Structure capabilities as services with clear contracts and integration boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "security",
+      "nodeType": "subtopic",
+      "skillName": "Security",
+      "parentNodeId": "technical-skills",
+      "reason": "Include authentication, authorization, data protection, and threat awareness in designs.",
+      "resources": []
+    },
+    {
+      "nodeId": "hashing-algorithms",
+      "nodeType": "subtopic",
+      "skillName": "Hashing Algorithms",
+      "parentNodeId": "security",
+      "reason": "Use hashing correctly for integrity, password handling, and identity workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "pki",
+      "nodeType": "subtopic",
+      "skillName": "PKI",
+      "parentNodeId": "security",
+      "reason": "Understand certificates, trust chains, and encrypted communication infrastructure.",
+      "resources": []
+    },
+    {
+      "nodeId": "owasp",
+      "nodeType": "subtopic",
+      "skillName": "OWASP",
+      "parentNodeId": "security",
+      "reason": "Recognize common web application risks and mitigation practices.",
+      "resources": []
+    },
+    {
+      "nodeId": "auth-strategies",
+      "nodeType": "subtopic",
+      "skillName": "Auth Strategies",
+      "parentNodeId": "security",
+      "reason": "Choose authentication and authorization approaches that fit system boundaries and user needs.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-and-integrations",
+      "nodeType": "topic",
+      "skillName": "Data and Integrations",
+      "parentNodeId": null,
+      "reason": "Understand the data, API, and client-facing surfaces that general software engineers work across.",
+      "resources": []
+    },
+    {
+      "nodeId": "working-with-data",
+      "nodeType": "subtopic",
+      "skillName": "Working with Data",
+      "parentNodeId": "data-and-integrations",
+      "reason": "Design data flows, storage choices, and analytical capabilities for real systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "hadoop-spark-mapreduce",
+      "nodeType": "subtopic",
+      "skillName": "Hadoop / Spark / MapReduce",
+      "parentNodeId": "working-with-data",
+      "reason": "Understand large-scale batch and distributed data processing concepts.",
+      "resources": []
+    },
+    {
+      "nodeId": "etl-datawarehouses",
+      "nodeType": "subtopic",
+      "skillName": "ETL and Data Warehouses",
+      "parentNodeId": "working-with-data",
+      "reason": "Move, transform, and organize data for analytics and reporting systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "sql-databases",
+      "nodeType": "subtopic",
+      "skillName": "SQL Databases",
+      "parentNodeId": "working-with-data",
+      "reason": "Model relational data and use transactional databases effectively.",
+      "resources": []
+    },
+    {
+      "nodeId": "nosql-databases",
+      "nodeType": "subtopic",
+      "skillName": "NoSQL Databases",
+      "parentNodeId": "working-with-data",
+      "reason": "Use non-relational storage when access patterns, scale, or flexibility require it.",
+      "resources": []
+    },
+    {
+      "nodeId": "analytics",
+      "nodeType": "subtopic",
+      "skillName": "Analytics",
+      "parentNodeId": "working-with-data",
+      "reason": "Support analytical workloads and reporting needs from operational systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "apache-spark",
+      "nodeType": "subtopic",
+      "skillName": "Apache Spark",
+      "parentNodeId": "analytics",
+      "reason": "Process large data sets with distributed computing primitives.",
+      "resources": []
+    },
+    {
+      "nodeId": "hadoop",
+      "nodeType": "subtopic",
+      "skillName": "Hadoop",
+      "parentNodeId": "analytics",
+      "reason": "Understand the ecosystem behind distributed file storage and batch processing.",
+      "resources": []
+    },
+    {
+      "nodeId": "datawarehouses-principles",
+      "nodeType": "subtopic",
+      "skillName": "Data Warehouse Principles",
+      "parentNodeId": "analytics",
+      "reason": "Model analytical data for reporting, aggregation, and business intelligence.",
+      "resources": []
+    },
+    {
+      "nodeId": "apis-and-integrations",
+      "nodeType": "subtopic",
+      "skillName": "APIs and Integrations",
+      "parentNodeId": "data-and-integrations",
+      "reason": "Connect systems through API contracts, messaging, and integration technologies.",
+      "resources": []
+    },
+    {
+      "nodeId": "grpc",
+      "nodeType": "subtopic",
+      "skillName": "gRPC",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Use typed RPC for efficient service-to-service communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "esb-soap",
+      "nodeType": "subtopic",
+      "skillName": "ESB / SOAP",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Recognize enterprise integration patterns and legacy service contracts.",
+      "resources": []
+    },
+    {
+      "nodeId": "graphql",
+      "nodeType": "subtopic",
+      "skillName": "GraphQL",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Expose flexible query APIs while controlling schema evolution and performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "rest",
+      "nodeType": "subtopic",
+      "skillName": "REST",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Design resource-oriented HTTP APIs with predictable semantics.",
+      "resources": []
+    },
+    {
+      "nodeId": "bpm-bpel",
+      "nodeType": "subtopic",
+      "skillName": "BPM / BPEL",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Understand business process modeling and orchestration in enterprise systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "messaging-queues",
+      "nodeType": "subtopic",
+      "skillName": "Messaging Queues",
+      "parentNodeId": "apis-and-integrations",
+      "reason": "Decouple producers and consumers with durable asynchronous communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "web-and-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Web and Mobile",
+      "parentNodeId": "data-and-integrations",
+      "reason": "Understand client application patterns that influence APIs, performance, and user workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "reactive-functional-programming",
+      "nodeType": "subtopic",
+      "skillName": "Reactive and Functional Programming",
+      "parentNodeId": "web-and-mobile",
+      "reason": "Use reactive streams and functional ideas where state and event flows benefit from them.",
+      "resources": []
+    },
+    {
+      "nodeId": "react-vue-angular",
+      "nodeType": "subtopic",
+      "skillName": "React / Vue / Angular",
+      "parentNodeId": "web-and-mobile",
+      "reason": "Understand major frontend frameworks and their architectural implications.",
+      "resources": []
+    },
+    {
+      "nodeId": "spa-ssr-ssg",
+      "nodeType": "subtopic",
+      "skillName": "SPA / SSR / SSG",
+      "parentNodeId": "web-and-mobile",
+      "reason": "Choose rendering models based on user experience, SEO, caching, and backend needs.",
+      "resources": []
+    },
+    {
+      "nodeId": "microfrontends",
+      "nodeType": "subtopic",
+      "skillName": "Microfrontends",
+      "parentNodeId": "web-and-mobile",
+      "reason": "Split frontend ownership across teams when product scale justifies the complexity.",
+      "resources": []
+    },
+    {
+      "nodeId": "w3c-whatwg-standards",
+      "nodeType": "subtopic",
+      "skillName": "W3C and WHATWG Standards",
+      "parentNodeId": "web-and-mobile",
+      "reason": "Rely on web standards for compatibility, accessibility, and long-term platform stability.",
+      "resources": []
+    },
+    {
+      "nodeId": "governance-and-operations",
+      "nodeType": "topic",
+      "skillName": "Governance and Operations",
+      "parentNodeId": null,
+      "reason": "Connect engineering choices to process, networks, operations, and organizational standards.",
+      "resources": []
+    },
+    {
+      "nodeId": "architect-frameworks",
+      "nodeType": "subtopic",
+      "skillName": "Architect Frameworks",
+      "parentNodeId": "governance-and-operations",
+      "reason": "Use formal frameworks and modeling tools where complex organizations need shared structure.",
+      "resources": []
+    },
+    {
+      "nodeId": "babok",
+      "nodeType": "subtopic",
+      "skillName": "BABOK",
+      "parentNodeId": "architect-frameworks",
+      "reason": "Understand business analysis practices that connect requirements to solutions.",
+      "resources": []
+    },
+    {
+      "nodeId": "iaf",
+      "nodeType": "subtopic",
+      "skillName": "IAF",
+      "parentNodeId": "architect-frameworks",
+      "reason": "Recognize integrated architecture framework concepts for enterprise planning.",
+      "resources": []
+    },
+    {
+      "nodeId": "uml",
+      "nodeType": "subtopic",
+      "skillName": "UML",
+      "parentNodeId": "architect-frameworks",
+      "reason": "Use common diagrams to communicate structure, behavior, and relationships.",
+      "resources": []
+    },
+    {
+      "nodeId": "togaf",
+      "nodeType": "subtopic",
+      "skillName": "TOGAF",
+      "parentNodeId": "architect-frameworks",
+      "reason": "Understand enterprise architecture governance and lifecycle concepts.",
+      "resources": []
+    },
+    {
+      "nodeId": "management",
+      "nodeType": "subtopic",
+      "skillName": "Management",
+      "parentNodeId": "governance-and-operations",
+      "reason": "Work with delivery processes, governance models, and cross-team coordination.",
+      "resources": []
+    },
+    {
+      "nodeId": "pmi-itil-prince2-rup",
+      "nodeType": "subtopic",
+      "skillName": "PMI / ITIL / PRINCE2 / RUP",
+      "parentNodeId": "management",
+      "reason": "Recognize common project, service, and process frameworks used in organizations.",
+      "resources": []
+    },
+    {
+      "nodeId": "less",
+      "nodeType": "subtopic",
+      "skillName": "LeSS",
+      "parentNodeId": "management",
+      "reason": "Understand scaled agile practices for coordinating multiple software teams.",
+      "resources": []
+    },
+    {
+      "nodeId": "safe",
+      "nodeType": "subtopic",
+      "skillName": "SAFe",
+      "parentNodeId": "management",
+      "reason": "Recognize enterprise agile planning and coordination concepts.",
+      "resources": []
+    },
+    {
+      "nodeId": "networks",
+      "nodeType": "subtopic",
+      "skillName": "Networks",
+      "parentNodeId": "governance-and-operations",
+      "reason": "Understand the network assumptions behind APIs, services, security, and deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "osi-tcp-ip-model",
+      "nodeType": "subtopic",
+      "skillName": "OSI / TCP-IP Model",
+      "parentNodeId": "networks",
+      "reason": "Use network layers to reason about communication problems and system boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "http-https",
+      "nodeType": "subtopic",
+      "skillName": "HTTP / HTTPS",
+      "parentNodeId": "networks",
+      "reason": "Understand the protocol layer behind web APIs, browsers, and secure traffic.",
+      "resources": []
+    },
+    {
+      "nodeId": "proxies",
+      "nodeType": "subtopic",
+      "skillName": "Proxies",
+      "parentNodeId": "networks",
+      "reason": "Use proxy layers for routing, security, caching, and traffic control.",
+      "resources": []
+    },
+    {
+      "nodeId": "firewalls",
+      "nodeType": "subtopic",
+      "skillName": "Firewalls",
+      "parentNodeId": "networks",
+      "reason": "Control network access and reduce attack surface around services.",
+      "resources": []
+    },
+    {
+      "nodeId": "operations-knowledge",
+      "nodeType": "subtopic",
+      "skillName": "Operations Knowledge",
+      "parentNodeId": "governance-and-operations",
+      "reason": "Design systems that can be deployed, operated, monitored, and evolved in production.",
+      "resources": []
+    },
+    {
+      "nodeId": "infrastructure-as-code",
+      "nodeType": "subtopic",
+      "skillName": "Infrastructure as Code",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Define environments reproducibly with versioned infrastructure configuration.",
+      "resources": []
+    },
+    {
+      "nodeId": "cloud-providers",
+      "nodeType": "subtopic",
+      "skillName": "Cloud Providers",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Understand managed cloud primitives for compute, networking, storage, and security.",
+      "resources": []
+    },
+    {
+      "nodeId": "serverless-concepts",
+      "nodeType": "subtopic",
+      "skillName": "Serverless Concepts",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Evaluate event-driven managed platforms and their operational tradeoffs.",
+      "resources": []
+    },
+    {
+      "nodeId": "linux-unix",
+      "nodeType": "subtopic",
+      "skillName": "Linux / Unix",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Operate servers, processes, files, permissions, and shell workflows confidently.",
+      "resources": []
+    },
+    {
+      "nodeId": "service-mesh",
+      "nodeType": "subtopic",
+      "skillName": "Service Mesh",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Manage service-to-service traffic, observability, and policy in distributed systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "ci-cd",
+      "nodeType": "subtopic",
+      "skillName": "CI/CD",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Automate build, test, release, and deployment flows for reliable delivery.",
+      "resources": []
+    },
+    {
+      "nodeId": "containers",
+      "nodeType": "subtopic",
+      "skillName": "Containers",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Package applications consistently for local development, testing, and deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "cloud-design-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Cloud Design Patterns",
+      "parentNodeId": "operations-knowledge",
+      "reason": "Apply proven patterns for cloud reliability, scalability, and maintainability.",
+      "resources": []
+    },
+    {
+      "nodeId": "enterprise-software",
+      "nodeType": "subtopic",
+      "skillName": "Enterprise Software",
+      "parentNodeId": "governance-and-operations",
+      "reason": "Recognize large business platforms that influence integration and architecture decisions.",
+      "resources": []
+    },
+    {
+      "nodeId": "ms-dynamics",
+      "nodeType": "subtopic",
+      "skillName": "MS Dynamics",
+      "parentNodeId": "enterprise-software",
+      "reason": "Understand common CRM and ERP integration concerns in Microsoft ecosystems.",
+      "resources": []
+    },
+    {
+      "nodeId": "sap-epr-hana-business-objects",
+      "nodeType": "subtopic",
+      "skillName": "SAP ERP / HANA / Business Objects",
+      "parentNodeId": "enterprise-software",
+      "reason": "Recognize SAP platform roles in enterprise data, finance, and operations workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "emc-dms",
+      "nodeType": "subtopic",
+      "skillName": "EMC DMS",
+      "parentNodeId": "enterprise-software",
+      "reason": "Understand document management concerns in enterprise software landscapes.",
+      "resources": []
+    },
+    {
+      "nodeId": "ibm-bpm",
+      "nodeType": "subtopic",
+      "skillName": "IBM BPM",
+      "parentNodeId": "enterprise-software",
+      "reason": "Recognize business process management platforms and integration patterns.",
+      "resources": []
+    },
+    {
+      "nodeId": "salesforce",
+      "nodeType": "subtopic",
+      "skillName": "Salesforce",
+      "parentNodeId": "enterprise-software",
+      "reason": "Understand CRM platform integration, customization, and data flow considerations.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-engineering-readiness",
+      "nodeType": "topic",
+      "skillName": "Japan Engineering Readiness",
+      "parentNodeId": null,
+      "reason": "Prepare for software engineering roles that work with Japanese teams, clients, documents, and delivery culture.",
+      "resources": []
+    },
+    {
+      "nodeId": "japanese-language-foundation",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Language Foundation",
+      "parentNodeId": "japan-engineering-readiness",
+      "reason": "Build the Japanese language base needed to communicate in technical and workplace contexts.",
+      "resources": []
+    },
+    {
+      "nodeId": "jlpt-n3-n2",
+      "nodeType": "subtopic",
+      "skillName": "JLPT N3 to N2",
+      "parentNodeId": "japanese-language-foundation",
+      "reason": "Reach practical reading, listening, and workplace communication ability for Japanese software teams.",
+      "resources": []
+    },
+    {
+      "nodeId": "technical-japanese",
+      "nodeType": "subtopic",
+      "skillName": "Technical Japanese",
+      "parentNodeId": "japanese-language-foundation",
+      "reason": "Understand common Japanese software terms used in requirements, design, testing, and operations.",
+      "resources": []
+    },
+    {
+      "nodeId": "business-japanese",
+      "nodeType": "subtopic",
+      "skillName": "Business Japanese",
+      "parentNodeId": "japanese-language-foundation",
+      "reason": "Use appropriate expressions for meetings, email, reporting, escalation, and client communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "japanese-requirement-reading",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Requirement Reading",
+      "parentNodeId": "japanese-language-foundation",
+      "reason": "Read Japanese specifications, tickets, change requests, and acceptance criteria accurately.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-workplace-communication",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Workplace Communication",
+      "parentNodeId": "japan-engineering-readiness",
+      "reason": "Communicate clearly within Japanese team norms where context, precision, and timing matter.",
+      "resources": []
+    },
+    {
+      "nodeId": "hou-ren-sou",
+      "nodeType": "subtopic",
+      "skillName": "Ho-Ren-So",
+      "parentNodeId": "japan-workplace-communication",
+      "reason": "Practice timely reporting, communication, and consultation to reduce delivery risk.",
+      "resources": []
+    },
+    {
+      "nodeId": "nemawashi",
+      "nodeType": "subtopic",
+      "skillName": "Nemawashi",
+      "parentNodeId": "japan-workplace-communication",
+      "reason": "Align stakeholders before formal decisions so technical proposals move smoothly.",
+      "resources": []
+    },
+    {
+      "nodeId": "meeting-minutes-japanese",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Meeting Minutes",
+      "parentNodeId": "japan-workplace-communication",
+      "reason": "Capture decisions, action items, risks, and open questions in a format Japanese teams can rely on.",
+      "resources": []
+    },
+    {
+      "nodeId": "japanese-email-chat-etiquette",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Email and Chat Etiquette",
+      "parentNodeId": "japan-workplace-communication",
+      "reason": "Write concise, respectful, and context-aware messages for clients and internal teams.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-delivery-process",
+      "nodeType": "subtopic",
+      "skillName": "Japan Delivery Process",
+      "parentNodeId": "japan-engineering-readiness",
+      "reason": "Understand delivery patterns often used in Japanese outsourcing, product, and enterprise projects.",
+      "resources": []
+    },
+    {
+      "nodeId": "basic-design-detailed-design",
+      "nodeType": "subtopic",
+      "skillName": "Basic Design and Detailed Design",
+      "parentNodeId": "japan-delivery-process",
+      "reason": "Work with common Japanese project artifacts such as basic design, detailed design, and implementation documents.",
+      "resources": []
+    },
+    {
+      "nodeId": "estimation-and-progress-reporting-japan",
+      "nodeType": "subtopic",
+      "skillName": "Estimation and Progress Reporting",
+      "parentNodeId": "japan-delivery-process",
+      "reason": "Report schedule, blockers, effort, and variance with the precision expected in Japanese projects.",
+      "resources": []
+    },
+    {
+      "nodeId": "quality-first-development-japan",
+      "nodeType": "subtopic",
+      "skillName": "Quality-first Development",
+      "parentNodeId": "japan-delivery-process",
+      "reason": "Prioritize defect prevention, careful review, and predictable delivery quality.",
+      "resources": []
+    },
+    {
+      "nodeId": "japanese-testing-documents",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Testing Documents",
+      "parentNodeId": "japan-delivery-process",
+      "reason": "Create and read test specifications, test evidence, bug reports, and acceptance records in Japanese project style.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-engineering-culture",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Engineering Culture",
+      "parentNodeId": "japan-engineering-readiness",
+      "reason": "Work effectively with cultural expectations around quality, responsibility, consensus, and respect.",
+      "resources": []
+    },
+    {
+      "nodeId": "kaizen",
+      "nodeType": "subtopic",
+      "skillName": "Kaizen",
+      "parentNodeId": "japan-engineering-culture",
+      "reason": "Use continuous improvement habits to reduce waste, defects, and repeated delivery issues.",
+      "resources": []
+    },
+    {
+      "nodeId": "genchi-genbutsu",
+      "nodeType": "subtopic",
+      "skillName": "Genchi Genbutsu",
+      "parentNodeId": "japan-engineering-culture",
+      "reason": "Investigate real evidence and actual system behavior before making decisions.",
+      "resources": []
+    },
+    {
+      "nodeId": "respectful-disagreement",
+      "nodeType": "subtopic",
+      "skillName": "Respectful Disagreement",
+      "parentNodeId": "japan-engineering-culture",
+      "reason": "Raise technical risks and alternative ideas clearly while preserving trust and team harmony.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-career-context",
+      "nodeType": "subtopic",
+      "skillName": "Japan Career Context",
+      "parentNodeId": "japan-engineering-readiness",
+      "reason": "Understand the professional context for software engineering roles connected to Japan.",
+      "resources": []
+    },
+    {
+      "nodeId": "japanese-interview-preparation",
+      "nodeType": "subtopic",
+      "skillName": "Japanese Interview Preparation",
+      "parentNodeId": "japan-career-context",
+      "reason": "Prepare self-introduction, project explanation, strengths, weaknesses, and technical discussion in Japanese.",
+      "resources": []
+    },
+    {
+      "nodeId": "japan-client-domain-awareness",
+      "nodeType": "subtopic",
+      "skillName": "Japan Client Domain Awareness",
+      "parentNodeId": "japan-career-context",
+      "reason": "Recognize common Japanese enterprise domains such as finance, manufacturing, retail, logistics, and public systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "offshore-onsite-collaboration",
+      "nodeType": "subtopic",
+      "skillName": "Offshore and Onsite Collaboration",
+      "parentNodeId": "japan-career-context",
+      "reason": "Coordinate effectively across Vietnam-Japan delivery models, time zones, handoffs, and client reviews.",
+      "resources": []
+    }
+  ]
+}

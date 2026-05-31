@@ -151,11 +151,55 @@ async function updateNodeState(userId, roadmapId, nodeId, fromState, toState) {
 		console.error('[roadmap-history:error]', historyErr);
 	}
 
+	try {
+		const progressTrackingService = require('../progress/progress.tracking.service');
+		await progressTrackingService.updateNodeActivity(userId, roadmapId, nodeId, toState);
+	} catch (trackingErr) {
+		console.error('[progress] updateNodeActivity failed:', trackingErr.message);
+	}
+
 	return updated;
+}
+
+/**
+ * Reconcile progress against a new set of valid nodeIds after a roadmap revert.
+ * - Removes nodeIds that no longer exist in the roadmap
+ * - Adds new nodeIds (not found in any state) as `pending`
+ */
+async function reconcileProgress(userId, roadmapId, validNodeIds) {
+	const validSet = new Set(validNodeIds);
+	const doc = await RoadmapProgress.findOne({ userId, roadmapId }).lean();
+
+	const current = doc?.state ?? { pending: [], inProgress: [], completed: [], skip: [] };
+	const allTracked = new Set([
+		...current.pending,
+		...current.inProgress,
+		...current.completed,
+		...current.skip,
+	]);
+
+	const newPending = [
+		...current.pending.filter(id => validSet.has(id)),
+		...[...validSet].filter(id => !allTracked.has(id)),
+	];
+
+	const reconciled = {
+		pending: newPending,
+		inProgress: current.inProgress.filter(id => validSet.has(id)),
+		completed: current.completed.filter(id => validSet.has(id)),
+		skip: current.skip.filter(id => validSet.has(id)),
+	};
+
+	await RoadmapProgress.updateOne(
+		{ userId, roadmapId },
+		{ $set: { state: reconciled, updatedAt: new Date() } },
+		{ upsert: true }
+	);
 }
 
 module.exports = {
 	createProgress,
 	getProgress,
 	updateNodeState,
+	reconcileProgress,
 };

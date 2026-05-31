@@ -31,7 +31,7 @@ export const useSkillTreeStore = create((set) => ({
   refetchCount: 0,
 
   // Actions
-  setTreeData: (data) => set((state) => ({
+  setTreeData: (data) => set(() => ({
     nodes: data.nodes || [],
     edges: data.edges || [],
     roadmapId: data.roadmapId,
@@ -48,7 +48,7 @@ export const useSkillTreeStore = create((set) => ({
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 
-  updateProgressState: ({ nodeId, fromState, toState }) => set((state) => {
+  updateProgressState: ({ nodeId, toState }) => set((state) => {
     const current = state.progress || { pending: [], inProgress: [], completed: [], skip: [] };
 
     const dedup = (arr) => (arr || []).filter((id) => id !== nodeId);

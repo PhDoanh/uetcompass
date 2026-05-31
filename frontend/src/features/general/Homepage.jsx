@@ -1,8 +1,7 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../providers/AuthProvider';
-import accountApi from '../../services/account.api';
 import { getSummaries, getTrackingTables } from '../../services/progress.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
@@ -29,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  Copy,
 } from 'lucide-react';
 import {
   Cell,
@@ -47,26 +47,26 @@ const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const ROADMAPS_PER_PAGE = 10;
 const MY_ROADMAPS_PER_PAGE = 5;
 const MY_MANUAL_ROADMAPS_PREVIEW_LIMIT = 5;
-const MANUAL_ROADMAP_FETCH_LIMIT = 100;
-const MAX_MANUAL_ROADMAP_FETCH_PAGES = 30;
-const ACTIVITY_SERIES = Array.from({ length: 30 }, (_, index) => {
-  const day = index + 1;
-  const base = Math.min(10, Math.max(0, Math.round(day / 3 + (day % 5 === 0 ? 2 : 0))));
-  const value = Math.min(10, Math.max(0, base - (day % 7 === 0 ? 2 : 0)));
-  return { day, value };
-});
-const TOPIC_DISTRIBUTION = [
-  { name: 'Web', value: 35, color: '#38BDF8' },
-  { name: 'AI/ML', value: 25, color: '#0EA5E9' },
-  { name: 'DevOps', value: 20, color: '#F97316' },
-  { name: 'Khác', value: 20, color: '#94A3B8' },
-];
-const HEATMAP_VALUES = [
-  0, 1, 2, 3, 1, 0, 2,
-  2, 3, 4, 3, 2, 1, 0,
-  1, 2, 3, 4, 2, 1, 1,
-  0, 1, 2, 3, 2, 1, 0,
-];
+
+function buildPublicSkillTreeHref(roadmapId) {
+  const normalizedRoadmapId = encodeURIComponent(String(roadmapId || '').trim());
+  return normalizedRoadmapId ? `/skill-tree/${normalizedRoadmapId}` : '/skill-tree';
+}
+
+function isManualRoadmapShared(roadmap) {
+  return Boolean(roadmap?.shared || roadmap?.isPublic || roadmap?.sharedAt || roadmap?.status === 'published');
+}
+
+function getRoadmapKey(item) {
+  const roadmapId = String(item?.roadmapId || '').trim();
+  if (!roadmapId) {
+    return '';
+  }
+
+  const roadmapSource = String(item?.roadmapSource || (item?.isManual ? 'manual' : item?.isPrimary ? 'primary' : 'roadmap') || '').trim() || 'roadmap';
+  return item?.roadmapKey || `${roadmapSource}:${roadmapId}`;
+}
+
 const HERO_LEFT_ICONS = [
   { key: 'left-1', top: '12%', left: '8%', size: '62px', rotate: '-8deg', icon: GraduationCap },
   { key: 'left-2', top: '24%', left: '18%', size: '46px', rotate: '6deg', icon: FlaskConical },
@@ -84,21 +84,20 @@ const HERO_RIGHT_ICONS = [
   { key: 'right-6', top: '84%', right: '6%', size: '40px', rotate: '-10deg', icon: Users },
 ];
 
-function navigateToHomeSection(sectionId) {
-  if (typeof window === 'undefined') {
+
+function scrollToHomeHashTarget() {
+  if (typeof window === 'undefined' || window.location.pathname !== '/') {
     return;
   }
 
-  const pathname = window.location.pathname;
-  if (pathname !== '/') {
-    window.location.assign(`/#${sectionId}`);
+  const hash = String(window.location.hash || '').replace(/^#/, '').trim();
+  if (!hash) {
     return;
   }
 
-  const target = document.getElementById(sectionId);
+  const target = document.getElementById(hash);
   if (target) {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window.history.replaceState(null, '', `/#${sectionId}`);
   }
 }
 
@@ -122,7 +121,7 @@ function resolveDisplayName(accessToken) {
     if (email.includes('@')) {
       return email.split('@')[0];
     }
-  } catch (_) {
+  } catch {
     return null;
   }
 
@@ -141,9 +140,13 @@ function resolveUserId(accessToken) {
     const payload = JSON.parse(decoded);
     const userId = String(payload?.userId || payload?.sub || '').trim();
     return userId || null;
-  } catch (_) {
+  } catch {
     return null;
   }
+}
+
+function isInvalidSessionError(err) {
+  return err?.status === 401 || (err?.status === 403 && err?.code === 'FORBIDDEN');
 }
 
 function isSameMonth(date, compare) {
@@ -242,15 +245,78 @@ function toRgba(hex, alpha) {
     }
     return streak;
   }
+
+  function dedupeRoadmapsByKey(items = []) {
+    const seen = new Set();
+    const uniqueItems = [];
+
+    items.forEach((item) => {
+      const roadmapKey = getRoadmapKey(item);
+      if (!roadmapKey || seen.has(roadmapKey)) {
+        return;
+      }
+
+      seen.add(roadmapKey);
+      uniqueItems.push(item);
+    });
+
+    return uniqueItems;
+  }
+
+  function dedupeRoadmapsByRoadmapId(items = []) {
+    const byId = new Map();
+
+    for (const item of Array.isArray(items) ? items : []) {
+      const roadmapId = String(item?.roadmapId || item?._id || '').trim();
+      if (!roadmapId) {
+        continue;
+      }
+
+      const existing = byId.get(roadmapId);
+      if (!existing) {
+        byId.set(roadmapId, item);
+        continue;
+      }
+
+      const nextIsPrimary = Boolean(item?.isPrimary);
+      const existingIsPrimary = Boolean(existing?.isPrimary);
+      if (nextIsPrimary && !existingIsPrimary) {
+        byId.set(roadmapId, item);
+        continue;
+      }
+
+      if (nextIsPrimary === existingIsPrimary) {
+        const nextUpdatedAt = new Date(item?.updatedAt || item?.lastActivityDate || 0).getTime();
+        const existingUpdatedAt = new Date(existing?.updatedAt || existing?.lastActivityDate || 0).getTime();
+        if (nextUpdatedAt > existingUpdatedAt) {
+          byId.set(roadmapId, item);
+        }
+      }
+    }
+
+    return Array.from(byId.values());
+  }
 export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const { addNotification } = useNotification();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
-  const [profileDisplayName, setProfileDisplayName] = useState('');
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
-  const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
   const [openingRoadmapTitle, setOpeningRoadmapTitle] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(scrollToHomeHashTarget);
+    window.addEventListener('hashchange', scrollToHomeHashTarget);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('hashchange', scrollToHomeHashTarget);
+    };
+  }, []);
   const [deletingManualRoadmapId, setDeletingManualRoadmapId] = useState('');
   const [pendingDeleteRoadmap, setPendingDeleteRoadmap] = useState(null);
   const [progressSummaries, setProgressSummaries] = useState([]);
@@ -264,6 +330,8 @@ export default function Homepage() {
   const [monthlyRoadmapLoading, setMonthlyRoadmapLoading] = useState(false);
   const [roadmapPage, setRoadmapPage] = useState(0);
   const [myRoadmapPage, setMyRoadmapPage] = useState(0);
+  const [sharingManualRoadmapId, setSharingManualRoadmapId] = useState('');
+  const [copyingManualRoadmapId, setCopyingManualRoadmapId] = useState('');
   const displayName = useMemo(() => resolveDisplayName(accessToken), [accessToken]);
   const userId = useMemo(() => resolveUserId(accessToken), [accessToken]);
   const currentMonthLabel = useMemo(() => {
@@ -313,40 +381,10 @@ export default function Homepage() {
         if (isMounted) {
           setPublicRoadmaps(result.items || []);
         }
-      } catch (err) {
+      } catch {
         // Silently fail for public roadmaps
         if (isMounted) {
           setPublicRoadmaps([]);
-        }
-      }
-    }
-
-    async function loadDisplayName() {
-      if (!accessToken) {
-        if (isMounted) {
-          setProfileDisplayName('');
-        }
-        return;
-      }
-
-      try {
-        const result = await accountApi.getProfile(accessToken);
-        const identity = result?.identity || {};
-        const nextName = String(
-          identity?.effectiveDisplayName || identity?.displayName || identity?.fullName || ''
-        ).trim();
-
-        if (isMounted) {
-          setProfileDisplayName(nextName);
-        }
-      } catch (err) {
-        if (err?.status === 401) {
-          await logoutAndRedirect();
-          return;
-        }
-
-        if (isMounted) {
-          setProfileDisplayName('');
         }
       }
     }
@@ -355,13 +393,8 @@ export default function Homepage() {
       if (!accessToken) {
         if (isMounted) {
           setMyManualRoadmaps([]);
-          setIsLoadingMyManualRoadmaps(false);
         }
         return;
-      }
-
-      if (isMounted) {
-        setIsLoadingMyManualRoadmaps(true);
       }
 
       try {
@@ -369,13 +402,12 @@ export default function Homepage() {
           page: 1,
           limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
         });
-        const items = Array.isArray(result?.items) ? result.items : [];
-
+        const items = dedupeRoadmapsByRoadmapId(Array.isArray(result?.items) ? result.items : []);
         if (isMounted) {
           setMyManualRoadmaps(items);
         }
       } catch (err) {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -383,26 +415,21 @@ export default function Homepage() {
         try {
           const fallback = await manualRoadmapApi.listPublicManualRoadmaps({ page: 1, limit: 100 });
           const fallbackItems = Array.isArray(fallback?.items) ? fallback.items : [];
-          const ownRoadmaps = fallbackItems
+          const ownRoadmaps = dedupeRoadmapsByRoadmapId(fallbackItems
             .filter((roadmap) => String(roadmap?.userId || '').trim() === String(userId || '').trim())
-            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT);
+            .slice(0, MY_MANUAL_ROADMAPS_PREVIEW_LIMIT));
           if (isMounted) {
             setMyManualRoadmaps(ownRoadmaps);
           }
-        } catch (_) {
+        } catch {
           if (isMounted) {
             setMyManualRoadmaps([]);
           }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingMyManualRoadmaps(false);
         }
       }
     }
 
     loadPublicRoadmaps();
-    loadDisplayName();
     loadMyManualRoadmaps();
 
     return () => {
@@ -450,7 +477,7 @@ export default function Homepage() {
           setProgressTrackingDaily(dailyTracking);
         }
       } catch (err) {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -494,7 +521,7 @@ export default function Homepage() {
         }
       })
       .catch(async (err) => {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -508,15 +535,48 @@ export default function Homepage() {
     };
   }, [accessToken, logoutAndRedirect]);
 
-  const combinedProgressSummaries = useMemo(
-    () => [...progressSummaries, ...manualProgressSummaries],
-    [progressSummaries, manualProgressSummaries]
-  );
+  const primaryProgressRoadmap = useMemo(() => {
+    const list = dedupeRoadmapsByRoadmapId(Array.isArray(progressSummaries) ? progressSummaries : []);
+    return list.find((item) => item?.isPrimary) || list[0] || null;
+  }, [progressSummaries]);
+
+  const progressRoadmapCards = useMemo(() => {
+    const manualProgressById = new Map(
+      dedupeRoadmapsByRoadmapId(Array.isArray(manualProgressSummaries) ? manualProgressSummaries : [])
+        .map((summary) => [String(summary?.roadmapId || '').trim(), summary])
+        .filter(([roadmapId]) => Boolean(roadmapId))
+    );
+
+    const cards = [];
+
+    if (primaryProgressRoadmap) {
+      cards.push({
+        kind: 'personalized',
+        id: primaryProgressRoadmap.roadmapId,
+        roadmap: primaryProgressRoadmap,
+      });
+    }
+
+    for (const roadmap of dedupeRoadmapsByRoadmapId(Array.isArray(myManualRoadmaps) ? myManualRoadmaps : [])) {
+      const roadmapId = String(roadmap?._id || '').trim();
+      if (!roadmapId) {
+        continue;
+      }
+
+      cards.push({
+        kind: 'manual',
+        id: roadmapId,
+        roadmap: manualProgressById.get(roadmapId) || roadmap,
+      });
+    }
+
+    return dedupeRoadmapsByRoadmapId(cards.map((card) => card.roadmap));
+  }, [manualProgressSummaries, myManualRoadmaps, primaryProgressRoadmap]);
 
   useEffect(() => {
     let isMounted = true;
 
-    if (!accessToken || combinedProgressSummaries.length === 0) {
+    if (!accessToken || progressRoadmapCards.length === 0) {
       if (isMounted) {
         setMonthlyRoadmapStats([]);
         setMonthlyRoadmapLoading(false);
@@ -530,7 +590,7 @@ export default function Homepage() {
     setMonthlyRoadmapLoading(true);
 
     Promise.allSettled(
-      combinedProgressSummaries.map(async (roadmap, index) => {
+      progressRoadmapCards.map(async (roadmap, index) => {
         const roadmapId = roadmap?.roadmapId;
         if (!roadmapId) {
           return null;
@@ -552,12 +612,13 @@ export default function Homepage() {
 
           return {
             roadmapId,
+            roadmapKey: getRoadmapKey(roadmap) || `${roadmap?.isManual ? 'manual' : roadmap?.isPrimary ? 'primary' : 'roadmap'}:${roadmapId}`,
             roadmapName: roadmap?.roadmapName || 'Roadmap',
             completedNodes,
             completionPercent,
             color: colorList[index % colorList.length],
           };
-        } catch (_) {
+        } catch {
           const totalNodes = roadmap?.totalNodes || 0;
           const doneNodes = roadmap?.doneNodes || 0;
           const completionPercent = totalNodes > 0
@@ -566,6 +627,7 @@ export default function Homepage() {
 
           return {
             roadmapId,
+            roadmapKey: getRoadmapKey(roadmap) || `${roadmap?.isManual ? 'manual' : roadmap?.isPrimary ? 'primary' : 'roadmap'}:${roadmapId}`,
             roadmapName: roadmap?.roadmapName || 'Roadmap',
             completedNodes: 0,
             completionPercent,
@@ -588,7 +650,7 @@ export default function Homepage() {
     return () => {
       isMounted = false;
     };
-  }, [accessToken, combinedProgressSummaries]);
+  }, [accessToken, progressRoadmapCards]);
 
   const handleCloseOnboarding = (result) => {
     setShowOnboardingPanel(false);
@@ -633,7 +695,7 @@ export default function Homepage() {
 
       navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
     } catch (_) {
-      setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
+      addNotification('Không thể mở roadmap lúc này. Vui lòng thử lại sau.', 'error');
     } finally {
       setOpeningRoadmapTitle('');
     }
@@ -647,6 +709,125 @@ export default function Homepage() {
 
     setPendingDeleteRoadmap({ id: normalizedId, title: roadmapTitle || 'này' });
   };
+
+  const handleShareManualRoadmap = useCallback(async (roadmapId) => {
+    const normalizedRoadmapId = String(roadmapId || '').trim();
+    if (!normalizedRoadmapId || !accessToken || typeof window === 'undefined') {
+      return;
+    }
+
+    setSharingManualRoadmapId(normalizedRoadmapId);
+
+    try {
+      const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
+      setMyManualRoadmaps((current) => current.map((roadmap) => (
+        String(roadmap?._id || '').trim() === normalizedRoadmapId
+          ? {
+              ...roadmap,
+              ...updatedRoadmap,
+              shared: true,
+              isPublic: true,
+              status: 'published',
+              sharedAt: updatedRoadmap?.sharedAt || roadmap?.sharedAt || new Date().toISOString(),
+            }
+          : roadmap
+      )));
+      addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
+    } catch (err) {
+      if (err?.status === 401) {
+        await logoutAndRedirect();
+        return;
+      }
+
+      addNotification(err?.message || 'Không thể bật chia sẻ cho roadmap này.', 'error');
+    } finally {
+      setSharingManualRoadmapId('');
+    }
+  }, [accessToken, addNotification, logoutAndRedirect]);
+
+  const handleToggleShareManualRoadmap = useCallback(async (roadmapId, currentlyShared) => {
+    const normalizedRoadmapId = String(roadmapId || '').trim();
+    if (!normalizedRoadmapId || !accessToken || typeof window === 'undefined') {
+      return;
+    }
+
+    setSharingManualRoadmapId(normalizedRoadmapId);
+
+    try {
+      if (currentlyShared) {
+        const updatedRoadmap = await manualRoadmapApi.unshareManualRoadmap(accessToken, normalizedRoadmapId);
+        setMyManualRoadmaps((current) => current.map((roadmap) => (
+          String(roadmap?._id || '').trim() === normalizedRoadmapId
+            ? {
+                ...roadmap,
+                ...updatedRoadmap,
+                shared: false,
+                isPublic: false,
+                status: 'draft',
+                sharedAt: null,
+              }
+            : roadmap
+        )));
+        addNotification('Đã tắt chia sẻ cho manual roadmap.', 'success');
+      } else {
+        const updatedRoadmap = await manualRoadmapApi.shareManualRoadmap(accessToken, normalizedRoadmapId);
+        setMyManualRoadmaps((current) => current.map((roadmap) => (
+          String(roadmap?._id || '').trim() === normalizedRoadmapId
+            ? {
+                ...roadmap,
+                ...updatedRoadmap,
+                shared: true,
+                isPublic: true,
+                status: 'published',
+                sharedAt: updatedRoadmap?.sharedAt || roadmap?.sharedAt || new Date().toISOString(),
+              }
+            : roadmap
+        )));
+        addNotification('Đã bật chia sẻ cho manual roadmap.', 'success');
+      }
+    } catch (err) {
+      if (err?.status === 401) {
+        await logoutAndRedirect();
+        return;
+      }
+
+      addNotification(err?.message || 'Không thể thay đổi trạng thái chia sẻ cho roadmap này.', 'error');
+    } finally {
+      setSharingManualRoadmapId('');
+    }
+  }, [accessToken, addNotification, logoutAndRedirect]);
+
+  const handleCopyManualRoadmapLink = useCallback(async (roadmapId) => {
+    const normalizedRoadmapId = String(roadmapId || '').trim();
+    if (!normalizedRoadmapId || typeof window === 'undefined') {
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}${buildPublicSkillTreeHref(normalizedRoadmapId)}`;
+    setCopyingManualRoadmapId(normalizedRoadmapId);
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.setAttribute('readonly', 'true');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      addNotification('Đã sao chép link public skill tree.', 'success');
+    } catch (err) {
+      addNotification(err?.message || 'Không thể sao chép link lúc này.', 'error');
+    } finally {
+      setCopyingManualRoadmapId('');
+    }
+  }, [addNotification]);
 
   const handleDeleteManualRoadmap = async () => {
     if (!pendingDeleteRoadmap || !accessToken || typeof window === 'undefined') {
@@ -667,11 +848,8 @@ export default function Homepage() {
       setMyManualRoadmaps((prev) => prev.filter((roadmap) => String(roadmap?._id || '').trim() !== normalizedId));
       setManualProgressSummaries((prev) => prev.filter((summary) => summary?.roadmapId !== normalizedId));
       addNotification('Đã xóa roadmap thành công.', 'success');
-      if (typeof window !== 'undefined') {
-        window.location.reload();
-      }
     } catch (err) {
-      if (err?.status === 401) {
+      if (isInvalidSessionError(err)) {
         await logoutAndRedirect();
         return;
       }
@@ -689,7 +867,6 @@ export default function Homepage() {
     setPendingDeleteRoadmap(null);
   };
 
-  const roadmapTags = ['Fullstack Engineer', 'DevOps', 'Game Developer', 'Project Manager', 'Software Architect'];
   const socialAvatars = [
     'https://lh3.googleusercontent.com/aida-public/AB6AXuAm3OZLEw_e4IktWDFZy2iAf8Cw1jTHvNOWvTQHGiNA3g6ZsV_radMO5HphkK6j_SVRQviUpbVRZpvTMyJliwOY2u7BrUoe_wJYBxLT5DB0AfyaUIasLCU2U2o3QiEGu6AfX947BwgkHovy7yugGuVY8qr-XDaJ-FbiEh2WzepR-0yCbMW0zJ0ptnst2hC86wDY6_4XC0VXSuMSSJXTQrob_LI76RHptUioHV6uOAQe5FNsrtUQEJLC8hbeprscLaunOelKDECmoAs',
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBE4ZG-Jjw72WlNfuIVexhs5C8Mm_da1cflBQY_DCKqsS2xnQ44MRodSBQPPVmckSQcSYDnZbVa2Z01yUvJ9bjko2eHXnHh2AIfiOoCouhalixD_NhlElp1fS39nmFm46N_Bc7jsrLIY7WeSr9OX3rdispw5DdhGpbRQKl0VKl5y-AyCreS3YVZe8-5zrB4ZxE-aQfWVNQS-R6O5Q8TCHDZHBZfUgHe0P0N-8SQQCOr7migcmOcGnfhpO5OlaxeKKcCNCDUKQGyZ_4',
@@ -807,9 +984,8 @@ export default function Homepage() {
   );
   const isSingleRoadmapCardPage = visibleRoadmapCards.length === 1;
   const hasPersonalizedRoadmap = onboardingState === 'COMPLETED' && Boolean(accessToken);
-  const myManualRoadmapCards = Array.isArray(myManualRoadmaps)
-    ? myManualRoadmaps.filter((roadmap) => String(roadmap?._id || '').trim())
-    : [];
+  const myManualRoadmapCards = dedupeRoadmapsByRoadmapId(Array.isArray(myManualRoadmaps) ? myManualRoadmaps : [])
+    .filter((roadmap) => String(roadmap?._id || '').trim());
   const myRoadmapCards = [
     ...(hasPersonalizedRoadmap ? [{ kind: 'personalized', id: 'personalized' }] : []),
     ...myManualRoadmapCards.map((roadmap) => ({ kind: 'manual', id: String(roadmap?._id || '').trim(), roadmap })),
@@ -822,10 +998,6 @@ export default function Homepage() {
     (myRoadmapPage + 1) * MY_ROADMAPS_PER_PAGE
   );
   const shouldShowMyRoadmapsSection = Boolean(accessToken) && (hasPersonalizedRoadmap || myManualRoadmapCards.length > 0);
-  const primaryProgressRoadmap = useMemo(() => {
-    const list = Array.isArray(combinedProgressSummaries) ? combinedProgressSummaries : [];
-    return list.find((item) => item?.isPrimary) || list[0] || null;
-  }, [combinedProgressSummaries]);
   const monthlyTotalNodes = useMemo(
     () => monthlyRoadmapStats.reduce((sum, item) => sum + (item.completedNodes || 0), 0),
     [monthlyRoadmapStats]
@@ -840,8 +1012,8 @@ export default function Homepage() {
     [monthlyRoadmapStats]
   );
   const roadmapProgressStack = useMemo(
-    () => combinedProgressSummaries.map((roadmap, index) => {
-      const stats = monthlyRoadmapStats.find((item) => item.roadmapId === roadmap.roadmapId);
+    () => progressRoadmapCards.map((roadmap, index) => {
+      const stats = monthlyRoadmapStats.find((item) => getRoadmapKey(item) === getRoadmapKey(roadmap));
       const totalNodes = roadmap?.totalNodes || (roadmap?.doneNodes || 0) + (roadmap?.pendingNodes || 0);
       const doneNodes = roadmap?.doneNodes || 0;
       const completionPercent = totalNodes > 0
@@ -859,8 +1031,22 @@ export default function Homepage() {
         color,
       };
     }),
-    [combinedProgressSummaries, monthlyRoadmapStats]
+    [progressRoadmapCards, monthlyRoadmapStats]
   );
+  const totalStackNodes = useMemo(
+    () => roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0),
+    [roadmapProgressStack]
+  );
+  const totalStackDoneNodes = useMemo(
+    () => roadmapProgressStack.reduce((sum, item) => sum + (item.doneNodes || 0), 0),
+    [roadmapProgressStack]
+  );
+  const totalStackCompletionPercent = useMemo(() => {
+    if (totalStackNodes === 0) {
+      return 0;
+    }
+    return Math.round((totalStackDoneNodes / totalStackNodes) * 100);
+  }, [totalStackDoneNodes, totalStackNodes]);
   const activitySeries = useMemo(() => {
     const baseSeries = buildActivitySeriesFromBuckets(progressTracking?.buckets || []);
     return baseSeries.slice(-7);
@@ -972,7 +1158,7 @@ export default function Homepage() {
 
             <div className="homepage-hero-modern__content homepage-hero-modern__content--centered">
               <span className="homepage-status homepage-status--badge">
-                {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
+                {accessToken ? `Chào ${displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
               </span>
               <h1 className="homepage-title">
                 La bàn dẫn lối sự nghiệp <span className="homepage-title__nowrap">UET-ers</span>
@@ -1130,9 +1316,9 @@ export default function Homepage() {
                 </div>
                 <div className="homepage-progress__stack">
                   <div className="homepage-progress__stack-label">
-                    {roadmapProgressStack.length} lộ trình đang theo học
+                    Hoàn thành {totalStackCompletionPercent}%
                   </div>
-                  {roadmapProgressStack.reduce((sum, item) => sum + (item.totalNodes || 0), 0) > 0 ? (
+                    {totalStackNodes > 0 ? (
                     <div className="homepage-progress__stack-track" role="list">
                       {roadmapProgressStack.map((entry) => (
                         <div
@@ -1153,7 +1339,7 @@ export default function Homepage() {
                             }}
                           />
                           <span className="homepage-progress__stack-tooltip">
-                            {entry.name}: {entry.monthlyCompleted} node
+                            {entry.name}: {entry.completionPercent}% ({entry.monthlyCompleted} node)
                           </span>
                         </div>
                       ))}
@@ -1286,7 +1472,9 @@ export default function Homepage() {
                 const roadmap = card.roadmap;
                 const roadmapId = card.id;
                 const roadmapTitle = String(roadmap?.title || '').trim() || 'Roadmap tạo thủ công';
-                const roadmapDescription = String(roadmap?.description || '').trim() || 'Roadmap thủ công do bạn tạo.';
+                const isShared = isManualRoadmapShared(roadmap);
+                const isSharing = sharingManualRoadmapId === roadmapId;
+                const isCopying = copyingManualRoadmapId === roadmapId;
                 const isDeleting = deletingManualRoadmapId === roadmapId;
 
                 return (
@@ -1304,7 +1492,39 @@ export default function Homepage() {
                     </div>
                     <div className="homepage-roadmap-card__body">
                       <h3 className="homepage-roadmap-card__title">{roadmapTitle}</h3>
-                      <p className="homepage-roadmap-card__description">{roadmapDescription}</p>
+                      <div className="homepage-roadmap-card__share">
+                        <div className="homepage-roadmap-card__share-row">
+                          <div className="homepage-roadmap-card__share-meta">
+                            <span className="homepage-roadmap-card__share-label">Chia sẻ</span>
+                            <span className="homepage-roadmap-card__share-state">
+                              {isShared ? 'Đang mở công khai' : 'Chỉ mình bạn xem'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isShared}
+                            aria-label={`Chia sẻ roadmap ${roadmapTitle}`}
+                            className={`homepage-roadmap-share-toggle${isShared ? ' is-on' : ''}`}
+                            onClick={() => handleToggleShareManualRoadmap(roadmapId, isShared)}
+                            aria-busy={isSharing}
+                          >
+                            <span className="homepage-roadmap-share-toggle__thumb" />
+                          </button>
+                        </div>
+
+                        {isShared ? (
+                          <button
+                            type="button"
+                            className="homepage-roadmap-share-copy"
+                            onClick={() => handleCopyManualRoadmapLink(roadmapId)}
+                            disabled={isCopying}
+                          >
+                            <Copy size={14} aria-hidden="true" />
+                            <span>{isCopying ? 'Đang sao chép...' : 'Sao chép link'}</span>
+                          </button>
+                        ) : null}
+                      </div>
                       <div className="homepage-roadmap-card__meta homepage-roadmap-card__meta--actions-only">
                         <div className="homepage-roadmap-card__meta-actions">
                           <button
@@ -1312,7 +1532,7 @@ export default function Homepage() {
                             className="homepage-card-action"
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+                                navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}?mine=1`);
                               }
                             }}
                             disabled={isDeleting}
@@ -1431,16 +1651,19 @@ export default function Homepage() {
         <SiteFooter />
       </main>
 
-      {showOnboardingPanel && (
-        <div className="homepage-onboarding-overlay">
-          <OnboardingPanel
-            authToken={accessToken}
-            onUnauthorized={logoutAndRedirect}
-            onCompleted={handleCloseOnboarding}
-            onClose={handleCloseOnboarding}
-          />
-        </div>
-      )}
+      {showOnboardingPanel && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="homepage-onboarding-overlay">
+            <OnboardingPanel
+              authToken={accessToken}
+              onUnauthorized={logoutAndRedirect}
+              onCompleted={handleCloseOnboarding}
+              onClose={handleCloseOnboarding}
+            />
+          </div>,
+          document.body
+        )
+        : null}
       {pendingDeleteRoadmap && typeof document !== 'undefined'
         ? createPortal(
           <div
@@ -1448,6 +1671,7 @@ export default function Homepage() {
             onClick={handleCancelDeleteManualRoadmap}
             role="dialog"
             aria-modal="true"
+            aria-label="Xác nhận xóa roadmap"
           >
             <div
               className="account-delete-modal"
@@ -1459,7 +1683,7 @@ export default function Homepage() {
                 <h3>Xác nhận xóa roadmap</h3>
               </div>
               <p>
-                Bạn có chắc muốn xóa roadmap "{pendingDeleteRoadmap.title}"?
+                Bạn có chắc muốn xóa roadmap &quot;{pendingDeleteRoadmap.title}&quot;?
                 <br />
                 Dữ liệu và tiến độ liên quan sẽ bị xóa vĩnh viễn.
               </p>

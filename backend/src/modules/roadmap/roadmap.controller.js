@@ -3,12 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 const roadmapService = require('./roadmap.service');
-const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
-const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
+const roadmapVersionService = require('./roadmapVersion.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
 const { notifyClientByToken } = require('./roadmap.sse');
 const previewStore = require('./roadmap.preview.store');
@@ -44,6 +43,19 @@ async function listRoadmaps(req, res) {
 	}
 }
 
+async function listManualRoadmaps(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await manualRoadmapService.listByUser(req.user.userId, {
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 async function getRoadmapById(req, res) {
 	try {
 		const roadmap = await roadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
@@ -58,6 +70,7 @@ async function listPublicManualRoadmaps(req, res) {
 	try {
 		const { q, tags, page, limit } = req.query;
 		const normalizedQuery = String(q || '').trim();
+		const userId = String(req.query?.userId || '').trim();
 
 		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
 			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
@@ -73,6 +86,7 @@ async function listPublicManualRoadmaps(req, res) {
 		const result = await manualRoadmapService.listPublic({
 			q: normalizedQuery,
 			tags: selectedTags,
+			userId,
 			page: parsePositiveIntQuery(page, 'page'),
 			limit: parsePositiveIntQuery(limit, 'limit'),
 		});
@@ -94,19 +108,24 @@ async function getPublicManualRoadmapPreviewById(req, res) {
 	}
 }
 
-async function listRoadmapComments(req, res) {
-	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
-}
-
-async function createRoadmapComment(req, res) {
-	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
-}
-
 async function getManualRoadmapById(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
 		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
 		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function listManualRoadmaps(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await manualRoadmapService.listByUser(req.user.userId, {
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -159,6 +178,15 @@ async function updateManualRoadmap(req, res) {
 async function shareManualRoadmap(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.share(req.params.roadmapId, req.user.userId);
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function unshareManualRoadmap(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.unshare(req.params.roadmapId, req.user.userId);
 		return res.json(roadmap);
 	} catch (err) {
 		return mapError(err, res);
@@ -335,17 +363,86 @@ async function getManualRoadmapTags(req, res) {
 	}
 }
 
+async function listManualRoadmapVersions(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await roadmapVersionService.listVersions(
+			req.params.roadmapId,
+			{
+				page: parsePositiveIntQuery(page, 'page'),
+				limit: parsePositiveIntQuery(limit, 'limit'),
+			}
+		);
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getManualRoadmapVersion(req, res) {
+	try {
+		const version = await roadmapVersionService.getVersionById(
+			req.params.roadmapId,
+			req.params.versionId
+		);
+		return res.json(version);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function revertManualRoadmapVersion(req, res) {
+	try {
+		const { roadmapId, versionId } = req.params;
+		const userId = req.user.userId;
+
+		// 1. Get the target version (includes yamlCode and progressState)
+		const version = await roadmapVersionService.getVersionById(roadmapId, versionId);
+
+		// 2. Validate/parse YAML from the version
+		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(version.yamlCode || ''));
+		const { title, description, nodes } = parsed;
+
+		// 3. Get current tags (tags are not stored in versions, keep them as-is)
+		const existing = await manualRoadmapService.getByIdForUser(roadmapId, userId);
+		if (!existing) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+		const tags = manualRoadmapValidation.validateAndNormalizeTags(existing.tags || []);
+
+		// 4. Update draft — this also snapshots the current progress into the new version
+		const updated = await manualRoadmapService.updateDraft(roadmapId, userId, {
+			title,
+			description,
+			yamlCode: String(version.yamlCode || '').trim(),
+			nodes,
+			tags,
+		});
+
+		// 5. Reconcile progress — keep valid node entries, add new nodes as pending (best-effort)
+		const validNodeIds = (updated.nodes || []).map(n => n.nodeId).filter(Boolean);
+		if (validNodeIds.length > 0) {
+			progressService.reconcileProgress(userId, roadmapId, validNodeIds).catch(() => {});
+		}
+
+		return res.json(updated);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
+	listManualRoadmaps,
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
+	listManualRoadmaps,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,
 	shareManualRoadmap,
+	unshareManualRoadmap,
 	deleteManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,
@@ -355,4 +452,7 @@ module.exports = {
 	getProgressHandler,
 	updateNodeStateHandler,
 	getManualRoadmapTags,
+	listManualRoadmapVersions,
+	getManualRoadmapVersion,
+	revertManualRoadmapVersion,
 };

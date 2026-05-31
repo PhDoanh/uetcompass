@@ -97,24 +97,6 @@
     background-color: var(--surface-1);
 }
 
-/* Scrollbar styling */
-.yaml-guide-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.yaml-guide-content::-webkit-scrollbar-track {
-    background: var(--surface-2);
-}
-
-.yaml-guide-content::-webkit-scrollbar-thumb {
-    background: var(--border-1);
-    border-radius: 4px;
-}
-
-.yaml-guide-content::-webkit-scrollbar-thumb:hover {
-    background: var(--border-2);
-}
-
 .yaml-guide-loading {
     display: flex;
     flex-direction: column;
@@ -421,18 +403,6 @@ html[data-theme='dark'] .yaml-guide-close:hover {
 
 html[data-theme='dark'] .yaml-guide-content {
     background-color: #0f172a;
-}
-
-html[data-theme='dark'] .yaml-guide-content::-webkit-scrollbar-track {
-    background: #1e293b;
-}
-
-html[data-theme='dark'] .yaml-guide-content::-webkit-scrollbar-thumb {
-    background: #334155;
-}
-
-html[data-theme='dark'] .yaml-guide-content::-webkit-scrollbar-thumb:hover {
-    background: #475569;
 }
 
 html[data-theme='dark'] .yaml-guide-loading {

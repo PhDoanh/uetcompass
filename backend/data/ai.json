@@ -1,0 +1,345 @@
+{
+  "userId": "",
+  "studentProfileId": "",
+  "isPrimary": true,
+  "roadmapName": "AI Data Engineer",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "mathematics",
+      "nodeType": "topic",
+      "skillName": "Mathematics",
+      "parentNodeId": null,
+      "reason": "Build the mathematical foundation needed to understand models, optimization, and data transformations.",
+      "resources": []
+    },
+    {
+      "nodeId": "linear-algebra-calculus-analysis",
+      "nodeType": "subtopic",
+      "skillName": "Linear Algebra, Calculus, Mathematical Analysis",
+      "parentNodeId": "mathematics",
+      "reason": "Vectors, matrices, gradients, and optimization are core to machine learning and deep learning.",
+      "resources": []
+    },
+    {
+      "nodeId": "differential-calculus",
+      "nodeType": "subtopic",
+      "skillName": "Differential Calculus",
+      "parentNodeId": "mathematics",
+      "reason": "Understand gradients, derivatives, and optimization behavior used by model training algorithms.",
+      "resources": []
+    },
+    {
+      "nodeId": "statistics",
+      "nodeType": "topic",
+      "skillName": "Statistics",
+      "parentNodeId": null,
+      "reason": "Statistics supports experiment design, model evaluation, inference, and uncertainty analysis.",
+      "resources": []
+    },
+    {
+      "nodeId": "statistics-clt",
+      "nodeType": "subtopic",
+      "skillName": "Statistics and Central Limit Theorem",
+      "parentNodeId": "statistics",
+      "reason": "Sampling distributions and the CLT are foundational for inference and metric analysis.",
+      "resources": []
+    },
+    {
+      "nodeId": "hypothesis-testing",
+      "nodeType": "subtopic",
+      "skillName": "Hypothesis Testing",
+      "parentNodeId": "statistics",
+      "reason": "Validate assumptions and compare model, product, or business outcomes with statistical rigor.",
+      "resources": []
+    },
+    {
+      "nodeId": "probability-sampling",
+      "nodeType": "subtopic",
+      "skillName": "Probability and Sampling",
+      "parentNodeId": "statistics",
+      "reason": "Probability and sampling methods explain uncertainty, bias, and representativeness in datasets.",
+      "resources": []
+    },
+    {
+      "nodeId": "ab-testing",
+      "nodeType": "subtopic",
+      "skillName": "A/B Testing",
+      "parentNodeId": "statistics",
+      "reason": "Controlled experiments help evaluate product changes, model impact, and business metrics.",
+      "resources": []
+    },
+    {
+      "nodeId": "test-sensitivity",
+      "nodeType": "subtopic",
+      "skillName": "Increasing Test Sensitivity",
+      "parentNodeId": "statistics",
+      "reason": "Improve experiment power and reduce noise when detecting meaningful changes.",
+      "resources": []
+    },
+    {
+      "nodeId": "ratio-metrics",
+      "nodeType": "subtopic",
+      "skillName": "Ratio Metrics",
+      "parentNodeId": "statistics",
+      "reason": "Many production metrics are ratios and need careful variance and interpretation handling.",
+      "resources": []
+    },
+    {
+      "nodeId": "econometrics",
+      "nodeType": "topic",
+      "skillName": "Econometrics",
+      "parentNodeId": null,
+      "reason": "Econometrics connects statistical modeling with causal and time-dependent real-world data.",
+      "resources": []
+    },
+    {
+      "nodeId": "econometrics-prerequisites",
+      "nodeType": "subtopic",
+      "skillName": "Pre-requisites of Econometrics",
+      "parentNodeId": "econometrics",
+      "reason": "Understand regression assumptions, estimators, bias, and causal interpretation before advanced modeling.",
+      "resources": []
+    },
+    {
+      "nodeId": "regression-timeseries-distributions",
+      "nodeType": "subtopic",
+      "skillName": "Regression, Time Series, Fitting Distributions",
+      "parentNodeId": "econometrics",
+      "reason": "Forecasting, regression, and distribution fitting are common data science and analytics tasks.",
+      "resources": []
+    },
+    {
+      "nodeId": "coding",
+      "nodeType": "topic",
+      "skillName": "Coding",
+      "parentNodeId": null,
+      "reason": "AI and data roles require practical programming for data pipelines, experiments, and production integration.",
+      "resources": []
+    },
+    {
+      "nodeId": "python-ai",
+      "nodeType": "subtopic",
+      "skillName": "Learn Python Programming Language",
+      "parentNodeId": "coding",
+      "reason": "Python is the dominant language for data processing, notebooks, machine learning, and AI tooling.",
+      "resources": []
+    },
+    {
+      "nodeId": "dsa-python",
+      "nodeType": "subtopic",
+      "skillName": "Data Structures and Algorithms (Python)",
+      "parentNodeId": "coding",
+      "reason": "Efficient data structures and algorithms improve data processing and problem-solving capability.",
+      "resources": []
+    },
+    {
+      "nodeId": "sql-ai",
+      "nodeType": "subtopic",
+      "skillName": "Learn SQL",
+      "parentNodeId": "coding",
+      "reason": "SQL is essential for querying warehouses, preparing datasets, and validating analytical results.",
+      "resources": []
+    },
+    {
+      "nodeId": "exploratory-data-analysis",
+      "nodeType": "topic",
+      "skillName": "Exploratory Data Analysis",
+      "parentNodeId": null,
+      "reason": "EDA turns raw data into hypotheses, data quality findings, and modeling direction.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-understanding-analysis-visualization",
+      "nodeType": "subtopic",
+      "skillName": "Data Understanding, Data Analysis and Visualization",
+      "parentNodeId": "exploratory-data-analysis",
+      "reason": "Inspect distributions, missing values, anomalies, relationships, and business meaning before modeling.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-cleaning",
+      "nodeType": "subtopic",
+      "skillName": "Data Cleaning",
+      "parentNodeId": "exploratory-data-analysis",
+      "reason": "Clean, normalize, and validate data so downstream models and dashboards are trustworthy.",
+      "resources": []
+    },
+    {
+      "nodeId": "feature-engineering",
+      "nodeType": "subtopic",
+      "skillName": "Feature Engineering",
+      "parentNodeId": "exploratory-data-analysis",
+      "reason": "Transform raw columns into useful signals for statistical models and machine learning systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-visualization",
+      "nodeType": "subtopic",
+      "skillName": "Data Visualization",
+      "parentNodeId": "exploratory-data-analysis",
+      "reason": "Use charts and visual summaries to communicate patterns, outliers, and model behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "machine-learning",
+      "nodeType": "topic",
+      "skillName": "Machine Learning",
+      "parentNodeId": null,
+      "reason": "Machine learning provides predictive and pattern-recognition methods for AI/data products.",
+      "resources": []
+    },
+    {
+      "nodeId": "classic-advanced-ml",
+      "nodeType": "subtopic",
+      "skillName": "Classic ML and Advanced ML",
+      "parentNodeId": "machine-learning",
+      "reason": "Learn supervised, unsupervised, ensemble, and neural-network approaches for different data problems.",
+      "resources": []
+    },
+    {
+      "nodeId": "supervised-learning",
+      "nodeType": "subtopic",
+      "skillName": "Supervised Learning",
+      "parentNodeId": "machine-learning",
+      "reason": "Classification and regression models solve many labeled prediction problems.",
+      "resources": []
+    },
+    {
+      "nodeId": "unsupervised-learning",
+      "nodeType": "subtopic",
+      "skillName": "Unsupervised Learning",
+      "parentNodeId": "machine-learning",
+      "reason": "Clustering, dimensionality reduction, and representation methods reveal structure in unlabeled data.",
+      "resources": []
+    },
+    {
+      "nodeId": "model-evaluation",
+      "nodeType": "subtopic",
+      "skillName": "Model Evaluation",
+      "parentNodeId": "machine-learning",
+      "reason": "Choose metrics, validation strategies, and baselines to judge model quality reliably.",
+      "resources": []
+    },
+    {
+      "nodeId": "deep-learning",
+      "nodeType": "topic",
+      "skillName": "Deep Learning",
+      "parentNodeId": null,
+      "reason": "Deep learning powers modern AI for images, text, speech, recommendation, and generative systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "fully-connected-cnn-rnn-lstm-transformers",
+      "nodeType": "subtopic",
+      "skillName": "Fully Connected, CNN, RNN, LSTM, Transformers, Transfer Learning",
+      "parentNodeId": "deep-learning",
+      "reason": "Understand the major neural architectures and where each architecture is useful.",
+      "resources": []
+    },
+    {
+      "nodeId": "neural-networks",
+      "nodeType": "subtopic",
+      "skillName": "Neural Networks",
+      "parentNodeId": "deep-learning",
+      "reason": "Learn layers, activations, losses, backpropagation, regularization, and training loops.",
+      "resources": []
+    },
+    {
+      "nodeId": "cnn",
+      "nodeType": "subtopic",
+      "skillName": "Convolutional Neural Networks",
+      "parentNodeId": "deep-learning",
+      "reason": "CNNs are a foundation for computer vision and spatial feature extraction.",
+      "resources": []
+    },
+    {
+      "nodeId": "rnn-lstm",
+      "nodeType": "subtopic",
+      "skillName": "RNN and LSTM",
+      "parentNodeId": "deep-learning",
+      "reason": "Sequence models provide historical context for language, time series, and event data.",
+      "resources": []
+    },
+    {
+      "nodeId": "transformers",
+      "nodeType": "subtopic",
+      "skillName": "Transformers",
+      "parentNodeId": "deep-learning",
+      "reason": "Transformer architectures are central to modern NLP, multimodal AI, and foundation models.",
+      "resources": []
+    },
+    {
+      "nodeId": "transfer-learning",
+      "nodeType": "subtopic",
+      "skillName": "Transfer Learning",
+      "parentNodeId": "deep-learning",
+      "reason": "Reuse pretrained models to reduce data requirements and accelerate practical AI applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "mlops",
+      "nodeType": "topic",
+      "skillName": "MLOps",
+      "parentNodeId": null,
+      "reason": "Production AI work needs repeatable deployment, monitoring, governance, and lifecycle management.",
+      "resources": []
+    },
+    {
+      "nodeId": "deployment-models-cicd",
+      "nodeType": "subtopic",
+      "skillName": "Deployment Models and CI/CD",
+      "parentNodeId": "mlops",
+      "reason": "Package, test, deploy, and roll back models through reliable automated workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "model-serving",
+      "nodeType": "subtopic",
+      "skillName": "Model Serving",
+      "parentNodeId": "mlops",
+      "reason": "Expose trained models through batch jobs, APIs, streaming systems, or embedded runtimes.",
+      "resources": []
+    },
+    {
+      "nodeId": "model-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Model Monitoring",
+      "parentNodeId": "mlops",
+      "reason": "Track latency, errors, drift, data quality, and model performance after deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-pipelines",
+      "nodeType": "topic",
+      "skillName": "Data Pipelines",
+      "parentNodeId": null,
+      "reason": "AI data engineers need reliable data movement, transformation, and orchestration for model-ready datasets.",
+      "resources": []
+    },
+    {
+      "nodeId": "etl-elt",
+      "nodeType": "subtopic",
+      "skillName": "ETL and ELT",
+      "parentNodeId": "data-pipelines",
+      "reason": "Design extraction, transformation, loading, and warehouse-first processing flows.",
+      "resources": []
+    },
+    {
+      "nodeId": "workflow-orchestration",
+      "nodeType": "subtopic",
+      "skillName": "Workflow Orchestration",
+      "parentNodeId": "data-pipelines",
+      "reason": "Schedule, retry, monitor, and dependency-manage data workflows for reproducible AI pipelines.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-quality",
+      "nodeType": "subtopic",
+      "skillName": "Data Quality",
+      "parentNodeId": "data-pipelines",
+      "reason": "Validate schema, freshness, completeness, ranges, and anomalies before data reaches models.",
+      "resources": []
+    }
+  ]
+}

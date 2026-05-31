@@ -67,7 +67,9 @@ export function NotificationProvider({ children, sseToken }) {
         if (payload.status === 'completed') {
           requestRefetch();
         }
-      } catch {}
+      } catch {
+        // Ignore malformed notification payloads.
+      }
     });
     es.addEventListener('roadmap_preview_ready', async (event) => {
       if (acceptingPreviewRef.current) {

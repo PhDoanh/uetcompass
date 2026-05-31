@@ -13,8 +13,10 @@ const progressRouter = require('./modules/progress/progress.routes');
 const { accountRouter } = require('./modules/account/account.routes');
 const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { reviewRouter } = require('./modules/review/review.routes');
+const jobRouter = require('./modules/job-market/job.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
+const { initializeUserSocialStats } = require('./modules/account/account.service');
 
 const app = express();
 
@@ -60,7 +62,10 @@ app.use(express.json());
 const mongoose = require('mongoose');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uetcompass';
 mongoose.connect(MONGODB_URI)
-	.then(() => console.log('Connected to MongoDB'))
+	.then(async () => {
+		console.log('Connected to MongoDB');
+		await initializeUserSocialStats();
+	})
 	.catch(err => console.error('MongoDB connection error:', safeErrorMessage(err)));
 
 app.get('/health', (req, res) => {
@@ -77,8 +82,10 @@ app.use('/api/resources', resourcesRouter);
 app.use('/api/resources', academicRouter);
 app.use('/api/market', trendsRouter);
 app.use('/api/account', accountRouter);
+app.use('/api/jobs', jobRouter);
 
 app.use((err, req, res, next) => {
+	void next;
 	const status = err?.status || 500;
 	const code = err?.code || 'INTERNAL_ERROR';
 	const message = err?.message === 'CORS_ORIGIN_DENIED' ? 'Origin not allowed.' : err?.message || 'Unexpected server error';

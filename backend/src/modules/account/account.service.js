@@ -64,7 +64,7 @@ function resolveOptionalViewerUserId(req = {}) {
   try {
     const payload = verifyAccessToken(bearerToken);
     return String(payload?.userId || '').trim();
-  } catch (_) {
+  } catch {
     return '';
   }
 }

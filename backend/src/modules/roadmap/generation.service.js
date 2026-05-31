@@ -4,7 +4,6 @@
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
-const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');

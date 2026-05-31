@@ -229,7 +229,9 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
         try {
             const progressDoc = await RoadmapProgress.findOne({ userId, roadmapId: existing._id }).lean();
             await roadmapVersionService.createVersion(existing._id, existing.yamlCode, progressDoc?.state ?? null);
-        } catch (_) {}
+        } catch {
+            // Ignore versioning errors to avoid blocking roadmap updates
+        }
     })();
 
     return existing.toObject();

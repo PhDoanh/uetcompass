@@ -43,19 +43,6 @@ async function listRoadmaps(req, res) {
 	}
 }
 
-async function listManualRoadmaps(req, res) {
-	try {
-		const { page, limit } = req.query;
-		const result = await manualRoadmapService.listByUser(req.user.userId, {
-			page: parsePositiveIntQuery(page, 'page'),
-			limit: parsePositiveIntQuery(limit, 'limit'),
-		});
-		return res.json(result);
-	} catch (err) {
-		return mapError(err, res);
-	}
-}
-
 async function getRoadmapById(req, res) {
 	try {
 		const roadmap = await roadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
@@ -437,7 +424,6 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
-	listManualRoadmaps,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

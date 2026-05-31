@@ -1,8 +1,8 @@
-const { ManualRoadmap } = require('../roadmap/manualRoadmap.model');
 const SkillTrendSnapshot = require('../scraping/models/skillTrendSnapshot.model');
 const LearningResource = require('../scraping/models/learningResource.model');
 const { RESOURCE_MAX_RESULTS } = require('../scraping/adapters/tavily.adapter');
 const skillService = require('../skill/skill.service');
+const Roadmap = require('../roadmap/roadmap.model');
 
 async function resolveCourseName(courseCode) {
   const roadmap = await Roadmap.findOne(

@@ -81,6 +81,7 @@ app.use('/api/account', accountRouter);
 app.use('/api/jobs', jobRouter);
 
 app.use((err, req, res, next) => {
+	void next;
 	const status = err?.status || 500;
 	const code = err?.code || 'INTERNAL_ERROR';
 	const message = err?.message === 'CORS_ORIGIN_DENIED' ? 'Origin not allowed.' : err?.message || 'Unexpected server error';

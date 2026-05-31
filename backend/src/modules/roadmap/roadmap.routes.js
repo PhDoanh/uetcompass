@@ -33,11 +33,11 @@ roadmapRouter.get('/sse', (req, res) => {
 		return;
 	}
 
-	let userId = '';
+	let userId;
 	try {
 		const payload = verifyAccessToken(sseToken);
 		userId = String(payload?.userId || '').trim();
-	} catch (_) {
+	} catch {
 		res.writeHead(401, {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',

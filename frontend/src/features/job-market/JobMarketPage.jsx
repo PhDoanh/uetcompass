@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Banknote,
@@ -69,6 +68,20 @@ function findFact(values = [], pattern) {
     return values.find((value) => pattern.test(String(value || '')));
 }
 
+function normalizeJobLocation(value) {
+    const raw = String(value || '').trim();
+    const plain = raw
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    if (!raw || plain.includes('ha noi') || plain.includes('hanoi') || plain.includes('tim kiem')) {
+        return 'Hà Nội';
+    }
+
+    return raw;
+}
+
 function getJobFacts(job) {
     const skills = Array.isArray(job.skills) ? job.skills.filter(Boolean) : [];
     const salary = job.salaryText || findFact(skills, /trieu|triệu|usd|vnd|\$|thoa|thoả|luong|lương/i);
@@ -80,7 +93,7 @@ function getJobFacts(job) {
 
     return {
         experience: experience || 'Không yêu cầu',
-        location: location || 'Đang cập nhật',
+        location: normalizeJobLocation(location),
         posted: posted || 'Đang cập nhật',
         salary: salary || 'Thỏa thuận',
         workingMode: job.workingMode || 'Theo tin tuyển dụng',
@@ -126,6 +139,8 @@ function CompanyLogo({ job, size = 'card' }) {
 }
 
 function JobCard({ job, isSelected, onClick }) {
+    const location = normalizeJobLocation(job.city || job.location);
+
     return (
         <button
             type="button"
@@ -148,12 +163,10 @@ function JobCard({ job, isSelected, onClick }) {
                 <p className="jm-card__audience">{job.targetAudienceLabel}</p>
             )}
             <div className="jm-card__facts">
-                {job.city && (
-                    <span className="jm-card__location">
-                        <MapPin size={12} />
-                        {job.city}
-                    </span>
-                )}
+                <span className="jm-card__location">
+                    <MapPin size={12} />
+                    {location}
+                </span>
                 {job.salaryText && <span className="jm-card__salary">{job.salaryText}</span>}
             </div>
             {job.skills?.length > 0 && (
@@ -184,7 +197,6 @@ function JobDetail({ job }) {
     const facts = getJobFacts(job);
     const displaySkills = getDisplaySkills(job);
     const overview = [
-        { label: 'Phu hop', value: job.targetAudienceLabel || 'Intern / Fresher', icon: Info },
         { label: 'Mức lương', value: facts.salary, icon: Banknote, tone: 'salary' },
         { label: 'Kinh nghiệm', value: facts.experience, icon: Clock3 },
         { label: 'Địa điểm', value: facts.location, icon: MapPin },

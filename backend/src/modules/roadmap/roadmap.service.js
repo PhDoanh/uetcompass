@@ -1,6 +1,8 @@
 'use strict';
 
 const { ManualRoadmap } = require('./manualRoadmap.model');
+const roadmapVersionService = require('./roadmapVersion.service');
+const { buildManualRoadmapYaml } = require('./roadmapYaml.service');
 
 function toManualRoadmapNode(node) {
 	const relatedCourses = Array.isArray(node.relatedCourses) ? node.relatedCourses : [];
@@ -128,11 +130,17 @@ async function commitAccepted(userId, { studentProfileId, roadmapName, personali
 	}
 
 	const mappedNodes = Array.isArray(nodes) ? nodes.map(toManualRoadmapNode) : [];
-	return ManualRoadmap.create({
+	const yamlCode = buildManualRoadmapYaml({
+		title: roadmapName,
+		description: '',
+		nodes: mappedNodes,
+	});
+
+	const created = await ManualRoadmap.create({
 		userId,
 		title: roadmapName,
 		description: '',
-		yamlCode: `# Auto-generated roadmap: ${roadmapName}`,
+		yamlCode,
 		nodes: mappedNodes,
 		edges: [],
 		isPrimary: !!isPrimary,
@@ -144,6 +152,10 @@ async function commitAccepted(userId, { studentProfileId, roadmapName, personali
 		isPublic: false,
 		status: 'draft',
 	});
+
+	roadmapVersionService.createVersion(created._id, yamlCode, null).catch(() => { });
+
+	return created;
 }
 
 async function switchPrimary(roadmapId, userId) {

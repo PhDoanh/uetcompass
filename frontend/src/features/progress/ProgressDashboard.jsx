@@ -602,7 +602,7 @@ export default function ProgressDashboard() {
           </section>
         ) : null}
 
-        {detailRoadmapId ? (
+        {selectedRoadmapId ? (
           <section className={styles.detailSection}>
             <div className={styles.detailGrid}>
               <div className={styles.detailColumn}>

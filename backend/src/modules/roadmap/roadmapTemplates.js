@@ -9,8 +9,8 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const yaml = require('js-yaml');
 const { generateEdgesFromHierarchy } = require('./graph.generator');
+const { buildManualRoadmapYaml } = require('./roadmapYaml.service');
 
 const DATA_DIR = path.join(__dirname, '../../..', 'data');
 
@@ -39,21 +39,6 @@ function convertNode(n) {
     };
 }
 
-function buildYamlCode(title, description, nodes) {
-    const obj = {
-        title,
-        description,
-        nodes: nodes.map((n) => {
-            const entry = { nodeId: n.nodeId, label: n.label, type: n.type };
-            if (n.parentNodeId) entry.parentNodeId = n.parentNodeId;
-            if (n.description) entry.description = n.description.slice(0, 200);
-            return entry;
-        }),
-    };
-    const raw = yaml.dump(obj, { lineWidth: 300 });
-    return raw.length > 10240 ? raw.slice(0, 10240) : raw;
-}
-
 // Loaded once on first access
 let _cache = null;
 
@@ -79,7 +64,7 @@ function loadTemplates() {
 
             const edges = generateEdgesFromHierarchy(nodes, { includePrerequisites: true });
             const description = `Official ${title} roadmap curated by UETCompass.`;
-            const yamlCode = buildYamlCode(title, description, nodes);
+            const yamlCode = buildManualRoadmapYaml({ title, description, nodes });
 
             _cache.push({
                 _id: stableId(title),

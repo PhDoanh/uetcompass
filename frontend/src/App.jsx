@@ -19,6 +19,7 @@ import {
 	toRouteKey,
 } from './shared/navigation';
 import './style/navigation-orchestration.css';
+import { X } from 'lucide-react';
 
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));

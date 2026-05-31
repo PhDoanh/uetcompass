@@ -13,6 +13,7 @@ const progressRouter = require('./modules/progress/progress.routes');
 const { accountRouter } = require('./modules/account/account.routes');
 const { roadmapRouter } = require('./modules/roadmap/roadmap.routes');
 const { reviewRouter } = require('./modules/review/review.routes');
+const jobRouter = require('./modules/job-market/job.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
 
@@ -77,6 +78,7 @@ app.use('/api/resources', resourcesRouter);
 app.use('/api/resources', academicRouter);
 app.use('/api/market', trendsRouter);
 app.use('/api/account', accountRouter);
+app.use('/api/jobs', jobRouter);
 
 app.use((err, req, res, next) => {
 	const status = err?.status || 500;

@@ -192,7 +192,11 @@
 }
 
 .skill-tree-panel__tab-btn:hover:not(:disabled) {
-  background: #eff6ff;
+  background: #f0f4f8;
+}
+
+html[data-theme='dark'] .skill-tree-panel__tab-btn:hover:not(:disabled) {
+  background: #2b6fd0;
 }
 
 .skill-tree-panel__tab-btn.is-active {

@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import authApi from '../services/auth.api';
 import { useAuth } from '../providers/AuthProvider';
+import { navigateTo } from '../shared/navigation';
 
 const ONBOARDING_REDIRECT_NOTICE_KEY = 'onboardingRedirectNotice';
+
+function isInvalidSessionError(error) {
+	return error?.status === 401 || (error?.status === 403 && error?.code === 'FORBIDDEN');
+}
 
 export default function OnboardingGuard({ children }) {
 	const { accessToken, onboardingState, updateAuthInfo, logoutAndRedirect } = useAuth();
@@ -29,9 +34,7 @@ export default function OnboardingGuard({ children }) {
 
 		const resolveFromProfile = async () => {
 			if (!accessToken) {
-				if (typeof window !== 'undefined') {
-					window.location.replace('/');
-				}
+				navigateTo('/', { replace: true });
 				return;
 			}
 
@@ -61,13 +64,13 @@ export default function OnboardingGuard({ children }) {
 					ONBOARDING_REDIRECT_NOTICE_KEY,
 					'Cần hoàn thành Onboarding để vào tính năng này'
 				);
-				window.location.replace('/');
+				navigateTo('/', { replace: true });
 			} catch (error) {
 				if (!isMounted) {
 					return;
 				}
 
-				if (error?.status === 401) {
+				if (isInvalidSessionError(error)) {
 					logoutAndRedirect?.();
 					return;
 				}
@@ -76,7 +79,7 @@ export default function OnboardingGuard({ children }) {
 					ONBOARDING_REDIRECT_NOTICE_KEY,
 					'Cần hoàn thành Onboarding để vào tính năng này'
 				);
-				window.location.replace('/');
+				navigateTo('/', { replace: true });
 			}
 		};
 

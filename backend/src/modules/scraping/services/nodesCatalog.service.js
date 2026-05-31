@@ -31,7 +31,9 @@ async function getActiveRoadmapNodes() {
     return nodes;
   } catch (error) {
     console.error('[NodesCatalog] Failed to fetch active roadmap nodes:', error.message);
-    throw new Error(`Failed to fetch roadmap nodes: ${error.message}`);
+    const thrown = new Error(`Failed to fetch roadmap nodes: ${error.message}`);
+    thrown.cause = error;
+    throw thrown;
   }
 }
 
@@ -52,7 +54,9 @@ async function getRoadmapNodeById(nodeId) {
     return node;
   } catch (error) {
     console.error('[NodesCatalog] Failed to fetch roadmap node:', error.message);
-    throw new Error(`Failed to fetch roadmap node: ${error.message}`);
+    const thrown = new Error(`Failed to fetch roadmap node: ${error.message}`);
+    thrown.cause = error;
+    throw thrown;
   }
 }
 

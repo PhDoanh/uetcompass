@@ -2,7 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
-**Updated**: 2026-03-14  
+**Updated**: 2026-05-13  
 **Feeds into**: [plan.md](plan.md), [data-model.md](data-model.md), [contracts/rest-api.md](contracts/rest-api.md)
 
 ---
@@ -28,7 +28,7 @@
 
 ## R-002: SSE Architecture — dedicated module or reuse existing notification channel?
 
-**Question**: Should Progress Tracking push `progress:update` events through the existing `notification.sse.js` channel (Feature 005) or create a dedicated `progress.sse.js`?
+**Question**: Should Progress Tracking push `progress:updated` events through the existing `notification.sse.js` channel (Feature 005) or create a dedicated `progress.sse.js`?
 
 **Decision**: Create a dedicated `progress.sse.js` module following exactly the same Map-based pattern used by `onboarding.sse.js` and `notification.sse.js`.
 
@@ -39,7 +39,7 @@
 
 **Connection survival**: 15-second heartbeat comment line (`: heartbeat\n\n`) matches all other SSE modules. Beats Render's ~30-second idle connection close.
 
-**Auth on SSE endpoint**: Token passed as `?token=<JWT>` query param — EventSource cannot send custom headers. Auth errors are returned as `event: error` SSE frames (not HTTP 401) so the browser's EventSource does not enter an infinite reconnect loop.
+**Auth on SSE endpoint**: Token passed as `?sseToken=<JWT>` query param — EventSource cannot send custom headers. Auth errors are returned as `event: error` SSE frames (not HTTP 401) so the browser's EventSource does not enter an infinite reconnect loop.
 
 **Alternatives considered**:
 - WebSocket: Rejected — constitution already established SSE as the real-time primitive; no WebSocket infrastructure exists.
@@ -119,3 +119,36 @@ const totalNodes = doneNodes + inProgressNodes + pendingNodes;
 **Alternatives considered**:
 - Onboarding-based enrollment list: legacy assumption, not canonical after 009. Rejected.
 - Skill Tree primary-only scope: fails multi-roadmap requirement. Rejected.
+
+---
+
+## R-007: Tracking Tables Data Source — how to derive learning activity windows
+
+**Question**: Progress Tracking must show weekly/monthly learning frequency and completion rate derived from node status transitions, without introducing a new learning event log. What data should be stored to support this?
+
+**Decision**: Store a per-node, per-roadmap activity record in a derived `roadmap_progress_activity` collection, capturing only the latest `inProgressAt` and `doneAt` timestamps per `(userId, roadmapId, nodeId)` pair. Update these timestamps when Skill Tree transitions a node to `inProgress` or `completed`. Tracking tables compute activity windows from these timestamps and aggregate them by week/month.
+
+**Rationale**:
+- Provides the minimum state needed to derive learning activity windows while avoiding a full event log.
+- Keeps ownership boundaries intact: Skill Tree triggers updates; Progress owns the derived activity store.
+- Aggregations are efficient (bounded by number of nodes, not number of events).
+
+**Alternatives considered**:
+- Full transition event log: violates the spec constraint (no new learning event log). Rejected.
+- On-the-fly inference from current status only: cannot derive windows or completion timestamps. Rejected.
+
+---
+
+## R-008: Tracking Tables API Shape — single endpoint with scope + grouping
+
+**Question**: How should the dashboard request tracking tables for both all-roadmaps and per-roadmap views with weekly/monthly grouping?
+
+**Decision**: Add `GET /api/progress/tracking` with query params `scope=all|roadmap`, `roadmapId` (required when scope=roadmap), and `groupBy=weekly|monthly`. The response returns `buckets[]` plus a `summary` object for the selected scope.
+
+**Rationale**:
+- A single endpoint keeps the API surface small and aligns with the dashboard’s scope toggle.
+- Weekly/monthly grouping is explicit and avoids implicit defaults.
+
+**Alternatives considered**:
+- Separate endpoints for all-roadmaps and per-roadmap: redundant API surface. Rejected.
+- Client-side aggregation: requires downloading all node activity data, increasing payload size and coupling. Rejected.

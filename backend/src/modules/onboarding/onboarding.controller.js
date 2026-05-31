@@ -1,7 +1,7 @@
 const onboardingService = require('./onboarding.service');
 const { toHttpError } = require('./onboarding.errors');
 
-async function getDraft(req, res, next) {
+async function getDraft(req, res) {
 	try {
 		const draft = await onboardingService.getDraft(req.user.userId);
 
@@ -26,7 +26,7 @@ async function getDraft(req, res, next) {
 	}
 }
 
-async function getCourseCatalog(req, res, next) {
+async function getCourseCatalog(req, res) {
 	try {
 		const payload = await onboardingService.getCourseCatalog();
 		return res.status(200).json(payload);
@@ -36,7 +36,7 @@ async function getCourseCatalog(req, res, next) {
 	}
 }
 
-async function putDraft(req, res, next) {
+async function putDraft(req, res) {
 	try {
 		const draft = await onboardingService.upsertDraft(req.user.userId, req.body || {});
 		return res.status(200).json(draft);
@@ -46,7 +46,7 @@ async function putDraft(req, res, next) {
 	}
 }
 
-async function submit(req, res, next) {
+async function submit(req, res) {
 	try {
 		const result = await onboardingService.submitProfile(req.user.userId, req.body || {});
 		return res.status(202).json({

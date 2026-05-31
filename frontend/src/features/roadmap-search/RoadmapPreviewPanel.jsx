@@ -2,14 +2,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
+import { navigateTo } from '../../shared/navigation';
 
 function normalizePreviewNodes(nodes = []) {
+    const seenIds = new Set();
     const mappedNodes = nodes
         .map((node) => {
             const nodeId = String(node?.nodeId || node?.id || '').trim();
-            if (!nodeId) {
+            if (!nodeId || seenIds.has(nodeId)) {
                 return null;
             }
+            seenIds.add(nodeId);
 
             const metadata = typeof node?.metadata === 'object' && node?.metadata !== null ? node.metadata : {};
             const parentNodeId = String(
@@ -28,6 +31,10 @@ function normalizePreviewNodes(nodes = []) {
                         type: 'course',
                     }))
                     : []);
+            const rawType = String(node?.type || '').trim();
+            const type = parentNodeId
+                ? (rawType === 'choice_item' ? 'choice_item' : 'sub_topic')
+                : (rawType || 'main_topic');
 
             return {
                 nodeId,
@@ -35,7 +42,7 @@ function normalizePreviewNodes(nodes = []) {
                 description: String(node?.description || node?.reason || '').trim(),
                 parent: parentNodeId || undefined,
                 parentNodeId: parentNodeId || undefined,
-                type: String(node?.type || '').trim() || (parentNodeId ? 'sub_topic' : 'main_topic'),
+                type,
                 prerequisites,
                 status: String(node?.status || 'pending').trim() || 'pending',
                 resources,
@@ -106,7 +113,8 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
                 throw new Error('Roadmap not found');
             }
 
-            window.location.assign(`/skill-tree/${encodeURIComponent(roadmapId)}`);
+            window.dispatchEvent(new CustomEvent('roadmap-search-overlay-close'));
+            navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
         } catch {
             // Keep panel interaction non-blocking; fail silently like homepage card flow.
         } finally {
@@ -153,54 +161,60 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
     }, [normalizedNodes, previewEdges]);
 
     if (previewStatus === 'loading') {
-        return <p className="roadmap-preview-panel__state">Loading preview...</p>;
-    }
-
-    if (previewStatus === 'error') {
-        return <p className="roadmap-preview-panel__state roadmap-preview-panel__state--error">{errorMessage || 'Unable to load roadmap preview.'}</p>;
-    }
-
-    if (!previewData) {
-        return <p className="roadmap-preview-panel__state">Select a roadmap to preview details.</p>;
-    }
-
-    if (!Array.isArray(previewData.nodes) || previewData.nodes.length === 0) {
         return (
-            <div className="roadmap-preview-panel" aria-label="Roadmap preview panel">
-                <div className="roadmap-preview-panel__hero">
-                    <div>
-                        <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
-                        <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
-                    </div>
-                    <button type="button" onClick={handleOpenRoadmap} className="roadmap-preview-panel__cta" disabled={openingRoadmap}>
-                        {openingRoadmap ? 'Đang mở...' : 'Mở roadmap'}
-                    </button>
-                </div>
-                <p className="roadmap-preview-panel__state">No nodes to preview yet.</p>
+            <div className="roadmap-preview-panel roadmap-preview-panel--empty" aria-label="Xem trước lộ trình">
+                <p className="roadmap-preview-panel__placeholder">Đang tải bản xem trước...</p>
             </div>
         );
     }
 
+    if (previewStatus === 'error') {
+        return (
+            <div className="roadmap-preview-panel roadmap-preview-panel--empty" aria-label="Xem trước lộ trình">
+                <p className="roadmap-preview-panel__state roadmap-preview-panel__state--error">
+                    {errorMessage || 'Không tải được bản xem trước.'}
+                </p>
+            </div>
+        );
+    }
+
+    if (!previewData) {
+        return (
+            <div className="roadmap-preview-panel roadmap-preview-panel--empty" aria-label="Xem trước lộ trình">
+                <p className="roadmap-preview-panel__placeholder">
+                    Chọn một lộ trình để xem <span className="roadmap-preview-panel__placeholder-accent">bản xem trước</span>
+                </p>
+            </div>
+        );
+    }
+
+    const hasNodes = Array.isArray(previewData.nodes) && previewData.nodes.length > 0;
+
     return (
-        <div className="roadmap-preview-panel" aria-label="Roadmap preview panel">
-            <div className="roadmap-preview-panel__hero">
-                <div>
-                    <h2 className="roadmap-preview-panel__title">{previewData.title || 'Roadmap Preview'}</h2>
-                    <p className="roadmap-preview-panel__description">{previewData.description || 'No description available.'}</p>
-                </div>
-                <button type="button" onClick={handleOpenRoadmap} className="roadmap-preview-panel__cta" disabled={openingRoadmap}>
-                    {openingRoadmap ? 'Đang mở...' : 'Mở roadmap'}
+        <div className="roadmap-preview-panel" aria-label="Xem trước lộ trình">
+            <div className="roadmap-preview-panel__toolbar">
+                <button
+                    type="button"
+                    onClick={handleOpenRoadmap}
+                    className="roadmap-preview-panel__open"
+                    disabled={openingRoadmap}
+                >
+                    {openingRoadmap ? 'Đang mở...' : 'Mở lộ trình'}
                 </button>
             </div>
             <div className="roadmap-preview-panel__graph-shell">
-                <RoadmapGraphRenderer
-                    nodes={normalizedNodes}
-                    edges={previewEdges}
-                    positions={layoutPositions}
-                    onNodeSelect={() => { }}
-                    loading={isComputingLayout}
-                    controlsVisible={false}
-                />
+                {hasNodes ? (
+                    <RoadmapGraphRenderer
+                        nodes={normalizedNodes}
+                        edges={previewEdges}
+                        positions={layoutPositions}
+                        onNodeSelect={() => { }}
+                        loading={isComputingLayout}
+                        controlsVisible
+                    />
+                ) : (
+                    <p className="roadmap-preview-panel__state">Lộ trình chưa có nút để xem trước.</p>
+                )}
             </div>
         </div>
     );

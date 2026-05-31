@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import authApi from '../services/auth.api';
+import { navigateTo } from '../shared/navigation';
 
 const AuthContext = createContext(null);
 const AUTH_STORAGE_KEY = 'authState';
@@ -29,7 +30,7 @@ function readStoredAuthState() {
       onboardingState: parsed?.onboardingState || 'NEVER_STARTED',
       onboardingDraft: parsed?.onboardingDraft || null,
     };
-  } catch (_) {
+  } catch {
     return {
       accessToken: null,
       onboardingState: 'NEVER_STARTED',
@@ -77,7 +78,7 @@ export function sanitizeOnboardingDraft(draft) {
 }
 
 // --- ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI SYNTAX ---
-export function decidePostLoginRoute(onboardingState) {
+export function decidePostLoginRoute() {
   return '/';
 }
 
@@ -131,15 +132,13 @@ export function AuthProvider({ children }) {
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
-        if (typeof window !== 'undefined') {
-          window.location.assign('/');
-        }
+        navigateTo('/');
       },
 
       logoutAndRedirect: async () => {
         try {
           await authApi.logout();
-        } catch (_) {
+        } catch {
           // Luôn xóa state cục bộ kể cả khi logout server lỗi
         }
 
@@ -147,9 +146,7 @@ export function AuthProvider({ children }) {
         setOnboardingState('NEVER_STARTED');
         setOnboardingDraft(null);
         persistAuthState(null, 'NEVER_STARTED', null);
-        if (typeof window !== 'undefined') {
-          window.location.assign('/');
-        }
+        navigateTo('/');
       },
     }),
     [accessToken, onboardingDraft, onboardingState]

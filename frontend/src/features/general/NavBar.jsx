@@ -1,8 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Moon, Search, Sun } from "lucide-react";
+import { Bell, Check, Moon, Search, Sun } from "lucide-react";
 import MenuBar from './MenuBar';
 import { useAuth } from '../../providers/AuthProvider';
+import { useNotification } from '../notification/NotificationContainer';
 import accountApi from '../../services/account.api';
+import { navigateTo } from '../../shared/navigation';
+import { getRoadmapSearchTarget } from './navbar.utils';
 import '../../style/general-component.css';
 
 const THEME_STORAGE_KEY = 'uetcompass-theme';
@@ -35,19 +38,6 @@ function getAvatarState(profile = {}) {
   };
 }
 
-export function getRoadmapSearchTarget(pathname) {
-  const blockedPaths = ['/login', '/register', '/forgot-password'];
-  return !blockedPaths.includes(pathname);
-}
-
-function dispatchRoadmapSearchQuery(query) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.dispatchEvent(new CustomEvent('roadmap-search-query', { detail: { query } }));
-}
-
 function dispatchOpenRoadmapSearchOverlay() {
   if (typeof window === 'undefined') {
     return;
@@ -55,15 +45,59 @@ function dispatchOpenRoadmapSearchOverlay() {
   window.dispatchEvent(new CustomEvent('roadmap-search-overlay-open'));
 }
 
+function navigateToHomeSection(sectionId) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const pathname = window.location.pathname;
+  if (pathname !== '/') {
+    window.location.assign(`/#${sectionId}`);
+    return;
+  }
+
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.history.replaceState(null, '', `/#${sectionId}`);
+  }
+}
+
+function scrollToMyRoadmapsSection() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const target = document.getElementById('my-roadmaps');
+  if (!target) {
+    return false;
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.history.replaceState(null, '', '/#my-roadmaps');
+  return true;
+}
+
+function isInvalidSessionError(error) {
+  return error?.status === 401 || (error?.status === 403 && error?.code === 'FORBIDDEN');
+}
+
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarFallback, setAvatarFallback] = useState('U');
-  const [searchText, setSearchText] = useState('');
-  const [displayName, setDisplayName] = useState('Người dùng');
   const [theme, setTheme] = useState(resolveInitialTheme);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [isRoadmapSearchOpen, setIsRoadmapSearchOpen] = useState(false);
   const avatarRef = useRef(null);
-  const { isAuthenticated, accessToken } = useAuth();
+  const notificationRef = useRef(null);
+  const { isAuthenticated, accessToken, onboardingState, updateAuthInfo, logoutAndRedirect } = useAuth();
+  const {
+    addNotification,
+    savedNotifications,
+    removeSavedNotification,
+    clearSavedNotifications,
+  } = useNotification();
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -90,16 +124,33 @@ export default function NavBar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleOpen = () => setIsRoadmapSearchOpen(true);
+    const handleClose = () => setIsRoadmapSearchOpen(false);
+
+    window.addEventListener('roadmap-search-overlay-open', handleOpen);
+    window.addEventListener('roadmap-search-overlay-close', handleClose);
+
+    return () => {
+      window.removeEventListener('roadmap-search-overlay-open', handleOpen);
+      window.removeEventListener('roadmap-search-overlay-close', handleClose);
+    };
+  }, []);
+
   const goHome = () => {
-    window.location.assign('/');
+    navigateTo('/');
   };
 
   const goLogin = () => {
-    window.location.assign('/login');
+    navigateTo('/login');
   };
 
   const goRegister = () => {
-    window.location.assign('/register');
+    navigateTo('/register');
   };
 
   const goRoadmapSearch = () => {
@@ -107,12 +158,55 @@ export default function NavBar() {
       const canOpen = getRoadmapSearchTarget(window.location.pathname);
       if (canOpen) {
         dispatchOpenRoadmapSearchOverlay();
+        setIsRoadmapSearchOpen(true);
       }
     }
   };
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const goMyRoadmaps = async () => {
+    let onboardingDone = onboardingState === 'COMPLETED';
+    if (!onboardingDone && accessToken) {
+      try {
+        const profile = await accountApi.getProfile(accessToken);
+        const resolvedState = profile?.onboardingState;
+        const hasMajorFallback = Boolean(String(profile?.profile?.major || '').trim());
+        onboardingDone = resolvedState === 'COMPLETED' || (!resolvedState && hasMajorFallback);
+
+        if (onboardingDone) {
+          updateAuthInfo?.({ onboardingState: 'COMPLETED' });
+        } else if (resolvedState && resolvedState !== onboardingState) {
+          updateAuthInfo?.({ onboardingState: resolvedState });
+        }
+      } catch (error) {
+        if (isInvalidSessionError(error)) {
+          logoutAndRedirect?.();
+          return;
+        }
+      }
+    }
+
+    if (!onboardingDone) {
+      addNotification('Bạn cần hoàn tất onboarding để mở Lộ trình của tôi.', 'warning');
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.location.pathname !== '/') {
+      window.location.assign('/#my-roadmaps');
+      return;
+    }
+
+    const hasMyRoadmapsSection = scrollToMyRoadmapsSection();
+    if (!hasMyRoadmapsSection) {
+      addNotification('Bạn cần hoàn tất onboarding để mở Lộ trình của tôi.', 'warning');
+    }
   };
 
   // Close menu on click outside
@@ -133,12 +227,29 @@ export default function NavBar() {
   }, [menuOpen]);
 
   useEffect(() => {
+    function handleNotificationClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
+      }
+    }
+
+    if (notificationOpen) {
+      document.addEventListener('mousedown', handleNotificationClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleNotificationClickOutside);
+    };
+  }, [notificationOpen]);
+
+  useEffect(() => {
     let isMounted = true;
 
     if (!isAuthenticated || !accessToken) {
       setAvatarUrl('');
       setAvatarFallback('U');
-      setDisplayName('Người dùng');
       return () => {
         isMounted = false;
       };
@@ -149,24 +260,25 @@ export default function NavBar() {
         const result = await accountApi.getProfile(accessToken);
         const next = getAvatarState(result?.identity || {});
         if (isMounted) {
-          setAvatarUrl(next.avatarUrl);
+          setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
           setAvatarFallback(next.avatarFallback);
-          setDisplayName(next.displayName);
         }
-      } catch (_) {
+      } catch (error) {
+        if (isInvalidSessionError(error)) {
+          logoutAndRedirect?.();
+          return;
+        }
+
         if (isMounted) {
-          setAvatarUrl('');
           setAvatarFallback('U');
-          setDisplayName('Người dùng');
         }
       }
     }
 
     function handleProfileUpdated(event) {
       const next = getAvatarState(event?.detail?.profile || {});
-      setAvatarUrl(next.avatarUrl);
+      setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
       setAvatarFallback(next.avatarFallback);
-      setDisplayName(next.displayName);
     }
 
     loadProfile();
@@ -178,76 +290,176 @@ export default function NavBar() {
     };
   }, [accessToken, isAuthenticated]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+  const navigationItems = isAuthenticated
+    ? [
+      {
+        key: 'monthly-progress',
+        label: 'Tiến độ học tập',
+        onClick: () => navigateToHomeSection('monthly-progress'),
+      },
+      {
+        key: 'my-roadmap',
+        label: 'Lộ trình của tôi',
+        onClick: goMyRoadmaps,
+      },
+      {
+        key: 'community-roadmap',
+        label: 'Lộ trình cộng đồng',
+        onClick: () => navigateToHomeSection('roadmap-community'),
+      },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateTo('/job-market'),
+      },
+    ]
+    : [
+      {
+        key: 'features',
+        label: 'Tính năng',
+        onClick: () => navigateToHomeSection('featured-features'),
+      },
+      {
+        key: 'roadmap',
+        label: 'Lộ trình',
+        onClick: () => navigateToHomeSection('roadmap-community'),
+      },
+      {
+        key: 'how-it-works',
+        label: 'Cách hoạt động',
+        onClick: () => navigateToHomeSection('system-flow'),
+      },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateTo('/job-market'),
+      },
+    ];
 
-    const params = new URLSearchParams(window.location.search);
-    const initialQuery = String(params.get('q') || '').trim();
-    if (initialQuery) {
-      setSearchText(initialQuery);
-      dispatchRoadmapSearchQuery(initialQuery);
-    }
-  }, []);
+  const hasSavedNotifications = savedNotifications.length > 0;
 
   return (
     <nav className="navbar">
-      <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
-        <img src="/images/ueticon.jpg" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
-        UETCompass
-      </button>
-      <div className="navbar__search" onClick={goRoadmapSearch}>
-        <Search className="navbar__search-icon" size={16} />
-        <input
-          className="navbar__input"
-          type="text"
-          placeholder="Tìm kiếm roadmap..."
-          value={searchText}
-          onFocus={goRoadmapSearch}
-          onChange={(event) => {
-            const nextValue = event.target.value;
-            setSearchText(nextValue);
-            dispatchRoadmapSearchQuery(nextValue);
-          }}
-        />
-      </div>
-      <div className="navbar__actions">
-        <button
-          type="button"
-          className="navbar__icon-btn"
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      <div className="navbar__left">
+        <button type="button" className="navbar__icon navbar__brand-btn" onClick={goHome}>
+          <img src="/images/ueticon.png" alt="UET Icon" className="navbar__icon-img" width={36} height={36} style={{ marginRight: 8 }} />
+          UETCompass
         </button>
-
-        {isAuthenticated ? (
-          <div className="navbar__avatar-wrapper" ref={avatarRef}>
+        <div className="navbar__links" aria-label="Điều hướng chính">
+          {navigationItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className="navbar__link"
+              onClick={item.onClick}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="navbar__right">
+        <div className="navbar__search" role="search">
+          <Search size={16} aria-hidden="true" className="navbar__search-icon" />
+          <input
+            className="navbar__input"
+            type="search"
+            placeholder="Tìm lộ trình"
+            readOnly
+            aria-label="Tìm kiếm lộ trình"
+            aria-haspopup="dialog"
+            aria-controls="roadmap-search-overlay"
+            aria-expanded={isRoadmapSearchOpen}
+            onClick={goRoadmapSearch}
+            onFocus={goRoadmapSearch}
+          />
+        </div>
+        <div className="navbar__actions">
+          <div className="navbar__notification" ref={notificationRef}>
             <button
               type="button"
-              className="navbar__auth-btn navbar__profile-trigger"
-              title="Tài khoản"
-              onClick={() => setMenuOpen((open) => !open)}
+              className="navbar__icon-btn navbar__notification-btn"
+              aria-label="Thông báo"
+              aria-expanded={notificationOpen}
+              onClick={() => setNotificationOpen((open) => !open)}
             >
-              <span className="navbar__profile-name">{displayName}</span>
-              <div className="navbar__avatar">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
+              <Bell size={18} />
+              {hasSavedNotifications ? <span className="navbar__notification-dot" /> : null}
+            </button>
+            {notificationOpen ? (
+              <div className="navbar__notification-panel" role="dialog" aria-label="Thông báo">
+                <div className="navbar__notification-header">
+                  <span>Thông báo</span>
+                  <button
+                    type="button"
+                    className="navbar__notification-clear"
+                    onClick={clearSavedNotifications}
+                    disabled={!hasSavedNotifications}
+                  >
+                    Đã đọc tất cả
+                  </button>
+                </div>
+                {hasSavedNotifications ? (
+                  <div className="navbar__notification-list">
+                    {savedNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`navbar__notification-item navbar__notification-item--${notif.type}`}
+                      >
+                        <span className="navbar__notification-message">{notif.message}</span>
+                        <button
+                          type="button"
+                          className="navbar__notification-read"
+                          onClick={() => removeSavedNotification(notif.id)}
+                          aria-label="Đánh dấu đã đọc"
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <span>{avatarFallback}</span>
+                  <div className="navbar__notification-empty">Chưa có thông báo.</div>
                 )}
               </div>
-            </button>
-            {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
+            ) : null}
           </div>
-        ) : (
-          <div className="navbar__auth-actions">
-            <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
-            <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
-          </div>
-        )}
+          <button
+            type="button"
+            className="navbar__icon-btn"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {isAuthenticated ? (
+            <div className="navbar__avatar-wrapper" ref={avatarRef}>
+              <button
+                type="button"
+                className="navbar__auth-btn navbar__profile-trigger"
+                title="Tài khoản"
+                aria-label="Mở menu tài khoản"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <div className="navbar__avatar">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar người dùng" className="navbar__avatar-img" />
+                  ) : (
+                    <span>{avatarFallback}</span>
+                  )}
+                </div>
+              </button>
+              {menuOpen && <MenuBar onClose={() => setMenuOpen(false)} />}
+            </div>
+          ) : (
+            <div className="navbar__auth-actions">
+              <button type="button" className="navbar__auth-btn" onClick={goRegister}>Đăng ký</button>
+              <button type="button" className="navbar__auth-btn navbar__auth-btn--primary" onClick={goLogin}>Đăng nhập</button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

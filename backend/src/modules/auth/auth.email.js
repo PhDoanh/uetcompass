@@ -7,9 +7,12 @@ function buildTransporter() {
   if (!user || !pass) {
     return null;
   }
-
+  
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    family: 4,
     auth: { user, pass },
   });
 }

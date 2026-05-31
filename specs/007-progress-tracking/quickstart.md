@@ -2,7 +2,7 @@
 
 **Feature**: `007-progress-tracking`  
 **Date**: 2026-03-11  
-**Prerequisites**: Feature 005 (Account Management) must be running — the Progress module shares `auth.middleware.js` and reads from `users`. Feature 004 (Skill Tree) must be running — the Progress module calls `skillTreeService.getNodesByStatus()` and depends on `roadmap_nodes` being populated.
+**Prerequisites**: Feature 005 (Account Management) must be running — the Progress module shares `auth.middleware.js` and reads from `users`. Feature 004 (Skill Tree) must be running — the Progress module calls `skillTreeService.getNodesByStatus()` and depends on roadmap node status transitions for tracking tables.
 
 ---
 
@@ -57,7 +57,7 @@ app.use('/api/progress', progressRoutes);
 
 ### 3.3 Wire the cache refresh call in Skill Tree
 
-In `backend/src/modules/skillTree/skillTree.service.js`, inject the progress service and add the refresh call:
+In `backend/src/modules/skill-tree/skillTree.service.js`, inject the progress service and add the refresh call:
 
 ```js
 const progressService = require('../progress/progress.service');
@@ -70,6 +70,25 @@ async function updateNodeStatus(userId, roadmapId, nodeId, newStatus) {
   } catch (err) {
     console.error('[progress] refreshCache failed:', err.message);
     // Soft-fail — node write already committed
+  }
+}
+```
+
+### 3.4 Update tracking activity on node transitions
+
+When a node transitions to `inProgress` or `completed`, update the derived activity store so tracking tables can be computed:
+
+```js
+const progressTrackingService = require('../progress/progress.tracking.service');
+
+async function updateNodeStatus(userId, roadmapId, nodeId, newStatus) {
+  // ... existing node write ...
+
+  try {
+    await progressTrackingService.updateNodeActivity(userId, roadmapId, nodeId, newStatus);
+  } catch (err) {
+    console.error('[progress] updateNodeActivity failed:', err.message);
+    // Soft-fail — tracking tables are derived data
   }
 }
 ```
@@ -185,7 +204,15 @@ Alternatively: update any node status through the Skill Tree UI — this trigger
 5. ✅ The affected roadmap card updates its `%` and Done count within 5 seconds.
 6. ✅ The `lastActivityDate` updates to today.
 
-### Scenario 5 — Empty state (Edge case)
+### Scenario 5 — Tracking tables (US-5)
+
+1. Create multiple node transitions across different days (In Progress → Done).
+2. Open `/progress` and switch the tracking tables between `weekly` and `monthly`.
+3. ✅ Frequency counts match the number of activity days in each bucket.
+4. ✅ Completion rate reflects Done transitions for the selected scope (per-roadmap or all-roadmaps).
+5. ✅ Periods with no activity show a clear empty state.
+
+### Scenario 6 — Empty state (Edge case)
 
 1. Log in as a student with no roadmaps assigned (new account, onboarding not completed).
 2. Navigate to `/progress`.
@@ -209,3 +236,21 @@ Key test cases covered:
 - `getAll`: returns empty array when no cache documents exist for userId
 - `getRoadmapDetail`: delegates to Skill Tree service, groups nodes by status
 - `getRoadmapDetail`: returns empty arrays (not null) for status groups with 0 nodes
+- `getTrackingTables`: weekly/monthly buckets, completion rate, and empty-period handling
+
+---
+
+## 8. Phase 7 Validation Notes
+
+- **SC-001 (<=2s on 4G, up to 10 roadmaps)**
+  - Device/profile: _fill in during validation_
+  - Network throttle profile: _fill in during validation_
+  - Measured load time: _fill in during validation_
+  - Result: PASS/FAIL
+
+- **SC-002 (Progress percent parity with Skill Tree within ±1pp)**
+  - Fixture user/roadmap: _fill in during validation_
+  - Dashboard percent: _fill in during validation_
+  - Skill Tree percent: _fill in during validation_
+  - Delta: _fill in during validation_
+  - Result: PASS/FAIL

@@ -3,12 +3,21 @@ import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Compass, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import { decidePostLoginRoute, useAuth } from '../../providers/AuthProvider';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
 import { AuthField, AuthShell } from './AuthModule';
+import { navigateTo } from '../../shared/navigation';
 
 const ONBOARDING_AUTO_OPEN_ONCE_KEY = 'onboardingAutoOpenOnce';
 const REGISTER_SUCCESS_NOTICE_KEY = 'registerSuccessNotice';
 const BUTTON_DELAY_MS = 5000;
+
+function resolveIsDarkTheme() {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
 
 function formatCountdown(seconds) {
   const safe = Math.max(0, Number(seconds || 0));
@@ -28,6 +37,7 @@ export default function LoginPage() {
   const [lockRemaining, setLockRemaining] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isButtonCoolingDown, setIsButtonCoolingDown] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(resolveIsDarkTheme);
   const buttonDelayTimerRef = useRef(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const hasGoogleClientId = Boolean(String(googleClientId).trim());
@@ -73,12 +83,41 @@ export default function LoginPage() {
     window.sessionStorage.removeItem(REGISTER_SUCCESS_NOTICE_KEY);
   }, [addNotification]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const syncTheme = () => {
+      setIsDarkTheme(resolveIsDarkTheme());
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          syncTheme();
+          break;
+        }
+      }
+    });
+
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const lockMessage = useMemo(() => {
     if (lockRemaining <= 0) {
       return '';
     }
     return `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${formatCountdown(lockRemaining)}.`;
   }, [lockRemaining]);
+  const googleButtonTheme = isDarkTheme ? 'filled_black' : 'outline';
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -96,7 +135,7 @@ export default function LoginPage() {
       if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
         window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
       }
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'ACCOUNT_LOCKED') {
         const seconds = Number(err?.details?.remainingSeconds || 0);
@@ -118,7 +157,7 @@ export default function LoginPage() {
       if (result?.onboardingState !== 'COMPLETED' && typeof window !== 'undefined') {
         window.sessionStorage.setItem(ONBOARDING_AUTO_OPEN_ONCE_KEY, '1');
       }
-      window.location.assign(decidePostLoginRoute(result?.onboardingState));
+      navigateTo(decidePostLoginRoute(result?.onboardingState));
     } catch (err) {
       if (err?.code === 'GOOGLE_DOMAIN_RESTRICTED') {
         setError('Vui lòng sử dụng tài khoản Google @vnu.edu.vn.');
@@ -142,10 +181,8 @@ export default function LoginPage() {
         { href: '/register', label: 'Đăng ký', active: false },
       ]}
       footerNote="Bằng cách tiếp tục, bạn đồng ý với các chính sách và điều khoản dịch vụ của UETCompass"
-      footerLinks={[
-        { href: '#', label: 'Trung tâm hỗ trợ' },
-        { href: '#', label: 'Chính sách & Điều khoản' },
-      ]}
+      footerSecondary="Chính sách bảo mật / Điều khoản sử dụng"
+      footerTertiary="© 2026 UETCompass • Phát triển bởi sinh viên UET"
     >
       <div className="auth-google-block">
         {hasGoogleClientId ? (
@@ -154,7 +191,7 @@ export default function LoginPage() {
               onSuccess={handleGoogleSuccess}
               onError={() => setError('Đăng nhập Google thất bại. Vui lòng thử lại.')}
               useOneTap={false}
-              theme="outline"
+              theme={googleButtonTheme}
               shape="pill"
               size="large"
               text="continue_with"

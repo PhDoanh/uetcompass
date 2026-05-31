@@ -5,7 +5,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(2, 6, 23, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -25,12 +25,12 @@
 }
 
 .yaml-guide-modal {
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    background-color: var(--surface-1);
+    border-radius: 12px;
+    box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
-    max-width: 900px;
+    max-width: 1000px;
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
@@ -53,16 +53,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px;
-    border-bottom: 1px solid #e5e7eb;
-    background-color: #f9fafb;
+    padding: 28px 32px;
+    border-bottom: 2px solid var(--border-1);
+        background: var(--surface-2);
 }
 
 .yaml-guide-title {
     margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-1);
+    letter-spacing: -0.5px;
 }
 
 .yaml-guide-close {
@@ -72,26 +73,28 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
+    color: var(--text-3);
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
 
 .yaml-guide-close:hover {
-    background-color: #e5e7eb;
-    color: #1f2937;
+    background-color: var(--surface-3);
+        color: var(--text-1);
+    transform: scale(1.05);
 }
 
-.yaml-guide-close .material-symbols-outlined {
-    font-size: 24px;
+.yaml-guide-close svg {
+    width: 24px;
+    height: 24px;
 }
 
 .yaml-guide-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
-    background-color: #ffffff;
+    padding: 32px;
+    background-color: var(--surface-1);
 }
 
 .yaml-guide-loading {
@@ -100,13 +103,14 @@
     align-items: center;
     justify-content: center;
     height: 300px;
-    color: #6b7280;
+    color: var(--text-3);
     gap: 12px;
 }
 
 .yaml-guide-loading .spinning {
     animation: spin 1s linear infinite;
-    font-size: 32px;
+    width: 32px;
+    height: 32px;
 }
 
 @keyframes spin {
@@ -123,101 +127,182 @@
 .yaml-guide-markdown {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
         'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    line-height: 1.6;
-    color: #1f2937;
+    line-height: 1.7;
+    color: var(--text-2);
 }
 
+/* Section Divider */
+.yaml-guide-section-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border-1), transparent);
+    margin: 24px 0 0 0;
+}
+
+/* Headings */
 .yaml-guide-h1 {
-    margin: 32px 0 16px 0;
-    font-size: 28px;
-    font-weight: 700;
-    color: #111827;
-    border-bottom: 2px solid #dbeafe;
-    padding-bottom: 8px;
+    margin: 32px 0 24px 0;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-1);
+    letter-spacing: -1px;
+    border-bottom: 3px solid var(--color-primary);
+    padding-bottom: 12px;
+    background: linear-gradient(135deg, var(--text-1) 0%, var(--text-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .yaml-guide-h2 {
-    margin: 24px 0 12px 0;
-    font-size: 22px;
-    font-weight: 600;
-    color: #1f2937;
+    margin: 28px 0 16px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 0;
+}
+
+.yaml-guide-h2::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    border-radius: 2px;
 }
 
 .yaml-guide-h3 {
-    margin: 16px 0 8px 0;
+    margin: 20px 0 12px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-2);
+    padding-left: 12px;
+    border-left: 3px solid var(--color-secondary);
 }
 
 .yaml-guide-p {
-    margin: 12px 0;
-    color: #4b5563;
+    margin: 14px 0;
+    color: #475569;
+    line-height: 1.8;
+    font-size: 15px;
 }
 
+/* Lists */
 .yaml-guide-list {
-    list-style: disc;
-    margin: 12px 0;
-    padding-left: 24px;
+    list-style: none;
+    margin: 16px 0;
+    padding-left: 0;
 }
 
 .yaml-guide-li {
-    list-style: disc;
-    margin-left: 24px;
-    margin-bottom: 8px;
-    color: #4b5563;
+    list-style: none;
+    margin: 8px 0;
+    padding-left: 28px;
+    color: #475569;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.7;
 }
 
-.yaml-guide-inline-code {
-    background-color: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-family: 'Monaco', 'Courier New', monospace;
-    font-size: 13px;
-    color: #dc2626;
-    white-space: pre-wrap;
-    word-break: break-word;
+.yaml-guide-li::before {
+    content: '▸';
+    position: absolute;
+    left: 8px;
+    color: #3b82f6;
+    font-weight: bold;
+    font-size: 18px;
 }
 
+/* Horizontal Rule */
+.yaml-guide-hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    margin: 32px 0;
+}
+
+/* Code Blocks */
 .yaml-guide-code-block {
-    background-color: #1f2937;
-    color: #e5e7eb;
-    padding: 16px;
-    border-radius: 6px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 8px;
     overflow-x: auto;
-    margin: 16px 0;
-    font-family: 'Monaco', 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.5;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    border-left: 4px solid #3b82f6;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+    position: relative;
+}
+
+.yaml-guide-code-block::before {
+    content: 'YAML';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    opacity: 0.7;
 }
 
 .yaml-guide-code-block code {
     all: unset;
     display: block;
-    color: #e5e7eb;
-    font-family: 'Monaco', 'Courier New', monospace;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Courier New', monospace;
     white-space: pre;
     word-break: break-word;
 }
 
-.yaml-guide-table-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    border: 1px solid #e5e7eb;
-    margin: 12px 0;
-    background-color: #f9fafb;
+/* Tables */
+.yaml-guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.yaml-guide-table-cell {
-    padding: 12px;
-    border-right: 1px solid #e5e7eb;
+.yaml-guide-table-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 700;
     font-size: 14px;
-    color: #374151;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
-.yaml-guide-table-cell:last-child {
-    border-right: none;
+.yaml-guide-table-body-row {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s ease;
+}
+
+.yaml-guide-table-body-row:hover {
+    background-color: #f8fafc;
+}
+
+.yaml-guide-table-body-row:last-child {
+    border-bottom: none;
+}
+
+.yaml-guide-table-data {
+    padding: 12px 16px;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.yaml-guide-table-data:first-child {
+    font-weight: 600;
+    color: #1e293b;
 }
 
 /* Responsive design */
@@ -228,129 +313,157 @@
 
     .yaml-guide-modal {
         max-height: 95vh;
+        border-radius: 12px;
     }
 
     .yaml-guide-header {
-        padding: 16px;
+        padding: 20px 24px;
     }
 
     .yaml-guide-title {
-        font-size: 18px;
+        font-size: 20px;
     }
 
     .yaml-guide-content {
-        padding: 16px;
+        padding: 20px 24px;
     }
 
     .yaml-guide-h1 {
-        font-size: 24px;
-        margin: 24px 0 12px 0;
+        font-size: 26px;
+        margin: 24px 0 16px 0;
     }
 
     .yaml-guide-h2 {
-        font-size: 18px;
+        font-size: 20px;
+        margin: 20px 0 12px 0;
     }
 
     .yaml-guide-h3 {
         font-size: 16px;
     }
 
+    .yaml-guide-p {
+        font-size: 14px;
+    }
+
+    .yaml-guide-li {
+        font-size: 14px;
+    }
+
     .yaml-guide-code-block {
         font-size: 12px;
-        padding: 12px;
+        padding: 16px;
+        margin: 16px 0;
     }
 
-    .yaml-guide-table-row {
-        grid-template-columns: 1fr;
+    .yaml-guide-table {
+        font-size: 13px;
     }
 
-    .yaml-guide-table-cell {
-        padding: 8px;
-        border-right: none;
-        border-bottom: 1px solid #e5e7eb;
+    .yaml-guide-table-header {
+        padding: 10px 12px;
     }
 
-    .yaml-guide-table-cell:last-child {
-        border-bottom: none;
+    .yaml-guide-table-data {
+        padding: 10px 12px;
     }
 
+    .yaml-guide-table-body-row:hover {
+        background-color: #f1f5f9;
+    }
 }
 
+/* Dark theme support */
 html[data-theme='dark'] .yaml-guide-overlay {
-    background-color: rgba(2, 9, 20, 0.72);
+    background-color: rgba(15, 23, 42, 0.8);
 }
 
 html[data-theme='dark'] .yaml-guide-modal {
-    background-color: #10253f;
-    box-shadow: 0 18px 44px rgba(2, 9, 20, 0.62);
+    background-color: #0f172a;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 html[data-theme='dark'] .yaml-guide-header {
-    border-bottom-color: rgba(95, 145, 210, 0.35);
-    background-color: #16314f;
+    border-bottom-color: rgba(30, 41, 59, 0.5);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
 html[data-theme='dark'] .yaml-guide-title {
-    color: #dceafd;
+    color: #e2e8f0;
 }
 
 html[data-theme='dark'] .yaml-guide-close {
-    color: #b8cde8;
+    color: #94a3b8;
 }
 
 html[data-theme='dark'] .yaml-guide-close:hover {
-    background-color: #27476f;
-    color: #e6f1ff;
+    background-color: rgba(30, 41, 59, 0.6);
+    color: #cbd5e1;
 }
 
 html[data-theme='dark'] .yaml-guide-content {
-    background-color: #10253f;
+    background-color: #0f172a;
 }
 
 html[data-theme='dark'] .yaml-guide-loading {
-    color: #a9c0df;
+    color: #94a3b8;
 }
 
-html[data-theme='dark'] .yaml-guide-markdown,
-html[data-theme='dark'] .yaml-guide-h2,
-html[data-theme='dark'] .yaml-guide-h3,
-html[data-theme='dark'] .yaml-guide-table-cell {
-    color: #dceafd;
+html[data-theme='dark'] .yaml-guide-markdown {
+    color: #cbd5e1;
 }
 
 html[data-theme='dark'] .yaml-guide-h1 {
-    color: #e6f1ff;
-    border-bottom-color: rgba(95, 145, 210, 0.55);
+    background: linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    border-bottom-color: #3b82f6;
 }
 
-html[data-theme='dark'] .yaml-guide-p,
+html[data-theme='dark'] .yaml-guide-h2 {
+    color: #e2e8f0;
+}
+
+html[data-theme='dark'] .yaml-guide-h3 {
+    color: #cbd5e1;
+    border-left-color: #06b6d4;
+}
+
+html[data-theme='dark'] .yaml-guide-p {
+    color: #b0bac9;
+}
+
 html[data-theme='dark'] .yaml-guide-li {
-    color: #b3c8e3;
+    color: #b0bac9;
 }
 
-html[data-theme='dark'] .yaml-guide-inline-code {
-    background-color: #1a304d;
-    border-color: rgba(95, 145, 210, 0.42);
-    color: #ffb4ab;
+html[data-theme='dark'] .yaml-guide-hr {
+    background: linear-gradient(90deg, transparent, #334155, transparent);
 }
 
-html[data-theme='dark'] .yaml-guide-code-block,
-html[data-theme='dark'] .yaml-guide-code-block code {
-    background-color: #0a1628;
-    color: #dceafd;
+html[data-theme='dark'] .yaml-guide-code-block {
+    background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
+    color: #e2e8f0;
 }
 
-html[data-theme='dark'] .yaml-guide-table-row {
-    border-color: rgba(95, 145, 210, 0.4);
-    background-color: #1a304d;
+html[data-theme='dark'] .yaml-guide-table {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-html[data-theme='dark'] .yaml-guide-table-cell {
-    border-right-color: rgba(95, 145, 210, 0.35);
+html[data-theme='dark'] .yaml-guide-table-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 
-@media (max-width: 768px) {
-    html[data-theme='dark'] .yaml-guide-table-cell {
-        border-bottom-color: rgba(95, 145, 210, 0.35);
-    }
+html[data-theme='dark'] .yaml-guide-table-body-row:hover {
+    background-color: rgba(30, 41, 59, 0.5);
+}
+
+html[data-theme='dark'] .yaml-guide-table-data {
+    color: #cbd5e1;
+    border-bottom-color: rgba(30, 41, 59, 0.5);
+}
+
+html[data-theme='dark'] .yaml-guide-table-body-row:last-child .yaml-guide-table-data {
+    border-bottom-color: rgba(30, 41, 59, 0.5);
 }

@@ -15,6 +15,7 @@ const roadmapRouter = express.Router();
 roadmapRouter.get('/public', controller.getPublicSharedRoadmap);
 roadmapRouter.get('/manual-roadmaps/public', controller.listPublicManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/public/:roadmapId', controller.getPublicManualRoadmapPreviewById);
+roadmapRouter.get('/manual-roadmaps/tags', controller.getManualRoadmapTags);
 
 // SSE endpoint supports EventSource by authenticating with JWT passed via sseToken query.
 roadmapRouter.get('/sse', (req, res) => {
@@ -32,11 +33,11 @@ roadmapRouter.get('/sse', (req, res) => {
 		return;
 	}
 
-	let userId = '';
+	let userId;
 	try {
 		const payload = verifyAccessToken(sseToken);
 		userId = String(payload?.userId || '').trim();
-	} catch (_) {
+	} catch {
 		res.writeHead(401, {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',
@@ -74,10 +75,17 @@ roadmapRouter.post('/primary/regenerate', controller.retryGeneration);
 roadmapRouter.post('/primary/accept', controller.acceptRoadmapHandler);
 roadmapRouter.post('/primary/reject', controller.rejectRoadmap);
 
+roadmapRouter.get('/manual-roadmaps', controller.listManualRoadmaps);
 roadmapRouter.post('/manual-roadmaps', controller.createManualRoadmap);
+roadmapRouter.get('/manual-roadmaps', controller.listManualRoadmaps);
 roadmapRouter.get('/manual-roadmaps/:roadmapId', controller.getManualRoadmapById);
 roadmapRouter.patch('/manual-roadmaps/:roadmapId', controller.updateManualRoadmap);
+roadmapRouter.delete('/manual-roadmaps/:roadmapId', controller.deleteManualRoadmap);
 roadmapRouter.post('/manual-roadmaps/:roadmapId/share', controller.shareManualRoadmap);
+roadmapRouter.post('/manual-roadmaps/:roadmapId/unshare', controller.unshareManualRoadmap);
+roadmapRouter.get('/manual-roadmaps/:roadmapId/versions', controller.listManualRoadmapVersions);
+roadmapRouter.get('/manual-roadmaps/:roadmapId/versions/:versionId', controller.getManualRoadmapVersion);
+roadmapRouter.post('/manual-roadmaps/:roadmapId/versions/:versionId/revert', controller.revertManualRoadmapVersion);
 
 // roadmapRouter.get('/', controller.listRoadmaps); // Deprecated compatibility alias, now removed
 roadmapRouter.get('/:roadmapId', controller.getRoadmapById);

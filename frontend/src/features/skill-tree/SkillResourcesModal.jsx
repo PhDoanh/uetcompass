@@ -32,7 +32,7 @@ export default function SkillResourcesModal({ skillName, onClose = () => {} }) {
     <div className="skill-modal-overlay" role="dialog" aria-modal="true" aria-label={`Learn ${skillName}`}>
       <div className="skill-modal">
         <div className="skill-modal__header">
-          <h3 className="skill-modal__title">Learn "{skillName}"</h3>
+          <h3 className="skill-modal__title">Learn &quot;{skillName}&quot;</h3>
           <button onClick={onClose} className="skill-tree-icon-button" aria-label="Close skill resources">
             <X size={18} />
           </button>

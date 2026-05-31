@@ -1,10 +1,9 @@
 ﻿'use strict';
 
-const roadmapValidation = require('./roadmapValidation.service');
+// const roadmapValidation = require('./roadmapValidation.service');
 const previewStore = require('./roadmap.preview.store');
 const roadmapService = require('./roadmap.service');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
-const { evaluateOffTemplateSkills } = require('./roadmap.gemini.service');
 const { notifyPreviewReady, notifyGenerationFailed } = require('./roadmap.sse');
 const { StudentProfile } = require('../onboarding/onboarding.model');
 const { CourseUnit } = require('../curriculum/courseUnit.model');
@@ -13,7 +12,6 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const {
 	toKebabCase,
 	uniqueNodeId,
-	sortCourseUnitsTopologically,
 	buildCandidateSkills,
 	buildNodesTopologically,
 } = require('./generation.helpers');
@@ -74,6 +72,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		// Check if a pre-built template matches the roadmapName
 		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
 		if (templateNodes) {
+			console.log('Matching template: ', roadmapName);
 			const seenIds = new Set();
 
 			// Enrich template nodes with relatedCourses from course skills
@@ -95,8 +94,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 
 			if (personalisationLevel === 'full') {
 				// Identify course skills NOT already in the template (compare by nodeId)
-				const templateNodeIds = new Set(templateNodes.map((n) => n.nodeId));
-				const offTemplateSkills = candidateSkills.filter((c) => !templateNodeIds.has(toKebabCase(c.skillName)));
+				// const offTemplateSkills = candidateSkills.filter((c) => !templateNodes.some((n) => n.nodeId === toKebabCase(c.skillName)));
 
 				// AI evaluates relevance of off-template skills to the career goal
 				const approvedExtras = []; //await evaluateOffTemplateSkills(offTemplateSkills, profile);
@@ -154,7 +152,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				nodes = enriched;
 			}
 		} else if (personalisationLevel === 'full') {
-			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
+			const approvedSkills = //await evaluateOffTemplateSkills(candidateSkills, profile);
 			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
 		} else {
 			// Low personalisation: sort relatedCourses for each skill by topological order

@@ -4,7 +4,7 @@ const connections = new Map();      // sseToken → res
 const userConnections = new Map(); // userId   → res
 
 function addConnection(sseToken, res) {
-	console.info('[roadmap:sse:open]', { sseToken });
+	console.info('[roadmap:sse:open]');
 	res.writeHead(200, {
 		'Content-Type': 'text/event-stream',
 		'Cache-Control': 'no-cache',
@@ -22,7 +22,7 @@ function addConnection(sseToken, res) {
 	res.on('close', () => {
 		clearInterval(heartbeat);
 		connections.delete(sseToken);
-		console.info('[roadmap:sse:close]', { sseToken });
+		console.info('[roadmap:sse:close]');
 	});
 }
 
@@ -37,7 +37,7 @@ function addUserConnection(userId, res) {
 function notifyClientByToken(sseToken, eventName, data) {
 	const res = connections.get(sseToken);
 	if (!res) {
-		console.warn('[roadmap:sse:missed]', { sseToken, eventName });
+		console.warn('[roadmap:sse:missed]', { eventName });
 		return false;
 	}
 	res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);

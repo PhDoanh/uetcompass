@@ -1,40 +1,172 @@
-import LoginPage from './features/auth/LoginPage';
-import RegisterPage from './features/auth/RegisterPage';
-import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
-import SkillTreePage from './features/skill-tree/SkillTreePage';
-import PublicSkillTreePage from './features/skill-tree/PublicSkillTreePage';
-import AccountSettingsPage from './features/account/AccountSettingsPage';
-import Homepage from './features/general/Homepage';
-import OnboardingPanel from './features/onboarding/OnboardingPanel';
-import LearningProfilePage from './features/onboarding/LearningProfilePage';
-import ManualRoadmapPage from './features/manual-roadmap/ManualRoadmapPage';
-import RoadmapSearchPage from './features/roadmap-search/RoadmapSearchPage';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import NavBar from './features/general/NavBar';
-import { NotificationProvider } from './features/general/NotificationContainer';
+import { NotificationProvider } from './features/notification/NotificationContainer';
 import OnboardingGuard from './guards/OnboardingGuard';
 import AuthGuard from './guards/AuthGuard';
 import { AuthProvider, decidePostLoginRoute, useAuth } from './providers/AuthProvider';
-import { useEffect, useRef, useState } from 'react';
+import usePrefetch from './hooks/usePrefetch';
+import NavigationProgressBar from './shared/NavigationProgressBar';
+import PageSkeleton from './shared/PageSkeleton';
+import PageTransition from './shared/PageTransition';
+import ScrollRestorationManager from './shared/ScrollRestorationManager';
+import {
+	interceptAnchorNavigation,
+	LOCATION_CHANGE_EVENT,
+	navigateTo,
+	NAVIGATION_END_EVENT,
+	NAVIGATION_START_EVENT,
+	normalizePathname,
+	toRouteKey,
+} from './shared/navigation';
+import './style/navigation-orchestration.css';
+import { X } from 'lucide-react';
 
-function normalizePathname(pathname) {
-	if (!pathname || pathname === '/') {
-		return '/';
+const LoginPage = lazy(() => import('./features/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPasswordPage'));
+const SkillTreePage = lazy(() => import('./features/skill-tree/SkillTreePage'));
+const PublicSkillTreePage = lazy(() => import('./features/skill-tree/PublicSkillTreePage'));
+const AccountSettingsPage = lazy(() => import('./features/account/AccountSettingsPage'));
+const Homepage = lazy(() => import('./features/general/Homepage'));
+const OnboardingPanel = lazy(() => import('./features/onboarding/OnboardingPanel'));
+const LearningProfilePage = lazy(() => import('./features/onboarding/LearningProfilePage'));
+const PublicProfilePage = lazy(() => import('./features/public-profile/PublicProfilePage'));
+const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
+const RoadmapVersionHistoryPage = lazy(() => import('./features/manual-roadmap/RoadmapVersionHistoryPage'));
+const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
+const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
+const JobMarketPage = lazy(() => import('./features/job-market/JobMarketPage'));
+
+function shouldUseReducedMotion() {
+	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+		return false;
 	}
-	return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+	return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function RouteReadySignal({ routeKey }) {
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.dispatchEvent(
+			new CustomEvent(NAVIGATION_END_EVENT, {
+				detail: {
+					routeKey,
+				},
+			})
+		);
+	}, [routeKey]);
+
+	return null;
+}
+
+function RouteFrame({ routeKey, children, fallbackLabel }) {
+	return (
+		<PageTransition routeKey={routeKey}>
+			<Suspense fallback={<PageSkeleton label={fallbackLabel} />}>
+				<RouteReadySignal routeKey={routeKey} />
+				{children}
+			</Suspense>
+		</PageTransition>
+	);
 }
 
 function AppContent() {
 	const { isAuthenticated, onboardingState, accessToken } = useAuth();
 	const [isRoadmapSearchOverlayOpen, setIsRoadmapSearchOverlayOpen] = useState(false);
+	const [isRoadmapSearchOverlayExpanded, setIsRoadmapSearchOverlayExpanded] = useState(false);
+	const [routeState, setRouteState] = useState(() => {
+		if (typeof window === 'undefined') {
+			return { pathname: '/', search: '' };
+		}
+
+		return {
+			pathname: normalizePathname(window.location.pathname),
+			search: String(window.location.search || ''),
+		};
+	});
 	const roadmapSearchPanelRef = useRef(null);
-	const pathname = normalizePathname(typeof window !== 'undefined' ? window.location.pathname : '');
+	const routeKeyRef = useRef(toRouteKey(routeState));
+	const pathname = routeState.pathname;
+	const routeKey = toRouteKey(routeState);
 	const publicSkillTreeMatch = pathname.match(/^\/skill-tree\/([^/]+)$/);
 	const publicSkillTreeRoadmapId = publicSkillTreeMatch ? decodeURIComponent(publicSkillTreeMatch[1]) : '';
+	const publicProfileMatch = pathname.match(/^\/public-profile\/([^/]+)$/);
+	const publicProfileUserId = publicProfileMatch ? decodeURIComponent(publicProfileMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement', '/job-market'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
+		Boolean(publicProfileUserId) ||
 		pathname.startsWith('/roadmaps/public/');
+
+	usePrefetch();
+
+	const syncRouteState = useCallback(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const nextPathname = normalizePathname(window.location.pathname);
+		const nextSearch = String(window.location.search || '');
+		const nextRouteKey = toRouteKey({ pathname: nextPathname, search: nextSearch });
+
+		if (nextRouteKey === routeKeyRef.current) {
+			return;
+		}
+
+		const commit = () => {
+			startTransition(() => {
+				setRouteState({ pathname: nextPathname, search: nextSearch });
+			});
+		};
+
+		if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function' && !shouldUseReducedMotion()) {
+			document.startViewTransition(commit);
+			return;
+		}
+
+		commit();
+	}, []);
+
+	useEffect(() => {
+		routeKeyRef.current = routeKey;
+	}, [routeKey]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return undefined;
+		}
+
+		const handlePopState = () => {
+			const nextRouteKey = toRouteKey(window.location);
+			if (nextRouteKey !== routeKeyRef.current) {
+				window.dispatchEvent(
+					new CustomEvent(NAVIGATION_START_EVENT, {
+						detail: {
+							from: routeKeyRef.current,
+							to: nextRouteKey,
+							replace: false,
+						},
+					})
+				);
+			}
+
+			syncRouteState();
+		};
+
+		document.addEventListener('click', interceptAnchorNavigation, true);
+		window.addEventListener('popstate', handlePopState);
+		window.addEventListener(LOCATION_CHANGE_EVENT, syncRouteState);
+
+		return () => {
+			document.removeEventListener('click', interceptAnchorNavigation, true);
+			window.removeEventListener('popstate', handlePopState);
+			window.removeEventListener(LOCATION_CHANGE_EVENT, syncRouteState);
+		};
+	}, [syncRouteState]);
 
 	useEffect(() => {
 		if (typeof window === 'undefined') {
@@ -47,24 +179,69 @@ function AppContent() {
 
 		const handleCloseOverlay = () => {
 			setIsRoadmapSearchOverlayOpen(false);
+			setIsRoadmapSearchOverlayExpanded(false);
+		};
+
+		const handleSearchContentChange = (event) => {
+			setIsRoadmapSearchOverlayExpanded(Boolean(event?.detail?.hasSearchContent));
 		};
 
 		const handleEscClose = (event) => {
 			if (event.key === 'Escape') {
 				setIsRoadmapSearchOverlayOpen(false);
+				setIsRoadmapSearchOverlayExpanded(false);
 			}
 		};
 
 		window.addEventListener('roadmap-search-overlay-open', handleOpenOverlay);
 		window.addEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+		window.addEventListener('roadmap-search-content-change', handleSearchContentChange);
 		window.addEventListener('keydown', handleEscClose);
 
 		return () => {
 			window.removeEventListener('roadmap-search-overlay-open', handleOpenOverlay);
 			window.removeEventListener('roadmap-search-overlay-close', handleCloseOverlay);
+			window.removeEventListener('roadmap-search-content-change', handleSearchContentChange);
 			window.removeEventListener('keydown', handleEscClose);
 		};
 	}, [pathname]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.dispatchEvent(
+			new CustomEvent(isRoadmapSearchOverlayOpen ? 'roadmap-search-overlay-open' : 'roadmap-search-overlay-close')
+		);
+	}, [isRoadmapSearchOverlayOpen]);
+
+	useEffect(() => {
+		if (typeof document === 'undefined') {
+			return undefined;
+		}
+
+		if (!isRoadmapSearchOverlayOpen) {
+			return undefined;
+		}
+
+		const html = document.documentElement;
+		const body = document.body;
+
+		const prevHtmlOverflow = html.style.overflow;
+		const prevBodyOverflow = body.style.overflow;
+		const prevBodyOverscrollBehavior = body.style.overscrollBehavior;
+
+		html.style.overflow = 'hidden';
+		body.style.overflow = 'hidden';
+		body.style.overscrollBehavior = 'none';
+
+		return () => {
+			html.style.overflow = prevHtmlOverflow;
+			body.style.overflow = prevBodyOverflow;
+			body.style.overscrollBehavior = prevBodyOverscrollBehavior;
+		};
+	}, [isRoadmapSearchOverlayOpen]);
 
 	useEffect(() => {
 		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
@@ -90,39 +267,24 @@ function AppContent() {
 			}
 		};
 
-		const handleOutsideWheel = (event) => {
-			if (isOutsideOverlayPanel(event.target)) {
-				event.preventDefault();
-				setIsRoadmapSearchOverlayOpen(false);
-			}
-		};
-
 		document.addEventListener('mousedown', handleOutsideInteraction, true);
 		document.addEventListener('touchstart', handleOutsideInteraction, true);
 		document.addEventListener('click', handleOutsideInteraction, true);
-		window.addEventListener('wheel', handleOutsideWheel, { capture: true, passive: false });
-		window.addEventListener('touchmove', handleOutsideWheel, { capture: true, passive: false });
 
 		return () => {
 			document.removeEventListener('mousedown', handleOutsideInteraction, true);
 			document.removeEventListener('touchstart', handleOutsideInteraction, true);
 			document.removeEventListener('click', handleOutsideInteraction, true);
-			window.removeEventListener('wheel', handleOutsideWheel, true);
-			window.removeEventListener('touchmove', handleOutsideWheel, true);
 		};
 	}, [isRoadmapSearchOverlayOpen]);
 
 	if (isAuthenticated && isAuthPopupPath) {
-		if (typeof window !== 'undefined') {
-			window.location.replace(decidePostLoginRoute(onboardingState));
-		}
+		navigateTo(decidePostLoginRoute(onboardingState), { replace: true });
 		return null;
 	}
 
 	if (!isAuthenticated && !isPublicPath) {
-		if (typeof window !== 'undefined') {
-			window.location.replace('/');
-		}
+		navigateTo('/', { replace: true });
 		return null;
 	}
 
@@ -139,16 +301,8 @@ function AppContent() {
 					<OnboardingPanel
 						authToken={accessToken}
 						sseToken={accessToken}
-						onClose={() => {
-							if (typeof window !== 'undefined') {
-								window.location.assign('/');
-							}
-						}}
-						onCompleted={() => {
-							if (typeof window !== 'undefined') {
-								window.location.assign('/skill-tree');
-							}
-						}}
+						onClose={() => navigateTo('/')}
+						onCompleted={() => navigateTo('/skill-tree')}
 						isFullPage
 						showDismissButton={false}
 					/>
@@ -170,6 +324,14 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/job-market') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<JobMarketPage />
+			</main>
+		);
+	}
+
 	if (!content && pathname === '/manual-roadmap') {
 		content = (
 			<AuthGuard>
@@ -180,9 +342,31 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/manual-roadmap/versions') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<RoadmapVersionHistoryPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/progress') {
+		content = (
+			<AuthGuard>
+				<OnboardingGuard>
+					<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+						<ProgressDashboard />
+					</main>
+				</OnboardingGuard>
+			</AuthGuard>
+		);
+	}
+
 	if (!content && publicSkillTreeRoadmapId) {
 		content = (
-			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+			<main style={{ width: '100%', height: '100vh' }}>
 				<PublicSkillTreePage roadmapId={publicSkillTreeRoadmapId} />
 			</main>
 		);
@@ -192,7 +376,7 @@ function AppContent() {
 	if (!content && pathname === '/skill-tree') {
 		content = (
 			<OnboardingGuard>
-				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<main style={{ width: '100%', height: '100vh' }}>
 					<SkillTreePage />
 				</main>
 			</OnboardingGuard>
@@ -220,6 +404,14 @@ function AppContent() {
 		);
 	}
 
+	if (!content && publicProfileUserId) {
+		content = <PublicProfilePage userId={publicProfileUserId} />;
+	}
+
+	if (!content && pathname === '/public-profile') {
+		content = <PublicProfilePage />;
+	}
+
 	if (!content && isAuthPopupPath) {
 		content = <Homepage />;
 	}
@@ -235,26 +427,27 @@ function AppContent() {
 
 		return (
 			<NotificationProvider sseToken={isAuthenticated ? (accessToken || '') : ''}>
+				<NavigationProgressBar />
+				<ScrollRestorationManager routeKey={routeKey} />
 				<NavBar />
-				{content}
+				<RouteFrame routeKey={routeKey} fallbackLabel="Dang tai du lieu trang...">
+					{content}
+				</RouteFrame>
 				{isAuthPopupPath ? (
 					<div
 						className="auth-modal-overlay"
 						role="dialog"
 						aria-modal="true"
+						aria-label="Authentication popup"
 					>
 						<div className="auth-modal-shell">
 							<button
 								type="button"
 								className="auth-modal-close"
-								onClick={() => {
-									if (typeof window !== 'undefined') {
-										window.location.assign('/');
-									}
-								}}
+								onClick={() => navigateTo('/')}
 								aria-label="Close authentication popup"
 							>
-								x
+								<X size={16} aria-hidden="true" />
 							</button>
 							{authPopupContent}
 						</div>
@@ -263,28 +456,24 @@ function AppContent() {
 				{isRoadmapSearchOverlayOpen ? (
 					<div
 						className="roadmap-search-overlay"
+						id="roadmap-search-overlay"
 						role="dialog"
 						aria-modal="true"
+						aria-label="Roadmap search overlay"
 						onClick={() => setIsRoadmapSearchOverlayOpen(false)}
 					>
 						<div className="roadmap-search-overlay__backdrop" />
 						<div
+							className={`roadmap-search-overlay__page-mask${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__page-mask--expanded' : ' roadmap-search-overlay__page-mask--collapsed'}`}
+						/>
+						<div
 							ref={roadmapSearchPanelRef}
-							className="roadmap-search-overlay__panel"
+							className={`roadmap-search-overlay__panel${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__panel--expanded' : ' roadmap-search-overlay__panel--collapsed'}`}
 							onClick={(event) => event.stopPropagation()}
 						>
-							<div className="roadmap-search-overlay__header">
-								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
-								<button
-									type="button"
-									className="roadmap-search-overlay__close"
-									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
-									aria-label="Close roadmap search"
-								>
-									x
-								</button>
-							</div>
-							<RoadmapSearchPage />
+							<Suspense fallback={<PageSkeleton label="Dang tai bo loc roadmap..." />}>
+								<RoadmapSearchPage />
+							</Suspense>
 						</div>
 					</div>
 				) : null}
@@ -292,9 +481,7 @@ function AppContent() {
 		);
 	}
 
-	if (typeof window !== 'undefined') {
-		window.location.replace('/');
-	}
+	navigateTo('/', { replace: true });
 
 	return null;
 }

@@ -124,6 +124,10 @@ const ManualRoadmapSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.Mixed,
             default: {},
         },
+        averageRating: {
+            type: Number,
+            default: null,
+        },
         shared: {
             type: Boolean,
             required: true,
@@ -144,6 +148,48 @@ const ManualRoadmapSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        tags: {
+            type: [
+                {
+                    label: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                    },
+                    normalizedLabel: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                        lowercase: true,
+                    },
+                    _id: false,
+                }
+            ],
+            default: [],
+        },
+        isPrimary: {
+            type: Boolean,
+            default: false,
+        },
+        studentProfileId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'StudentProfile',
+            default: null,
+        },
+        personalisationLevel: {
+            type: String,
+            enum: ['full', 'low', 'manual'],
+            default: 'manual',
+        },
+        acceptedAt: {
+            type: Date,
+            default: null,
+        },
+        source: {
+            type: String,
+            enum: ['auto', 'manual'],
+            default: 'manual',
+        },
     },
     {
         collection: 'manual_roadmaps',
@@ -154,6 +200,14 @@ const ManualRoadmapSchema = new mongoose.Schema(
 
 ManualRoadmapSchema.index({ userId: 1, updatedAt: -1 }, { name: 'manual_roadmap_by_user' });
 ManualRoadmapSchema.index({ isPublic: 1, updatedAt: -1 }, { name: 'manual_roadmap_public' });
+ManualRoadmapSchema.index(
+    { userId: 1, isPrimary: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { isPrimary: true },
+        name: 'manual_roadmap_primary_per_user',
+    }
+);
 
 const ManualRoadmap = mongoose.models.ManualRoadmap || mongoose.model('ManualRoadmap', ManualRoadmapSchema);
 

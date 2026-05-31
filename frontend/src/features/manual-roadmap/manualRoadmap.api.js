@@ -25,7 +25,7 @@ async function request(path, method, authToken, body, { requireAuth = true } = {
     let payload = null;
     try {
         payload = await response.json();
-    } catch (err) {
+    } catch {
         payload = null;
     }
 
@@ -51,19 +51,27 @@ export function getManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'GET', authToken);
 }
 
-export function createManualRoadmap(authToken, { yamlCode }) {
-    return request('/roadmaps/manual-roadmaps', 'POST', authToken, { yamlCode });
+export function createManualRoadmap(authToken, { yamlCode, tags = [] }) {
+    return request('/roadmaps/manual-roadmaps', 'POST', authToken, { yamlCode, tags });
 }
 
-export function updateManualRoadmap(authToken, roadmapId, { yamlCode }) {
-    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'PATCH', authToken, { yamlCode });
+export function updateManualRoadmap(authToken, roadmapId, { yamlCode, tags = [] }) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'PATCH', authToken, { yamlCode, tags });
+}
+
+export function deleteManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}`, 'DELETE', authToken);
 }
 
 export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
 }
 
-export function listPublicManualRoadmaps({ q = '', page = 1, limit = 20 } = {}) {
+export function unshareManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}/unshare`, 'POST', authToken);
+}
+
+export function listPublicManualRoadmaps({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
@@ -74,11 +82,69 @@ export function listPublicManualRoadmaps({ q = '', page = 1, limit = 20 } = {}) 
         params.set('q', normalizedQuery);
     }
 
+    if (Array.isArray(tags) && tags.length > 0) {
+        tags.forEach(tag => {
+            params.append('tags', String(tag || '').trim().toLowerCase());
+        });
+    }
+
+    const normalizedUserId = String(userId || '').trim();
+    if (normalizedUserId) {
+        params.set('userId', normalizedUserId);
+    }
+
     return request(`/roadmaps/manual-roadmaps/public?${params.toString()}`, 'GET', null, undefined, { requireAuth: false });
+}
+
+export function getManualRoadmapTags() {
+    return request('/roadmaps/manual-roadmaps/tags', 'GET', null, undefined, { requireAuth: false });
 }
 
 export function getPublicManualRoadmapPreviewById(roadmapId) {
     return request(`/roadmaps/manual-roadmaps/public/${roadmapId}`, 'GET', null, undefined, { requireAuth: false });
+}
+
+export function listPublicManualRoadmapComments(roadmapId, limit = 20) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments?limit=${encodeURIComponent(limit)}`,
+        'GET',
+        null,
+        undefined,
+        { requireAuth: false }
+    );
+}
+
+export function createManualRoadmapComment(authToken, roadmapId, { content, rating }) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/comments`,
+        'POST',
+        authToken,
+        { content, rating }
+    );
+}
+
+export function listRoadmapVersions(authToken, roadmapId, { page = 1, limit = 50 } = {}) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions?page=${page}&limit=${limit}`,
+        'GET',
+        authToken
+    );
+}
+
+export function getRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}`,
+        'GET',
+        authToken
+    );
+}
+
+export function revertRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}/revert`,
+        'POST',
+        authToken
+    );
 }
 
 const manualRoadmapApi = {
@@ -86,9 +152,17 @@ const manualRoadmapApi = {
     getManualRoadmap,
     createManualRoadmap,
     updateManualRoadmap,
+    deleteManualRoadmap,
     shareManualRoadmap,
+    unshareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
+    listPublicManualRoadmapComments,
+    createManualRoadmapComment,
+    getManualRoadmapTags,
+    listRoadmapVersions,
+    getRoadmapVersion,
+    revertRoadmapVersion,
 };
 
 export default manualRoadmapApi;

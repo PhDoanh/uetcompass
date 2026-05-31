@@ -39,15 +39,15 @@ async function getPrimaryRoadmap(studentId) {
       roadmapId: roadmap._id.toString(),
       userId: roadmap.userId.toString(),
       studentProfileId: roadmap.studentProfileId?.toString() || null,
-      personalisationLevel: roadmap.personalisationLevel,
-      roadmapName: roadmap.roadmapName || `${roadmap.personalisationLevel === 'full' ? 'Personalized' : 'Generic'} Roadmap`,
+      personalisationLevel: roadmap.personalisationLevel || 'manual',
+      roadmapName: roadmap.title || `${roadmap.personalisationLevel === 'full' ? 'Personalized' : 'Generic'} Roadmap`,
       nodes: (roadmap.nodes || []).map((node) => ({
         nodeId: node.nodeId,
-        nodeType: node.nodeType,
-        skillName: node.skillName,
+        nodeType: node.type === 'sub_topic' ? 'subtopic' : 'topic',
+        skillName: node.skillName || node.label || '',
         parentNodeId: node.parentNodeId ?? null,
-        relatedCourses: node.relatedCourses || [],
-        reason: node.reason,
+        relatedCourses: node.metadata?.relatedCourses || [],
+        reason: node.description || node.metadata?.reason || '',
         resources: node.resources || [],
       })),
       acceptedAt: roadmap.acceptedAt,
@@ -74,7 +74,7 @@ async function getPrimaryRoadmap(studentId) {
  * @deprecated Use Feature 009 endpoint directly
  * @param {string} studentId - User ID
  */
-async function triggerRepersonalize(studentId) {
+async function triggerRepersonalize() {
   // Feature 005 and 009 handle this directly
   // Skill Tree does not trigger repersonalization
   throw new Error('Use Feature 009 endpoint directly: POST /api/roadmaps/primary/regenerate');

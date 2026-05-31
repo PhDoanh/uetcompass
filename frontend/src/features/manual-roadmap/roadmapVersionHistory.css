@@ -1,0 +1,104 @@
+/* ── Roadmap Version History Page ───────────────────────── */
+
+.roadmap-version-sidebar {
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+.roadmap-version-list-pane {
+    padding: 24px;
+    overflow-y: auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.roadmap-version-list-pane__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.roadmap-version-list-pane__title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.roadmap-version-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.roadmap-version-list__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--st-border, #e2e8f0);
+    cursor: pointer;
+    background: var(--surface-1);
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.roadmap-version-list__item:hover {
+    background: var(--surface-2);
+    border-color: var(--color-primary);
+}
+
+.roadmap-version-list__item--active {
+    background: var(--surface-2);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.roadmap-version-list__number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.roadmap-version-list__date {
+    font-size: 0.78rem;
+    color: var(--text-2);
+}
+
+.roadmap-version-yaml-preview {
+    font-size: 12px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    background: var(--surface-1);
+    border: 1px solid var(--st-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 12px;
+    overflow: auto;
+    max-height: 60vh;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-1);
+    margin: 0;
+}
+
+/* dark mode overrides */
+html[data-theme='dark'] .roadmap-version-list__item {
+    border-color: rgba(95, 145, 210, 0.3);
+    background: var(--surface-2);
+}
+
+html[data-theme='dark'] .roadmap-version-list__item:hover,
+html[data-theme='dark'] .roadmap-version-list__item--active {
+    background: var(--surface-3);
+    border-color: var(--color-primary);
+}
+
+html[data-theme='dark'] .roadmap-version-yaml-preview {
+    background: var(--surface-2);
+    border-color: rgba(95, 145, 210, 0.3);
+}

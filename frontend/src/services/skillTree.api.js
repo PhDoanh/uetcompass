@@ -73,6 +73,13 @@ export async function getRoadmapProgress(authToken, roadmapId) {
   });
 }
 
+export async function getRoadmapHistory(authToken, roadmapId, limit = 50) {
+  return request(`/skill-tree/roadmaps/${roadmapId}/history?limit=${encodeURIComponent(limit)}`, {
+    method: 'GET',
+    headers: createHeaders(authToken),
+  });
+}
+
 export async function getResources(authToken, courseCode) {
   return request(`/skill-tree/nodes/${courseCode}/resources`, {
     method: 'GET',
@@ -101,6 +108,14 @@ export async function getLearningResources(authToken, skillName) {
   });
 }
 
+export async function curateResources(authToken, options = {}) {
+  return request('/skill-tree/resources/curate', {
+    method: 'POST',
+    headers: createHeaders(authToken),
+    body: JSON.stringify(options),
+  });
+}
+
 // Backward-compatible aliases for older call sites.
 export const getNodeResources = getResources;
 export const getNodeWhy = getWhyCourse;
@@ -124,10 +139,12 @@ const skillTreeApi = {
   getTree,
   patchNodeStatus,
   getRoadmapProgress,
+  getRoadmapHistory,
   getResources,
   getWhyCourse,
   getMarketSkills,
   getLearningResources,
+  curateResources,
   getNodeResources,
   getNodeWhy,
   getNodeMarketSkills,

@@ -1,26 +1,44 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Clock } from 'lucide-react';
+import * as skillTreeApi from '../../services/skillTree.api';
 import { useSkillTree } from './useSkillTree';
-import SkillTreeCanvas from './SkillTreeCanvas';
-import CourseDetailPanel from './CourseDetailPanel';
+import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
+import { useSplitLayout } from './useSplitLayout';
+import SkillTreeDetailPanel, { calculateProgress, buildFixedMilestones, SkillTreeOverviewTab, SkillTreeNodeDetailTab } from './SkillTreeDetailPanel';
+import MilestoneCelebrationModal from './MilestoneCelebrationModal';
+import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import './skill-tree.css';
+import '../manual-roadmap/manual-roadmap.css';
 
-const ZOOM_MIN = 0.6;
-const ZOOM_MAX = 1.8;
-const ZOOM_STEP = 0.15;
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
 
-function clampZoom(value) {
-  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
+function isInProgressState(state) {
+  const normalizedState = String(state || '').toLowerCase();
+  return normalizedState === 'inprogress' || normalizedState === 'in_progress' || normalizedState === 'in-progress';
+}
+
+function isCompletedState(state) {
+  return String(state || '').toLowerCase() === 'completed';
 }
 
 export default function SkillTreePage() {
-  const [zoom, setZoom] = useState(1);
-  const canvasViewportRef = useRef(null);
-  const zoomContentRef = useRef(null);
-  const autoFittedRef = useRef(false);
+  const [historyEvents, setHistoryEvents] = useState([]);
+  const [celebration, setCelebration] = useState(null);
+  const milestoneTriggeredRef = useRef(new Set());
+  const previousPercentRef = useRef(0);
+  const celebrationInitializedRef = useRef(false);
+  const celebrationTimerRef = useRef(null);
+  const [focusNodeId, setFocusNodeId] = useState('');
 
   const {
     nodes,
     edges,
+    roadmapId,
+    roadmapName,
     createdAt,
     acceptedAt,
     activeNodeId,
@@ -38,58 +56,285 @@ export default function SkillTreePage() {
   const hasNodes = (nodes || []).length > 0;
   const roadmapCreatedAt = createdAt || acceptedAt;
   const roadmapCreatedLabel = roadmapCreatedAt ? new Date(roadmapCreatedAt).toLocaleString() : 'Not available';
+  const roadmapTitle = roadmapName || 'Roadmap cá nhân';
+  const roadmapDescription = 'Your personalized roadmap';
 
-  const handleZoomIn = useCallback(() => {
-    setZoom((prev) => clampZoom(prev + ZOOM_STEP));
-  }, []);
+  const {
+    layoutRef,
+    ratio,
+    minRatio,
+    maxRatio,
+    handleResizePointerDown,
+    handleResizeKeyDown,
+  } = useSplitLayout();
 
-  const handleZoomOut = useCallback(() => {
-    setZoom((prev) => clampZoom(prev - ZOOM_STEP));
-  }, []);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const handleFitView = useCallback(() => {
-    const viewportEl = canvasViewportRef.current;
-    const contentEl = zoomContentRef.current;
-
-    if (!viewportEl || !contentEl || !hasNodes) {
-      setZoom(1);
+  useEffect(() => {
+    if (activeNode) {
+      setActiveTab('node');
       return;
     }
 
-    const viewportWidth = viewportEl.clientWidth;
-    const viewportHeight = viewportEl.clientHeight;
-    const contentWidth = contentEl.scrollWidth;
-    const contentHeight = contentEl.scrollHeight;
+    setActiveTab('overview');
+  }, [activeNode]);
 
-    if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
-      setZoom(1);
+  const progressSummary = useMemo(
+    () => calculateProgress(nodes || [], (node) => node.progressState),
+    [nodes]
+  );
+
+  const progressInsights = useMemo(() => {
+    const safeNodes = Array.isArray(nodes) ? nodes : [];
+    const doneNodes = safeNodes.filter((node) => isCompletedState(node?.progressState)).length;
+    const inProgressNodes = safeNodes.filter((node) => isInProgressState(node?.progressState)).length;
+    const pendingNodes = Math.max(0, safeNodes.length - doneNodes - inProgressNodes);
+
+    const activityDates = safeNodes
+      .filter((node) => isCompletedState(node?.progressState) || isInProgressState(node?.progressState))
+      .map((node) => node?.updatedAt)
+      .filter(Boolean)
+      .map((value) => new Date(value))
+      .filter((value) => !Number.isNaN(value.getTime()));
+
+    const earliestNodeActivity = activityDates.length
+      ? new Date(Math.min(...activityDates.map((value) => value.getTime())))
+      : null;
+    const roadmapCreatedAt = createdAt || acceptedAt || null;
+    const earliestLearningDate = earliestNodeActivity || roadmapCreatedAt;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfLearning = earliestLearningDate ? new Date(earliestLearningDate) : null;
+    if (startOfLearning) {
+      startOfLearning.setHours(0, 0, 0, 0);
+    }
+
+    const learnedDays = startOfLearning
+      ? Math.max(0, Math.floor((startOfToday - startOfLearning) / (24 * 60 * 60 * 1000)))
+      : 0;
+    const nodesPerDay = learnedDays > 0 ? inProgressNodes / learnedDays : 0;
+    const estimatedCompletionDate = nodesPerDay > 0
+      ? addDays(startOfToday, Math.ceil(pendingNodes / nodesPerDay))
+      : null;
+
+    return {
+      totalNodes: safeNodes.length,
+      doneNodes,
+      inProgressNodes,
+      pendingNodes,
+      nodesPerDay,
+      startDate: earliestLearningDate,
+      estimatedCompletionDate,
+      completionRate: progressSummary.percent || 0,
+    };
+  }, [acceptedAt, createdAt, nodes, progressSummary.percent]);
+
+  const milestones = useMemo(() => buildFixedMilestones(), []);
+
+  const closeCelebration = useCallback(() => {
+    setCelebration(null);
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    if (!roadmapId) {
+      setHistoryEvents([]);
       return;
     }
 
-    const padding = 48;
-    const widthScale = (viewportWidth - padding) / contentWidth;
-    const heightScale = (viewportHeight - padding) / contentHeight;
-    const targetZoom = clampZoom(Math.min(widthScale, heightScale));
+    try {
+      const token = localStorage.getItem('authToken') || '';
+      const payload = await skillTreeApi.getRoadmapHistory(token, roadmapId, 50);
+      setHistoryEvents(Array.isArray(payload?.items) ? payload.items : []);
+    } catch {
+      setHistoryEvents([]);
+    }
+  }, [roadmapId]);
 
-    setZoom(Number.isFinite(targetZoom) && targetZoom > 0 ? targetZoom : 1);
+  const overviewMetaItems = useMemo(() => ([
+    { label: 'Ngày tạo', value: roadmapCreatedLabel },
+    { label: 'Số node', value: hasNodes ? `${nodes.length}` : '0' },
+  ]), [hasNodes, nodes.length, roadmapCreatedLabel]);
 
-    requestAnimationFrame(() => {
-      viewportEl.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-    });
-  }, [hasNodes]);
+  const graphNodes = useMemo(() => (nodes || []).map((node) => {
+    const parentNodeId = String(node?.parentNodeId || '').trim() || null;
+    const type = node?.nodeType === 'subtopic' ? 'sub_topic' : 'main_topic';
+
+    return {
+      ...node,
+      label: node.skillName || node.label || node.nodeId,
+      description: node.reason || node.description || '',
+      type,
+      parentNodeId,
+      prerequisites: parentNodeId ? [parentNodeId] : [],
+      status: node.progressState || 'pending',
+    };
+  }), [nodes]);
+
+  const graphEdges = useMemo(() => (edges || [])
+    .map((edge) => ({
+      edgeId: edge.id || edge.edgeId || `${edge.sourceId || edge.source}->${edge.targetId || edge.target}`,
+      source: edge.source || edge.sourceId,
+      target: edge.target || edge.targetId,
+      type: edge.type || 'default',
+    }))
+    .filter((edge) => edge.source && edge.target), [edges]);
+
+  const handleNodeTransition = useCallback(async (fromState, toState) => {
+    if (!activeNode) {
+      return;
+    }
+
+    await transitionNode(activeNode.nodeId, fromState, toState);
+    await refreshHistory();
+  }, [activeNode, refreshHistory, transitionNode]);
+
+  const handleRightClickToggle = useCallback(async (nodeId) => {
+    if (!nodeId) {
+      return;
+    }
+
+    const node = nodes.find((item) => item.nodeId === nodeId);
+    if (!node) {
+      return;
+    }
+
+    const currentState = node.progressState || 'pending';
+    const targetState = currentState === 'completed' ? 'pending' : 'completed';
+
+    await transitionNode(node.nodeId, currentState, targetState);
+    await refreshHistory();
+  }, [nodes, refreshHistory, transitionNode]);
 
   useEffect(() => {
     if (!hasNodes) {
-      autoFittedRef.current = false;
-      setZoom(1);
+      milestoneTriggeredRef.current.clear();
+      previousPercentRef.current = 0;
+      celebrationInitializedRef.current = false;
       return;
     }
 
-    if (!autoFittedRef.current) {
-      autoFittedRef.current = true;
-      handleFitView();
+    const currentPercent = progressSummary.percent || 0;
+    const previousPercent = previousPercentRef.current || 0;
+
+    if (!celebrationInitializedRef.current) {
+      celebrationInitializedRef.current = true;
+      previousPercentRef.current = currentPercent;
+      return;
     }
-  }, [hasNodes, nodes.length, handleFitView]);
+
+    if (currentPercent <= previousPercent) {
+      previousPercentRef.current = currentPercent;
+      return;
+    }
+
+    const orderedMilestones = [...milestones].sort((a, b) => a.percent - b.percent);
+    for (const milestone of orderedMilestones) {
+      if (
+        currentPercent >= milestone.percent
+        && previousPercent < milestone.percent
+        && !milestoneTriggeredRef.current.has(milestone.id)
+      ) {
+        milestoneTriggeredRef.current.add(milestone.id);
+        setCelebration({ milestone, roadmapTitle });
+        break;
+      }
+    }
+
+    previousPercentRef.current = currentPercent;
+  }, [hasNodes, milestones, progressSummary.percent, roadmapTitle]);
+
+  const detailTabs = useMemo(() => ([
+    {
+      id: 'overview',
+      label: 'Tổng quan',
+      content: (
+        <SkillTreeOverviewTab
+          title={roadmapTitle}
+          description={roadmapDescription}
+          metaItems={overviewMetaItems}
+          showRoadmapTitle={false}
+          progress={progressSummary}
+          progressStats={progressInsights}
+          milestones={milestones}
+          progressVariant="fixed"
+          historyEvents={historyEvents}
+          showHistory
+          actions={
+            roadmapId ? (
+              <button
+                type="button"
+                className="manual-roadmap-button manual-roadmap-button--secondary"
+                onClick={() => { window.location.href = `/manual-roadmap/versions?id=${roadmapId}`; }}
+              >
+                <Clock size={15} aria-hidden="true" style={{ marginRight: 4 }} />
+                Lịch sử phiên bản
+              </button>
+            ) : null
+          }
+        />
+      ),
+    },
+    {
+      id: 'node',
+      label: 'Chi tiết nút',
+      disabled: !activeNode,
+      content: (
+        <SkillTreeNodeDetailTab
+          mode="personal"
+          node={activeNode}
+          onClearSelection={closeNode}
+          onTransition={activeNode ? handleNodeTransition : undefined}
+        />
+      ),
+    },
+  ]), [activeNode, closeNode, handleNodeTransition, historyEvents, milestones, overviewMetaItems, progressSummary, roadmapDescription, roadmapTitle]);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  useEffect(() => {
+    if (!celebration) {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = null;
+      }
+      return;
+    }
+
+    celebrationTimerRef.current = setTimeout(() => {
+      setCelebration(null);
+    }, 3800);
+
+    return () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = null;
+      }
+    };
+  }, [celebration]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search || '');
+    const focus = params.get('focus') || '';
+    setFocusNodeId(focus);
+  }, []);
+
+  useEffect(() => {
+    if (!focusNodeId || !hasNodes) {
+      return;
+    }
+
+    if (nodes.some((node) => node.nodeId === focusNodeId)) {
+      openNode(focusNodeId);
+    }
+  }, [focusNodeId, hasNodes, nodes, openNode]);
 
   let generationMessage = '';
   if (!hasNodes) {
@@ -130,75 +375,62 @@ export default function SkillTreePage() {
 
   return (
     <div className="skill-tree-page">
-      <div className="skill-tree-layout">
-        <main ref={canvasViewportRef} className="skill-tree-layout__canvas" aria-label="Skill tree canvas">
-          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
-            <h2 className="skill-tree-summary-card__title">Your personalized roadmap</h2>
-            <p className="skill-tree-summary-card__meta">Created at: {roadmapCreatedLabel}</p>
-          </section>
-
-          {hasNodes ? (
-            <div className="skill-tree-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-              <div ref={zoomContentRef}>
-                <SkillTreeCanvas
-                  nodes={nodes || []}
-                  edges={edges || []}
-                  onSelectNode={openNode}
-                />
+      <MilestoneCelebrationModal
+        open={!!celebration}
+        milestone={celebration?.milestone}
+        roadmapTitle={celebration?.roadmapTitle}
+        onClose={closeCelebration}
+      />
+      <div
+        className="skill-tree-layout skill-tree-layout--split"
+        ref={layoutRef}
+        style={{ '--st-panel-ratio': ratio }}
+      >
+        <main
+          className="skill-tree-layout__canvas skill-tree-layout__canvas--split"
+          aria-label="Skill tree canvas"
+        >
+          <div className="skill-tree-canvas-stage skill-tree-graph-shell">
+            {hasNodes ? (
+              <RoadmapGraphRenderer
+                nodes={graphNodes}
+                edges={graphEdges}
+                onNodeSelect={openNode}
+                onNodeToggleStatus={handleRightClickToggle}
+                selectedNodeId={activeNodeId}
+                controlsVisible
+              />
+            ) : (
+              <div className="skill-tree-empty-state">
+                <p>{generationMessage || 'Roadmap is not available yet.'}</p>
               </div>
-            </div>
-          ) : (
-            <div className="skill-tree-empty-state">
-              <p>{generationMessage || 'Roadmap is not available yet.'}</p>
-            </div>
-          )}
+            )}
+          </div>
         </main>
 
-        <div className="skill-tree-canvas-controls">
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleZoomIn}
-            aria-label="Zoom in"
-            title="Zoom in"
-            disabled={!hasNodes}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleZoomOut}
-            aria-label="Zoom out"
-            title="Zoom out"
-            disabled={!hasNodes}
-          >
-            -
-          </button>
-          <button
-            type="button"
-            className="skill-tree-canvas-controls__btn"
-            onClick={handleFitView}
-            aria-label="Fit to view"
-            title="Fit to view"
-            disabled={!hasNodes}
-          >
-            ⤢
-          </button>
+        <div
+          className="skill-tree-layout__divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize skill tree canvas and detail panel"
+          aria-valuemin={Math.round(minRatio * 100)}
+          aria-valuemax={Math.round(maxRatio * 100)}
+          aria-valuenow={Math.round(ratio * 100)}
+          tabIndex={0}
+          onPointerDown={handleResizePointerDown}
+          onKeyDown={handleResizeKeyDown}
+        >
+          <ManualRoadmapDividerHandle />
         </div>
 
-        {activeNode && (
-          <CourseDetailPanel
-            node={activeNode}
-            onClosePanel={closeNode}
-            onTransition={(fromState, toState) => transitionNode(activeNode.nodeId, fromState, toState)}
-          />
-        )}
+        <SkillTreeDetailPanel
+          title="Chi tiết roadmap"
+          subtitle={roadmapTitle}
+          tabs={detailTabs}
+          activeTabId={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
-
-      <footer className="skill-tree-page__footer">
-        <span>UETCompass</span>
-      </footer>
     </div>
   );
 }

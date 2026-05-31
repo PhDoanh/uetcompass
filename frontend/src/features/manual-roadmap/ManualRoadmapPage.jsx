@@ -8,7 +8,9 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import ManualRoadmapDividerHandle from './ManualRoadmapDividerHandle';
 import YamlGuideOverlay from './YamlGuideOverlay';
-import { useNotification } from '../general/NotificationContainer';
+import { useNotification } from '../notification/NotificationContainer';
+import TagInput from './TagInput';
+import { CircleHelp, Clock, History, Save } from 'lucide-react';
 import '../skill-tree/skill-tree.css';
 import './manual-roadmap.css';
 import webDevelopmentSample from '../../../../specs/013-manual-roadmap-generator/sample-manual-roadmap.yaml?raw';
@@ -89,8 +91,8 @@ function findNodeLine(yamlText, nodeId) {
   if (!yamlText || !nodeId) return 0;
   const lines = String(yamlText).split('\n');
   const escapedId = escapeRegExp(nodeId);
-  const nodeIdPattern = new RegExp(`^\\s*-\\s*nodeId:\\s*['\"]?${escapedId}['\"]?\\s*$`);
-  const idPattern = new RegExp(`^\\s*-\\s*id:\\s*['\"]?${escapedId}['\"]?\\s*$`);
+  const nodeIdPattern = new RegExp(`^\\s*-\\s*nodeId:\\s*['"]?${escapedId}['"]?\\s*$`);
+  const idPattern = new RegExp(`^\\s*-\\s*id:\\s*['"]?${escapedId}['"]?\\s*$`);
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -147,6 +149,9 @@ export default function ManualRoadmapPage() {
   const [description, setDescription] = useState('');
   const [preview, setPreview] = useState({ title: '', description: '', nodes: [], edges: [] });
   const [validationError, setValidationError] = useState('');
+  const [tags, setTags] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -165,8 +170,31 @@ export default function ManualRoadmapPage() {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const layoutRef = useRef(null);
+  const previewStageRef = useRef(null);
   const resizeDragRef = useRef({ startX: 0, startRatio: MANUAL_ROADMAP_SPLIT_DEFAULT_RATIO });
   const currentSample = SAMPLE_ROADMAPS.find((sample) => sample.key === selectedSampleKey) || SAMPLE_ROADMAPS[0];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handlePreviewWheel = (event) => {
+      if (!previewStageRef.current || !previewStageRef.current.contains(event.target)) {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('wheel', handlePreviewWheel, { passive: false, capture: true });
+
+    return () => {
+      window.removeEventListener('wheel', handlePreviewWheel, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -223,6 +251,33 @@ export default function ManualRoadmapPage() {
     } catch {
       // Ignore malformed prefill payload and keep default editor content.
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingTags(true);
+
+    (async () => {
+      try {
+        const tags = await manualRoadmapApi.getManualRoadmapTags();
+        if (isMounted) {
+          setAvailableTags(Array.isArray(tags) ? tags : []);
+        }
+      } catch (err) {
+        console.error('Failed to load tag catalog:', err);
+        if (isMounted) {
+          setAvailableTags([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingTags(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -429,6 +484,7 @@ export default function ManualRoadmapPage() {
         setSelectedSampleKey('custom');
         setTitle(roadmap.title || '');
         setDescription(roadmap.description || '');
+        setTags(Array.isArray(roadmap.tags) ? roadmap.tags : []);
       } catch (err) {
         if (!isMounted) return;
         setApiError(err.message || 'Không thể tải roadmap thủ công.');
@@ -488,10 +544,13 @@ export default function ManualRoadmapPage() {
 
       const next = transform(parsed);
       const nextYaml = dump(next, { noRefs: true, lineWidth: 120, sortKeys: false });
+      setSelectedSampleKey('custom');
       setYamlCode(nextYaml);
       setApiError('');
+      return true;
     } catch (err) {
       setApiError(err.message || 'Không thể cập nhật học liệu trong YAML.');
+      return false;
     }
   };
 
@@ -509,7 +568,7 @@ export default function ManualRoadmapPage() {
       return;
     }
 
-    writeYaml((parsed) => {
+    const updated = writeYaml((parsed) => {
       const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
       const targetNode = nodes.find((node) => String(node.nodeId || node.id || '').trim() === nodeId);
 
@@ -530,8 +589,10 @@ export default function ManualRoadmapPage() {
       return parsed;
     });
 
-    setResourceTitle('');
-    setResourceUrl('');
+    if (updated) {
+      setResourceTitle('');
+      setResourceUrl('');
+    }
   };
 
   const handleRemoveResource = (index) => {
@@ -575,11 +636,15 @@ export default function ManualRoadmapPage() {
 
     setIsSaving(true);
     try {
-      await (roadmapId
-        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode })
-        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode }));
+      const result = await (roadmapId
+        ? manualRoadmapApi.updateManualRoadmap(accessToken, roadmapId, { yamlCode: persistableYamlCode, tags })
+        : manualRoadmapApi.createManualRoadmap(accessToken, { yamlCode: persistableYamlCode, tags }));
 
       setSuccessMessage(`Đã ${roadmapId ? 'cập nhật' : 'tạo'} roadmap thành công.`);
+
+      if (result && result.syncSkipped) {
+        addNotification('Roadmap đã được lưu cục bộ nhưng chưa được đồng bộ sang primary vì hồ sơ onboarding chưa hoàn thành.', 'warning');
+      }
     } catch (err) {
       if (err?.status === 401) {
         setApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi lưu lại roadmap.');
@@ -639,6 +704,7 @@ export default function ManualRoadmapPage() {
         className="skill-tree-layout manual-roadmap-layout"
         ref={layoutRef}
       >
+        {/* PHẦN CANVAS PREVIEW FULL BÊN TRÁI */}
         <main
           className="skill-tree-layout__canvas manual-roadmap-layout__canvas"
           aria-label="Manual roadmap preview"
@@ -650,15 +716,11 @@ export default function ManualRoadmapPage() {
             : undefined
           }
         >
-          <section className="skill-tree-summary-card" aria-label="Roadmap summary">
-            <h2 className="skill-tree-summary-card__title">{title || 'Manual roadmap draft'}</h2>
-            <p className="skill-tree-summary-card__meta">{description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}</p>
-            <div className={`manual-roadmap-summary-card__status ${validationError ? 'manual-roadmap-summary-card__status--error' : 'manual-roadmap-summary-card__status--info'}`} role="status" aria-live="polite">
-              {renderStatusMessage}
-            </div>
-          </section>
-
-          <div className="manual-roadmap-preview-stage">
+          <div
+            className="manual-roadmap-preview-stage"
+            ref={previewStageRef}
+            style={{ height: '100%', width: '100%' }}
+          >
             <RoadmapGraphRenderer
               nodes={displayNodes}
               edges={preview.edges || []}
@@ -684,6 +746,7 @@ export default function ManualRoadmapPage() {
           <ManualRoadmapDividerHandle />
         </div>
 
+        {/* PHẦN PANEL ĐIỀU KHIỂN BÊN PHẢI */}
         <aside
           className="skill-tree-panel manual-roadmap-panel"
           aria-label="Manual roadmap editor"
@@ -706,17 +769,28 @@ export default function ManualRoadmapPage() {
                   title="View YAML format guide"
                   aria-label="Open YAML format guide"
                 >
-                  <span className="material-symbols-outlined">help</span>
+                  <CircleHelp size={18} aria-hidden="true" />
                 </button>
               </div>
 
               <div className="manual-roadmap-panel__actions">
+                {roadmapId && (
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = `/manual-roadmap/versions?id=${roadmapId}`; }}
+                    className="manual-roadmap-button manual-roadmap-button--secondary"
+                    title="Xem lịch sử phiên bản"
+                  >
+                    <Clock className="manual-roadmap-button__icon" aria-hidden="true" />
+                    Lịch sử
+                  </button>
+                )}
                 <button type="button" onClick={handleRestoreSample} className="manual-roadmap-button manual-roadmap-button--secondary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">history</span>
+                  <History className="manual-roadmap-button__icon" aria-hidden="true" />
                   Phục hồi mẫu
                 </button>
                 <button type="button" onClick={handleSave} disabled={actionsDisabled} className="manual-roadmap-button manual-roadmap-button--primary">
-                  <span className="material-symbols-outlined manual-roadmap-button__icon">save</span>
+                  <Save className="manual-roadmap-button__icon" aria-hidden="true" />
                   {isSaving ? 'Đang lưu...' : 'Lưu roadmap'}
                 </button>
               </div>
@@ -724,6 +798,32 @@ export default function ManualRoadmapPage() {
           </div>
 
           <div className="skill-tree-panel__content manual-roadmap-panel__content">
+            {/* ĐÃ CHUYỂN CARD THÔNG TIN VÀO ĐÂY (NẰM TRÊN CÙNG CỦA PANEL NỘI DUNG BÊN PHẢI) */}
+            <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Thông tin tổng quan</h4>
+              <div
+                className="skill-tree-summary-card"
+                aria-label="Roadmap summary"
+                style={{
+                  position: 'static',      /* Xóa bỏ định vị float/absolute cũ nếu có */
+                  width: '100%',           /* Kéo giãn độ rộng bằng với thẻ cha */
+                  maxWidth: '100%',        /* Ghi đè max-width cũ giới hạn trên canvas */
+                  margin: 0,               /* Gỡ bỏ margin thừa gây lệch hàng */
+                  boxSizing: 'border-box'
+                }}
+              >
+                <h2 className="skill-tree-summary-card__title" style={{ fontSize: '1.1rem' }}>
+                  {title || 'Manual roadmap draft'}
+                </h2>
+                <p className="skill-tree-summary-card__meta">
+                  {description || 'Use the YAML editor to define nodes, prerequisites, and resources.'}
+                </p>
+                <div className={`manual-roadmap-summary-card__status ${validationError ? 'manual-roadmap-summary-card__status--error' : 'manual-roadmap-summary-card__status--info'}`} role="status" aria-live="polite">
+                  {renderStatusMessage}
+                </div>
+              </div>
+            </section>
+
             <section className="resources-tab__section manual-roadmap-section">
               <h4 className="resources-tab__heading">Chọn mẫu roadmap</h4>
               <div className="manual-roadmap-form__grid">
@@ -768,6 +868,21 @@ export default function ManualRoadmapPage() {
             </section>
 
             <section className="resources-tab__section manual-roadmap-section">
+              <h4 className="resources-tab__heading">Gắn thẻ roadmap</h4>
+              <div className="manual-roadmap-form">
+                <label className="manual-roadmap-field__label">Thêm hoặc chọn thẻ</label>
+                <TagInput
+                  tags={tags}
+                  availableTags={availableTags}
+                  onTagsChange={setTags}
+                  isLoading={isLoadingTags}
+                  disabled={isSaving}
+                />
+                <p className="manual-roadmap-section__note">Sử dụng thẻ để giúp người dùng tìm kiếm và lọc roadmap của bạn.</p>
+              </div>
+            </section>
+
+            <section className="resources-tab__section manual-roadmap-section">
               <h4 className="resources-tab__heading">Quản lý học liệu</h4>
               <div className="manual-roadmap-form">
                 <div className="manual-roadmap-field">
@@ -783,7 +898,7 @@ export default function ManualRoadmapPage() {
                         {node.label || node.nodeId}
                       </option>
                     ))}
-                  </select>
+                  </  select>
                 </div>
 
                 <div className="manual-roadmap-form__grid">

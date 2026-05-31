@@ -1,49 +1,96 @@
 'use strict';
 
-const { Roadmap } = require('./roadmap.model');
+const { ManualRoadmap } = require('./manualRoadmap.model');
+const roadmapVersionService = require('./roadmapVersion.service');
+const { buildManualRoadmapYaml } = require('./roadmapYaml.service');
+
+function toManualRoadmapNode(node) {
+	const relatedCourses = Array.isArray(node.relatedCourses) ? node.relatedCourses : [];
+	const label = String(node.skillName || node.nodeId || '').trim();
+	return {
+		nodeId: node.nodeId,
+		type: node.nodeType === 'subtopic' ? 'sub_topic' : 'main_topic',
+		parentNodeId: node.parentNodeId || null,
+		label,
+		description: node.reason || '',
+		prerequisites: node.parentNodeId ? [node.parentNodeId] : [],
+		skillName: node.skillName || '',
+		resources: Array.isArray(node.resources) ? node.resources : [],
+		metadata: { relatedCourses, reason: node.reason || '' },
+	};
+}
 
 async function getPrimaryByUser(userId) {
-	return Roadmap.findOne({ userId, isPrimary: true }).lean();
+	return ManualRoadmap.findOne({ userId, isPrimary: true }).lean();
 }
 
 async function getCompletedByUser(userId) {
-	return Roadmap.findOne({ userId, isPrimary: true, acceptedAt: { $ne: null } }).lean();
+	return ManualRoadmap.findOne({ userId, isPrimary: true, acceptedAt: { $ne: null } }).lean();
 }
 
 async function getRetryableByUser(userId) {
-	return Roadmap.findOne({ userId, acceptedAt: null }).lean();
+	return ManualRoadmap.findOne({ userId, source: 'auto', acceptedAt: null }).lean();
 }
 
-async function listByUser(userId, { page = 1, limit = 20 } = {}) {
+async function listByUser(userId, { page = 1, limit = 20, status } = {}) {
 	limit = Math.min(limit, 100);
 	const filter = { userId };
+	if (status) filter.status = status;
 
 	const [items, total] = await Promise.all([
-		Roadmap.find(filter, { nodes: 0 })
+		ManualRoadmap.find(filter, { nodes: 0, edges: 0 })
 			.sort({ updatedAt: -1 })
 			.skip((page - 1) * limit)
 			.limit(limit)
 			.lean(),
-		Roadmap.countDocuments(filter),
+		ManualRoadmap.countDocuments(filter),
 	]);
 
 	return { items, pagination: { page, limit, total } };
 }
 
 async function getByIdForUser(roadmapId, userId) {
-	return Roadmap.findOne({ _id: roadmapId, userId }).lean();
+	return ManualRoadmap.findOne({ _id: roadmapId, userId }).lean();
 }
 
-async function upsertFailed(userId, message) {
-	// message is for logging only — NOT stored on the document (2026-04-08 decision)
-	return Roadmap.findOneAndUpdate(
-		{ userId, acceptedAt: null },
+async function getByIdForReview(roadmapId) {
+	const roadmap = await ManualRoadmap.findById(roadmapId).lean();
+	if (roadmap) {
+		return { roadmap, model: 'ManualRoadmap' };
+	}
+	return null;
+}
+
+async function updateAverageRating(roadmapId, averageRating) {
+	const nextAverage = typeof averageRating === 'number' && Number.isFinite(averageRating) ? averageRating : null;
+	const result = await ManualRoadmap.findByIdAndUpdate(
+		roadmapId,
+		{ $set: { averageRating: nextAverage } },
+		{ new: true }
+	);
+
+	if (!result) {
+		const err = new Error('Roadmap not found.');
+		err.code = 'ROADMAP_NOT_FOUND';
+		err.status = 404;
+		throw err;
+	}
+	return result;
+}
+
+async function upsertFailed(userId) {
+	return ManualRoadmap.findOneAndUpdate(
+		{ userId, source: 'auto', acceptedAt: null },
 		{
 			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
+				title: 'Generating roadmap...',
+				yamlCode: '# Roadmap generation in progress',
+				source: 'auto',
 				isPrimary: false,
 				nodes: [],
+				edges: [],
 				acceptedAt: null,
 			},
 		},
@@ -51,18 +98,22 @@ async function upsertFailed(userId, message) {
 	);
 }
 
-async function upsertFailedWithProfile(userId, studentProfileId, message, personalisationLevel = 'full') {
+async function upsertFailedWithProfile(userId, studentProfileId, _message, personalisationLevel = 'full') {
 	// message is for logging only — NOT stored on the document (2026-04-08 decision)
-	return Roadmap.findOneAndUpdate(
-		{ userId, acceptedAt: null },
+	return ManualRoadmap.findOneAndUpdate(
+		{ userId, source: 'auto', acceptedAt: null },
 		{
 			$set: { updatedAt: new Date() },
 			$setOnInsert: {
 				userId,
+				title: 'Generating roadmap...',
+				yamlCode: '# Roadmap generation in progress',
+				source: 'auto',
 				isPrimary: false,
 				studentProfileId,
 				personalisationLevel,
 				nodes: [],
+				edges: [],
 				acceptedAt: null,
 			},
 		},
@@ -72,25 +123,43 @@ async function upsertFailedWithProfile(userId, studentProfileId, message, person
 
 async function commitAccepted(userId, { studentProfileId, roadmapName, personalisationLevel, isPrimary, nodes }) {
 	if (isPrimary) {
-		await Roadmap.updateMany(
+		await ManualRoadmap.updateMany(
 			{ userId, isPrimary: true },
 			{ $set: { isPrimary: false } }
 		);
 	}
 
-	return Roadmap.create({
-		userId,
-		isPrimary: !!isPrimary,
-		studentProfileId,
-		roadmapName,
-		personalisationLevel,
-		nodes,
-		acceptedAt: new Date(),
+	const mappedNodes = Array.isArray(nodes) ? nodes.map(toManualRoadmapNode) : [];
+	const yamlCode = buildManualRoadmapYaml({
+		title: roadmapName,
+		description: '',
+		nodes: mappedNodes,
 	});
+
+	const created = await ManualRoadmap.create({
+		userId,
+		title: roadmapName,
+		description: '',
+		yamlCode,
+		nodes: mappedNodes,
+		edges: [],
+		isPrimary: !!isPrimary,
+		studentProfileId: studentProfileId || null,
+		personalisationLevel: personalisationLevel || 'full',
+		source: 'auto',
+		acceptedAt: new Date(),
+		shared: false,
+		isPublic: false,
+		status: 'draft',
+	});
+
+	roadmapVersionService.createVersion(created._id, yamlCode, null).catch(() => { });
+
+	return created;
 }
 
 async function switchPrimary(roadmapId, userId) {
-	const target = await Roadmap.findOne({ _id: roadmapId, userId });
+	const target = await ManualRoadmap.findOne({ _id: roadmapId, userId });
 	if (!target) {
 		const err = new Error('Roadmap not found.');
 		err.code = 'ROADMAP_NOT_FOUND';
@@ -100,12 +169,12 @@ async function switchPrimary(roadmapId, userId) {
 
 	if (target.isPrimary) return target;
 
-	await Roadmap.updateMany(
+	await ManualRoadmap.updateMany(
 		{ userId, isPrimary: true },
 		{ $set: { isPrimary: false } }
 	);
 
-	const promoted = await Roadmap.findOneAndUpdate(
+	const promoted = await ManualRoadmap.findOneAndUpdate(
 		{ _id: roadmapId, userId, isPrimary: false },
 		{ $set: { isPrimary: true } },
 		{ new: true }
@@ -127,6 +196,8 @@ module.exports = {
 	getRetryableByUser,
 	listByUser,
 	getByIdForUser,
+	getByIdForReview,
+	updateAverageRating,
 	upsertFailed,
 	upsertFailedWithProfile,
 	commitAccepted,

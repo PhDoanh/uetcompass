@@ -3,12 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 const roadmapService = require('./roadmap.service');
-const { ManualRoadmap } = require('./manualRoadmap.model');
 const manualRoadmapService = require('./manualRoadmap.service');
 const manualRoadmapValidation = require('./manualRoadmapValidation.service');
-const { Roadmap } = require('./roadmap.model');
 const { acceptRoadmap } = require('./roadmapAcceptance.service');
 const progressService = require('./roadmapProgress.service');
+const roadmapVersionService = require('./roadmapVersion.service');
 const { triggerGeneration, isGenerating } = require('./generation.service');
 const { notifyClientByToken } = require('./roadmap.sse');
 const previewStore = require('./roadmap.preview.store');
@@ -56,15 +55,25 @@ async function getRoadmapById(req, res) {
 
 async function listPublicManualRoadmaps(req, res) {
 	try {
-		const { q, page, limit } = req.query;
+		const { q, tags, page, limit } = req.query;
 		const normalizedQuery = String(q || '').trim();
+		const userId = String(req.query?.userId || '').trim();
 
 		if (normalizedQuery.length > 0 && normalizedQuery.length < 2) {
 			throw new RoadmapError(400, ERROR_CODES.INVALID_PAYLOAD, 'Search query must be at least 2 characters.');
 		}
 
+		// Parse tags parameter (can be string or array)
+		let selectedTags = [];
+		if (tags) {
+			selectedTags = Array.isArray(tags) ? tags : [tags];
+			selectedTags = selectedTags.map(tag => String(tag || '').trim().toLowerCase()).filter(Boolean);
+		}
+
 		const result = await manualRoadmapService.listPublic({
 			q: normalizedQuery,
+			tags: selectedTags,
+			userId,
 			page: parsePositiveIntQuery(page, 'page'),
 			limit: parsePositiveIntQuery(limit, 'limit'),
 		});
@@ -96,17 +105,33 @@ async function getManualRoadmapById(req, res) {
 	}
 }
 
+async function listManualRoadmaps(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await manualRoadmapService.listByUser(req.user.userId, {
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 async function createManualRoadmap(req, res) {
 	try {
-		const { yamlCode } = req.body ?? {};
+		const { yamlCode, tags } = req.body ?? {};
 		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
 		const { title, description, nodes } = parsed;
+
+		const normalizedTags = manualRoadmapValidation.validateAndNormalizeTags(tags);
 
 		const roadmap = await manualRoadmapService.createDraft(req.user.userId, {
 			title,
 			description,
 			yamlCode: String(yamlCode || '').trim(),
 			nodes,
+			tags: normalizedTags,
 		});
 
 		return res.status(201).json(roadmap);
@@ -117,15 +142,18 @@ async function createManualRoadmap(req, res) {
 
 async function updateManualRoadmap(req, res) {
 	try {
-		const { yamlCode } = req.body ?? {};
+		const { yamlCode, tags } = req.body ?? {};
 		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(yamlCode || ''));
 		const { title, description, nodes } = parsed;
+
+		const normalizedTags = manualRoadmapValidation.validateAndNormalizeTags(tags);
 
 		const roadmap = await manualRoadmapService.updateDraft(req.params.roadmapId, req.user.userId, {
 			title,
 			description,
 			yamlCode: String(yamlCode || '').trim(),
 			nodes,
+			tags: normalizedTags,
 		});
 
 		return res.json(roadmap);
@@ -138,6 +166,24 @@ async function shareManualRoadmap(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.share(req.params.roadmapId, req.user.userId);
 		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function unshareManualRoadmap(req, res) {
+	try {
+		const roadmap = await manualRoadmapService.unshare(req.params.roadmapId, req.user.userId);
+		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function deleteManualRoadmap(req, res) {
+	try {
+		const result = await manualRoadmapService.deleteById(req.params.roadmapId, req.user.userId);
+		return res.json(result);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -295,10 +341,86 @@ async function updateNodeStateHandler(req, res) {
 	}
 }
 
+async function getManualRoadmapTags(req, res) {
+	try {
+		const tags = await manualRoadmapService.getDistinctTags();
+		return res.json(tags);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function listManualRoadmapVersions(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await roadmapVersionService.listVersions(
+			req.params.roadmapId,
+			{
+				page: parsePositiveIntQuery(page, 'page'),
+				limit: parsePositiveIntQuery(limit, 'limit'),
+			}
+		);
+		return res.json(result);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function getManualRoadmapVersion(req, res) {
+	try {
+		const version = await roadmapVersionService.getVersionById(
+			req.params.roadmapId,
+			req.params.versionId
+		);
+		return res.json(version);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function revertManualRoadmapVersion(req, res) {
+	try {
+		const { roadmapId, versionId } = req.params;
+		const userId = req.user.userId;
+
+		// 1. Get the target version (includes yamlCode and progressState)
+		const version = await roadmapVersionService.getVersionById(roadmapId, versionId);
+
+		// 2. Validate/parse YAML from the version
+		const parsed = manualRoadmapValidation.validateManualRoadmapYaml(String(version.yamlCode || ''));
+		const { title, description, nodes } = parsed;
+
+		// 3. Get current tags (tags are not stored in versions, keep them as-is)
+		const existing = await manualRoadmapService.getByIdForUser(roadmapId, userId);
+		if (!existing) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+		const tags = manualRoadmapValidation.validateAndNormalizeTags(existing.tags || []);
+
+		// 4. Update draft — this also snapshots the current progress into the new version
+		const updated = await manualRoadmapService.updateDraft(roadmapId, userId, {
+			title,
+			description,
+			yamlCode: String(version.yamlCode || '').trim(),
+			nodes,
+			tags,
+		});
+
+		// 5. Reconcile progress — keep valid node entries, add new nodes as pending (best-effort)
+		const validNodeIds = (updated.nodes || []).map(n => n.nodeId).filter(Boolean);
+		if (validNodeIds.length > 0) {
+			progressService.reconcileProgress(userId, roadmapId, validNodeIds).catch(() => {});
+		}
+
+		return res.json(updated);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
 module.exports = {
 	getPublicSharedRoadmap,
 	getPrimaryRoadmap,
 	listRoadmaps,
+	listManualRoadmaps,
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
@@ -306,6 +428,8 @@ module.exports = {
 	getManualRoadmapById,
 	updateManualRoadmap,
 	shareManualRoadmap,
+	unshareManualRoadmap,
+	deleteManualRoadmap,
 	acceptRoadmapHandler,
 	switchPrimaryHandler,
 	retryGeneration,
@@ -313,4 +437,8 @@ module.exports = {
 	previewRoadmapHandler,
 	getProgressHandler,
 	updateNodeStateHandler,
+	getManualRoadmapTags,
+	listManualRoadmapVersions,
+	getManualRoadmapVersion,
+	revertManualRoadmapVersion,
 };

@@ -4,6 +4,10 @@ const { requireAccountAccess } = require('./account.guard');
 
 const accountRouter = express.Router();
 
+accountRouter.get('/public/:userId', accountController.getPublicProfile);
+accountRouter.post('/public/:userId/follow', requireAccountAccess, accountController.followPublicProfile);
+accountRouter.post('/public/:userId/unfollow', requireAccountAccess, accountController.unfollowPublicProfile);
+
 accountRouter.use(requireAccountAccess);
 accountRouter.get('/profile', accountController.getProfile);
 accountRouter.patch('/profile', accountController.patchProfile);

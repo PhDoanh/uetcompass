@@ -9,6 +9,7 @@
     "test": "jest",
     "seed:mock": "node src/seed-mock.js",
     "seed:ctdt": "node -e \"require('./src/modules/curriculum/seed.job').runManualCli()\"",
+    "jobs:crawl": "node src/modules/job-market/crawl.cli.js",
     "skills:export-review": "node -e \"require('./src/modules/curriculum/skills.review.cli').runExportCli()\"",
     "skills:apply-review": "node -e \"require('./src/modules/curriculum/skills.review.cli').runApplyCli()\"",
     "lint": "eslint src/",
@@ -31,6 +32,7 @@
     "mongoose": "^8.12.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.5",
+    "playwright": "^1.60.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

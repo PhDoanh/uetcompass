@@ -73,6 +73,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 		// Check if a pre-built template matches the roadmapName
 		const templateNodes = ROADMAP_TEMPLATES.get(roadmapName.toLowerCase());
 		if (templateNodes) {
+			console.log('Matching template: ', roadmapName);
 			const seenIds = new Set();
 
 			// Enrich template nodes with relatedCourses from course skills
@@ -152,7 +153,7 @@ async function runGenerationLifecycle(userId, triggerReason, sseToken = '') {
 				nodes = enriched;
 			}
 		} else if (personalisationLevel === 'full') {
-			const approvedSkills = await evaluateOffTemplateSkills(candidateSkills, profile);
+			const approvedSkills = //await evaluateOffTemplateSkills(candidateSkills, profile);
 			nodes = buildNodesTopologically(approvedSkills, candidateSkillsMap, courseUnits);
 		} else {
 			// Low personalisation: sort relatedCourses for each skill by topological order

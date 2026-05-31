@@ -438,6 +438,22 @@ export default function Homepage() {
   }, [accessToken, logoutAndRedirect, userId]);
 
   useEffect(() => {
+    function handleGenerationCompleted() {
+      if (accessToken) {
+        manualRoadmapApi.listManualRoadmaps(accessToken, {
+          page: 1,
+          limit: MY_MANUAL_ROADMAPS_PREVIEW_LIMIT,
+        }).then((result) => {
+          const items = dedupeRoadmapsByRoadmapId(Array.isArray(result?.items) ? result.items : []);
+          setMyManualRoadmaps(items);
+        }).catch(() => {});
+      }
+    }
+    window.addEventListener('roadmap:generation:completed', handleGenerationCompleted);
+    return () => window.removeEventListener('roadmap:generation:completed', handleGenerationCompleted);
+  }, [accessToken]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function loadProgress() {
@@ -873,112 +889,24 @@ export default function Homepage() {
     'https://lh3.googleusercontent.com/aida-public/AB6AXuAUpvRyYC72x7gmoVa_gY8AltiVFaZ9TODyN9xlUefH-N86clFq2n0Ai-wCEvT1DpLWFZHub2pnUPVwz4ZkMUZp0cVYw1lntZpDldno4f02TdOw-SWmCn92gjdw5A6k_8mBsc3CYR5JASxpDx5OJij4s3rPop9-mgBITulxmTQKLuOxpMOzH7zQ5oyIftvPniVMSpc6YhLSTQ6BNn9CV_mnTK6jlHUDQXDtsEDxplybSY6ZCE-yvPMYt3MVahfbrQ5p8gIwrBVr0gg',
   ];
 
-  const roadmapCards = [
-    {
-      title: 'Frontend Developer Roadmap',
-      description: 'Xây dựng giao diện người dùng hiện đại với React, Tailwind và các công cụ tối ưu trải nghiệm người dùng.',
-      nodes: 24,
-      level: 'Cơ bản',
-      topic: 'Web',
-      tone: 'blue',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA_KjEMWczQ_DlajI_hjkXAGtP3A8sv0_IcV9TfIVujtWNy4Su8BkMBfLiFCcY9kpU9baKvKuFGigC1uLby1mTFXANHhUqRneCB-VA6s18ur2KauJKusNMJceUZiZO2weSEzx0X4JEkd-ZXji05HNsMKbxKQRbtXpkAdQsXQ_vQYI1bmy3vim1GPiHC9nq7RE2nAIr8e1XRlBaw80IutOJgENV1D9vYuiaOw1pH9TtjLRmEwevsBPHTlGR76tkhtE2k6ZmhdLHGLNY',
+  const communityRoadmapCards = publicRoadmaps.map((item) => ({
+    roadmapId: String(item._id || '').trim(),
+    title: String(item.title || '').trim(),
+    description: String(item.description || '').trim(),
+    rating: typeof item.averageRating === 'number' ? item.averageRating : null,
+    tags: (item.tags || []).map((t) => (typeof t === 'string' ? t : (t.label || t.normalizedLabel || ''))).filter(Boolean),
+    image: item.thumbnailUrl || item.image || '/images/cards/uetstone.jpg',
+    nodeCount: typeof item.nodeCount === 'number' ? item.nodeCount : null,
+    sharedBy: {
+      userId: String(item.ownerUserId || '').trim(),
+      name: item.ownerName || null,
+      avatar: item.ownerAvatar || null,
     },
-    {
-      title: 'Backend Architect Roadmap',
-      description: 'Xử lý hệ thống phân tán, kiến trúc microservices và quản lý cơ sở dữ liệu hiệu năng cao.',
-      nodes: 32,
-      level: 'Chuyên sâu',
-      topic: 'Server',
-      tone: 'orange',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBYSoJRR8VzHWDof1M7MUQcGFSV9zLIpciEeDod-yBmKAb-potyDddD7ERCZ0DfkaAt61yqc9sn-gftzrbAxMNDoXoBMwT6D1oN3ka4K4dHQabHLionoQNDeIyks_TrswOTnIqNXLoYR22ur5_0k12wBy7eqhbGUtOO0GxTZOEdUoAWOp0mH05ueCN1h6bHKzOM7IYrHN_QTESQrUyeSf75L7DP3H-nODHoT_q6AIvhZgGiC5E3csWaLe1lQ0TM-KQdVRPPymnx77Y',
-    },
-    {
-      title: 'AI Engineer Roadmap',
-      description: 'Làm chủ Machine Learning, Deep Learning và xử lý ngôn ngữ tự nhiên từ nền tảng toán học.',
-      nodes: 45,
-      level: 'Nâng cao',
-      topic: 'AI/ML',
-      tone: 'indigo',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKIvmh8PFkrJSxRTNIIEn6kv6zTQjxUV7F_zWPZjEELcvmXeRxAzuvY4kBwp-ObYZp-1zOB_F7vtLG9NDT5EEu1DlW_Ju_iDCqPFGMTN2aIMjbVqedsFZonyjJz7WaD7ZrmGvoaoOUr8P-YtvrJgFyBDr2NvwY018bcJWdsXcUbCu1DGfit586sEIXA_8Sa4IXw5xsgXAO-QXI-pyn80dljhGYEe4JhOEXu_jrqmQYkTMv6CQtWyPVLGj-NVZJCKxgWZFuguYYYXM',
-    },
-    {
-      title: 'Mobile App Developer Roadmap',
-      description: 'Xây dựng ứng dụng di động đa nền tảng với Flutter hoặc Native development.',
-      nodes: 28,
-      level: 'Trung cấp',
-      topic: 'App',
-      tone: 'rose',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBz5KeexoRTuEcHjz22xRDyBsjuSTcd6o0ge2wS0aJXcjqHGl_1cDIPCbbNtTSMFkSfCggD0pZivkXTmmUquEa5XWSiNwWZn465sFBjH5HOscNpecRvtqLE5FhkT3bSo6X7dUifR5-hazIapk28ekgWhBXYoBrtnRplAGu1xDstL3hr4qB_019ZPxYEAcSA19zpn28eBNuyCMY-iYLrtfF0ZTs-yf0tFuGOfHa9que3WC_NL7NWzaou6PuVCH4j-JCY5VBhxr4vetY',
-    },
-    {
-      title: 'Cyber Security Roadmap',
-      description: 'Phòng thủ và tấn công hệ thống, mật mã học và bảo mật hạ tầng mạng.',
-      nodes: 35,
-      level: 'Chuyên gia',
-      topic: 'Security',
-      tone: 'emerald',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD9NESH4wHUUckrjtZS9Jl3gJkYMdoNeFX-Ru2MtHjjl_0BNx7hp-gduLWwMNCQLkGQzfz0eUCYj7uiGmYNRFtF74JmT5vWpOtsH6BzaLU-BpvJhL0W6Ti8cFfoiXftqiFbxCa91teE2Bt-5Tl0a6IcTJ9bOKjf8MfYNDaNECUqhCIL1VVNSYqsa6oe2JfqL31wjv6A4fc5nEbAnjDFGM2cL-BXdjNv6MdkRD90mhgP3oWjf78EUU0Fe9ayxNXspnWEtXsjHt5o2r8',
-    },
-    {
-      title: 'Game Developer Roadmap',
-      description: 'Phát triển trò chơi 2D/3D với Unity, C# và các nguyên lý thiết kế game hiện đại.',
-      nodes: 40,
-      level: 'Nâng cao',
-      topic: 'Game',
-      tone: 'amber',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB4qNBL4DQngN58jKn00hqhVGcpVt9TybosJPXhjgojqwsv0AQ55polYiCI_xk9j1DQtudMhyZlsZJ5WkV4j5yqDhoSMDwEdnROrSvw6JcVHywc5-sIWG9JZ8E7s9Y6HFJt2ip7UDph96GPAYyo4L8fQRqHh_g9bofS9AUPWYGd1IK-PxP39d01dSXD1kXLwKOBDBhv5IccSs_agWiZIoB9dQj3VZmQ-ur8pEkz3iecMfhsA3fVpkPJVRsjgbx5PUgXsrQaX58VADA',
-    },
-    {
-      title: 'Cloud DevOps Roadmap',
-      description: 'Nắm vững nền tảng cloud, CI/CD, containers, monitoring và triển khai hệ thống production ổn định.',
-      nodes: 34,
-      level: 'Chuyên sâu',
-      topic: 'DevOps',
-      tone: 'orange',
-      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      title: 'Data Analytics Roadmap',
-      description: 'Rèn luyện kỹ năng phân tích dữ liệu với Excel, SQL, trực quan hóa và storytelling cho nghiệp vụ thực tế.',
-      nodes: 30,
-      level: 'Trung cấp',
-      topic: 'Analytics',
-      tone: 'blue',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      title: 'Fullstack Engineering Extended Roadmap',
-      description: 'Lộ trình fullstack mở rộng với frontend, backend, database, testing và kiến trúc triển khai thực chiến.',
-      nodes: 48,
-      level: 'Nâng cao',
-      topic: 'Fullstack',
-      tone: 'indigo',
-      image: 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      title: 'Frontend Foundations Roadmap',
-      description: 'Bắt đầu với HTML, CSS, JavaScript, Internet fundamentals và bộ công cụ frontend căn bản.',
-      nodes: 22,
-      level: 'Cơ bản',
-      topic: 'Frontend',
-      tone: 'rose',
-      image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      title: 'Render Showcase Roadmap',
-      description: 'Khám phá lộ trình đồ họa render: pipeline 3D, ánh sáng, vật liệu và tối ưu hiệu năng hiển thị.',
-      nodes: 26,
-      level: 'Trung cấp',
-      topic: 'Graphics',
-      tone: 'emerald',
-      image: 'https://images.unsplash.com/photo-1633419461186-7d40a38105ec?auto=format&fit=crop&w=1200&q=80',
-    },
-  ];
-
-  const totalRoadmapPages = Math.max(1, Math.ceil(roadmapCards.length / ROADMAPS_PER_PAGE));
+  }));
+  const totalRoadmapPages = Math.max(1, Math.ceil(communityRoadmapCards.length / ROADMAPS_PER_PAGE));
   const canGoPrevRoadmapPage = roadmapPage > 0;
   const canGoNextRoadmapPage = roadmapPage < totalRoadmapPages - 1;
-  const visibleRoadmapCards = roadmapCards.slice(
+  const visibleRoadmapCards = communityRoadmapCards.slice(
     roadmapPage * ROADMAPS_PER_PAGE,
     (roadmapPage + 1) * ROADMAPS_PER_PAGE
   );
@@ -1585,27 +1513,78 @@ export default function Homepage() {
 
           <div className={`homepage-roadmap-grid${isSingleRoadmapCardPage ? ' homepage-roadmap-grid--single' : ''}`}>
             {visibleRoadmapCards.map((card) => (
-              <article key={card.title} className="homepage-roadmap-card">
-                <div className="homepage-roadmap-card__image-wrap">
-                  <img src={card.image} alt={card.title} className="homepage-roadmap-card__image" />
-                  <div className="homepage-roadmap-card__chips">
-                    <span className="homepage-chip homepage-chip--neutral">{card.level}</span>
-                    <span className={`homepage-chip homepage-chip--${card.tone}`}>{card.topic}</span>
-                  </div>
+              <article
+                key={card.roadmapId || card.title}
+                className="community-roadmap-card"
+                onClick={() => navigateTo(`/skill-tree/${encodeURIComponent(card.roadmapId)}`)}
+                style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') navigateTo(`/skill-tree/${encodeURIComponent(card.roadmapId)}`); }}
+              >
+                {/* Thumbnail */}
+                <div className="community-roadmap-card__thumbnail">
+                  {card.image
+                    ? <img src={card.image} alt={card.title} className="community-roadmap-card__thumbnail-img" />
+                    : <div className="community-roadmap-card__thumbnail-placeholder" aria-hidden="true" />}
                 </div>
-                <div className="homepage-roadmap-card__body">
-                  <h3 className="homepage-roadmap-card__title">{card.title}</h3>
-                  <p className="homepage-roadmap-card__description">{card.description}</p>
-                  <div className="homepage-roadmap-card__meta">
-                    <small>{card.nodes} nodes</small>
-                    <button
-                      type="button"
-                      className="homepage-card-action"
-                      onClick={() => handleOpenRoadmapCard(card.title)}
-                      disabled={openingRoadmapTitle === card.title}
-                    >
-                      {openingRoadmapTitle === card.title ? 'Đang mở...' : 'Bắt đầu'}
-                    </button>
+
+                {/* Tags */}
+                {(card.tags || []).length > 0 && (
+                  <div className="community-roadmap-card__tags">
+                    {card.tags.map((tag) => (
+                      <span key={tag} className="community-roadmap-card__tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
+
+                <hr className="community-roadmap-card__divider" />
+
+                {/* Body */}
+                <div className="community-roadmap-card__body">
+                  <div className="community-roadmap-card__title-row">
+                    <h3 className="community-roadmap-card__title">{card.title}</h3>
+                    <span className="community-roadmap-card__rating">
+                      {(card.rating ?? 0).toFixed(1)} <span aria-hidden="true">★</span>
+                    </span>
+                  </div>
+
+                  <p className="community-roadmap-card__description">{card.description}</p>
+
+                  <div className="community-roadmap-card__footer">
+                    {card.nodeCount !== null && (
+                      <span className="community-roadmap-card__nodes">
+                        {card.nodeCount} nút
+                      </span>
+                    )}
+                    {card.sharedBy.userId ? (
+                      <div
+                        className="community-roadmap-card__author"
+                        onClick={(e) => { e.stopPropagation(); navigateTo(`/public-profile/${encodeURIComponent(card.sharedBy.userId)}`); }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); navigateTo(`/public-profile/${encodeURIComponent(card.sharedBy.userId)}`); } }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <span className="community-roadmap-card__author-label">shared by</span>
+                        {card.sharedBy.avatar
+                          ? <img src={card.sharedBy.avatar} alt={card.sharedBy.name || 'avatar'} className="community-roadmap-card__author-avatar" />
+                          : <span className="community-roadmap-card__author-avatar community-roadmap-card__author-avatar--initial" aria-hidden="true">{card.sharedBy.name ? card.sharedBy.name[0].toUpperCase() : '?'}</span>}
+                        <span className="community-roadmap-card__author-name" title={card.sharedBy.name || 'Ẩn danh'}>
+                          {(card.sharedBy.name || 'Ẩn danh').length > 16 ? (card.sharedBy.name || 'Ẩn danh').slice(0, 16) + '…' : (card.sharedBy.name || 'Ẩn danh')}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="community-roadmap-card__author">
+                        <span className="community-roadmap-card__author-label">shared by</span>
+                        {card.sharedBy.avatar
+                          ? <img src={card.sharedBy.avatar} alt={card.sharedBy.name || 'avatar'} className="community-roadmap-card__author-avatar" />
+                          : <span className="community-roadmap-card__author-avatar community-roadmap-card__author-avatar--initial" aria-hidden="true">{card.sharedBy.name ? card.sharedBy.name[0].toUpperCase() : '?'}</span>}
+                        <span className="community-roadmap-card__author-name" title={card.sharedBy.name || 'UETCompass'}>
+                          {(card.sharedBy.name || 'UETCompass').length > 16 ? (card.sharedBy.name || 'UETCompass').slice(0, 16) + '…' : (card.sharedBy.name || 'UETCompass')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>

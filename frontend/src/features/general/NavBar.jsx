@@ -310,7 +310,7 @@ export default function NavBar() {
       {
         key: 'job-market',
         label: 'Thị trường tuyển dụng',
-        onClick: () => navigateToPath('/job-market'),
+        onClick: () => navigateTo('/job-market'),
       },
     ]
     : [
@@ -332,7 +332,7 @@ export default function NavBar() {
       {
         key: 'job-market',
         label: 'Thị trường tuyển dụng',
-        onClick: () => navigateToPath('/job-market'),
+        onClick: () => navigateTo('/job-market'),
       },
     ];
 

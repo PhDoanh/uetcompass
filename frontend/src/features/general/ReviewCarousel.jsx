@@ -42,9 +42,10 @@ export default function ReviewCarousel({ visible = true }) {
 	const forwardRowRef = useRef(null);
 	const reverseRowRef = useRef(null);
 	const animationRef = useRef(null);
-	const pauseRef = useRef(false);
 	const isDraggingRef = useRef(false);
 	const velocityRef = useRef({ forward: 0, reverse: 0 });
+	const multipliersRef = useRef({ forward: 1, reverse: 1 });
+	const rowHoverRef = useRef({ forward: false, reverse: false });
 	const dragStateRef = useRef({
 		active: false,
 		startX: 0,
@@ -96,10 +97,6 @@ export default function ReviewCarousel({ visible = true }) {
 	}, []);
 
 	useEffect(() => {
-		pauseRef.current = isPaused;
-	}, [isPaused]);
-
-	useEffect(() => {
 		const reverseRow = reverseRowRef.current;
 		if (!reverseRow) {
 			return;
@@ -131,23 +128,33 @@ export default function ReviewCarousel({ visible = true }) {
 			const delta = time - lastTime;
 			lastTime = time;
 
+			// Smoothly update multipliers based on per-row hover and global drag state
+			// A slower lerp (0.97) provides a more natural, drift-like stop
+			const lerpFactor = 1 - Math.pow(0.97, delta / 16);
+			
+			const targetForward = (rowHoverRef.current.forward || isDraggingRef.current) ? 0 : 1;
+			const targetReverse = (rowHoverRef.current.reverse || isDraggingRef.current) ? 0 : 1;
+
+			multipliersRef.current.forward += (targetForward - multipliersRef.current.forward) * lerpFactor;
+			multipliersRef.current.reverse += (targetReverse - multipliersRef.current.reverse) * lerpFactor;
+
 			if (!isDraggingRef.current) {
 				const forwardLimit = forwardRow.scrollWidth / 2;
 				const reverseLimit = reverseRow.scrollWidth / 2;
 
-				// Handle Velocity / Inertia
+				// Handle Velocity / Inertia with smooth multiplier
 				if (Math.abs(velocityRef.current.forward) > VELOCITY_THRESHOLD) {
-					forwardRow.scrollLeft += velocityRef.current.forward * delta;
+					forwardRow.scrollLeft += velocityRef.current.forward * multipliersRef.current.forward * delta;
 					velocityRef.current.forward *= Math.pow(FRICTION, delta / 16);
-				} else if (!pauseRef.current) {
-					forwardRow.scrollLeft += delta * SCROLL_SPEED;
+				} else {
+					forwardRow.scrollLeft += delta * SCROLL_SPEED * multipliersRef.current.forward;
 				}
 
 				if (Math.abs(velocityRef.current.reverse) > VELOCITY_THRESHOLD) {
-					reverseRow.scrollLeft += velocityRef.current.reverse * delta;
+					reverseRow.scrollLeft += velocityRef.current.reverse * multipliersRef.current.reverse * delta;
 					velocityRef.current.reverse *= Math.pow(FRICTION, delta / 16);
-				} else if (!pauseRef.current) {
-					reverseRow.scrollLeft -= delta * SCROLL_SPEED;
+				} else {
+					reverseRow.scrollLeft -= delta * SCROLL_SPEED * multipliersRef.current.reverse;
 				}
 
 				// Seamless loop normalization
@@ -261,10 +268,10 @@ export default function ReviewCarousel({ visible = true }) {
 					onPointerUp={(event) => handlePointerUp(event, forwardRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, forwardRowRef)}
 					onPointerLeave={(event) => handlePointerUp(event, forwardRowRef)}
-					onMouseEnter={() => setIsPaused(true)}
-					onMouseLeave={() => setIsPaused(false)}
-					onFocus={() => setIsPaused(true)}
-					onBlur={() => setIsPaused(false)}
+					onMouseEnter={() => { rowHoverRef.current.forward = true; setIsPaused(true); }}
+					onMouseLeave={() => { rowHoverRef.current.forward = false; setIsPaused(false); }}
+					onFocus={() => { rowHoverRef.current.forward = true; setIsPaused(true); }}
+					onBlur={() => { rowHoverRef.current.forward = false; setIsPaused(false); }}
 					aria-label="Hàng đánh giá số 1"
 					tabIndex={0}
 				>
@@ -283,10 +290,10 @@ export default function ReviewCarousel({ visible = true }) {
 					onPointerUp={(event) => handlePointerUp(event, reverseRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, reverseRowRef)}
 					onPointerLeave={(event) => handlePointerUp(event, reverseRowRef)}
-					onMouseEnter={() => setIsPaused(true)}
-					onMouseLeave={() => setIsPaused(false)}
-					onFocus={() => setIsPaused(true)}
-					onBlur={() => setIsPaused(false)}
+					onMouseEnter={() => { rowHoverRef.current.reverse = true; setIsPaused(true); }}
+					onMouseLeave={() => { rowHoverRef.current.reverse = false; setIsPaused(false); }}
+					onFocus={() => { rowHoverRef.current.reverse = true; setIsPaused(true); }}
+					onBlur={() => { rowHoverRef.current.reverse = false; setIsPaused(false); }}
 					aria-label="Hàng đánh giá số 2"
 					tabIndex={0}
 				>

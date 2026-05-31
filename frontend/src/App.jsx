@@ -19,6 +19,7 @@ import {
 	toRouteKey,
 } from './shared/navigation';
 import './style/navigation-orchestration.css';
+import { X } from 'lucide-react';
 
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
@@ -325,6 +326,16 @@ function AppContent() {
 			<AuthGuard>
 				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
 					<ManualRoadmapPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
+	if (!content && pathname === '/manual-roadmap/versions') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<RoadmapVersionHistoryPage />
 				</main>
 			</AuthGuard>
 		);

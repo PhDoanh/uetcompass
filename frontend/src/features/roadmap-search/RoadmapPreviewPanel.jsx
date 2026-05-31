@@ -5,12 +5,14 @@ import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import { navigateTo } from '../../shared/navigation';
 
 function normalizePreviewNodes(nodes = []) {
+    const seenIds = new Set();
     const mappedNodes = nodes
         .map((node) => {
             const nodeId = String(node?.nodeId || node?.id || '').trim();
-            if (!nodeId) {
+            if (!nodeId || seenIds.has(nodeId)) {
                 return null;
             }
+            seenIds.add(nodeId);
 
             const metadata = typeof node?.metadata === 'object' && node?.metadata !== null ? node.metadata : {};
             const parentNodeId = String(
@@ -29,6 +31,10 @@ function normalizePreviewNodes(nodes = []) {
                         type: 'course',
                     }))
                     : []);
+            const rawType = String(node?.type || '').trim();
+            const type = parentNodeId
+                ? (rawType === 'choice_item' ? 'choice_item' : 'sub_topic')
+                : (rawType || 'main_topic');
 
             return {
                 nodeId,
@@ -36,7 +42,7 @@ function normalizePreviewNodes(nodes = []) {
                 description: String(node?.description || node?.reason || '').trim(),
                 parent: parentNodeId || undefined,
                 parentNodeId: parentNodeId || undefined,
-                type: String(node?.type || '').trim() || (parentNodeId ? 'sub_topic' : 'main_topic'),
+                type,
                 prerequisites,
                 status: String(node?.status || 'pending').trim() || 'pending',
                 resources,

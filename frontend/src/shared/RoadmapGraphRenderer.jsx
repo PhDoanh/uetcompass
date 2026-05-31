@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNotification } from '../features/notification/NotificationContainer';
 import './roadmapGraphRenderer.css';
 
+const EMPTY_NODES = [];
+const EMPTY_EDGES = [];
+const EMPTY_POSITIONS = {};
+
 /**
  * Unified graph renderer in plane mode.
  * - Pan/zoom viewport
@@ -10,9 +14,9 @@ import './roadmapGraphRenderer.css';
  * - Parent-child cluster containers
  */
 export function RoadmapGraphRenderer({
-    nodes = [],
-    edges = [],
-    positions = {},
+    nodes = EMPTY_NODES,
+    edges = EMPTY_EDGES,
+    positions = EMPTY_POSITIONS,
     onNodeSelect,
     onNodeToggleStatus,
     loading = false,
@@ -51,13 +55,21 @@ export function RoadmapGraphRenderer({
     }, [pan]);
 
     const renderedNodes = useMemo(() => {
+        const seenIds = new Set();
+
         return nodes.map((node) => {
-            const pos = positions[node.nodeId];
+            const id = String(node?.nodeId || '').trim();
+            if (!id || seenIds.has(id)) {
+                return null;
+            }
+            seenIds.add(id);
+
+            const pos = positions[id];
             const nodeType = node.type || 'main_topic';
             const dims = NODE_DIMENSIONS[nodeType] || NODE_DIMENSIONS.default;
             const displayName = node.label || node.nodeId;
             return {
-                id: node.nodeId,
+                id,
                 label: displayName,
                 type: nodeType,
                 status: String(node.status || node.progressState || 'pending'),
@@ -68,7 +80,7 @@ export function RoadmapGraphRenderer({
                 width: dims.width,
                 height: dims.height,
             };
-        });
+        }).filter(Boolean);
     }, [nodes, positions]);
 
     const planeNodes = useMemo(() => {
@@ -87,7 +99,7 @@ export function RoadmapGraphRenderer({
 
         const byId = new Map(normalized.map((node) => [node.id, node]));
         const parents = normalized
-            .filter((node) => node.type === 'main_topic' || !node.parentNodeId)
+            .filter((node) => !node.parentNodeId)
             .sort((a, b) => a.label.localeCompare(b.label));
 
         const parentSet = new Set(parents.map((node) => node.id));
@@ -254,7 +266,7 @@ export function RoadmapGraphRenderer({
         };
 
         const mainParents = planeNodes
-            .filter((node) => node.type === 'main_topic' || !node.parentNodeId)
+            .filter((node) => !node.parentNodeId)
             .sort((a, b) => a.y - b.y || a.x - b.x);
 
         for (let i = 0; i < mainParents.length - 1; i += 1) {
@@ -381,11 +393,17 @@ export function RoadmapGraphRenderer({
         const contentCenterX = planeBounds.minX + planeBounds.width / 2;
         const contentCenterY = planeBounds.minY + planeBounds.height / 2;
 
-        setZoom(fitScale);
-        setPan({
+        const nextPan = {
             x: Math.round(viewport.clientWidth / 2 - contentCenterX * fitScale),
             y: Math.round(viewport.clientHeight / 2 - contentCenterY * fitScale),
-        });
+        };
+
+        setZoom((currentZoom) => (currentZoom === fitScale ? currentZoom : fitScale));
+        setPan((currentPan) => (
+            currentPan.x === nextPan.x && currentPan.y === nextPan.y
+                ? currentPan
+                : nextPan
+        ));
     }, [clampZoom, planeBounds, planeNodes.length]);
 
     useEffect(() => {
@@ -395,7 +413,7 @@ export function RoadmapGraphRenderer({
         if (!viewport) return;
 
         fitRoadmapToView();
-    }, [planeNodes, planeBounds, fitRoadmapToView]);
+    }, [fitRoadmapToView, planeNodes.length]);
 
     const zoomBy = useCallback((delta, focalPoint) => {
         const viewport = viewportRef.current;
@@ -428,9 +446,8 @@ export function RoadmapGraphRenderer({
         event.preventDefault();
         event.stopPropagation();
 
-        const nativeEvent = event.nativeEvent;
-        if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
-            nativeEvent.stopImmediatePropagation();
+        if (typeof event.stopImmediatePropagation === 'function') {
+            event.stopImmediatePropagation();
         }
 
         const rect = event.currentTarget.getBoundingClientRect();
@@ -448,6 +465,17 @@ export function RoadmapGraphRenderer({
 
         zoomBy(nextDelta, focalPoint);
     }, [zoomBy]);
+
+    useEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return undefined;
+
+        viewport.addEventListener('wheel', handleWheel, { passive: false });
+
+        return () => {
+            viewport.removeEventListener('wheel', handleWheel);
+        };
+    }, [handleWheel]);
 
     const handlePointerDown = useCallback((event) => {
         if (event.button !== 0) return;
@@ -573,7 +601,6 @@ export function RoadmapGraphRenderer({
                     <div
                         ref={viewportRef}
                         className="roadmap-graph-renderer__fallback-canvas"
-                        onWheelCapture={handleWheel}
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={stopPanning}

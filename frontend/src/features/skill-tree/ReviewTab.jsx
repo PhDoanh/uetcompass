@@ -34,7 +34,6 @@ export default function ReviewTab({ roadmapId }) {
 	const { addNotification } = useNotification();
 	const [reviews, setReviews] = useState([]);
 	const [summary, setSummary] = useState({ averageRating: null, reviewCount: 0 });
-	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -60,7 +59,6 @@ export default function ReviewTab({ roadmapId }) {
 				setReviews(Array.isArray(payload?.items) ? payload.items : []);
 				setSummary(payload?.summary || { averageRating: null, reviewCount: 0 });
 				setHasMore(Boolean(payload?.pagination?.hasMore));
-				setPage(1);
 			} catch (error) {
 				if (isActive) {
 					addNotification(error?.message || 'Không tải được đánh giá.', 'error');

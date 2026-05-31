@@ -18,7 +18,7 @@ export async function getPrimaryRoadmap(authToken) {
 	let payload = null;
 	try {
 		payload = await response.json();
-	} catch (err) {
+	} catch {
 		payload = null;
 	}
 
@@ -49,7 +49,7 @@ export async function retryRoadmapGeneration(authToken) {
 	let payload = null;
 	try {
 		payload = await response.json();
-	} catch (err) {
+	} catch {
 		payload = null;
 	}
 
@@ -82,7 +82,7 @@ export async function acceptPrimaryRoadmap(authToken, payload) {
 	let result = null;
 	try {
 		result = await response.json();
-	} catch (_) {
+	} catch {
 		result = null;
 	}
 

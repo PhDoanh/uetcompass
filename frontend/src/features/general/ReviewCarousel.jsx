@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import reviewApi from '../../services/review.api';
 import { Star } from 'lucide-react';
 
-const SCROLL_SPEED = 0.35;
+const SCROLL_SPEED = 0.05;
 
 function ReviewCard({ review }) {
 	return (

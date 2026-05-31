@@ -112,7 +112,7 @@ export function useRoadmapSearch(initialQuery = '') {
                                 nodeDetails: Array.isArray(preview?.nodes) ? preview.nodes : [],
                                 description: String(preview?.description || result.description || '').trim(),
                             };
-                        } catch (_) {
+                        } catch {
                             return {
                                 ...result,
                                 nodeDetails: [],

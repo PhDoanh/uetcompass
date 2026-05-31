@@ -17,7 +17,7 @@ async function request(path, options = {}) {
 	let payload = null;
 	try {
 		payload = await response.json();
-	} catch (err) {
+	} catch {
 		payload = null;
 	}
 

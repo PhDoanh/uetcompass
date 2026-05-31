@@ -101,7 +101,7 @@ function hasValidHttpUrl(url) {
     }
 
     return true;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -140,7 +140,7 @@ async function validateReachableUrl(url) {
       headers: { Range: 'bytes=0-1024' },
     });
     return getResponse.ok;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -241,7 +241,9 @@ async function academicSearch(courseName) {
       ACADEMIC_MAX_RESULTS
     );
     if (fallbackValidated.length === 0) {
-      throw new Error(`Tavily academic search failed: ${error.message}`);
+      const thrown = new Error(`Tavily academic search failed: ${error.message}`);
+      thrown.cause = error;
+      throw thrown;
     }
     return topUpToMaxResults(
       fallbackValidated,
@@ -301,7 +303,9 @@ async function trendSearch(courseName, personalizationContext = null) {
       TREND_MAX_RESULTS
     );
     if (fallbackValidated.length === 0) {
-      throw new Error(`Tavily trend search failed: ${error.message}`);
+      const thrown = new Error(`Tavily trend search failed: ${error.message}`);
+      thrown.cause = error;
+      throw thrown;
     }
     return topUpToMaxResults(
       fallbackValidated,
@@ -361,7 +365,9 @@ async function resourceSearch(skillName, mode = 'mixed') {
       RESOURCE_MAX_RESULTS
     );
     if (fallbackValidated.length === 0) {
-      throw new Error(`Tavily resource search failed: ${error.message}`);
+      const thrown = new Error(`Tavily resource search failed: ${error.message}`);
+      thrown.cause = error;
+      throw thrown;
     }
     return topUpToMaxResults(
       fallbackValidated,

@@ -11,7 +11,7 @@ const RoadmapHistorySchema = new mongoose.Schema(
 		},
 		roadmapId: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Roadmap',
+			ref: 'ManualRoadmap',
 			required: true,
 		},
 		eventType: {

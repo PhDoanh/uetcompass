@@ -25,7 +25,7 @@ async function request(path, method, authToken, body, { requireAuth = true } = {
     let payload = null;
     try {
         payload = await response.json();
-    } catch (err) {
+    } catch {
         payload = null;
     }
 
@@ -65,6 +65,10 @@ export function deleteManualRoadmap(authToken, roadmapId) {
 
 export function shareManualRoadmap(authToken, roadmapId) {
     return request(`/roadmaps/manual-roadmaps/${roadmapId}/share`, 'POST', authToken);
+}
+
+export function unshareManualRoadmap(authToken, roadmapId) {
+    return request(`/roadmaps/manual-roadmaps/${roadmapId}/unshare`, 'POST', authToken);
 }
 
 export function listPublicManualRoadmaps({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
@@ -119,6 +123,30 @@ export function createManualRoadmapComment(authToken, roadmapId, { content, rati
     );
 }
 
+export function listRoadmapVersions(authToken, roadmapId, { page = 1, limit = 50 } = {}) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions?page=${page}&limit=${limit}`,
+        'GET',
+        authToken
+    );
+}
+
+export function getRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}`,
+        'GET',
+        authToken
+    );
+}
+
+export function revertRoadmapVersion(authToken, roadmapId, versionId) {
+    return request(
+        `/roadmaps/manual-roadmaps/${roadmapId}/versions/${versionId}/revert`,
+        'POST',
+        authToken
+    );
+}
+
 const manualRoadmapApi = {
     listManualRoadmaps,
     getManualRoadmap,
@@ -126,11 +154,15 @@ const manualRoadmapApi = {
     updateManualRoadmap,
     deleteManualRoadmap,
     shareManualRoadmap,
+    unshareManualRoadmap,
     listPublicManualRoadmaps,
     getPublicManualRoadmapPreviewById,
     listPublicManualRoadmapComments,
     createManualRoadmapComment,
     getManualRoadmapTags,
+    listRoadmapVersions,
+    getRoadmapVersion,
+    revertRoadmapVersion,
 };
 
 export default manualRoadmapApi;

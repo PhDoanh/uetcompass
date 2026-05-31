@@ -21,7 +21,7 @@ async function request(path, authToken) {
   let payload = null;
   try {
     payload = await response.json();
-  } catch (_) {
+  } catch {
     payload = null;
   }
 
@@ -36,7 +36,16 @@ async function request(path, authToken) {
 
 export async function getSummaries(authToken) {
   const payload = await request('/progress/summaries', authToken);
-  return payload?.roadmaps || [];
+  return (payload?.roadmaps || []).map((item) => {
+    const roadmapId = String(item?.roadmapId || '').trim();
+    const roadmapSource = String(item?.roadmapSource || (item?.isPrimary ? 'primary' : 'roadmap') || '').trim() || 'roadmap';
+    return {
+      ...item,
+      roadmapId,
+      roadmapSource,
+      roadmapKey: item?.roadmapKey || `${roadmapSource}:${roadmapId}`,
+    };
+  });
 }
 
 export async function getRoadmapNodes(authToken, roadmapId) {

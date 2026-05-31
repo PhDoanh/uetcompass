@@ -16,6 +16,7 @@ const { reviewRouter } = require('./modules/review/review.routes');
 const jobRouter = require('./modules/job-market/job.routes');
 const { registerCronJob } = require('./modules/curriculum/seed.job');
 const { registerSigtermHandler } = require('./modules/roadmap/roadmap.triggers');
+const { initializeUserSocialStats } = require('./modules/account/account.service');
 
 const app = express();
 
@@ -61,7 +62,10 @@ app.use(express.json());
 const mongoose = require('mongoose');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uetcompass';
 mongoose.connect(MONGODB_URI)
-	.then(() => console.log('Connected to MongoDB'))
+	.then(async () => {
+		console.log('Connected to MongoDB');
+		await initializeUserSocialStats();
+	})
 	.catch(err => console.error('MongoDB connection error:', safeErrorMessage(err)));
 
 app.get('/health', (req, res) => {

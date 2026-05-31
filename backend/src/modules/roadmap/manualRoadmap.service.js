@@ -1,77 +1,21 @@
 'use strict';
 
 const { ManualRoadmap } = require('./manualRoadmap.model');
-const { Roadmap } = require('./roadmap.model');
 const { RoadmapProgress } = require('./roadmapProgress.model');
 const { RoadmapHistory } = require('./roadmapHistory.model');
 const RoadmapProgressCache = require('../progress/roadmapProgressCache.model');
 const RoadmapProgressActivity = require('../progress/roadmapProgressActivity.model');
-const { StudentProfile } = require('../onboarding/onboarding.model');
 const { RoadmapError, ERROR_CODES } = require('./roadmap.errors');
+const roadmapVersionService = require('./roadmapVersion.service');
 const { generateEdgesFromHierarchy, enrichNodes, validateHierarchy } = require('./graph.generator');
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function resolveStudentProfileId(userId) {
-    const profile = await StudentProfile.findOne({ userId }, { _id: 1 }).lean();
-    if (!profile?._id) {
-        throw new RoadmapError(409, ERROR_CODES.CONFLICT, 'Please complete onboarding profile before saving a manual roadmap into primary roadmap collection.');
-    }
-    return profile._id;
-}
-
-function toRoadmapNode(node) {
-    const prerequisites = Array.isArray(node.prerequisites) ? node.prerequisites.filter(Boolean) : [];
-    const metadata = node && typeof node.metadata === 'object' && node.metadata !== null ? node.metadata : {};
-    const relatedCourses = Array.isArray(metadata.relatedCourses) ? metadata.relatedCourses : [];
-    const resources = Array.isArray(node.resources)
-        ? node.resources
-        : (Array.isArray(metadata.resources) ? metadata.resources : []);
-    const label = String(node.label || '').trim();
-
-    return {
-        nodeId: node.nodeId,
-        nodeType: prerequisites.length > 0 ? 'subtopic' : 'topic',
-        skillName: String(node.skillName || label).trim(),
-        parentNodeId: metadata.parentNodeId || prerequisites[0] || null,
-        relatedCourses,
-        reason: node.description || metadata.reason || `Learn ${label}`,
-        resources,
-    };
-}
-
-async function syncToRoadmapCollection(roadmapId, userId, { title, nodes }) {
-    const studentProfileId = await resolveStudentProfileId(userId);
-    const mappedNodes = Array.isArray(nodes) ? nodes.map(toRoadmapNode) : [];
-
-    await Roadmap.findOneAndUpdate(
-        { _id: roadmapId, userId },
-        {
-            $set: {
-                userId,
-                isPrimary: false,
-                studentProfileId,
-                roadmapName: title,
-                personalisationLevel: 'full',
-                nodes: mappedNodes,
-                acceptedAt: new Date(),
-                updatedAt: new Date(),
-            },
-            $setOnInsert: { _id: roadmapId, createdAt: new Date() },
-        },
-        {
-            upsert: true,
-            new: true,
-            runValidators: true,
-        }
-    );
-}
-
 async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = { isPublic: true };
+    const filter = { isPublic: true, isPrimary: { $ne: true } };
 
     const normalizedUserId = String(userId || '').trim();
     if (normalizedUserId) {
@@ -104,7 +48,7 @@ async function listPublic({ q = '', tags = [], userId = '', page = 1, limit = 20
 
 async function getPublicPreviewById(roadmapId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId },
+        { _id: roadmapId, isPrimary: { $ne: true } },
         { title: 1, description: 1, nodes: 1, edges: 1, yamlCode: 1, sharedAt: 1 }
     ).lean();
 }
@@ -115,7 +59,7 @@ async function getPublicPreviewById(roadmapId) {
  */
 async function getByIdForEdit(roadmapId, userId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId, userId },
+        { _id: roadmapId, userId, isPrimary: { $ne: true } },
         { yamlCode: 1, title: 1, description: 1, status: 1 }
     ).lean();
 }
@@ -126,7 +70,7 @@ async function getByIdForEdit(roadmapId, userId) {
  */
 async function getByIdForView(roadmapId, userId) {
     return ManualRoadmap.findOne(
-        { _id: roadmapId, userId },
+        { _id: roadmapId, userId, isPrimary: { $ne: true } },
         { title: 1, description: 1, nodes: 1, edges: 1, positions: 1 }
     ).lean();
 }
@@ -140,7 +84,7 @@ async function getByIdForUser(roadmapId, userId) {
 
 async function listByUser(userId, { page = 1, limit = 20 } = {}) {
     limit = Math.min(limit, 100);
-    const filter = { userId };
+    const filter = { userId, isPrimary: { $ne: true } };
 
     const [items, total] = await Promise.all([
         ManualRoadmap.find(filter, { yamlCode: 0, nodes: 0, edges: 0 })
@@ -170,7 +114,6 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         throw new RoadmapError(400, ERROR_CODES.INVALID_DATA, `Hierarchy validation failed: ${validation.errors.join('; ')}`);
     }
 
-    const sharedAt = new Date();
     const manualRoadmap = await ManualRoadmap.create({
         userId,
         title,
@@ -182,30 +125,16 @@ async function createDraft(userId, { title, description, yamlCode, nodes, tags =
         shared: true,
         isPublic: true,
         status: 'draft',
-        sharedAt,
+        sharedAt: new Date(),
     });
 
-    let syncSkipped = false;
-    try {
-        await syncToRoadmapCollection(manualRoadmap._id, userId, { title, nodes: enrichedNodes });
-    } catch (err) {
-        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
-            // Log and continue — draft is still created and persisted in ManualRoadmap.
-             
-            console.warn('syncToRoadmapCollection skipped:', err.message);
-            syncSkipped = true;
-        } else {
-            throw err;
-        }
-    }
+    roadmapVersionService.createVersion(manualRoadmap._id, manualRoadmap.yamlCode, null).catch(() => {});
 
-    const result = typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
-    if (syncSkipped) result.syncSkipped = true;
-    return result;
+    return typeof manualRoadmap.toObject === 'function' ? manualRoadmap.toObject() : manualRoadmap;
 }
 
 async function updateDraft(roadmapId, userId, { title, description, yamlCode, nodes, tags = [] }) {
-    const existing = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    const existing = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
     if (!existing) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
@@ -239,23 +168,16 @@ async function updateDraft(roadmapId, userId, { title, description, yamlCode, no
     existing.updatedAt = new Date();
 
     await existing.save();
-    let syncSkippedOnUpdate = false;
-    try {
-        await syncToRoadmapCollection(existing._id, userId, { title, nodes: enrichedNodes });
-    } catch (err) {
-        if (err instanceof RoadmapError && err.code === ERROR_CODES.CONFLICT) {
-            // Allow update to succeed even if onboarding/profile is missing.
-             
-            console.warn('syncToRoadmapCollection skipped on update:', err.message);
-            syncSkippedOnUpdate = true;
-        } else {
-            throw err;
-        }
-    }
 
-    const out = existing.toObject();
-    if (syncSkippedOnUpdate) out.syncSkipped = true;
-    return out;
+    // Record a version snapshot with current progress state (best-effort — does not fail the save)
+    ;(async () => {
+        try {
+            const progressDoc = await RoadmapProgress.findOne({ userId, roadmapId: existing._id }).lean();
+            await roadmapVersionService.createVersion(existing._id, existing.yamlCode, progressDoc?.state ?? null);
+        } catch (_) {}
+    })();
+
+    return existing.toObject();
 }
 
 function serializeTag(tag) {
@@ -290,7 +212,7 @@ async function getDistinctTags() {
 }
 
 async function share(roadmapId, userId) {
-    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId });
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
     if (!roadmap) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
@@ -308,19 +230,39 @@ async function share(roadmapId, userId) {
     return roadmap.toObject();
 }
 
+async function unshare(roadmapId, userId) {
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } });
+    if (!roadmap) {
+        throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
+    }
+
+    if (roadmap.status !== 'published') {
+        throw new RoadmapError(409, ERROR_CODES.PUBLICATION_ERROR, 'Only published roadmaps can be unpublished.');
+    }
+
+    roadmap.shared = false;
+    roadmap.isPublic = false;
+    roadmap.status = 'draft';
+    roadmap.sharedAt = null;
+    roadmap.updatedAt = new Date();
+
+    await roadmap.save();
+    return roadmap.toObject();
+}
+
 async function deleteById(roadmapId, userId) {
-    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId }, { _id: 1 }).lean();
+    const roadmap = await ManualRoadmap.findOne({ _id: roadmapId, userId, isPrimary: { $ne: true } }, { _id: 1 }).lean();
     if (!roadmap) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
 
     await Promise.all([
         ManualRoadmap.deleteOne({ _id: roadmapId, userId }),
-        Roadmap.deleteOne({ _id: roadmapId, userId }),
         RoadmapProgress.deleteOne({ roadmapId, userId }),
         RoadmapHistory.deleteMany({ roadmapId, userId }),
         RoadmapProgressCache.deleteOne({ roadmapId: String(roadmapId), userId: String(userId) }),
         RoadmapProgressActivity.deleteMany({ roadmapId: String(roadmapId), userId: String(userId) }),
+        roadmapVersionService.deleteAllForRoadmap(roadmapId),
     ]);
 
     return { deleted: true, roadmapId };
@@ -334,6 +276,7 @@ module.exports = {
     createDraft,
     updateDraft,
     share,
+    unshare,
     deleteById,
     listPublic,
     getPublicPreviewById,

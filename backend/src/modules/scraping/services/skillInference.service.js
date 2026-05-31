@@ -38,7 +38,7 @@ async function extractSkillsFromJobPostings(tavilySnippet, jobBoardContext = '')
 
     // Keep top skills with at least one occurrence to avoid sparse crawl output.
     const candidates = Object.entries(skillFrequency)
-      .filter(([_, count]) => count >= 1)
+      .filter(([, count]) => count >= 1)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([name, count]) => ({

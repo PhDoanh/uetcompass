@@ -3,6 +3,8 @@ import { CalendarDays, ChevronLeft, ChevronRight, Compass, Star, UserPlus, Users
 import accountApi from '../../services/account.api';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import { useNotification } from '../notification/NotificationContainer';
+import { useAuth } from '../../providers/AuthProvider';
+import { navigateTo } from '../../shared/navigation';
 import '../../style/general-component.css';
 import './public-profile-page.css';
 
@@ -129,8 +131,10 @@ function resolveUserIdFromLocation(fallbackUserId = '') {
 function normalizeManualRoadmap(item, authorName, authorAvatar) {
 	const title = safeText(item?.title, 'Manual roadmap');
 	const description = safeText(item?.description, 'Lộ trình cộng đồng được chia sẻ để người khác tham khảo và học theo.');
+	const roadmapId = safeText(item?._id, '');
 	return {
-		id: `manual-${item?._id || title}`,
+		id: `manual-${roadmapId || title}`,
+		roadmapId,
 		type: 'manual',
 		title,
 		description,
@@ -157,8 +161,30 @@ function RatingStrip({ value }) {
 }
 
 function RoadmapCard({ item }) {
+	const handleOpenRoadmap = () => {
+		if (!item?.roadmapId) {
+			return;
+		}
+
+		navigateTo(`/skill-tree/${encodeURIComponent(item.roadmapId)}`);
+	};
+
+	const handleKeyDown = (event) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			handleOpenRoadmap();
+		}
+	};
+
 	return (
-		<article className="public-profile-card public-profile-card--roadmap">
+		<article
+			className="public-profile-card public-profile-card--roadmap"
+			onClick={handleOpenRoadmap}
+			onKeyDown={handleKeyDown}
+			tabIndex={0}
+			role="link"
+			aria-label={`Mở roadmap ${item.title}`}
+		>
 			<div className="public-profile-card__thumbnail" style={{ background: buildGradient(item.thumbnailSeed) }}>
 				<div className="public-profile-card__thumbnail-badge">
 					<Compass size={18} aria-hidden="true" />
@@ -191,6 +217,7 @@ function RoadmapCard({ item }) {
 }
 
 export default function PublicProfilePage({ userId }) {
+	const { accessToken, isAuthenticated } = useAuth();
 	const notificationApi = useNotification();
 	const addNotification = notificationApi?.addNotification || (() => {});
 	const [loading, setLoading] = useState(true);
@@ -198,6 +225,7 @@ export default function PublicProfilePage({ userId }) {
 	const [pageIndex, setPageIndex] = useState(0);
 	const [profile, setProfile] = useState(null);
 	const [roadmaps, setRoadmaps] = useState([]);
+	const [isFollowingLoading, setIsFollowingLoading] = useState(false);
 
 	useEffect(() => {
 		let alive = true;
@@ -214,8 +242,8 @@ export default function PublicProfilePage({ userId }) {
 			setError('');
 
 			try {
-				const [profilePayload, manualPayload, skillTreePayload] = await Promise.all([
-					accountApi.getPublicProfile(resolvedUserId),
+				const [profilePayload, manualPayload] = await Promise.all([
+					accountApi.getPublicProfile(resolvedUserId, accessToken),
 					manualRoadmapApi.listPublicManualRoadmaps({ userId: resolvedUserId, page: 1, limit: 100 }),
 				]);
 
@@ -245,8 +273,10 @@ export default function PublicProfilePage({ userId }) {
 					careerGoalRole: visible ? safeText(profilePayload?.profile?.careerGoal?.role, 'Chưa cập nhật') : '',
 					roadmapCount: combined.length,
 					averageRating: average(combined.map((item) => item.rating)),
-					followers: Math.max(12, Math.round(combined.length * 4 + average(combined.map((item) => item.rating)) * 6)),
-					following: Math.max(8, Math.round(combined.length + manualRoadmaps.length)),
+					followers: Number(profilePayload?.followersCount ?? identity?.followersCount ?? 0) || 0,
+					following: Number(profilePayload?.followingCount ?? identity?.followingCount ?? 0) || 0,
+					isFollowing: Boolean(profilePayload?.viewerIsFollowing),
+					isSelf: Boolean(profilePayload?.viewerIsSelf),
 				});
 				setRoadmaps(combined);
 				setPageIndex(0);
@@ -270,7 +300,7 @@ export default function PublicProfilePage({ userId }) {
 		return () => {
 			alive = false;
 		};
-	}, [userId]);
+		}, [accessToken, userId]);
 
 	const totalPages = Math.max(1, Math.ceil(roadmaps.length / PAGE_SIZE));
 	const safePageIndex = Math.min(pageIndex, totalPages - 1);
@@ -287,8 +317,42 @@ export default function PublicProfilePage({ userId }) {
 		}
 	}, [pageIndex, safePageIndex]);
 
-	const handleFollow = () => {
-		addNotification('Tính năng theo dõi đang ở chế độ xem trước.', 'info');
+	const handleFollow = async () => {
+		if (!profile?.userId || !isAuthenticated || !accessToken) {
+			addNotification('Vui lòng đăng nhập để theo dõi.', 'warning');
+			return;
+		}
+
+		if (profile?.isSelf) {
+			return;
+		}
+
+		if (profile?.isFollowing) {
+			addNotification('Bạn đã theo dõi hồ sơ này rồi.', 'info');
+			return;
+		}
+
+		setIsFollowingLoading(true);
+
+		try {
+			const result = profile?.isFollowing
+				? await accountApi.unfollowPublicProfile(accessToken, profile.userId)
+				: await accountApi.followPublicProfile(accessToken, profile.userId);
+			setProfile((current) => ({
+				...(current || {}),
+				followers: Number(result?.followersCount ?? current?.followers ?? 0) || 0,
+				following: Number(result?.followingCount ?? current?.following ?? 0) || 0,
+				isFollowing: Boolean(result?.isFollowing ?? !current?.isFollowing),
+			}));
+			addNotification(
+				result?.message || (profile?.isFollowing ? 'Đã bỏ theo dõi hồ sơ này.' : 'Đã theo dõi hồ sơ này.'),
+				'success'
+			);
+		} catch (error) {
+			addNotification(error?.message || 'Không thể cập nhật trạng thái theo dõi lúc này.', 'error');
+		} finally {
+			setIsFollowingLoading(false);
+		}
 	};
 
 	return (
@@ -330,9 +394,14 @@ export default function PublicProfilePage({ userId }) {
 										</div>
 									</div>
 
-									<button type="button" className="public-profile-card__follow-btn" onClick={handleFollow}>
+									<button
+										type="button"
+										className="public-profile-card__follow-btn"
+										onClick={handleFollow}
+										disabled={Boolean(profile?.isSelf || isFollowingLoading || !isAuthenticated)}
+									>
 										<UserPlus size={16} />
-										Follow
+										{profile?.isFollowing ? 'Unfollow' : 'Follow'}
 									</button>
 
 									<div className="public-profile-card__stats public-profile-card__stats--social">

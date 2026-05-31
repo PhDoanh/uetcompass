@@ -30,7 +30,7 @@ function readStoredAuthState() {
       onboardingState: parsed?.onboardingState || 'NEVER_STARTED',
       onboardingDraft: parsed?.onboardingDraft || null,
     };
-  } catch (_) {
+  } catch {
     return {
       accessToken: null,
       onboardingState: 'NEVER_STARTED',
@@ -78,7 +78,7 @@ export function sanitizeOnboardingDraft(draft) {
 }
 
 // --- ĐÃ THÊM LẠI HÀM NÀY ĐỂ FIX LỖI SYNTAX ---
-export function decidePostLoginRoute(onboardingState) {
+export function decidePostLoginRoute() {
   return '/';
 }
 
@@ -138,7 +138,7 @@ export function AuthProvider({ children }) {
       logoutAndRedirect: async () => {
         try {
           await authApi.logout();
-        } catch (_) {
+        } catch {
           // Luôn xóa state cục bộ kể cả khi logout server lỗi
         }
 

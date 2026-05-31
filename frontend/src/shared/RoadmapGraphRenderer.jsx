@@ -31,7 +31,6 @@ export function RoadmapGraphRenderer({
         default: { width: 220, height: 58 },
     };
 
-    const PARENT_WIDTH = NODE_DIMENSIONS.main_topic.width;
     const CHILD_COLUMN_WIDTH = 300;
     const CENTER_X = 760;
     const CHILD_SIDE_GAP = 320;

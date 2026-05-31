@@ -74,6 +74,7 @@ async function refreshCache(userId, roadmapId, options = {}) {
     const payload = {
       userId: userKey,
       roadmapId: roadmapKey,
+      roadmapSource: ownedRoadmap.isPrimary ? 'primary' : 'roadmap',
       roadmapName: ownedRoadmap.roadmapName,
       isPrimary: ownedRoadmap.isPrimary,
       roadmapCreatedAt: ownedRoadmap.createdAt || null,
@@ -98,6 +99,7 @@ async function refreshCache(userId, roadmapId, options = {}) {
 
     progressSse.notifyUser(userKey, {
       roadmapId: payload.roadmapId,
+      roadmapSource: payload.roadmapSource,
       roadmapName: payload.roadmapName,
       isPrimary: payload.isPrimary,
       roadmapCreatedAt: payload.roadmapCreatedAt,
@@ -144,6 +146,7 @@ async function getAll(userId) {
     const roadmapAcceptedAt = doc.roadmapAcceptedAt || ownedRoadmap?.acceptedAt || null;
     return {
       roadmapId: doc.roadmapId,
+      roadmapSource: doc.roadmapSource || (doc.isPrimary ? 'primary' : 'roadmap'),
       roadmapName: doc.roadmapName,
       isPrimary: Boolean(doc.isPrimary),
       roadmapCreatedAt,
@@ -179,6 +182,7 @@ async function getRoadmapDetail(userId, roadmapId) {
 
   return {
     roadmapId: roadmapKey,
+    roadmapSource: ownedRoadmap.isPrimary ? 'primary' : 'roadmap',
     roadmapName: detail?.roadmapName || ownedRoadmap.roadmapName,
     nodes: {
       done,

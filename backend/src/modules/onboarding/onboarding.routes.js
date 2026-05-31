@@ -28,7 +28,7 @@ router.get('/status', (req, res) => {
 			throw new Error('INVALID_TOKEN_PAYLOAD');
 		}
 		addConnection(userId, res);
-	} catch (_) {
+	} catch {
 		res.writeHead(401, {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',

@@ -69,7 +69,7 @@ export default function usePrefetch() {
 			let url;
 			try {
 				url = new URL(href, window.location.origin);
-			} catch (_) {
+			} catch {
 				return;
 			}
 

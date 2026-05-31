@@ -22,7 +22,7 @@ export function toRouteKey(locationLike) {
 function toSameOriginUrl(path) {
 	try {
 		return new URL(path, window.location.origin);
-	} catch (_) {
+	} catch {
 		return null;
 	}
 }

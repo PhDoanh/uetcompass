@@ -96,7 +96,7 @@ function MarqueeRow({ items, direction = 'left', paused }) {
     track.scrollLeft = dragState.current.scrollLeft - dx;
   }, []);
 
-  const onPointerUp = useCallback((e) => {
+  const onPointerUp = useCallback(() => {
     dragState.current.active = false;
     const track = trackRef.current;
     if (track) track.style.cursor = 'grab';

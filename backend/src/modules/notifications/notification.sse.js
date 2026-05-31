@@ -6,7 +6,7 @@ function addConnection(userId, res) {
   if (connections.has(key)) {
     try {
       connections.get(key).end();
-    } catch (_) {
+    } catch {
       // best effort cleanup
     }
   }
@@ -16,7 +16,7 @@ function addConnection(userId, res) {
   const heartbeat = setInterval(() => {
     try {
       res.write(':heartbeat\\n\\n');
-    } catch (_) {
+    } catch {
       clearInterval(heartbeat);
       connections.delete(key);
     }

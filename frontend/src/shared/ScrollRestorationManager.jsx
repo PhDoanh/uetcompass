@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { NAVIGATION_START_EVENT } from './navigation';
 
-// eslint-disable-next-line react/prop-types
 export default function ScrollRestorationManager({ routeKey }) {
   const scrollByRouteRef = useRef(new Map());
   const shouldRestoreRef = useRef(false);
@@ -19,7 +18,7 @@ export default function ScrollRestorationManager({ routeKey }) {
 
     try {
       window.sessionStorage.setItem(makeStorageKey(safeRoute), String(safeValue));
-    } catch (_) {
+    } catch {
       // Ignore storage errors.
     }
   };
@@ -38,7 +37,7 @@ export default function ScrollRestorationManager({ routeKey }) {
       const raw = window.sessionStorage.getItem(makeStorageKey(safeRoute));
       const parsed = Number(raw || 0);
       return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-    } catch (_) {
+    } catch {
       return 0;
     }
   };

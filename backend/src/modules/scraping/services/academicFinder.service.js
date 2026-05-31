@@ -16,7 +16,7 @@ function classifySourceType(url) {
   const urlLower = url.toLowerCase();
   
   // UET official sources: uet.vnu.edu.vn, uet.edu.vn, github.com/uet* repos (uet-, uet_, uet/)
-  if (/uet\.(vnu\.)?edu\.vn|github\.com\/uet[\/-_]*/i.test(urlLower)) {
+  if (/uet\.(vnu\.)?edu\.vn|github\.com\/uet[/_-]*/i.test(urlLower)) {
     return 'uet_official';
   }
   
@@ -98,7 +98,7 @@ async function crawlAcademicMaterialsPerNode(roadmapNodes = []) {
 
         for (const result of tavilyResults) {
           try {
-            const { title, url, snippet, source } = result;
+            const { title, url } = result;
 
             // Classify and detect
             const sourceType = classifySourceType(url);

@@ -35,6 +35,7 @@ const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoa
 const RoadmapVersionHistoryPage = lazy(() => import('./features/manual-roadmap/RoadmapVersionHistoryPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
+const JobMarketPage = lazy(() => import('./features/job-market/JobMarketPage'));
 
 function shouldUseReducedMotion() {
 	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -96,7 +97,7 @@ function AppContent() {
 	const publicProfileUserId = publicProfileMatch ? decodeURIComponent(publicProfileMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement', '/job-market'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
 		Boolean(publicProfileUserId) ||
 		pathname.startsWith('/roadmaps/public/');
@@ -312,13 +313,11 @@ function AppContent() {
 		);
 	}
 
-	if (!content && pathname === '/manual-roadmap/versions') {
+	if (!content && pathname === '/job-market') {
 		content = (
-			<AuthGuard>
-				<main style={{ width: '100%', height: '100vh' }}>
-					<RoadmapVersionHistoryPage />
-				</main>
-			</AuthGuard>
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<JobMarketPage />
+			</main>
 		);
 	}
 

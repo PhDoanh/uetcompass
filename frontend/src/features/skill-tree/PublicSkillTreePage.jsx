@@ -3,7 +3,7 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import * as skillTreeApi from '../../services/skillTree.api';
+import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../notification/NotificationContainer';
 import { Copy } from 'lucide-react';
 import './skill-tree.css';
@@ -30,40 +30,6 @@ function normalizeNodeState(state) {
   return 'pending';
 }
 
-function buildNodeStatesFromProgress(progressState, nodes = []) {
-  const next = {};
-  const pending = new Set(progressState?.pending || []);
-  const inProgress = new Set(progressState?.inProgress || []);
-  const completed = new Set(progressState?.completed || []);
-  const skip = new Set(progressState?.skip || []);
-
-  nodes.forEach((node) => {
-    const nodeId = node.nodeId;
-    if (!nodeId) {
-      return;
-    }
-    if (completed.has(nodeId)) {
-      next[nodeId] = 'completed';
-      return;
-    }
-    if (inProgress.has(nodeId)) {
-      next[nodeId] = 'inProgress';
-      return;
-    }
-    if (skip.has(nodeId)) {
-      next[nodeId] = 'skip';
-      return;
-    }
-    if (pending.has(nodeId)) {
-      next[nodeId] = 'pending';
-      return;
-    }
-    next[nodeId] = normalizeNodeState(node.status);
-  });
-
-  return next;
-}
-
 function normalizePreviewNodes(nodes = []) {
   const seenIds = new Set();
   const mappedNodes = nodes
@@ -81,6 +47,10 @@ function normalizePreviewNodes(nodes = []) {
       const prerequisites = Array.isArray(node?.prerequisites)
         ? node.prerequisites.map((id) => String(id || '').trim()).filter(Boolean)
         : (parentNodeId ? [parentNodeId] : []);
+      const rawType = String(node?.type || '').trim();
+      const type = parentNodeId
+        ? (rawType === 'choice_item' ? 'choice_item' : 'sub_topic')
+        : (rawType || 'main_topic');
 
       return {
         nodeId,
@@ -88,7 +58,7 @@ function normalizePreviewNodes(nodes = []) {
         description: String(node?.description || node?.reason || '').trim(),
         parent: parentNodeId || undefined,
         parentNodeId: parentNodeId || undefined,
-        type: String(node?.type || '').trim() || (parentNodeId ? 'sub_topic' : 'main_topic'),
+        type,
         prerequisites,
         status: String(node?.status || 'pending').trim() || 'pending',
         resources: Array.isArray(node?.resources) ? node.resources : [],
@@ -136,7 +106,7 @@ function isManualRoadmapShared(roadmap) {
 }
 
 export default function PublicSkillTreePage({ roadmapId = '' }) {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);
@@ -399,10 +369,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     </>
   );
 
-  const applyProgressState = useCallback((progressState) => {
-    setNodeStates(buildNodeStatesFromProgress(progressState, normalizedNodes));
-  }, [normalizedNodes]);
-
   const handleNodeTransition = useCallback(async (node, toState) => {
     if (!node?.nodeId) {
       return;
@@ -413,40 +379,11 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       return;
     }
 
-    if (!accessToken) {
-      setNodeStates((prev) => ({
-        ...prev,
-        [node.nodeId]: toState,
-      }));
-      return;
-    }
-
-    try {
-      const updated = await skillTreeApi.patchNodeStatus(
-        accessToken,
-        normalizedRoadmapId,
-        node.nodeId,
-        fromState,
-        toState
-      );
-
-      if (updated?.state) {
-        applyProgressState(updated.state);
-      } else {
-        setNodeStates((prev) => ({
-          ...prev,
-          [node.nodeId]: toState,
-        }));
-      }
-    } catch (error) {
-      if (error?.code === 'ROADMAP_NOT_FOUND') {
-        addNotification('Roadmap thủ công chưa được đồng bộ để lưu tiến độ. Hãy hoàn tất onboarding rồi thử lại.', 'warning');
-        return;
-      }
-
-      addNotification(error?.message || 'Không thể cập nhật tiến độ roadmap.', 'error');
-    }
-  }, [accessToken, addNotification, applyProgressState, nodeStates, normalizedRoadmapId]);
+    setNodeStates((prev) => ({
+      ...prev,
+      [node.nodeId]: toState,
+    }));
+  }, [nodeStates]);
 
   const handleRightClickToggle = useCallback((nodeId) => {
     const target = nodesForRender.find((node) => node.nodeId === nodeId);
@@ -593,38 +530,6 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     setNodeStates(initialStates);
     setActiveNodeId('');
   }, [normalizedNodes]);
-
-  useEffect(() => {
-    if (!accessToken || !normalizedRoadmapId || normalizedNodes.length === 0) {
-      return undefined;
-    }
-
-    let isActive = true;
-
-    (async () => {
-      try {
-        const progress = await skillTreeApi.getRoadmapProgress(accessToken, normalizedRoadmapId);
-        if (!isActive) {
-          return;
-        }
-
-        if (progress?.state) {
-          applyProgressState(progress.state);
-        }
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-        if (error?.code === 'ROADMAP_NOT_FOUND') {
-          return;
-        }
-      }
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [accessToken, applyProgressState, normalizedNodes, normalizedRoadmapId]);
 
   useEffect(() => {
     if (!focusNodeId || normalizedNodes.length === 0) {

@@ -3,6 +3,7 @@ const courseResourceService = require('./courseResource.service');
 const marketSkillService = require('./marketSkill.service');
 const aiContextService = require('./aiContext.service');
 const primaryRoadmapService = require('./primaryRoadmap.service');
+const skillService = require('../skill/skill.service');
 const {
   validateNodeId,
   validateProgressState,
@@ -111,9 +112,10 @@ async function getRoadmapHistory(req, res) {
 
 async function getNodeResources(req, res) {
   try {
+    const userId = req.user.userId;
     const { courseCode } = req.params;
 
-    const resources = await courseResourceService.getResources(courseCode);
+    const resources = await courseResourceService.getResources(courseCode, userId);
     res.json({ resources });
   } catch (err) {
     handleError(err, res);
@@ -182,6 +184,31 @@ async function getSkillLearningResources(req, res) {
   }
 }
 
+async function curatePrimaryRoadmapResources(req, res) {
+  try {
+    const userId = req.user.userId;
+    const {
+      force = false,
+      includeResources = true,
+      includeJobs = true,
+    } = req.body || {};
+
+    const roadmap = await primaryRoadmapService.getPrimaryRoadmap(userId);
+    const result = await skillService.curateSkillsForNodes(roadmap.nodes || [], {
+      force: force === true,
+      includeResources: includeResources !== false,
+      includeJobs: includeJobs !== false,
+    });
+
+    return res.json({
+      roadmapId: roadmap.roadmapId,
+      ...result,
+    });
+  } catch (err) {
+    handleError(err, res);
+  }
+}
+
 function handleError(err, res) {
   if (err.status) {
     return res.status(err.status).json({
@@ -211,5 +238,6 @@ module.exports = {
   getNodeWhy,
   getNodeMarketSkills,
   getSkillLearningResources,
+  curatePrimaryRoadmapResources,
   handleError,
 };

@@ -544,10 +544,13 @@ export default function ManualRoadmapPage() {
 
       const next = transform(parsed);
       const nextYaml = dump(next, { noRefs: true, lineWidth: 120, sortKeys: false });
+      setSelectedSampleKey('custom');
       setYamlCode(nextYaml);
       setApiError('');
+      return true;
     } catch (err) {
       setApiError(err.message || 'Không thể cập nhật học liệu trong YAML.');
+      return false;
     }
   };
 
@@ -565,7 +568,7 @@ export default function ManualRoadmapPage() {
       return;
     }
 
-    writeYaml((parsed) => {
+    const updated = writeYaml((parsed) => {
       const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
       const targetNode = nodes.find((node) => String(node.nodeId || node.id || '').trim() === nodeId);
 
@@ -586,8 +589,10 @@ export default function ManualRoadmapPage() {
       return parsed;
     });
 
-    setResourceTitle('');
-    setResourceUrl('');
+    if (updated) {
+      setResourceTitle('');
+      setResourceUrl('');
+    }
   };
 
   const handleRemoveResource = (index) => {

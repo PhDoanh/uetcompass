@@ -78,6 +78,10 @@ function scrollToMyRoadmapsSection() {
   return true;
 }
 
+function isInvalidSessionError(error) {
+  return error?.status === 401 || (error?.status === 403 && error?.code === 'FORBIDDEN');
+}
+
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -178,7 +182,7 @@ export default function NavBar() {
           updateAuthInfo?.({ onboardingState: resolvedState });
         }
       } catch (error) {
-        if (error?.status === 401) {
+        if (isInvalidSessionError(error)) {
           logoutAndRedirect?.();
           return;
         }
@@ -259,7 +263,12 @@ export default function NavBar() {
           setAvatarUrl((currentAvatarUrl) => next.avatarUrl || currentAvatarUrl);
           setAvatarFallback(next.avatarFallback);
         }
-      } catch {
+      } catch (error) {
+        if (isInvalidSessionError(error)) {
+          logoutAndRedirect?.();
+          return;
+        }
+
         if (isMounted) {
           setAvatarFallback('U');
         }
@@ -298,6 +307,11 @@ export default function NavBar() {
         label: 'Lộ trình cộng đồng',
         onClick: () => navigateToHomeSection('roadmap-community'),
       },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateToPath('/job-market'),
+      },
     ]
     : [
       {
@@ -314,6 +328,11 @@ export default function NavBar() {
         key: 'how-it-works',
         label: 'Cách hoạt động',
         onClick: () => navigateToHomeSection('system-flow'),
+      },
+      {
+        key: 'job-market',
+        label: 'Thị trường tuyển dụng',
+        onClick: () => navigateToPath('/job-market'),
       },
     ];
 

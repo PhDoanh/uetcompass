@@ -3,6 +3,7 @@ import { Cell, Label, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { Star, X } from 'lucide-react';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import { getNextTransitionOptions } from './skillTree.types';
+import NodeResourcesList from './NodeResourcesList';
 
 const MAX_RATING = 5;
 
@@ -394,6 +395,7 @@ export function SkillTreeNodeDetailTab({
   const subtitle = toNodeTypeLabel(mode, mode === 'public' ? node?.type : node?.nodeType);
   const description = mode === 'public' ? node?.description : node?.reason;
   const resources = Array.isArray(node?.resources) ? node.resources : [];
+  const relatedJobs = Array.isArray(node?.relatedJobs) ? node.relatedJobs : [];
   const relatedCourses = Array.isArray(node?.relatedCourses) ? node.relatedCourses : [];
   const normalizedPublicResources = useMemo(() => {
     if (mode !== 'public') {
@@ -482,37 +484,10 @@ export function SkillTreeNodeDetailTab({
         )}
       </section>
 
-      <section className="resources-tab__section">
-        <h4 className="resources-tab__heading">Resources</h4>
-        {(mode === 'public' ? normalizedPublicResources.length : resources.length) === 0 ? (
-          <p className="skill-tree-muted-text">No resources available</p>
-        ) : (
-          <ul className={mode === 'public' ? 'sample-resource-list' : 'resources-tab__list'}>
-            {(mode === 'public' ? normalizedPublicResources : resources).map((resource, index) => (
-              <li
-                key={`resource-${index}`}
-                className={mode === 'public' ? 'sample-resource-list__item' : 'resources-tab__item'}
-              >
-                {mode === 'public' ? (
-                  <div>
-                    <p className="sample-resource-list__title">{resource.title}</p>
-                    <a
-                      href={resource.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="sample-resource-list__link"
-                    >
-                      {resource.url}
-                    </a>
-                  </div>
-                ) : (
-                  <pre className="skill-tree-json-preview">{JSON.stringify(resource, null, 2)}</pre>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <NodeResourcesList
+        resources={mode === 'public' ? normalizedPublicResources : resources}
+        relatedJobs={mode === 'personal' ? relatedJobs : []}
+      />
 
       {mode === 'personal' ? (
         <section className="resources-tab__section">

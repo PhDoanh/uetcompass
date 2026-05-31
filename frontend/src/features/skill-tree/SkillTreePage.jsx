@@ -2,22 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Clock } from 'lucide-react';
 import * as skillTreeApi from '../../services/skillTree.api';
 import { useSkillTree } from './useSkillTree';
-import SkillTreeCanvas from './SkillTreeCanvas';
-import { useNotification } from '../notification/NotificationContainer';
+import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { useSplitLayout } from './useSplitLayout';
 import SkillTreeDetailPanel, { calculateProgress, buildFixedMilestones, SkillTreeOverviewTab, SkillTreeNodeDetailTab } from './SkillTreeDetailPanel';
 import MilestoneCelebrationModal from './MilestoneCelebrationModal';
 import ManualRoadmapDividerHandle from '../manual-roadmap/ManualRoadmapDividerHandle';
 import './skill-tree.css';
 import '../manual-roadmap/manual-roadmap.css';
-
-const ZOOM_MIN = 0.6;
-const ZOOM_MAX = 1.8;
-const ZOOM_STEP = 0.15;
-
-function clampZoom(value) {
-  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
-}
 
 function addDays(date, days) {
   const next = new Date(date.getTime());
@@ -35,12 +26,8 @@ function isCompletedState(state) {
 }
 
 export default function SkillTreePage() {
-  const [zoom, setZoom] = useState(1);
   const [historyEvents, setHistoryEvents] = useState([]);
   const [celebration, setCelebration] = useState(null);
-  const canvasViewportRef = useRef(null);
-  const zoomContentRef = useRef(null);
-  const autoFittedRef = useRef(false);
   const milestoneTriggeredRef = useRef(new Set());
   const previousPercentRef = useRef(0);
   const celebrationInitializedRef = useRef(false);
@@ -170,6 +157,30 @@ export default function SkillTreePage() {
     { label: 'Số node', value: hasNodes ? `${nodes.length}` : '0' },
   ]), [hasNodes, nodes.length, roadmapCreatedLabel]);
 
+  const graphNodes = useMemo(() => (nodes || []).map((node) => {
+    const parentNodeId = String(node?.parentNodeId || '').trim() || null;
+    const type = node?.nodeType === 'subtopic' ? 'sub_topic' : 'main_topic';
+
+    return {
+      ...node,
+      label: node.skillName || node.label || node.nodeId,
+      description: node.reason || node.description || '',
+      type,
+      parentNodeId,
+      prerequisites: parentNodeId ? [parentNodeId] : [],
+      status: node.progressState || 'pending',
+    };
+  }), [nodes]);
+
+  const graphEdges = useMemo(() => (edges || [])
+    .map((edge) => ({
+      edgeId: edge.id || edge.edgeId || `${edge.sourceId || edge.source}->${edge.targetId || edge.target}`,
+      source: edge.source || edge.sourceId,
+      target: edge.target || edge.targetId,
+      type: edge.type || 'default',
+    }))
+    .filter((edge) => edge.source && edge.target), [edges]);
+
   const handleNodeTransition = useCallback(async (fromState, toState) => {
     if (!activeNode) {
       return;
@@ -179,11 +190,13 @@ export default function SkillTreePage() {
     await refreshHistory();
   }, [activeNode, refreshHistory, transitionNode]);
 
-  const handleRightClickToggle = useCallback(async (event, node) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const handleRightClickToggle = useCallback(async (nodeId) => {
+    if (!nodeId) {
+      return;
+    }
 
-    if (!node?.nodeId) {
+    const node = nodes.find((item) => item.nodeId === nodeId);
+    if (!node) {
       return;
     }
 
@@ -192,7 +205,7 @@ export default function SkillTreePage() {
 
     await transitionNode(node.nodeId, currentState, targetState);
     await refreshHistory();
-  }, [refreshHistory, transitionNode]);
+  }, [nodes, refreshHistory, transitionNode]);
 
   useEffect(() => {
     if (!hasNodes) {
@@ -313,169 +326,15 @@ export default function SkillTreePage() {
     setFocusNodeId(focus);
   }, []);
 
-  const handleZoomIn = useCallback(() => {
-    setZoom((prev) => clampZoom(prev + ZOOM_STEP));
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setZoom((prev) => clampZoom(prev - ZOOM_STEP));
-  }, []);
-
-  const handleFitView = useCallback(() => {
-    const viewportEl = canvasViewportRef.current;
-    const contentEl = zoomContentRef.current;
-
-    if (!viewportEl || !contentEl || !hasNodes) {
-      setZoom(1);
-      return;
-    }
-
-    const viewportWidth = viewportEl.clientWidth;
-    const viewportHeight = viewportEl.clientHeight;
-    const contentWidth = contentEl.scrollWidth;
-    const contentHeight = contentEl.scrollHeight;
-
-    if (!viewportWidth || !viewportHeight || !contentWidth || !contentHeight) {
-      setZoom(1);
-      return;
-    }
-
-    const padding = 140;
-    const widthScale = (viewportWidth - padding) / contentWidth;
-    const heightScale = (viewportHeight - padding) / contentHeight;
-    const targetZoom = clampZoom(Math.min(widthScale, heightScale) * 0.9);
-
-    setZoom(Number.isFinite(targetZoom) && targetZoom > 0 ? targetZoom : 0.9);
-
-    requestAnimationFrame(() => {
-      viewportEl.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-    });
-  }, [hasNodes]);
-
-  const { addNotification } = useNotification();
-
-  const handleLocateCurrent = useCallback(() => {
-    const viewportEl = canvasViewportRef.current;
-    const contentEl = zoomContentRef.current;
-
-    if (!viewportEl || !contentEl || !hasNodes) {
-      handleFitView();
-      return;
-    }
-
-    // Find nodes that are in progress
-    const inProgressNodes = nodes.filter((n) => {
-      const status = String(n.progressState || '').toLowerCase();
-      return status === 'inprogress' || status.includes('in_progress') || status.includes('in-progress');
-    });
-
-    // If no in-progress nodes, show notification
-    if (inProgressNodes.length === 0) {
-      addNotification('Không có node nào đang trong trạng thái học', 'info');
-      return;
-    }
-
-    // Find all DOM elements of in-progress nodes
-    const targetElements = inProgressNodes
-      .map((node) => {
-        // Try to find element by data-node-id or by text content
-        return contentEl.querySelector(`[data-node-id="${node.nodeId}"]`) ||
-          Array.from(contentEl.querySelectorAll('.skill-tree-roadmap-v2__cell, .course-node'))
-            .find((el) => el.textContent?.includes(node.skillName));
-      })
-      .filter(Boolean);
-
-    if (targetElements.length === 0) {
-      handleFitView();
-      return;
-    }
-
-    // Calculate bounding box of all target elements
-    let minX = Number.POSITIVE_INFINITY;
-    let minY = Number.POSITIVE_INFINITY;
-    let maxX = Number.NEGATIVE_INFINITY;
-    let maxY = Number.NEGATIVE_INFINITY;
-
-    for (const el of targetElements) {
-      const rect = el.getBoundingClientRect();
-      const contentRect = contentEl.getBoundingClientRect();
-
-      // Transform from viewport to content coordinates (accounting for zoom)
-      const relX = (rect.left - contentRect.left) / zoom;
-      const relY = (rect.top - contentRect.top) / zoom;
-      const relWidth = rect.width / zoom;
-      const relHeight = rect.height / zoom;
-
-      minX = Math.min(minX, relX);
-      minY = Math.min(minY, relY);
-      maxX = Math.max(maxX, relX + relWidth);
-      maxY = Math.max(maxY, relY + relHeight);
-    }
-
-    const targetWidth = maxX - minX;
-    const targetHeight = maxY - minY;
-    const targetCenterX = minX + targetWidth / 2;
-    const targetCenterY = minY + targetHeight / 2;
-
-    // Calculate zoom to show all in-progress nodes
-    const padding = 120;
-    const viewportWidth = viewportEl.clientWidth;
-    const viewportHeight = viewportEl.clientHeight;
-    const availableWidth = Math.max(120, viewportWidth - padding);
-    const availableHeight = Math.max(120, viewportHeight - padding);
-
-    const fitScaleX = targetWidth > 0 ? availableWidth / targetWidth : 1;
-    const fitScaleY = targetHeight > 0 ? availableHeight / targetHeight : 1;
-    const targetZoom = clampZoom(Math.min(1.6, Math.max(0.6, Math.min(fitScaleX, fitScaleY))));
-
-    setZoom(targetZoom);
-
-    // Scroll to center on in-progress nodes
-    requestAnimationFrame(() => {
-      const scrollX = (targetCenterX * targetZoom) - viewportWidth / 2;
-      const scrollY = (targetCenterY * targetZoom) - viewportHeight / 2;
-
-      viewportEl.scrollTo({
-        left: Math.max(0, scrollX),
-        top: Math.max(0, scrollY),
-        behavior: 'smooth'
-      });
-    });
-  }, [nodes, zoom, hasNodes, handleFitView, addNotification]);
-
-  useEffect(() => {
-    if (!hasNodes) {
-      autoFittedRef.current = false;
-      setZoom(1);
-      return;
-    }
-
-    if (!autoFittedRef.current) {
-      autoFittedRef.current = true;
-      handleFitView();
-    }
-  }, [hasNodes, nodes.length, handleFitView]);
-
   useEffect(() => {
     if (!focusNodeId || !hasNodes) {
       return;
     }
 
-    const viewportEl = canvasViewportRef.current;
-    const contentEl = zoomContentRef.current;
-    if (!viewportEl || !contentEl) {
-      return;
+    if (nodes.some((node) => node.nodeId === focusNodeId)) {
+      openNode(focusNodeId);
     }
-
-    const target = contentEl.querySelector(`[data-node-id="${focusNodeId}"]`);
-    if (!target) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    });
-  }, [focusNodeId, hasNodes, nodes, zoom]);
+  }, [focusNodeId, hasNodes, nodes, openNode]);
 
   let generationMessage = '';
   if (!hasNodes) {
@@ -528,70 +387,24 @@ export default function SkillTreePage() {
         style={{ '--st-panel-ratio': ratio }}
       >
         <main
-          ref={canvasViewportRef}
           className="skill-tree-layout__canvas skill-tree-layout__canvas--split"
           aria-label="Skill tree canvas"
         >
-          <div className="skill-tree-canvas-stage skill-tree-canvas-stage--scroll">
+          <div className="skill-tree-canvas-stage skill-tree-graph-shell">
             {hasNodes ? (
-              <div className="skill-tree-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-                <div ref={zoomContentRef}>
-                  <SkillTreeCanvas
-                    nodes={nodes || []}
-                    edges={edges || []}
-                    onSelectNode={openNode}
-                    onToggleNodeStatus={handleRightClickToggle}
-                  />
-                </div>
-              </div>
+              <RoadmapGraphRenderer
+                nodes={graphNodes}
+                edges={graphEdges}
+                onNodeSelect={openNode}
+                onNodeToggleStatus={handleRightClickToggle}
+                selectedNodeId={activeNodeId}
+                controlsVisible
+              />
             ) : (
               <div className="skill-tree-empty-state">
                 <p>{generationMessage || 'Roadmap is not available yet.'}</p>
               </div>
             )}
-          </div>
-
-          <div className="skill-tree-canvas-controls skill-tree-canvas-controls--split">
-            <button
-              type="button"
-              className="skill-tree-canvas-controls__btn"
-              onClick={handleZoomIn}
-              aria-label="Zoom in"
-              title="Zoom in"
-              disabled={!hasNodes}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="skill-tree-canvas-controls__btn"
-              onClick={handleZoomOut}
-              aria-label="Zoom out"
-              title="Zoom out"
-              disabled={!hasNodes}
-            >
-              -
-            </button>
-            <button
-              type="button"
-              className="skill-tree-canvas-controls__btn"
-              onClick={handleFitView}
-              aria-label="Fit to view"
-              title="Fit to view"
-              disabled={!hasNodes}
-            >
-              ⤢
-            </button>
-            <button
-              type="button"
-              className="skill-tree-canvas-controls__btn"
-              onClick={handleLocateCurrent}
-              aria-label="Locate me"
-              title="Locate to current learning position"
-              disabled={!hasNodes}
-            >
-              Locate me
-            </button>
           </div>
         </main>
 

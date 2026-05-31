@@ -4,6 +4,7 @@ const roadmapHistoryService = require('../roadmap/roadmapHistory.service');
 const roadmapService = require('../roadmap/roadmap.service');
 const previewStore = require('../roadmap/roadmap.preview.store');
 const { isGenerating } = require('../roadmap/generation.service');
+const skillService = require('../skill/skill.service');
 
 /**
  * Contract-first Skill Tree service.
@@ -43,6 +44,8 @@ async function getSkillTree(studentId) {
         };
       }
     }
+
+    effectiveNodes = await skillService.hydrateNodesWithSkillCuration(effectiveNodes);
 
     let progressState = buildDefaultProgressState(effectiveNodes);
     if (roadmap.acceptedAt) {

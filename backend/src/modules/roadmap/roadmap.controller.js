@@ -108,19 +108,24 @@ async function getPublicManualRoadmapPreviewById(req, res) {
 	}
 }
 
-// async function listRoadmapComments(req, res) {
-// 	return res.json({ items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false } });
-// }
-
-// async function createRoadmapComment(req, res) {
-// 	return res.status(501).json({ error: { message: 'Comment feature not yet implemented.' } });
-// }
-
 async function getManualRoadmapById(req, res) {
 	try {
 		const roadmap = await manualRoadmapService.getByIdForUser(req.params.roadmapId, req.user.userId);
 		if (!roadmap) throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
 		return res.json(roadmap);
+	} catch (err) {
+		return mapError(err, res);
+	}
+}
+
+async function listManualRoadmaps(req, res) {
+	try {
+		const { page, limit } = req.query;
+		const result = await manualRoadmapService.listByUser(req.user.userId, {
+			page: parsePositiveIntQuery(page, 'page'),
+			limit: parsePositiveIntQuery(limit, 'limit'),
+		});
+		return res.json(result);
 	} catch (err) {
 		return mapError(err, res);
 	}
@@ -432,6 +437,7 @@ module.exports = {
 	getRoadmapById,
 	listPublicManualRoadmaps,
 	getPublicManualRoadmapPreviewById,
+	listManualRoadmaps,
 	createManualRoadmap,
 	getManualRoadmapById,
 	updateManualRoadmap,

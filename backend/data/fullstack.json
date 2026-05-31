@@ -1,0 +1,377 @@
+{
+  "userId": "",
+  "studentProfileId": "",
+  "isPrimary": true,
+  "roadmapName": "Full Stack Web Developer",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "web-foundations",
+      "nodeType": "topic",
+      "skillName": "Web Foundations",
+      "parentNodeId": null,
+      "reason": "Build the browser, markup, styling, and JavaScript fundamentals needed before full stack work.",
+      "resources": []
+    },
+    {
+      "nodeId": "html",
+      "nodeType": "subtopic",
+      "skillName": "HTML",
+      "parentNodeId": "web-foundations",
+      "reason": "Structure web pages and semantic content for accessible user interfaces.",
+      "resources": []
+    },
+    {
+      "nodeId": "css",
+      "nodeType": "subtopic",
+      "skillName": "CSS",
+      "parentNodeId": "web-foundations",
+      "reason": "Style responsive layouts, visual hierarchy, and interaction states across devices.",
+      "resources": []
+    },
+    {
+      "nodeId": "static-websites-checkpoint",
+      "nodeType": "subtopic",
+      "skillName": "Static Websites Checkpoint",
+      "parentNodeId": "web-foundations",
+      "reason": "Apply HTML and CSS by shipping static pages before adding application logic.",
+      "resources": []
+    },
+    {
+      "nodeId": "javascript-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "JavaScript",
+      "parentNodeId": "web-foundations",
+      "reason": "Add browser interactivity, client-side logic, and shared language fluency for the stack.",
+      "resources": []
+    },
+    {
+      "nodeId": "interactivity-checkpoint",
+      "nodeType": "subtopic",
+      "skillName": "Interactivity Checkpoint",
+      "parentNodeId": "web-foundations",
+      "reason": "Practice DOM updates, events, and dynamic behavior in realistic browser tasks.",
+      "resources": []
+    },
+    {
+      "nodeId": "npm",
+      "nodeType": "subtopic",
+      "skillName": "npm",
+      "parentNodeId": "web-foundations",
+      "reason": "Manage JavaScript packages, scripts, and project tooling consistently.",
+      "resources": []
+    },
+    {
+      "nodeId": "external-packages",
+      "nodeType": "subtopic",
+      "skillName": "External Packages",
+      "parentNodeId": "web-foundations",
+      "reason": "Evaluate and integrate third-party libraries without bloating or destabilizing the app.",
+      "resources": []
+    },
+    {
+      "nodeId": "version-control-fullstack",
+      "nodeType": "topic",
+      "skillName": "Version Control and Collaboration",
+      "parentNodeId": null,
+      "reason": "Coordinate full stack work through source control, remote repositories, and team workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "git-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Git",
+      "parentNodeId": "version-control-fullstack",
+      "reason": "Track changes, branch safely, and recover from mistakes during iterative development.",
+      "resources": []
+    },
+    {
+      "nodeId": "github-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "GitHub",
+      "parentNodeId": "version-control-fullstack",
+      "reason": "Host repositories, review changes, and collaborate through pull requests and issues.",
+      "resources": []
+    },
+    {
+      "nodeId": "collaborative-work",
+      "nodeType": "subtopic",
+      "skillName": "Collaborative Work",
+      "parentNodeId": "version-control-fullstack",
+      "reason": "Use shared conventions, review feedback, and task coordination in product teams.",
+      "resources": []
+    },
+    {
+      "nodeId": "frontend-development",
+      "nodeType": "topic",
+      "skillName": "Frontend Development",
+      "parentNodeId": null,
+      "reason": "Create usable client applications that connect cleanly to backend services.",
+      "resources": []
+    },
+    {
+      "nodeId": "tailwind",
+      "nodeType": "subtopic",
+      "skillName": "Tailwind CSS",
+      "parentNodeId": "frontend-development",
+      "reason": "Build maintainable, responsive interfaces with a utility-first styling workflow.",
+      "resources": []
+    },
+    {
+      "nodeId": "react",
+      "nodeType": "subtopic",
+      "skillName": "React",
+      "parentNodeId": "frontend-development",
+      "reason": "Develop component-based interfaces with state, effects, and reusable UI patterns.",
+      "resources": []
+    },
+    {
+      "nodeId": "frontend-apps",
+      "nodeType": "subtopic",
+      "skillName": "Frontend Apps",
+      "parentNodeId": "frontend-development",
+      "reason": "Combine routing, state, forms, API calls, and UI feedback into production-style screens.",
+      "resources": []
+    },
+    {
+      "nodeId": "backend-development-fullstack",
+      "nodeType": "topic",
+      "skillName": "Backend Development",
+      "parentNodeId": null,
+      "reason": "Build server-side APIs, business logic, and application workflows for full stack products.",
+      "resources": []
+    },
+    {
+      "nodeId": "nodejs-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Node.js",
+      "parentNodeId": "backend-development-fullstack",
+      "reason": "Use server-side JavaScript to build APIs, services, and supporting application logic.",
+      "resources": []
+    },
+    {
+      "nodeId": "cli-apps",
+      "nodeType": "subtopic",
+      "skillName": "CLI Apps",
+      "parentNodeId": "backend-development-fullstack",
+      "reason": "Create command-line utilities for automation, maintenance, and developer workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "crud",
+      "nodeType": "subtopic",
+      "skillName": "CRUD",
+      "parentNodeId": "backend-development-fullstack",
+      "reason": "Implement create, read, update, and delete flows that power most application features.",
+      "resources": []
+    },
+    {
+      "nodeId": "restful-apis",
+      "nodeType": "subtopic",
+      "skillName": "RESTful APIs",
+      "parentNodeId": "backend-development-fullstack",
+      "reason": "Design predictable HTTP APIs that frontend clients and external systems can consume.",
+      "resources": []
+    },
+    {
+      "nodeId": "jwt-auth-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "JWT Auth",
+      "parentNodeId": "backend-development-fullstack",
+      "reason": "Secure user sessions and authorization flows with stateless token-based authentication.",
+      "resources": []
+    },
+    {
+      "nodeId": "databases-cache-fullstack",
+      "nodeType": "topic",
+      "skillName": "Databases and Caching",
+      "parentNodeId": null,
+      "reason": "Persist application data and improve performance with relational storage and fast cache layers.",
+      "resources": []
+    },
+    {
+      "nodeId": "postgresql-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "PostgreSQL",
+      "parentNodeId": "databases-cache-fullstack",
+      "reason": "Model relational data, query reliably, and store durable application records.",
+      "resources": []
+    },
+    {
+      "nodeId": "redis-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Redis",
+      "parentNodeId": "databases-cache-fullstack",
+      "reason": "Use in-memory data structures for caching, sessions, queues, and rate limiting.",
+      "resources": []
+    },
+    {
+      "nodeId": "complete-fullstack-app",
+      "nodeType": "topic",
+      "skillName": "Complete App",
+      "parentNodeId": null,
+      "reason": "Integrate frontend, backend, database, authentication, and deployment into one product-ready project.",
+      "resources": []
+    },
+    {
+      "nodeId": "complete-app",
+      "nodeType": "subtopic",
+      "skillName": "Complete App Project",
+      "parentNodeId": "complete-fullstack-app",
+      "reason": "Ship an end-to-end app that demonstrates real full stack delivery and portfolio depth.",
+      "resources": []
+    },
+    {
+      "nodeId": "cloud-linux-deployment",
+      "nodeType": "topic",
+      "skillName": "Cloud, Linux and Deployment",
+      "parentNodeId": null,
+      "reason": "Run applications on real infrastructure and understand the operating environment behind production systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "linux-basics",
+      "nodeType": "subtopic",
+      "skillName": "Linux Basics",
+      "parentNodeId": "cloud-linux-deployment",
+      "reason": "Navigate servers, manage files and processes, and operate deployed applications confidently.",
+      "resources": []
+    },
+    {
+      "nodeId": "basic-aws-services",
+      "nodeType": "subtopic",
+      "skillName": "Basic AWS Services",
+      "parentNodeId": "cloud-linux-deployment",
+      "reason": "Understand core cloud services used to host, network, store, and deliver applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "aws-route53",
+      "nodeType": "subtopic",
+      "skillName": "Route 53",
+      "parentNodeId": "basic-aws-services",
+      "reason": "Manage DNS records and route traffic to deployed web applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "aws-ses",
+      "nodeType": "subtopic",
+      "skillName": "SES",
+      "parentNodeId": "basic-aws-services",
+      "reason": "Send transactional emails for account, notification, and product workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "aws-ec2",
+      "nodeType": "subtopic",
+      "skillName": "EC2",
+      "parentNodeId": "basic-aws-services",
+      "reason": "Provision virtual servers for hosting services and running application workloads.",
+      "resources": []
+    },
+    {
+      "nodeId": "aws-vpc",
+      "nodeType": "subtopic",
+      "skillName": "VPC",
+      "parentNodeId": "basic-aws-services",
+      "reason": "Design private networking boundaries for secure cloud deployments.",
+      "resources": []
+    },
+    {
+      "nodeId": "aws-s3",
+      "nodeType": "subtopic",
+      "skillName": "S3",
+      "parentNodeId": "basic-aws-services",
+      "reason": "Store static assets, uploads, backups, and other object data reliably.",
+      "resources": []
+    },
+    {
+      "nodeId": "deployment-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Deployment",
+      "parentNodeId": "cloud-linux-deployment",
+      "reason": "Release applications to production environments with configuration, security, and rollback awareness.",
+      "resources": []
+    },
+    {
+      "nodeId": "operations-ci-cd",
+      "nodeType": "topic",
+      "skillName": "Operations and CI/CD",
+      "parentNodeId": null,
+      "reason": "Keep full stack applications observable, repeatable, and continuously deliverable.",
+      "resources": []
+    },
+    {
+      "nodeId": "monit",
+      "nodeType": "subtopic",
+      "skillName": "Monit",
+      "parentNodeId": "operations-ci-cd",
+      "reason": "Monitor processes and restart services automatically when basic failures occur.",
+      "resources": []
+    },
+    {
+      "nodeId": "monitoring-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Monitoring",
+      "parentNodeId": "operations-ci-cd",
+      "reason": "Track uptime, errors, logs, and performance signals after deployment.",
+      "resources": []
+    },
+    {
+      "nodeId": "github-actions-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "GitHub Actions",
+      "parentNodeId": "operations-ci-cd",
+      "reason": "Automate tests, builds, checks, and deployment workflows from the repository.",
+      "resources": []
+    },
+    {
+      "nodeId": "ci-cd-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "CI/CD",
+      "parentNodeId": "operations-ci-cd",
+      "reason": "Use repeatable pipelines to integrate, validate, and release changes safely.",
+      "resources": []
+    },
+    {
+      "nodeId": "infrastructure-automation",
+      "nodeType": "topic",
+      "skillName": "Infrastructure Automation",
+      "parentNodeId": null,
+      "reason": "Automate environment setup and infrastructure changes so production systems are reproducible.",
+      "resources": []
+    },
+    {
+      "nodeId": "ansible",
+      "nodeType": "subtopic",
+      "skillName": "Ansible",
+      "parentNodeId": "infrastructure-automation",
+      "reason": "Automate server provisioning, configuration, and deployment tasks with playbooks.",
+      "resources": []
+    },
+    {
+      "nodeId": "terraform",
+      "nodeType": "subtopic",
+      "skillName": "Terraform",
+      "parentNodeId": "infrastructure-automation",
+      "reason": "Define and manage cloud infrastructure with versioned infrastructure as code.",
+      "resources": []
+    },
+    {
+      "nodeId": "automation-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Automation",
+      "parentNodeId": "infrastructure-automation",
+      "reason": "Reduce manual operational work and make repeatable tasks predictable.",
+      "resources": []
+    },
+    {
+      "nodeId": "infrastructure-fullstack",
+      "nodeType": "subtopic",
+      "skillName": "Infrastructure",
+      "parentNodeId": "infrastructure-automation",
+      "reason": "Understand the compute, networking, storage, and deployment pieces behind a full stack system.",
+      "resources": []
+    }
+  ]
+}

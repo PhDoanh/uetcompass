@@ -2,15 +2,22 @@ const { Roadmap } = require('../roadmap/roadmap.model');
 const SkillTrendSnapshot = require('../scraping/models/skillTrendSnapshot.model');
 const LearningResource = require('../scraping/models/learningResource.model');
 const { RESOURCE_MAX_RESULTS } = require('../scraping/adapters/tavily.adapter');
+const skillService = require('../skill/skill.service');
 
 async function resolveCourseName(courseCode) {
-  const roadmap = await Roadmap.findOne({ isPrimary: true, status: 'completed', 'nodes.courseCode': courseCode }, { nodes: 1 }).lean();
+  const roadmap = await Roadmap.findOne(
+    { isPrimary: true, 'nodes.relatedCourses.courseCode': courseCode },
+    { nodes: 1 }
+  ).lean();
   if (!roadmap || !Array.isArray(roadmap.nodes)) {
     return null;
   }
 
-  const node = roadmap.nodes.find((item) => item.courseCode === courseCode);
-  return node?.courseName || null;
+  const node = roadmap.nodes.find((item) =>
+    (item.relatedCourses || []).some((course) => course.courseCode === courseCode)
+  );
+  const course = (node?.relatedCourses || []).find((item) => item.courseCode === courseCode);
+  return course?.courseName || null;
 }
 
 async function getMarketSkills(courseCode) {
@@ -39,6 +46,11 @@ async function getMarketSkills(courseCode) {
 }
 
 async function getLearningResources(skillName) {
+  const curated = await skillService.getLearningResourcesBySkill(skillName);
+  if (curated.resources.free.length > 0 || curated.relatedJobs.length > 0) {
+    return curated;
+  }
+
   const resources = await LearningResource.find({ skillName, isAvailable: true })
     .sort({ 'qualitySignal.value': -1 })
     .limit(200)
@@ -54,12 +66,20 @@ async function getLearningResources(skillName) {
   const free = normalized
     .filter((item) => item.isFree)
     .slice(0, RESOURCE_MAX_RESULTS)
-    .map(({ isFree, ...item }) => item);
+    .map((item) => ({
+      title: item.title,
+      url: item.url,
+      platform: item.platform,
+    }));
 
   const paid = normalized
     .filter((item) => !item.isFree)
     .slice(0, RESOURCE_MAX_RESULTS)
-    .map(({ isFree, ...item }) => item);
+    .map((item) => ({
+      title: item.title,
+      url: item.url,
+      platform: item.platform,
+    }));
 
   return {
     skill: skillName,

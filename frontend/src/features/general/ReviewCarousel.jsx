@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import reviewApi from '../../services/review.api';
 import { Star } from 'lucide-react';
 
-const SCROLL_SPEED = 0.05;
+const SCROLL_SPEED = 0.10;
+const FRICTION = 0.96;
+const VELOCITY_THRESHOLD = 0.1;
 
 function ReviewCard({ review }) {
 	return (
@@ -41,7 +43,17 @@ export default function ReviewCarousel({ visible = true }) {
 	const reverseRowRef = useRef(null);
 	const animationRef = useRef(null);
 	const pauseRef = useRef(false);
-	const dragStateRef = useRef({ active: false, startX: 0, startScroll: 0, pointerId: null });
+	const isDraggingRef = useRef(false);
+	const velocityRef = useRef({ forward: 0, reverse: 0 });
+	const dragStateRef = useRef({
+		active: false,
+		startX: 0,
+		startScroll: 0,
+		lastX: 0,
+		lastTime: 0,
+		pointerId: null,
+		activeRow: null
+	});
 
 	useEffect(() => {
 		let isActive = true;
@@ -119,18 +131,35 @@ export default function ReviewCarousel({ visible = true }) {
 			const delta = time - lastTime;
 			lastTime = time;
 
-			if (!pauseRef.current) {
+			if (!isDraggingRef.current) {
 				const forwardLimit = forwardRow.scrollWidth / 2;
 				const reverseLimit = reverseRow.scrollWidth / 2;
 
-				forwardRow.scrollLeft += delta * SCROLL_SPEED;
-				reverseRow.scrollLeft -= delta * SCROLL_SPEED;
-
-				if (forwardRow.scrollLeft >= forwardLimit) {
-					forwardRow.scrollLeft -= forwardLimit;
+				// Handle Velocity / Inertia
+				if (Math.abs(velocityRef.current.forward) > VELOCITY_THRESHOLD) {
+					forwardRow.scrollLeft += velocityRef.current.forward * delta;
+					velocityRef.current.forward *= Math.pow(FRICTION, delta / 16);
+				} else if (!pauseRef.current) {
+					forwardRow.scrollLeft += delta * SCROLL_SPEED;
 				}
 
-				if (reverseRow.scrollLeft <= 0) {
+				if (Math.abs(velocityRef.current.reverse) > VELOCITY_THRESHOLD) {
+					reverseRow.scrollLeft += velocityRef.current.reverse * delta;
+					velocityRef.current.reverse *= Math.pow(FRICTION, delta / 16);
+				} else if (!pauseRef.current) {
+					reverseRow.scrollLeft -= delta * SCROLL_SPEED;
+				}
+
+				// Seamless loop normalization
+				if (forwardRow.scrollLeft >= forwardLimit) {
+					forwardRow.scrollLeft -= forwardLimit;
+				} else if (forwardRow.scrollLeft < 0) {
+					forwardRow.scrollLeft += forwardLimit;
+				}
+
+				if (reverseRow.scrollLeft >= reverseLimit * 2) {
+					reverseRow.scrollLeft -= reverseLimit;
+				} else if (reverseRow.scrollLeft <= 0) {
 					reverseRow.scrollLeft += reverseLimit;
 				}
 			}
@@ -148,18 +177,22 @@ export default function ReviewCarousel({ visible = true }) {
 		return null;
 	}
 
-	const handlePointerDown = (event, rowRef) => {
+	const handlePointerDown = (event, rowRef, type) => {
 		const row = rowRef.current;
-		if (!row) {
-			return;
-		}
+		if (!row) return;
 
+		isDraggingRef.current = true;
 		dragStateRef.current = {
 			active: true,
 			startX: event.clientX,
 			startScroll: row.scrollLeft,
+			lastX: event.clientX,
+			lastTime: performance.now(),
 			pointerId: event.pointerId,
+			activeRow: type
 		};
+
+		velocityRef.current[type] = 0;
 		row.setPointerCapture(event.pointerId);
 		setIsDragging(true);
 		setIsPaused(true);
@@ -168,25 +201,44 @@ export default function ReviewCarousel({ visible = true }) {
 	const handlePointerMove = (event, rowRef) => {
 		const row = rowRef.current;
 		const dragState = dragStateRef.current;
-		if (!row || !dragState.active) {
-			return;
+		if (!row || !dragState.active) return;
+
+		const now = performance.now();
+		const deltaT = now - dragState.lastTime;
+		if (deltaT > 0) {
+			const deltaX = event.clientX - dragState.lastX;
+			velocityRef.current[dragState.activeRow] = -deltaX / deltaT;
 		}
 
-		const deltaX = event.clientX - dragState.startX;
-		row.scrollLeft = dragState.startScroll - deltaX;
+		dragState.lastX = event.clientX;
+		dragState.lastTime = now;
+
+		const totalDeltaX = event.clientX - dragState.startX;
+		let nextScroll = dragState.startScroll - totalDeltaX;
+
+		// Robust normalization during drag
+		const limit = row.scrollWidth / 2;
+		if (nextScroll >= limit * 2) {
+			nextScroll -= limit;
+			dragState.startScroll -= limit;
+		} else if (nextScroll <= 0) {
+			nextScroll += limit;
+			dragState.startScroll += limit;
+		}
+
+		row.scrollLeft = nextScroll;
 	};
 
 	const handlePointerUp = (event, rowRef) => {
 		const row = rowRef.current;
 		const dragState = dragStateRef.current;
-		if (!row || !dragState.active) {
-			setIsPaused(false);
-			setIsDragging(false);
-			return;
+
+		if (row && dragState.active) {
+			row.releasePointerCapture(event.pointerId);
 		}
 
-		row.releasePointerCapture(dragState.pointerId);
-		dragStateRef.current = { active: false, startX: 0, startScroll: 0, pointerId: null };
+		isDraggingRef.current = false;
+		dragStateRef.current = { active: false, startX: 0, startScroll: 0, lastX: 0, lastTime: 0, pointerId: null, activeRow: null };
 		setIsDragging(false);
 		setIsPaused(false);
 	};
@@ -204,7 +256,7 @@ export default function ReviewCarousel({ visible = true }) {
 					className="review-carousel__row"
 					ref={forwardRowRef}
 					role="region"
-					onPointerDown={(event) => handlePointerDown(event, forwardRowRef)}
+					onPointerDown={(event) => handlePointerDown(event, forwardRowRef, 'forward')}
 					onPointerMove={(event) => handlePointerMove(event, forwardRowRef)}
 					onPointerUp={(event) => handlePointerUp(event, forwardRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, forwardRowRef)}
@@ -226,7 +278,7 @@ export default function ReviewCarousel({ visible = true }) {
 					className="review-carousel__row"
 					ref={reverseRowRef}
 					role="region"
-					onPointerDown={(event) => handlePointerDown(event, reverseRowRef)}
+					onPointerDown={(event) => handlePointerDown(event, reverseRowRef, 'reverse')}
 					onPointerMove={(event) => handlePointerMove(event, reverseRowRef)}
 					onPointerUp={(event) => handlePointerUp(event, reverseRowRef)}
 					onPointerCancel={(event) => handlePointerUp(event, reverseRowRef)}

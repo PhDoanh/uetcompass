@@ -3667,7 +3667,7 @@ html[data-theme='dark'] .homepage-system__arrow {
   background: #f8fafc;
   height: calc(100% - 52px);
   min-height: 0;
-  border-radius: 0 0 18px 18px;
+  border-radius: 18px;
   overflow: hidden;
 }
 
@@ -3718,6 +3718,7 @@ html[data-theme='dark'] .homepage-system__arrow {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #bfccdf transparent;
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   border-bottom-left-radius: 18px;
 }

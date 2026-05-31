@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../providers/AuthProvider';
-import accountApi from '../../services/account.api';
 import { getSummaries, getTrackingTables } from '../../services/progress.api';
 import OnboardingPanel from '../onboarding/OnboardingPanel';
 import { useNotification } from '../notification/NotificationContainer';
@@ -162,6 +161,10 @@ function resolveUserId(accessToken) {
   }
 }
 
+function isInvalidSessionError(err) {
+  return err?.status === 401 || (err?.status === 403 && err?.code === 'FORBIDDEN');
+}
+
 function isSameMonth(date, compare) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
@@ -262,7 +265,6 @@ export default function Homepage() {
   const { accessToken, onboardingState, logoutAndRedirect, updateAuthInfo } = useAuth();
   const { addNotification } = useNotification();
   const [showOnboardingPanel, setShowOnboardingPanel] = useState(false);
-  const [profileDisplayName, setProfileDisplayName] = useState('');
   const [publicRoadmaps, setPublicRoadmaps] = useState([]);
   const [myManualRoadmaps, setMyManualRoadmaps] = useState([]);
   const [isLoadingMyManualRoadmaps, setIsLoadingMyManualRoadmaps] = useState(false);
@@ -351,36 +353,6 @@ export default function Homepage() {
       }
     }
 
-    async function loadDisplayName() {
-      if (!accessToken) {
-        if (isMounted) {
-          setProfileDisplayName('');
-        }
-        return;
-      }
-
-      try {
-        const result = await accountApi.getProfile(accessToken);
-        const identity = result?.identity || {};
-        const nextName = String(
-          identity?.effectiveDisplayName || identity?.displayName || identity?.fullName || ''
-        ).trim();
-
-        if (isMounted) {
-          setProfileDisplayName(nextName);
-        }
-      } catch (err) {
-        if (err?.status === 401) {
-          await logoutAndRedirect();
-          return;
-        }
-
-        if (isMounted) {
-          setProfileDisplayName('');
-        }
-      }
-    }
-
     async function loadMyManualRoadmaps() {
       if (!accessToken) {
         if (isMounted) {
@@ -405,7 +377,7 @@ export default function Homepage() {
           setMyManualRoadmaps(items);
         }
       } catch (err) {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -432,7 +404,6 @@ export default function Homepage() {
     }
 
     loadPublicRoadmaps();
-    loadDisplayName();
     loadMyManualRoadmaps();
 
     return () => {
@@ -480,7 +451,7 @@ export default function Homepage() {
           setProgressTrackingDaily(dailyTracking);
         }
       } catch (err) {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -524,7 +495,7 @@ export default function Homepage() {
         }
       })
       .catch(async (err) => {
-        if (err?.status === 401) {
+        if (isInvalidSessionError(err)) {
           await logoutAndRedirect();
           return;
         }
@@ -663,7 +634,7 @@ export default function Homepage() {
 
       navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
     } catch (_) {
-      setPopupMessage('Không thể mở roadmap lúc này. Vui lòng thử lại sau.');
+      addNotification('Không thể mở roadmap lúc này. Vui lòng thử lại sau.', 'error');
     } finally {
       setOpeningRoadmapTitle('');
     }
@@ -698,7 +669,7 @@ export default function Homepage() {
       setManualProgressSummaries((prev) => prev.filter((summary) => summary?.roadmapId !== normalizedId));
       addNotification('Đã xóa roadmap thành công.', 'success');
     } catch (err) {
-      if (err?.status === 401) {
+      if (isInvalidSessionError(err)) {
         await logoutAndRedirect();
         return;
       }
@@ -1013,7 +984,7 @@ export default function Homepage() {
 
             <div className="homepage-hero-modern__content homepage-hero-modern__content--centered">
               <span className="homepage-status homepage-status--badge">
-                {accessToken ? `Chào ${profileDisplayName || displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
+                {accessToken ? `Chào ${displayName || 'bạn'}` : 'Sản phẩm đứng TOP #3 của tháng'}
               </span>
               <h1 className="homepage-title">
                 La bàn dẫn lối sự nghiệp <span className="homepage-title__nowrap">UET-ers</span>

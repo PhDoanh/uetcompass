@@ -34,6 +34,7 @@ const PublicProfilePage = lazy(() => import('./features/public-profile/PublicPro
 const ManualRoadmapPage = lazy(() => import('./features/manual-roadmap/ManualRoadmapPage'));
 const RoadmapSearchPage = lazy(() => import('./features/roadmap-search/RoadmapSearchPage'));
 const ProgressDashboard = lazy(() => import('./features/progress/ProgressDashboard'));
+const JobMarketPage = lazy(() => import('./features/job-market/JobMarketPage'));
 
 function shouldUseReducedMotion() {
 	if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -95,7 +96,7 @@ function AppContent() {
 	const publicProfileUserId = publicProfileMatch ? decodeURIComponent(publicProfileMatch[1]) : '';
 	const isAuthPopupPath = ['/login', '/register', '/forgot-password'].includes(pathname);
 	const isPublicPath =
-		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement'].includes(pathname) ||
+		['/', '/login', '/register', '/forgot-password', '/sample-roadmap', '/system-improvement', '/job-market'].includes(pathname) ||
 		Boolean(publicSkillTreeRoadmapId) ||
 		Boolean(publicProfileUserId) ||
 		pathname.startsWith('/roadmaps/public/');
@@ -307,6 +308,14 @@ function AppContent() {
 					<p>This is a sample roadmap showing typical course progression.</p>
 					<p>To create your personalized roadmap, please log in or register.</p>
 				</div>
+			</main>
+		);
+	}
+
+	if (!content && pathname === '/job-market') {
+		content = (
+			<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+				<JobMarketPage />
 			</main>
 		);
 	}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera, Calendar } from 'lucide-react';
+import { BookOpenCheck, Save, Sparkles, User, GraduationCap, Camera } from 'lucide-react';
 import authApi from '../../services/auth.api';
 import accountApi from '../../services/account.api';
 import { retryRoadmapGeneration } from '../../services/roadmap.api';

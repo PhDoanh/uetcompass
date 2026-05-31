@@ -3,7 +3,6 @@ import RoadmapGraphRenderer from '../../shared/RoadmapGraphRenderer';
 import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
-import PublicRoadmapNodePanel from './PublicRoadmapNodePanel';
 import { useNotification } from '../notification/NotificationContainer';
 import { patchNodeStatus, getRoadmapProgress } from '../../services/skillTree.api';
 import { Copy } from 'lucide-react';
@@ -147,8 +146,9 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
         const { message, type } = JSON.parse(raw);
         if (message) addNotification(message, type || 'success');
       }
-    } catch (_) {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      // Ignore sessionStorage errors
+    }
   }, []);
 
   useEffect(() => {

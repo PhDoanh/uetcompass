@@ -17,10 +17,10 @@ function formatDate(value) {
   return date.toLocaleDateString('vi-VN');
 }
 
-function formatRange(start, end) {
-  if (!start || !end) return '--';
-  return `${formatDate(start)} – ${formatDate(end)}`;
-}
+// function formatRange(start, end) {
+//   if (!start || !end) return '--';
+//   return `${formatDate(start)} – ${formatDate(end)}`;
+// }
 
 function formatPercent(value) {
   if (!Number.isFinite(value)) return '--';

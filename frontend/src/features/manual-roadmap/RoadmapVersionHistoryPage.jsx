@@ -192,7 +192,9 @@ export default function RoadmapVersionHistoryPage() {
             message: 'Khôi phục phiên bản thành công.',
             type: 'success',
           }));
-        } catch (_) {}
+        } catch {
+          // Ignore sessionStorage errors
+        }
         window.location.href = `/skill-tree/${encodeURIComponent(roadmapId)}?mine=1`;
       } catch (err) {
         setError(err.message || 'Không thể khôi phục phiên bản.');

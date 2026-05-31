@@ -217,13 +217,8 @@ async function share(roadmapId, userId) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
 
-    if (roadmap.status !== 'draft') {
-        throw new RoadmapError(409, ERROR_CODES.PUBLICATION_ERROR, 'Only draft roadmaps can be shared.');
-    }
-
     roadmap.shared = true;
     roadmap.isPublic = true;
-    roadmap.status = 'published';
     roadmap.sharedAt = new Date();
 
     await roadmap.save();
@@ -236,13 +231,8 @@ async function unshare(roadmapId, userId) {
         throw new RoadmapError(404, ERROR_CODES.ROADMAP_NOT_FOUND, 'Manual roadmap not found.');
     }
 
-    if (roadmap.status !== 'published') {
-        throw new RoadmapError(409, ERROR_CODES.PUBLICATION_ERROR, 'Only published roadmaps can be unpublished.');
-    }
-
     roadmap.shared = false;
     roadmap.isPublic = false;
-    roadmap.status = 'draft';
     roadmap.sharedAt = null;
     roadmap.updatedAt = new Date();
 

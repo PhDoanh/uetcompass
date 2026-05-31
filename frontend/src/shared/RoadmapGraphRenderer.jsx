@@ -36,6 +36,7 @@ export function RoadmapGraphRenderer({
     const CHILD_SIDE_GAP = 320;
 
     const viewportRef = useRef(null);
+    const wheelSurfaceRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const zoomRef = useRef(1);
@@ -442,6 +443,10 @@ export function RoadmapGraphRenderer({
     }, [clampZoom, planeNodes.length]);
 
     const handleWheel = useCallback((event) => {
+        if (event.target instanceof Element && event.target.closest('.roadmap-graph-renderer__controls')) {
+            return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -466,13 +471,13 @@ export function RoadmapGraphRenderer({
     }, [zoomBy]);
 
     useEffect(() => {
-        const viewport = viewportRef.current;
-        if (!viewport) return undefined;
+        const wheelSurface = wheelSurfaceRef.current;
+        if (!wheelSurface) return undefined;
 
-        viewport.addEventListener('wheel', handleWheel, { passive: false });
+        wheelSurface.addEventListener('wheel', handleWheel, { passive: false });
 
         return () => {
-            viewport.removeEventListener('wheel', handleWheel);
+            wheelSurface.removeEventListener('wheel', handleWheel);
         };
     }, [handleWheel]);
 
@@ -579,7 +584,12 @@ export function RoadmapGraphRenderer({
             )}
 
             {!loading && planeNodes.length > 0 && (
-                <div className="roadmap-graph-renderer__fallback" role="status" aria-live="polite">
+                <div
+                    ref={wheelSurfaceRef}
+                    className="roadmap-graph-renderer__fallback"
+                    role="status"
+                    aria-live="polite"
+                >
                     {controlsVisible ? (
                         <div className="roadmap-graph-renderer__controls">
                             <button type="button" className="roadmap-graph-renderer__control-btn" onClick={() => zoomBy(0.1)}>+</button>

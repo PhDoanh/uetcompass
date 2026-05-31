@@ -36,7 +36,6 @@ export function RoadmapGraphRenderer({
     const CHILD_SIDE_GAP = 320;
 
     const viewportRef = useRef(null);
-    const wheelSurfaceRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const zoomRef = useRef(1);
@@ -464,16 +463,12 @@ export function RoadmapGraphRenderer({
         };
 
         const deltaUnit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1;
-        const normalizedDeltaX = event.deltaX * deltaUnit;
         const normalizedDeltaY = event.deltaY * deltaUnit;
 
         const isPinchGesture = event.ctrlKey || event.metaKey;
-        const dominantDelta = Math.abs(normalizedDeltaY) >= Math.abs(normalizedDeltaX)
-            ? normalizedDeltaY
-            : normalizedDeltaX;
-        const sensitivity = isPinchGesture ? 0.0032 : 0.0018;
-        const maxStep = isPinchGesture ? 0.32 : 0.22;
-        const zoomDelta = Math.max(-maxStep, Math.min(maxStep, -dominantDelta * sensitivity));
+        const sensitivity = isPinchGesture ? 0.0032 : 0.0022;
+        const maxStep = isPinchGesture ? 0.32 : 0.24;
+        const zoomDelta = Math.max(-maxStep, Math.min(maxStep, -normalizedDeltaY * sensitivity));
 
         if (zoomDelta === 0) {
             return;
@@ -481,17 +476,6 @@ export function RoadmapGraphRenderer({
 
         zoomBy(zoomDelta, focalPoint);
     }, [zoomBy]);
-
-    useEffect(() => {
-        const wheelSurface = wheelSurfaceRef.current;
-        if (!wheelSurface) return undefined;
-
-        wheelSurface.addEventListener('wheel', handleWheel, { passive: false });
-
-        return () => {
-            wheelSurface.removeEventListener('wheel', handleWheel);
-        };
-    }, [handleWheel]);
 
     const handlePointerDown = useCallback((event) => {
         if (event.button !== 0) return;
@@ -597,10 +581,10 @@ export function RoadmapGraphRenderer({
 
             {!loading && planeNodes.length > 0 && (
                 <div
-                    ref={wheelSurfaceRef}
                     className="roadmap-graph-renderer__fallback"
                     role="status"
                     aria-live="polite"
+                    onWheelCapture={handleWheel}
                 >
                     {controlsVisible ? (
                         <div className="roadmap-graph-renderer__controls">

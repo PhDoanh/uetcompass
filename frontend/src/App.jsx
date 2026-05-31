@@ -217,6 +217,33 @@ function AppContent() {
 	}, [isRoadmapSearchOverlayOpen]);
 
 	useEffect(() => {
+		if (typeof document === 'undefined') {
+			return undefined;
+		}
+
+		if (!isRoadmapSearchOverlayOpen) {
+			return undefined;
+		}
+
+		const html = document.documentElement;
+		const body = document.body;
+
+		const prevHtmlOverflow = html.style.overflow;
+		const prevBodyOverflow = body.style.overflow;
+		const prevBodyOverscrollBehavior = body.style.overscrollBehavior;
+
+		html.style.overflow = 'hidden';
+		body.style.overflow = 'hidden';
+		body.style.overscrollBehavior = 'none';
+
+		return () => {
+			html.style.overflow = prevHtmlOverflow;
+			body.style.overflow = prevBodyOverflow;
+			body.style.overscrollBehavior = prevBodyOverscrollBehavior;
+		};
+	}, [isRoadmapSearchOverlayOpen]);
+
+	useEffect(() => {
 		if (typeof window === 'undefined' || !isRoadmapSearchOverlayOpen) {
 			return undefined;
 		}
@@ -240,25 +267,14 @@ function AppContent() {
 			}
 		};
 
-		const handleOutsideWheel = (event) => {
-			if (isOutsideOverlayPanel(event.target)) {
-				event.preventDefault();
-				setIsRoadmapSearchOverlayOpen(false);
-			}
-		};
-
 		document.addEventListener('mousedown', handleOutsideInteraction, true);
 		document.addEventListener('touchstart', handleOutsideInteraction, true);
 		document.addEventListener('click', handleOutsideInteraction, true);
-		window.addEventListener('wheel', handleOutsideWheel, { capture: true, passive: false });
-		window.addEventListener('touchmove', handleOutsideWheel, { capture: true, passive: false });
 
 		return () => {
 			document.removeEventListener('mousedown', handleOutsideInteraction, true);
 			document.removeEventListener('touchstart', handleOutsideInteraction, true);
 			document.removeEventListener('click', handleOutsideInteraction, true);
-			window.removeEventListener('wheel', handleOutsideWheel, true);
-			window.removeEventListener('touchmove', handleOutsideWheel, true);
 		};
 	}, [isRoadmapSearchOverlayOpen]);
 

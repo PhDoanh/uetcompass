@@ -265,18 +265,6 @@ export default function RoadmapSearchPage() {
             }
 
             setSelectedRoadmapId(orderedResults[nextIdx]._id);
-
-            useEffect(() => {
-                if (typeof window === 'undefined') {
-                    return;
-                }
-
-                window.dispatchEvent(
-                    new CustomEvent('roadmap-search-content-change', {
-                        detail: { hasSearchContent },
-                    })
-                );
-            }, [hasSearchContent]);
         }
 
 
@@ -329,6 +317,18 @@ export default function RoadmapSearchPage() {
         lastSortedResultsSignatureRef.current = signature;
         setSelectedRoadmapId(sortedResults[0]._id);
     }, [resultsStatus, sortedResults, setSelectedRoadmapId]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.dispatchEvent(
+            new CustomEvent('roadmap-search-content-change', {
+                detail: { hasSearchContent },
+            })
+        );
+    }, [hasSearchContent]);
 
 
 

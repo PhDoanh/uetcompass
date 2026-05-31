@@ -19,7 +19,6 @@ import {
 	toRouteKey,
 } from './shared/navigation';
 import './style/navigation-orchestration.css';
-import { X } from 'lucide-react';
 
 const LoginPage = lazy(() => import('./features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'));
@@ -428,17 +427,6 @@ function AppContent() {
 							className={`roadmap-search-overlay__panel${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__panel--expanded' : ' roadmap-search-overlay__panel--collapsed'}`}
 							onClick={(event) => event.stopPropagation()}
 						>
-							<div className={`roadmap-search-overlay__header${isRoadmapSearchOverlayExpanded ? ' roadmap-search-overlay__header--expanded' : ' roadmap-search-overlay__header--collapsed'}`}>
-								<h2 className="roadmap-search-overlay__title">Roadmap Search</h2>
-								<button
-									type="button"
-									className="roadmap-search-overlay__close"
-									onClick={() => setIsRoadmapSearchOverlayOpen(false)}
-									aria-label="Close roadmap search"
-								>
-									<X size={16} aria-hidden="true" />
-								</button>
-							</div>
 							<Suspense fallback={<PageSkeleton label="Dang tai bo loc roadmap..." />}>
 								<RoadmapSearchPage />
 							</Suspense>

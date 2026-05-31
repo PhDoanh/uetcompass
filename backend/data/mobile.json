@@ -1,0 +1,849 @@
+{
+  "userId": "",
+  "studentProfileId": "",
+  "isPrimary": true,
+  "roadmapName": "Mobile App Developer",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "pick-a-language",
+      "nodeType": "topic",
+      "skillName": "Pick a Language",
+      "parentNodeId": null,
+      "reason": "Choose the main Android language that will anchor your mobile development path.",
+      "resources": []
+    },
+    {
+      "nodeId": "kotlin-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Kotlin",
+      "parentNodeId": "pick-a-language",
+      "reason": "Modern, officially preferred language for Android application development.",
+      "resources": []
+    },
+    {
+      "nodeId": "java-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Java",
+      "parentNodeId": "pick-a-language",
+      "reason": "Legacy and enterprise Android codebases still rely heavily on Java.",
+      "resources": []
+    },
+    {
+      "nodeId": "mobile-fundamentals",
+      "nodeType": "topic",
+      "skillName": "The Fundamentals",
+      "parentNodeId": null,
+      "reason": "Core programming and Android tooling foundations for building mobile apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "development-ide",
+      "nodeType": "subtopic",
+      "skillName": "Development IDE",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Android Studio and emulator tooling are central to daily mobile development.",
+      "resources": []
+    },
+    {
+      "nodeId": "kotlin-basics",
+      "nodeType": "subtopic",
+      "skillName": "Basics of Kotlin",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Understand Kotlin syntax, null safety, collections, classes, and functions.",
+      "resources": []
+    },
+    {
+      "nodeId": "oop-basics",
+      "nodeType": "subtopic",
+      "skillName": "Basics of OOP",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Object-oriented design helps organize UI, domain, and data-layer code.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-structures-algorithms-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Data Structures and Algorithms",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Efficient data handling improves app responsiveness and interview readiness.",
+      "resources": []
+    },
+    {
+      "nodeId": "gradle-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Using Gradle",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Gradle controls Android builds, dependencies, variants, and release packaging.",
+      "resources": []
+    },
+    {
+      "nodeId": "hello-world-app",
+      "nodeType": "subtopic",
+      "skillName": "Hello World App",
+      "parentNodeId": "mobile-fundamentals",
+      "reason": "Build and run a minimal app to understand project structure and runtime flow.",
+      "resources": []
+    },
+    {
+      "nodeId": "version-control-mobile",
+      "nodeType": "topic",
+      "skillName": "Version Control",
+      "parentNodeId": null,
+      "reason": "Source control supports collaboration, code review, and release history.",
+      "resources": []
+    },
+    {
+      "nodeId": "git-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Git",
+      "parentNodeId": "version-control-mobile",
+      "reason": "Distributed version control fundamentals for branching, merging, and rollback.",
+      "resources": []
+    },
+    {
+      "nodeId": "github-mobile",
+      "nodeType": "subtopic",
+      "skillName": "GitHub",
+      "parentNodeId": "version-control-mobile",
+      "reason": "Repository hosting, pull requests, code review, and automation workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "gitlab-mobile",
+      "nodeType": "subtopic",
+      "skillName": "GitLab",
+      "parentNodeId": "version-control-mobile",
+      "reason": "Integrated repository hosting and CI/CD for mobile teams.",
+      "resources": []
+    },
+    {
+      "nodeId": "bitbucket-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Bitbucket",
+      "parentNodeId": "version-control-mobile",
+      "reason": "Repository hosting commonly used with Jira-centered delivery workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "app-components",
+      "nodeType": "topic",
+      "skillName": "App Components",
+      "parentNodeId": null,
+      "reason": "Android applications are composed from lifecycle-aware framework components.",
+      "resources": []
+    },
+    {
+      "nodeId": "activity",
+      "nodeType": "subtopic",
+      "skillName": "Activity",
+      "parentNodeId": "app-components",
+      "reason": "Activities host screens and coordinate lifecycle-driven user interactions.",
+      "resources": []
+    },
+    {
+      "nodeId": "activity-lifecycle",
+      "nodeType": "subtopic",
+      "skillName": "Activity Lifecycle",
+      "parentNodeId": "activity",
+      "reason": "Lifecycle callbacks govern resource management and state restoration.",
+      "resources": []
+    },
+    {
+      "nodeId": "activity-state-changes",
+      "nodeType": "subtopic",
+      "skillName": "State Changes",
+      "parentNodeId": "activity",
+      "reason": "Handle rotation, backgrounding, process death, and configuration changes safely.",
+      "resources": []
+    },
+    {
+      "nodeId": "tasks-back-stack",
+      "nodeType": "subtopic",
+      "skillName": "Tasks and Back Stack",
+      "parentNodeId": "activity",
+      "reason": "Understand navigation history, launch modes, and task behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "services",
+      "nodeType": "subtopic",
+      "skillName": "Services",
+      "parentNodeId": "app-components",
+      "reason": "Services support long-running or background work with platform constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "content-provider",
+      "nodeType": "subtopic",
+      "skillName": "Content Provider",
+      "parentNodeId": "app-components",
+      "reason": "Expose and consume structured app data across Android components.",
+      "resources": []
+    },
+    {
+      "nodeId": "broadcast-receiver",
+      "nodeType": "subtopic",
+      "skillName": "Broadcast Receiver",
+      "parentNodeId": "app-components",
+      "reason": "React to system and app-level broadcast events when appropriate.",
+      "resources": []
+    },
+    {
+      "nodeId": "intent",
+      "nodeType": "subtopic",
+      "skillName": "Intent",
+      "parentNodeId": "app-components",
+      "reason": "Intents connect screens, components, and external Android capabilities.",
+      "resources": []
+    },
+    {
+      "nodeId": "implicit-intents",
+      "nodeType": "subtopic",
+      "skillName": "Implicit Intents",
+      "parentNodeId": "intent",
+      "reason": "Delegate actions such as sharing, browsing, and picking content to other apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "explicit-intents",
+      "nodeType": "subtopic",
+      "skillName": "Explicit Intents",
+      "parentNodeId": "intent",
+      "reason": "Navigate directly between known components inside your application.",
+      "resources": []
+    },
+    {
+      "nodeId": "intent-filters",
+      "nodeType": "subtopic",
+      "skillName": "Intent Filters",
+      "parentNodeId": "intent",
+      "reason": "Declare which external actions and deep links your app can handle.",
+      "resources": []
+    },
+    {
+      "nodeId": "interface-navigation",
+      "nodeType": "topic",
+      "skillName": "Interface and Navigation",
+      "parentNodeId": null,
+      "reason": "Mobile apps depend on clear UI structure, navigation, and platform conventions.",
+      "resources": []
+    },
+    {
+      "nodeId": "frame-layout",
+      "nodeType": "subtopic",
+      "skillName": "FrameLayout",
+      "parentNodeId": "interface-navigation",
+      "reason": "Simple container layout useful for fragments and overlay-style screens.",
+      "resources": []
+    },
+    {
+      "nodeId": "linear-layout",
+      "nodeType": "subtopic",
+      "skillName": "LinearLayout",
+      "parentNodeId": "interface-navigation",
+      "reason": "Arrange views in straightforward horizontal or vertical sequences.",
+      "resources": []
+    },
+    {
+      "nodeId": "relative-layout",
+      "nodeType": "subtopic",
+      "skillName": "RelativeLayout",
+      "parentNodeId": "interface-navigation",
+      "reason": "Understand older relative positioning patterns still present in legacy apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "constraint-layout",
+      "nodeType": "subtopic",
+      "skillName": "ConstraintLayout",
+      "parentNodeId": "interface-navigation",
+      "reason": "Build responsive view-based Android layouts with flexible constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "recycler-view",
+      "nodeType": "subtopic",
+      "skillName": "RecyclerView",
+      "parentNodeId": "interface-navigation",
+      "reason": "Render large, dynamic lists efficiently with adapters and view holders.",
+      "resources": []
+    },
+    {
+      "nodeId": "jetpack-compose",
+      "nodeType": "subtopic",
+      "skillName": "Jetpack Compose",
+      "parentNodeId": "interface-navigation",
+      "reason": "Declarative UI toolkit for modern Android screens and reusable components.",
+      "resources": []
+    },
+    {
+      "nodeId": "app-shortcuts",
+      "nodeType": "subtopic",
+      "skillName": "App Shortcuts",
+      "parentNodeId": "interface-navigation",
+      "reason": "Expose common user actions directly from launcher and system surfaces.",
+      "resources": []
+    },
+    {
+      "nodeId": "navigation-components",
+      "nodeType": "subtopic",
+      "skillName": "Navigation Components",
+      "parentNodeId": "interface-navigation",
+      "reason": "Manage screen transitions, back stack behavior, and deep links consistently.",
+      "resources": []
+    },
+    {
+      "nodeId": "text-view",
+      "nodeType": "subtopic",
+      "skillName": "TextView",
+      "parentNodeId": "interface-navigation",
+      "reason": "Display styled text content with accessibility and layout constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "fragments",
+      "nodeType": "subtopic",
+      "skillName": "Fragments",
+      "parentNodeId": "interface-navigation",
+      "reason": "Compose modular screen sections and support flexible UI flows.",
+      "resources": []
+    },
+    {
+      "nodeId": "edit-text",
+      "nodeType": "subtopic",
+      "skillName": "EditText",
+      "parentNodeId": "interface-navigation",
+      "reason": "Capture user input while handling validation and keyboard behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "dialogs",
+      "nodeType": "subtopic",
+      "skillName": "Dialogs",
+      "parentNodeId": "interface-navigation",
+      "reason": "Show focused decisions, confirmations, and lightweight modal workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "buttons",
+      "nodeType": "subtopic",
+      "skillName": "Buttons",
+      "parentNodeId": "interface-navigation",
+      "reason": "Design clear, accessible triggers for primary and secondary actions.",
+      "resources": []
+    },
+    {
+      "nodeId": "toast",
+      "nodeType": "subtopic",
+      "skillName": "Toast",
+      "parentNodeId": "interface-navigation",
+      "reason": "Provide brief non-blocking feedback for completed or failed actions.",
+      "resources": []
+    },
+    {
+      "nodeId": "bottom-sheet",
+      "nodeType": "subtopic",
+      "skillName": "Bottom Sheet",
+      "parentNodeId": "interface-navigation",
+      "reason": "Present contextual actions and secondary content in mobile-friendly panels.",
+      "resources": []
+    },
+    {
+      "nodeId": "image-view",
+      "nodeType": "subtopic",
+      "skillName": "ImageView",
+      "parentNodeId": "interface-navigation",
+      "reason": "Render images efficiently with scaling, placeholders, and content descriptions.",
+      "resources": []
+    },
+    {
+      "nodeId": "drawer",
+      "nodeType": "subtopic",
+      "skillName": "Drawer",
+      "parentNodeId": "interface-navigation",
+      "reason": "Implement navigation drawers where broad app navigation requires them.",
+      "resources": []
+    },
+    {
+      "nodeId": "list-view",
+      "nodeType": "subtopic",
+      "skillName": "ListView",
+      "parentNodeId": "interface-navigation",
+      "reason": "Recognize legacy list implementations and migrate when appropriate.",
+      "resources": []
+    },
+    {
+      "nodeId": "tabs",
+      "nodeType": "subtopic",
+      "skillName": "Tabs",
+      "parentNodeId": "interface-navigation",
+      "reason": "Organize peer-level sections with predictable mobile navigation.",
+      "resources": []
+    },
+    {
+      "nodeId": "animations",
+      "nodeType": "subtopic",
+      "skillName": "Animations",
+      "parentNodeId": "interface-navigation",
+      "reason": "Improve perceived quality while preserving performance and usability.",
+      "resources": []
+    },
+    {
+      "nodeId": "mobile-design-architecture",
+      "nodeType": "topic",
+      "skillName": "Design Architecture",
+      "parentNodeId": null,
+      "reason": "Architecture choices keep mobile apps maintainable as screens and features grow.",
+      "resources": []
+    },
+    {
+      "nodeId": "mvi",
+      "nodeType": "subtopic",
+      "skillName": "MVI",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Unidirectional state flow pattern for predictable screen state management.",
+      "resources": []
+    },
+    {
+      "nodeId": "mvvm",
+      "nodeType": "subtopic",
+      "skillName": "MVVM",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Common Android architecture separating UI, state, and business logic.",
+      "resources": []
+    },
+    {
+      "nodeId": "mvp",
+      "nodeType": "subtopic",
+      "skillName": "MVP",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Presenter-based pattern still found in older Android applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "mvc-mobile",
+      "nodeType": "subtopic",
+      "skillName": "MVC",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Foundational UI architecture pattern for understanding separation of concerns.",
+      "resources": []
+    },
+    {
+      "nodeId": "repository-pattern-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Repository Pattern",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Abstract local and remote data sources behind a stable domain API.",
+      "resources": []
+    },
+    {
+      "nodeId": "builder-pattern-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Builder Pattern",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Create complex objects fluently and consistently in app code.",
+      "resources": []
+    },
+    {
+      "nodeId": "observer-pattern-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Observer Pattern",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "React to state and data changes across UI and asynchronous layers.",
+      "resources": []
+    },
+    {
+      "nodeId": "flow",
+      "nodeType": "subtopic",
+      "skillName": "Flow",
+      "parentNodeId": "observer-pattern-mobile",
+      "reason": "Kotlin reactive streams for asynchronous data updates.",
+      "resources": []
+    },
+    {
+      "nodeId": "rxjava-observer",
+      "nodeType": "subtopic",
+      "skillName": "RxJava",
+      "parentNodeId": "observer-pattern-mobile",
+      "reason": "Reactive programming library still used in many mature Android codebases.",
+      "resources": []
+    },
+    {
+      "nodeId": "rxkotlin-observer",
+      "nodeType": "subtopic",
+      "skillName": "RxKotlin",
+      "parentNodeId": "observer-pattern-mobile",
+      "reason": "Kotlin extensions for working with RxJava in Android projects.",
+      "resources": []
+    },
+    {
+      "nodeId": "livedata",
+      "nodeType": "subtopic",
+      "skillName": "LiveData",
+      "parentNodeId": "observer-pattern-mobile",
+      "reason": "Lifecycle-aware observable data holder used in Jetpack-based apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "dependency-injection-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Dependency Injection",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Improve testability and modularity by providing dependencies explicitly.",
+      "resources": []
+    },
+    {
+      "nodeId": "dagger",
+      "nodeType": "subtopic",
+      "skillName": "Dagger",
+      "parentNodeId": "dependency-injection-mobile",
+      "reason": "Compile-time dependency injection framework used in complex Android apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "hilt",
+      "nodeType": "subtopic",
+      "skillName": "Hilt",
+      "parentNodeId": "dependency-injection-mobile",
+      "reason": "Jetpack-integrated dependency injection built on top of Dagger.",
+      "resources": []
+    },
+    {
+      "nodeId": "koin",
+      "nodeType": "subtopic",
+      "skillName": "Koin",
+      "parentNodeId": "dependency-injection-mobile",
+      "reason": "Lightweight Kotlin dependency injection option for Android projects.",
+      "resources": []
+    },
+    {
+      "nodeId": "kodein",
+      "nodeType": "subtopic",
+      "skillName": "Kodein",
+      "parentNodeId": "dependency-injection-mobile",
+      "reason": "Kotlin dependency retrieval framework used in some mobile codebases.",
+      "resources": []
+    },
+    {
+      "nodeId": "factory-pattern-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Factory Pattern",
+      "parentNodeId": "mobile-design-architecture",
+      "reason": "Encapsulate object creation logic behind a clear construction boundary.",
+      "resources": []
+    },
+    {
+      "nodeId": "storage-mobile",
+      "nodeType": "topic",
+      "skillName": "Storage",
+      "parentNodeId": null,
+      "reason": "Mobile apps need reliable local persistence for state, cache, and offline use.",
+      "resources": []
+    },
+    {
+      "nodeId": "shared-preferences",
+      "nodeType": "subtopic",
+      "skillName": "Shared Preferences",
+      "parentNodeId": "storage-mobile",
+      "reason": "Store simple key-value preferences and lightweight app settings.",
+      "resources": []
+    },
+    {
+      "nodeId": "datastore",
+      "nodeType": "subtopic",
+      "skillName": "DataStore",
+      "parentNodeId": "storage-mobile",
+      "reason": "Modern asynchronous preference and typed data storage for Android.",
+      "resources": []
+    },
+    {
+      "nodeId": "room",
+      "nodeType": "subtopic",
+      "skillName": "Room",
+      "parentNodeId": "storage-mobile",
+      "reason": "Jetpack persistence layer over SQLite for structured local data.",
+      "resources": []
+    },
+    {
+      "nodeId": "file-system-mobile",
+      "nodeType": "subtopic",
+      "skillName": "File System",
+      "parentNodeId": "storage-mobile",
+      "reason": "Read and write files while respecting Android storage permissions and scopes.",
+      "resources": []
+    },
+    {
+      "nodeId": "network-mobile",
+      "nodeType": "topic",
+      "skillName": "Network",
+      "parentNodeId": null,
+      "reason": "Most mobile products integrate with backend APIs and remote services.",
+      "resources": []
+    },
+    {
+      "nodeId": "retrofit",
+      "nodeType": "subtopic",
+      "skillName": "Retrofit",
+      "parentNodeId": "network-mobile",
+      "reason": "Type-safe HTTP client abstraction for REST API integration.",
+      "resources": []
+    },
+    {
+      "nodeId": "okhttp",
+      "nodeType": "subtopic",
+      "skillName": "OkHttp",
+      "parentNodeId": "network-mobile",
+      "reason": "Core HTTP client used for requests, interceptors, caching, and diagnostics.",
+      "resources": []
+    },
+    {
+      "nodeId": "apollo-android",
+      "nodeType": "subtopic",
+      "skillName": "Apollo Android",
+      "parentNodeId": "network-mobile",
+      "reason": "GraphQL client tooling for typed mobile API access.",
+      "resources": []
+    },
+    {
+      "nodeId": "asynchronism",
+      "nodeType": "topic",
+      "skillName": "Asynchronism",
+      "parentNodeId": null,
+      "reason": "Responsive mobile apps must coordinate network, storage, and UI work asynchronously.",
+      "resources": []
+    },
+    {
+      "nodeId": "coroutines",
+      "nodeType": "subtopic",
+      "skillName": "Coroutines",
+      "parentNodeId": "asynchronism",
+      "reason": "Kotlin concurrency model for readable asynchronous Android code.",
+      "resources": []
+    },
+    {
+      "nodeId": "threads-mobile",
+      "nodeType": "subtopic",
+      "skillName": "Threads",
+      "parentNodeId": "asynchronism",
+      "reason": "Understand main-thread rules, background execution, and synchronization.",
+      "resources": []
+    },
+    {
+      "nodeId": "rxjava-async",
+      "nodeType": "subtopic",
+      "skillName": "RxJava",
+      "parentNodeId": "asynchronism",
+      "reason": "Model asynchronous streams and event pipelines in legacy or reactive apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "rxkotlin-async",
+      "nodeType": "subtopic",
+      "skillName": "RxKotlin",
+      "parentNodeId": "asynchronism",
+      "reason": "Use Kotlin-friendly APIs around RxJava asynchronous streams.",
+      "resources": []
+    },
+    {
+      "nodeId": "work-manager",
+      "nodeType": "subtopic",
+      "skillName": "WorkManager",
+      "parentNodeId": "asynchronism",
+      "reason": "Schedule deferrable and reliable background work with Android constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "common-services",
+      "nodeType": "topic",
+      "skillName": "Common Services",
+      "parentNodeId": null,
+      "reason": "Production mobile apps commonly rely on platform and cloud service integrations.",
+      "resources": []
+    },
+    {
+      "nodeId": "firebase-authentication",
+      "nodeType": "subtopic",
+      "skillName": "Firebase Authentication",
+      "parentNodeId": "common-services",
+      "reason": "Add email, social, and token-based sign-in flows to mobile apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "firebase-crashlytics",
+      "nodeType": "subtopic",
+      "skillName": "Crashlytics",
+      "parentNodeId": "common-services",
+      "reason": "Monitor production crashes and prioritize stability fixes.",
+      "resources": []
+    },
+    {
+      "nodeId": "firebase-remote-config",
+      "nodeType": "subtopic",
+      "skillName": "Remote Config",
+      "parentNodeId": "common-services",
+      "reason": "Change feature flags and app behavior without shipping a new version.",
+      "resources": []
+    },
+    {
+      "nodeId": "firebase-cloud-messaging",
+      "nodeType": "subtopic",
+      "skillName": "Cloud Messaging",
+      "parentNodeId": "common-services",
+      "reason": "Deliver push notifications and app messaging through Firebase.",
+      "resources": []
+    },
+    {
+      "nodeId": "firestore",
+      "nodeType": "subtopic",
+      "skillName": "Firestore",
+      "parentNodeId": "common-services",
+      "reason": "Use Firebase document storage for sync-friendly app data.",
+      "resources": []
+    },
+    {
+      "nodeId": "google-admob",
+      "nodeType": "subtopic",
+      "skillName": "Google AdMob",
+      "parentNodeId": "common-services",
+      "reason": "Integrate mobile advertising while respecting UX and policy constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "google-play-services",
+      "nodeType": "subtopic",
+      "skillName": "Google Play Services",
+      "parentNodeId": "common-services",
+      "reason": "Access Google-backed APIs used by many Android applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "google-maps",
+      "nodeType": "subtopic",
+      "skillName": "Google Maps",
+      "parentNodeId": "common-services",
+      "reason": "Add map, location, and geospatial experiences to Android apps.",
+      "resources": []
+    },
+    {
+      "nodeId": "linting-mobile",
+      "nodeType": "topic",
+      "skillName": "Linting",
+      "parentNodeId": null,
+      "reason": "Static analysis catches style, quality, and maintainability issues early.",
+      "resources": []
+    },
+    {
+      "nodeId": "ktlint",
+      "nodeType": "subtopic",
+      "skillName": "ktlint",
+      "parentNodeId": "linting-mobile",
+      "reason": "Enforce consistent Kotlin formatting across the codebase.",
+      "resources": []
+    },
+    {
+      "nodeId": "detekt",
+      "nodeType": "subtopic",
+      "skillName": "detekt",
+      "parentNodeId": "linting-mobile",
+      "reason": "Detect Kotlin code smells, complexity, and maintainability risks.",
+      "resources": []
+    },
+    {
+      "nodeId": "debugging-mobile",
+      "nodeType": "topic",
+      "skillName": "Debugging",
+      "parentNodeId": null,
+      "reason": "Debugging tools help diagnose crashes, memory leaks, and runtime behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "timber",
+      "nodeType": "subtopic",
+      "skillName": "Timber",
+      "parentNodeId": "debugging-mobile",
+      "reason": "Structured Android logging helper for development and diagnostics.",
+      "resources": []
+    },
+    {
+      "nodeId": "leak-canary",
+      "nodeType": "subtopic",
+      "skillName": "LeakCanary",
+      "parentNodeId": "debugging-mobile",
+      "reason": "Detect memory leaks before they degrade production app performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "chucker",
+      "nodeType": "subtopic",
+      "skillName": "Chucker",
+      "parentNodeId": "debugging-mobile",
+      "reason": "Inspect HTTP traffic directly from debug builds.",
+      "resources": []
+    },
+    {
+      "nodeId": "jetpack-benchmark",
+      "nodeType": "subtopic",
+      "skillName": "Jetpack Benchmark",
+      "parentNodeId": "debugging-mobile",
+      "reason": "Measure startup, rendering, and code performance with repeatable benchmarks.",
+      "resources": []
+    },
+    {
+      "nodeId": "testing-mobile",
+      "nodeType": "topic",
+      "skillName": "Testing",
+      "parentNodeId": null,
+      "reason": "Automated testing protects mobile behavior across devices and releases.",
+      "resources": []
+    },
+    {
+      "nodeId": "espresso",
+      "nodeType": "subtopic",
+      "skillName": "Espresso",
+      "parentNodeId": "testing-mobile",
+      "reason": "Write Android UI tests that interact with app screens and views.",
+      "resources": []
+    },
+    {
+      "nodeId": "junit-mobile",
+      "nodeType": "subtopic",
+      "skillName": "JUnit",
+      "parentNodeId": "testing-mobile",
+      "reason": "Unit-test Kotlin or Java business logic with fast feedback.",
+      "resources": []
+    },
+    {
+      "nodeId": "distribution-mobile",
+      "nodeType": "topic",
+      "skillName": "Distribution",
+      "parentNodeId": null,
+      "reason": "Release preparation turns a working app into a deployable product.",
+      "resources": []
+    },
+    {
+      "nodeId": "firebase-distribution",
+      "nodeType": "subtopic",
+      "skillName": "Firebase App Distribution",
+      "parentNodeId": "distribution-mobile",
+      "reason": "Share pre-release builds with testers before store submission.",
+      "resources": []
+    },
+    {
+      "nodeId": "google-play-store",
+      "nodeType": "subtopic",
+      "skillName": "Google Play Store",
+      "parentNodeId": "distribution-mobile",
+      "reason": "Prepare listings, tracks, policies, and rollout flows for public release.",
+      "resources": []
+    },
+    {
+      "nodeId": "signed-apk",
+      "nodeType": "subtopic",
+      "skillName": "Signed APK",
+      "parentNodeId": "distribution-mobile",
+      "reason": "Sign release artifacts correctly for installation and distribution.",
+      "resources": []
+    }
+  ]
+}

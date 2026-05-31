@@ -1,0 +1,1153 @@
+{
+  "userId": "",
+  "studentProfileId": "",
+  "isPrimary": true,
+  "roadmapName": "Systems Infrastructure",
+  "personalisationLevel": "full",
+  "nodes": [
+    {
+      "nodeId": "system-design-foundations",
+      "nodeType": "topic",
+      "skillName": "System Design Foundations",
+      "parentNodeId": null,
+      "reason": "Build the core vocabulary and tradeoff mindset needed to design large scale systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "introduction-system-design",
+      "nodeType": "subtopic",
+      "skillName": "Introduction",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Understand the scope, goals, and constraints of system design work.",
+      "resources": []
+    },
+    {
+      "nodeId": "what-is-system-design",
+      "nodeType": "subtopic",
+      "skillName": "What is System Design",
+      "parentNodeId": "introduction-system-design",
+      "reason": "Define system architecture in terms of components, interfaces, data, and requirements.",
+      "resources": []
+    },
+    {
+      "nodeId": "how-to-approach-system-design",
+      "nodeType": "subtopic",
+      "skillName": "How to Approach System Design",
+      "parentNodeId": "introduction-system-design",
+      "reason": "Use a structured process for clarifying requirements, estimating scale, and choosing tradeoffs.",
+      "resources": []
+    },
+    {
+      "nodeId": "performance-vs-scalability",
+      "nodeType": "subtopic",
+      "skillName": "Performance vs Scalability",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Separate single-request efficiency from the ability to handle growing load.",
+      "resources": []
+    },
+    {
+      "nodeId": "latency-vs-throughput",
+      "nodeType": "subtopic",
+      "skillName": "Latency vs Throughput",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Balance response time and total work processed when evaluating system behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "availability-vs-consistency",
+      "nodeType": "subtopic",
+      "skillName": "Availability vs Consistency",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Reason about the tradeoff between serving requests and returning the most current data.",
+      "resources": []
+    },
+    {
+      "nodeId": "cap-theorem",
+      "nodeType": "subtopic",
+      "skillName": "CAP Theorem",
+      "parentNodeId": "availability-vs-consistency",
+      "reason": "Understand how distributed systems trade consistency and availability during partitions.",
+      "resources": []
+    },
+    {
+      "nodeId": "consistency-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Consistency Patterns",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Choose the right consistency model for product expectations and failure modes.",
+      "resources": []
+    },
+    {
+      "nodeId": "weak-consistency",
+      "nodeType": "subtopic",
+      "skillName": "Weak Consistency",
+      "parentNodeId": "consistency-patterns",
+      "reason": "Use relaxed guarantees where speed and availability matter more than immediate accuracy.",
+      "resources": []
+    },
+    {
+      "nodeId": "eventual-consistency",
+      "nodeType": "subtopic",
+      "skillName": "Eventual Consistency",
+      "parentNodeId": "consistency-patterns",
+      "reason": "Design systems that converge over time while tolerating temporary divergence.",
+      "resources": []
+    },
+    {
+      "nodeId": "strong-consistency",
+      "nodeType": "subtopic",
+      "skillName": "Strong Consistency",
+      "parentNodeId": "consistency-patterns",
+      "reason": "Protect correctness when reads must reflect the latest committed writes.",
+      "resources": []
+    },
+    {
+      "nodeId": "availability-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Availability Patterns",
+      "parentNodeId": "system-design-foundations",
+      "reason": "Design services that continue operating through expected component failures.",
+      "resources": []
+    },
+    {
+      "nodeId": "fail-over",
+      "nodeType": "subtopic",
+      "skillName": "Fail-over",
+      "parentNodeId": "availability-patterns",
+      "reason": "Switch traffic to healthy replicas when primary components fail.",
+      "resources": []
+    },
+    {
+      "nodeId": "replication",
+      "nodeType": "subtopic",
+      "skillName": "Replication",
+      "parentNodeId": "availability-patterns",
+      "reason": "Duplicate data or services to improve read capacity and fault tolerance.",
+      "resources": []
+    },
+    {
+      "nodeId": "availability-in-numbers",
+      "nodeType": "subtopic",
+      "skillName": "Availability in Numbers",
+      "parentNodeId": "availability-patterns",
+      "reason": "Translate uptime targets into concrete downtime budgets and operational expectations.",
+      "resources": []
+    },
+    {
+      "nodeId": "traffic-delivery",
+      "nodeType": "topic",
+      "skillName": "Traffic and Content Delivery",
+      "parentNodeId": null,
+      "reason": "Understand how requests reach services and how systems distribute load at scale.",
+      "resources": []
+    },
+    {
+      "nodeId": "background-jobs",
+      "nodeType": "subtopic",
+      "skillName": "Background Jobs",
+      "parentNodeId": "traffic-delivery",
+      "reason": "Move slow, scheduled, or asynchronous work outside the request path.",
+      "resources": []
+    },
+    {
+      "nodeId": "event-driven-jobs",
+      "nodeType": "subtopic",
+      "skillName": "Event Driven Jobs",
+      "parentNodeId": "background-jobs",
+      "reason": "Trigger work from domain events and state changes without tight coupling.",
+      "resources": []
+    },
+    {
+      "nodeId": "schedule-driven-jobs",
+      "nodeType": "subtopic",
+      "skillName": "Schedule Driven Jobs",
+      "parentNodeId": "background-jobs",
+      "reason": "Run recurring maintenance, reporting, and batch tasks predictably.",
+      "resources": []
+    },
+    {
+      "nodeId": "returning-background-results",
+      "nodeType": "subtopic",
+      "skillName": "Returning Results",
+      "parentNodeId": "background-jobs",
+      "reason": "Report asynchronous task status and results back to users or systems safely.",
+      "resources": []
+    },
+    {
+      "nodeId": "domain-name-system",
+      "nodeType": "subtopic",
+      "skillName": "Domain Name System",
+      "parentNodeId": "traffic-delivery",
+      "reason": "Resolve service names to network locations and support reliable traffic routing.",
+      "resources": []
+    },
+    {
+      "nodeId": "content-delivery-networks",
+      "nodeType": "subtopic",
+      "skillName": "Content Delivery Networks",
+      "parentNodeId": "traffic-delivery",
+      "reason": "Cache and deliver content near users to reduce latency and origin load.",
+      "resources": []
+    },
+    {
+      "nodeId": "push-cdns",
+      "nodeType": "subtopic",
+      "skillName": "Push CDNs",
+      "parentNodeId": "content-delivery-networks",
+      "reason": "Preload assets into edge locations when content publishing is controlled.",
+      "resources": []
+    },
+    {
+      "nodeId": "pull-cdns",
+      "nodeType": "subtopic",
+      "skillName": "Pull CDNs",
+      "parentNodeId": "content-delivery-networks",
+      "reason": "Fetch and cache assets on demand as users request them.",
+      "resources": []
+    },
+    {
+      "nodeId": "load-balancers",
+      "nodeType": "subtopic",
+      "skillName": "Load Balancers",
+      "parentNodeId": "traffic-delivery",
+      "reason": "Distribute traffic across healthy instances to improve capacity and resilience.",
+      "resources": []
+    },
+    {
+      "nodeId": "lb-vs-reverse-proxy",
+      "nodeType": "subtopic",
+      "skillName": "Load Balancer vs Reverse Proxy",
+      "parentNodeId": "load-balancers",
+      "reason": "Distinguish traffic distribution from proxying, routing, and gateway behavior.",
+      "resources": []
+    },
+    {
+      "nodeId": "load-balancing-algorithms",
+      "nodeType": "subtopic",
+      "skillName": "Load Balancing Algorithms",
+      "parentNodeId": "load-balancers",
+      "reason": "Select routing algorithms based on fairness, locality, load, and failure handling.",
+      "resources": []
+    },
+    {
+      "nodeId": "layer-7-load-balancing",
+      "nodeType": "subtopic",
+      "skillName": "Layer 7 Load Balancing",
+      "parentNodeId": "load-balancers",
+      "reason": "Route HTTP traffic using application-aware information such as path, headers, and host.",
+      "resources": []
+    },
+    {
+      "nodeId": "layer-4-load-balancing",
+      "nodeType": "subtopic",
+      "skillName": "Layer 4 Load Balancing",
+      "parentNodeId": "load-balancers",
+      "reason": "Distribute TCP or UDP traffic with lower overhead and protocol-level routing.",
+      "resources": []
+    },
+    {
+      "nodeId": "horizontal-scaling",
+      "nodeType": "subtopic",
+      "skillName": "Horizontal Scaling",
+      "parentNodeId": "load-balancers",
+      "reason": "Increase capacity by adding more service instances instead of only larger machines.",
+      "resources": []
+    },
+    {
+      "nodeId": "application-architecture",
+      "nodeType": "topic",
+      "skillName": "Application Architecture",
+      "parentNodeId": null,
+      "reason": "Design service boundaries, communication patterns, and request workflows for distributed systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "application-layer",
+      "nodeType": "subtopic",
+      "skillName": "Application Layer",
+      "parentNodeId": "application-architecture",
+      "reason": "Place business logic, orchestration, and APIs in maintainable service layers.",
+      "resources": []
+    },
+    {
+      "nodeId": "microservices",
+      "nodeType": "subtopic",
+      "skillName": "Microservices",
+      "parentNodeId": "application-layer",
+      "reason": "Split systems into independently deployable services when autonomy and scale justify the complexity.",
+      "resources": []
+    },
+    {
+      "nodeId": "service-discovery",
+      "nodeType": "subtopic",
+      "skillName": "Service Discovery",
+      "parentNodeId": "application-layer",
+      "reason": "Allow services to find healthy peers in dynamic infrastructure.",
+      "resources": []
+    },
+    {
+      "nodeId": "idempotent-operations",
+      "nodeType": "subtopic",
+      "skillName": "Idempotent Operations",
+      "parentNodeId": "application-architecture",
+      "reason": "Make retries safe so duplicated requests do not corrupt state.",
+      "resources": []
+    },
+    {
+      "nodeId": "communication",
+      "nodeType": "subtopic",
+      "skillName": "Communication",
+      "parentNodeId": "application-architecture",
+      "reason": "Choose protocols and API styles that fit latency, reliability, and client needs.",
+      "resources": []
+    },
+    {
+      "nodeId": "http",
+      "nodeType": "subtopic",
+      "skillName": "HTTP",
+      "parentNodeId": "communication",
+      "reason": "Use the web's request-response protocol for APIs, assets, and browser traffic.",
+      "resources": []
+    },
+    {
+      "nodeId": "tcp",
+      "nodeType": "subtopic",
+      "skillName": "TCP",
+      "parentNodeId": "communication",
+      "reason": "Understand reliable ordered transport for service and database communication.",
+      "resources": []
+    },
+    {
+      "nodeId": "udp",
+      "nodeType": "subtopic",
+      "skillName": "UDP",
+      "parentNodeId": "communication",
+      "reason": "Use connectionless transport where low overhead matters more than built-in reliability.",
+      "resources": []
+    },
+    {
+      "nodeId": "rpc",
+      "nodeType": "subtopic",
+      "skillName": "RPC",
+      "parentNodeId": "communication",
+      "reason": "Call remote service operations while managing coupling and failure boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "rest",
+      "nodeType": "subtopic",
+      "skillName": "REST",
+      "parentNodeId": "communication",
+      "reason": "Design resource-oriented APIs with predictable HTTP semantics.",
+      "resources": []
+    },
+    {
+      "nodeId": "grpc",
+      "nodeType": "subtopic",
+      "skillName": "gRPC",
+      "parentNodeId": "communication",
+      "reason": "Use efficient typed service contracts for internal and cross-service APIs.",
+      "resources": []
+    },
+    {
+      "nodeId": "graphql",
+      "nodeType": "subtopic",
+      "skillName": "GraphQL",
+      "parentNodeId": "communication",
+      "reason": "Expose flexible query APIs while controlling schema design, authorization, and performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "asynchronism",
+      "nodeType": "subtopic",
+      "skillName": "Asynchronism",
+      "parentNodeId": "application-architecture",
+      "reason": "Decouple producers and consumers so systems can absorb bursts and continue during partial failures.",
+      "resources": []
+    },
+    {
+      "nodeId": "back-pressure",
+      "nodeType": "subtopic",
+      "skillName": "Back Pressure",
+      "parentNodeId": "asynchronism",
+      "reason": "Prevent overload by signaling producers to slow down when consumers are saturated.",
+      "resources": []
+    },
+    {
+      "nodeId": "task-queues",
+      "nodeType": "subtopic",
+      "skillName": "Task Queues",
+      "parentNodeId": "asynchronism",
+      "reason": "Buffer and process units of work outside synchronous request handling.",
+      "resources": []
+    },
+    {
+      "nodeId": "message-queues",
+      "nodeType": "subtopic",
+      "skillName": "Message Queues",
+      "parentNodeId": "asynchronism",
+      "reason": "Exchange events and commands between services with durability and delivery semantics.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-storage",
+      "nodeType": "topic",
+      "skillName": "Data Storage",
+      "parentNodeId": null,
+      "reason": "Choose and scale storage systems based on consistency, access patterns, and operational cost.",
+      "resources": []
+    },
+    {
+      "nodeId": "databases",
+      "nodeType": "subtopic",
+      "skillName": "Databases",
+      "parentNodeId": "data-storage",
+      "reason": "Understand the persistence layer behind application correctness and performance.",
+      "resources": []
+    },
+    {
+      "nodeId": "sql-vs-nosql",
+      "nodeType": "subtopic",
+      "skillName": "SQL vs NoSQL",
+      "parentNodeId": "databases",
+      "reason": "Select storage models based on schema, query, scale, and consistency requirements.",
+      "resources": []
+    },
+    {
+      "nodeId": "key-value-store",
+      "nodeType": "subtopic",
+      "skillName": "Key-value Store",
+      "parentNodeId": "databases",
+      "reason": "Use simple key lookups for fast access to session, cache, and metadata records.",
+      "resources": []
+    },
+    {
+      "nodeId": "document-store",
+      "nodeType": "subtopic",
+      "skillName": "Document Store",
+      "parentNodeId": "databases",
+      "reason": "Store flexible JSON-like documents for evolving product data models.",
+      "resources": []
+    },
+    {
+      "nodeId": "wide-column-store",
+      "nodeType": "subtopic",
+      "skillName": "Wide-column Store",
+      "parentNodeId": "databases",
+      "reason": "Model high-volume sparse data for distributed read and write workloads.",
+      "resources": []
+    },
+    {
+      "nodeId": "graph-databases",
+      "nodeType": "subtopic",
+      "skillName": "Graph Databases",
+      "parentNodeId": "databases",
+      "reason": "Represent highly connected data where relationships are first-class queries.",
+      "resources": []
+    },
+    {
+      "nodeId": "rdbms-replication",
+      "nodeType": "subtopic",
+      "skillName": "RDBMS Replication",
+      "parentNodeId": "databases",
+      "reason": "Copy relational data across nodes for read scaling, backups, and failover.",
+      "resources": []
+    },
+    {
+      "nodeId": "rdbms-sharding",
+      "nodeType": "subtopic",
+      "skillName": "RDBMS Sharding",
+      "parentNodeId": "databases",
+      "reason": "Partition relational data across databases when a single instance is not enough.",
+      "resources": []
+    },
+    {
+      "nodeId": "rdbms-federation",
+      "nodeType": "subtopic",
+      "skillName": "RDBMS Federation",
+      "parentNodeId": "databases",
+      "reason": "Split data by domain or function to reduce coupling and scaling pressure.",
+      "resources": []
+    },
+    {
+      "nodeId": "rdbms-denormalization",
+      "nodeType": "subtopic",
+      "skillName": "RDBMS Denormalization",
+      "parentNodeId": "databases",
+      "reason": "Trade write complexity and redundancy for faster reads in selected workloads.",
+      "resources": []
+    },
+    {
+      "nodeId": "sql-tuning",
+      "nodeType": "subtopic",
+      "skillName": "SQL Tuning",
+      "parentNodeId": "databases",
+      "reason": "Improve query plans, indexing, and database performance under real workloads.",
+      "resources": []
+    },
+    {
+      "nodeId": "caching",
+      "nodeType": "topic",
+      "skillName": "Caching",
+      "parentNodeId": null,
+      "reason": "Reduce latency and backend load by placing reusable data closer to consumers.",
+      "resources": []
+    },
+    {
+      "nodeId": "client-caching",
+      "nodeType": "subtopic",
+      "skillName": "Client Caching",
+      "parentNodeId": "caching",
+      "reason": "Let clients reuse responses while respecting freshness and invalidation rules.",
+      "resources": []
+    },
+    {
+      "nodeId": "cdn-caching",
+      "nodeType": "subtopic",
+      "skillName": "CDN Caching",
+      "parentNodeId": "caching",
+      "reason": "Serve cacheable content from edge locations to reduce origin traffic.",
+      "resources": []
+    },
+    {
+      "nodeId": "web-server-caching",
+      "nodeType": "subtopic",
+      "skillName": "Web Server Caching",
+      "parentNodeId": "caching",
+      "reason": "Cache generated content or upstream responses near the web tier.",
+      "resources": []
+    },
+    {
+      "nodeId": "database-caching",
+      "nodeType": "subtopic",
+      "skillName": "Database Caching",
+      "parentNodeId": "caching",
+      "reason": "Avoid repeated expensive database reads with carefully invalidated cached data.",
+      "resources": []
+    },
+    {
+      "nodeId": "application-caching",
+      "nodeType": "subtopic",
+      "skillName": "Application Caching",
+      "parentNodeId": "caching",
+      "reason": "Store computed or frequently used data inside application-controlled cache layers.",
+      "resources": []
+    },
+    {
+      "nodeId": "caching-strategies",
+      "nodeType": "subtopic",
+      "skillName": "Caching Strategies",
+      "parentNodeId": "caching",
+      "reason": "Choose write and read patterns that balance freshness, performance, and complexity.",
+      "resources": []
+    },
+    {
+      "nodeId": "cache-aside",
+      "nodeType": "subtopic",
+      "skillName": "Cache Aside",
+      "parentNodeId": "caching-strategies",
+      "reason": "Load data into cache on demand while keeping the source of truth in storage.",
+      "resources": []
+    },
+    {
+      "nodeId": "write-through",
+      "nodeType": "subtopic",
+      "skillName": "Write Through",
+      "parentNodeId": "caching-strategies",
+      "reason": "Update cache and storage together so future reads remain fast and current.",
+      "resources": []
+    },
+    {
+      "nodeId": "write-behind",
+      "nodeType": "subtopic",
+      "skillName": "Write Behind",
+      "parentNodeId": "caching-strategies",
+      "reason": "Buffer writes through cache for throughput while managing durability risk.",
+      "resources": []
+    },
+    {
+      "nodeId": "refresh-ahead",
+      "nodeType": "subtopic",
+      "skillName": "Refresh Ahead",
+      "parentNodeId": "caching-strategies",
+      "reason": "Refresh popular cache entries before expiry to avoid latency spikes.",
+      "resources": []
+    },
+    {
+      "nodeId": "performance-operations",
+      "nodeType": "topic",
+      "skillName": "Performance and Operations",
+      "parentNodeId": null,
+      "reason": "Detect bottlenecks, avoid common design failures, and operate systems with visibility.",
+      "resources": []
+    },
+    {
+      "nodeId": "performance-antipatterns",
+      "nodeType": "subtopic",
+      "skillName": "Performance Antipatterns",
+      "parentNodeId": "performance-operations",
+      "reason": "Recognize common system behaviors that create avoidable latency and scaling problems.",
+      "resources": []
+    },
+    {
+      "nodeId": "busy-database",
+      "nodeType": "subtopic",
+      "skillName": "Busy Database",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Avoid making the database the bottleneck for all application work.",
+      "resources": []
+    },
+    {
+      "nodeId": "busy-frontend",
+      "nodeType": "subtopic",
+      "skillName": "Busy Frontend",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Prevent excessive client work from degrading user experience.",
+      "resources": []
+    },
+    {
+      "nodeId": "chatty-io",
+      "nodeType": "subtopic",
+      "skillName": "Chatty I/O",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Reduce repeated small network or disk calls that amplify latency.",
+      "resources": []
+    },
+    {
+      "nodeId": "extraneous-fetching",
+      "nodeType": "subtopic",
+      "skillName": "Extraneous Fetching",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Avoid pulling unnecessary data across service or database boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "improper-instantiation",
+      "nodeType": "subtopic",
+      "skillName": "Improper Instantiation",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Prevent repeated expensive object, connection, or client creation.",
+      "resources": []
+    },
+    {
+      "nodeId": "monolithic-persistence",
+      "nodeType": "subtopic",
+      "skillName": "Monolithic Persistence",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Avoid forcing unrelated domains through one overloaded persistence model.",
+      "resources": []
+    },
+    {
+      "nodeId": "no-caching",
+      "nodeType": "subtopic",
+      "skillName": "No Caching",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Identify workloads where missing cache layers create unnecessary repeated work.",
+      "resources": []
+    },
+    {
+      "nodeId": "noisy-neighbor",
+      "nodeType": "subtopic",
+      "skillName": "Noisy Neighbor",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Isolate workloads so one tenant or service does not starve others.",
+      "resources": []
+    },
+    {
+      "nodeId": "retry-storm",
+      "nodeType": "subtopic",
+      "skillName": "Retry Storm",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Control retry behavior so failures do not multiply load on already degraded systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "synchronous-io",
+      "nodeType": "subtopic",
+      "skillName": "Synchronous I/O",
+      "parentNodeId": "performance-antipatterns",
+      "reason": "Avoid blocking critical paths on slow external operations when async handling is better.",
+      "resources": []
+    },
+    {
+      "nodeId": "monitoring-system",
+      "nodeType": "subtopic",
+      "skillName": "Monitoring",
+      "parentNodeId": "performance-operations",
+      "reason": "Observe health, availability, performance, security, and usage after release.",
+      "resources": []
+    },
+    {
+      "nodeId": "health-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Health Monitoring",
+      "parentNodeId": "monitoring-system",
+      "reason": "Track whether critical services and dependencies are functioning.",
+      "resources": []
+    },
+    {
+      "nodeId": "availability-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Availability Monitoring",
+      "parentNodeId": "monitoring-system",
+      "reason": "Measure uptime and detect service outages from user-facing perspectives.",
+      "resources": []
+    },
+    {
+      "nodeId": "performance-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Performance Monitoring",
+      "parentNodeId": "monitoring-system",
+      "reason": "Track latency, throughput, saturation, and resource usage under load.",
+      "resources": []
+    },
+    {
+      "nodeId": "security-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Security Monitoring",
+      "parentNodeId": "monitoring-system",
+      "reason": "Detect suspicious behavior, abuse, and policy violations in production systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "usage-monitoring",
+      "nodeType": "subtopic",
+      "skillName": "Usage Monitoring",
+      "parentNodeId": "monitoring-system",
+      "reason": "Understand how users and clients exercise the system over time.",
+      "resources": []
+    },
+    {
+      "nodeId": "instrumentation",
+      "nodeType": "subtopic",
+      "skillName": "Instrumentation",
+      "parentNodeId": "monitoring-system",
+      "reason": "Emit metrics, logs, and traces that make system behavior explainable.",
+      "resources": []
+    },
+    {
+      "nodeId": "visualization-and-alerts",
+      "nodeType": "subtopic",
+      "skillName": "Visualization and Alerts",
+      "parentNodeId": "monitoring-system",
+      "reason": "Turn telemetry into dashboards and actionable alerts for operations.",
+      "resources": []
+    },
+    {
+      "nodeId": "cloud-design-patterns",
+      "nodeType": "topic",
+      "skillName": "Cloud Design Patterns",
+      "parentNodeId": null,
+      "reason": "Apply proven architecture patterns for messaging, data, implementation, and reliability.",
+      "resources": []
+    },
+    {
+      "nodeId": "messaging-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Messaging Patterns",
+      "parentNodeId": "cloud-design-patterns",
+      "reason": "Coordinate asynchronous work and service communication with established queue and event patterns.",
+      "resources": []
+    },
+    {
+      "nodeId": "sequential-convoy",
+      "nodeType": "subtopic",
+      "skillName": "Sequential Convoy",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Process related messages in order when workflow correctness depends on sequence.",
+      "resources": []
+    },
+    {
+      "nodeId": "scheduling-agent-supervisor",
+      "nodeType": "subtopic",
+      "skillName": "Scheduling Agent Supervisor",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Coordinate scheduled or distributed work with supervision and recovery.",
+      "resources": []
+    },
+    {
+      "nodeId": "queue-based-load-leveling",
+      "nodeType": "subtopic",
+      "skillName": "Queue-based Load Leveling",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Use queues to smooth demand spikes and protect downstream services.",
+      "resources": []
+    },
+    {
+      "nodeId": "publisher-subscriber",
+      "nodeType": "subtopic",
+      "skillName": "Publisher Subscriber",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Fan out events to multiple consumers without direct service coupling.",
+      "resources": []
+    },
+    {
+      "nodeId": "priority-queue",
+      "nodeType": "subtopic",
+      "skillName": "Priority Queue",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Process urgent work ahead of lower-priority tasks when capacity is limited.",
+      "resources": []
+    },
+    {
+      "nodeId": "pipes-and-filters-messaging",
+      "nodeType": "subtopic",
+      "skillName": "Pipes and Filters",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Break processing into composable stages connected by message flows.",
+      "resources": []
+    },
+    {
+      "nodeId": "competing-consumers",
+      "nodeType": "subtopic",
+      "skillName": "Competing Consumers",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Scale workers horizontally over a shared queue while preserving task distribution.",
+      "resources": []
+    },
+    {
+      "nodeId": "choreography",
+      "nodeType": "subtopic",
+      "skillName": "Choreography",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Let services react to events without central orchestration where loose coupling is preferred.",
+      "resources": []
+    },
+    {
+      "nodeId": "claim-check",
+      "nodeType": "subtopic",
+      "skillName": "Claim Check",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Keep messages small by storing large payloads externally and passing references.",
+      "resources": []
+    },
+    {
+      "nodeId": "asynchronous-request-reply",
+      "nodeType": "subtopic",
+      "skillName": "Asynchronous Request Reply",
+      "parentNodeId": "messaging-patterns",
+      "reason": "Handle long-running operations without blocking the original request.",
+      "resources": []
+    },
+    {
+      "nodeId": "data-management-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Data Management Patterns",
+      "parentNodeId": "cloud-design-patterns",
+      "reason": "Use data patterns that improve scale, security, and read performance in cloud systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "valet-key-data",
+      "nodeType": "subtopic",
+      "skillName": "Valet Key",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Grant limited direct access to storage resources without exposing broad credentials.",
+      "resources": []
+    },
+    {
+      "nodeId": "static-content-hosting-data",
+      "nodeType": "subtopic",
+      "skillName": "Static Content Hosting",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Serve static assets from optimized object or edge storage instead of application servers.",
+      "resources": []
+    },
+    {
+      "nodeId": "sharding-pattern",
+      "nodeType": "subtopic",
+      "skillName": "Sharding",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Partition data across storage nodes to scale beyond one database instance.",
+      "resources": []
+    },
+    {
+      "nodeId": "materialized-view",
+      "nodeType": "subtopic",
+      "skillName": "Materialized View",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Precompute read models for faster queries and reporting workloads.",
+      "resources": []
+    },
+    {
+      "nodeId": "index-table",
+      "nodeType": "subtopic",
+      "skillName": "Index Table",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Create secondary lookup structures that match important query paths.",
+      "resources": []
+    },
+    {
+      "nodeId": "event-sourcing",
+      "nodeType": "subtopic",
+      "skillName": "Event Sourcing",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Persist state changes as events to support auditability and derived read models.",
+      "resources": []
+    },
+    {
+      "nodeId": "cqrs-data",
+      "nodeType": "subtopic",
+      "skillName": "CQRS",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Separate command and query models when write and read needs diverge.",
+      "resources": []
+    },
+    {
+      "nodeId": "cache-aside-data",
+      "nodeType": "subtopic",
+      "skillName": "Cache Aside",
+      "parentNodeId": "data-management-patterns",
+      "reason": "Use application-controlled cache loading for data management workflows.",
+      "resources": []
+    },
+    {
+      "nodeId": "design-implementation-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Design and Implementation Patterns",
+      "parentNodeId": "cloud-design-patterns",
+      "reason": "Structure cloud applications with patterns that reduce coupling and simplify evolution.",
+      "resources": []
+    },
+    {
+      "nodeId": "strangler-fig",
+      "nodeType": "subtopic",
+      "skillName": "Strangler Fig",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Migrate legacy systems incrementally by routing features to new services over time.",
+      "resources": []
+    },
+    {
+      "nodeId": "sidecar",
+      "nodeType": "subtopic",
+      "skillName": "Sidecar",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Attach helper capabilities to services without embedding them in application code.",
+      "resources": []
+    },
+    {
+      "nodeId": "static-content-hosting-implementation",
+      "nodeType": "subtopic",
+      "skillName": "Static Content Hosting",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Host static resources separately from compute-heavy application services.",
+      "resources": []
+    },
+    {
+      "nodeId": "leader-election",
+      "nodeType": "subtopic",
+      "skillName": "Leader Election",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Coordinate distributed workers so one instance performs exclusive duties.",
+      "resources": []
+    },
+    {
+      "nodeId": "pipes-and-filters-implementation",
+      "nodeType": "subtopic",
+      "skillName": "Pipes and Filters",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Compose independent processing steps into maintainable data or request pipelines.",
+      "resources": []
+    },
+    {
+      "nodeId": "gateway-offloading",
+      "nodeType": "subtopic",
+      "skillName": "Gateway Offloading",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Move cross-cutting concerns such as SSL, auth, or compression to gateway infrastructure.",
+      "resources": []
+    },
+    {
+      "nodeId": "gateway-routing",
+      "nodeType": "subtopic",
+      "skillName": "Gateway Routing",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Route external requests to appropriate backend services through a controlled entry point.",
+      "resources": []
+    },
+    {
+      "nodeId": "gateway-aggregation",
+      "nodeType": "subtopic",
+      "skillName": "Gateway Aggregation",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Combine multiple backend calls behind one client-facing endpoint when it reduces client complexity.",
+      "resources": []
+    },
+    {
+      "nodeId": "external-configuration-store",
+      "nodeType": "subtopic",
+      "skillName": "External Configuration Store",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Centralize configuration so services can change behavior without code redeploys.",
+      "resources": []
+    },
+    {
+      "nodeId": "compute-resource-consolidation",
+      "nodeType": "subtopic",
+      "skillName": "Compute Resource Consolidation",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Improve resource efficiency by grouping compatible workloads carefully.",
+      "resources": []
+    },
+    {
+      "nodeId": "cqrs-implementation",
+      "nodeType": "subtopic",
+      "skillName": "CQRS",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Implement separate write and read paths where product workflows require different models.",
+      "resources": []
+    },
+    {
+      "nodeId": "backends-for-frontend",
+      "nodeType": "subtopic",
+      "skillName": "Backends for Frontend",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Tailor backend APIs to specific client experiences without overloading shared services.",
+      "resources": []
+    },
+    {
+      "nodeId": "anti-corruption-layer",
+      "nodeType": "subtopic",
+      "skillName": "Anti-corruption Layer",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Protect new domain models from legacy or external system assumptions.",
+      "resources": []
+    },
+    {
+      "nodeId": "ambassador",
+      "nodeType": "subtopic",
+      "skillName": "Ambassador",
+      "parentNodeId": "design-implementation-patterns",
+      "reason": "Use a companion service to handle connectivity, retries, or observability for applications.",
+      "resources": []
+    },
+    {
+      "nodeId": "reliability-patterns",
+      "nodeType": "topic",
+      "skillName": "Reliability Patterns",
+      "parentNodeId": null,
+      "reason": "Design systems that remain dependable through failures, overload, and security constraints.",
+      "resources": []
+    },
+    {
+      "nodeId": "availability-reliability",
+      "nodeType": "subtopic",
+      "skillName": "Availability",
+      "parentNodeId": "reliability-patterns",
+      "reason": "Keep services reachable and useful within defined uptime targets.",
+      "resources": []
+    },
+    {
+      "nodeId": "deployment-stamps-availability",
+      "nodeType": "subtopic",
+      "skillName": "Deployment Stamps",
+      "parentNodeId": "availability-reliability",
+      "reason": "Replicate complete deployment units to isolate scale and failure boundaries.",
+      "resources": []
+    },
+    {
+      "nodeId": "geodes-availability",
+      "nodeType": "subtopic",
+      "skillName": "Geodes",
+      "parentNodeId": "availability-reliability",
+      "reason": "Deploy active services across regions to serve users near their data and location.",
+      "resources": []
+    },
+    {
+      "nodeId": "health-endpoint-monitoring-availability",
+      "nodeType": "subtopic",
+      "skillName": "Health Endpoint Monitoring",
+      "parentNodeId": "availability-reliability",
+      "reason": "Expose health checks that automated systems can use for routing and recovery.",
+      "resources": []
+    },
+    {
+      "nodeId": "throttling",
+      "nodeType": "subtopic",
+      "skillName": "Throttling",
+      "parentNodeId": "availability-reliability",
+      "reason": "Limit request rates to protect shared resources during spikes or abuse.",
+      "resources": []
+    },
+    {
+      "nodeId": "high-availability",
+      "nodeType": "subtopic",
+      "skillName": "High Availability",
+      "parentNodeId": "reliability-patterns",
+      "reason": "Use redundancy, failover, and isolation to keep services running through failures.",
+      "resources": []
+    },
+    {
+      "nodeId": "bulkhead-high-availability",
+      "nodeType": "subtopic",
+      "skillName": "Bulkhead",
+      "parentNodeId": "high-availability",
+      "reason": "Isolate resources so one failing part does not bring down the whole system.",
+      "resources": []
+    },
+    {
+      "nodeId": "circuit-breaker-high-availability",
+      "nodeType": "subtopic",
+      "skillName": "Circuit Breaker",
+      "parentNodeId": "high-availability",
+      "reason": "Stop repeated calls to failing dependencies until they recover.",
+      "resources": []
+    },
+    {
+      "nodeId": "resiliency",
+      "nodeType": "subtopic",
+      "skillName": "Resiliency",
+      "parentNodeId": "reliability-patterns",
+      "reason": "Recover gracefully from transient failures and partial outages.",
+      "resources": []
+    },
+    {
+      "nodeId": "compensating-transaction",
+      "nodeType": "subtopic",
+      "skillName": "Compensating Transaction",
+      "parentNodeId": "resiliency",
+      "reason": "Undo or correct distributed workflow steps when rollback is not atomic.",
+      "resources": []
+    },
+    {
+      "nodeId": "retry",
+      "nodeType": "subtopic",
+      "skillName": "Retry",
+      "parentNodeId": "resiliency",
+      "reason": "Handle transient failures with bounded retries, backoff, and idempotency.",
+      "resources": []
+    },
+    {
+      "nodeId": "security-patterns",
+      "nodeType": "subtopic",
+      "skillName": "Security Patterns",
+      "parentNodeId": "reliability-patterns",
+      "reason": "Protect services, identities, and delegated access in distributed cloud systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "federated-identity",
+      "nodeType": "subtopic",
+      "skillName": "Federated Identity",
+      "parentNodeId": "security-patterns",
+      "reason": "Delegate authentication to trusted identity providers across systems.",
+      "resources": []
+    },
+    {
+      "nodeId": "gatekeeper",
+      "nodeType": "subtopic",
+      "skillName": "Gatekeeper",
+      "parentNodeId": "security-patterns",
+      "reason": "Broker access to protected resources through a dedicated security boundary.",
+      "resources": []
+    },
+    {
+      "nodeId": "valet-key-security",
+      "nodeType": "subtopic",
+      "skillName": "Valet Key",
+      "parentNodeId": "security-patterns",
+      "reason": "Grant scoped temporary access to resources without exposing privileged credentials.",
+      "resources": []
+    }
+  ]
+}

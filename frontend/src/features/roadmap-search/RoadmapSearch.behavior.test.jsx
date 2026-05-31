@@ -1,3 +1,5 @@
+import { describe, expect, test } from 'vitest';
+
 describe('roadmap search behavior', () => {
     test('requires at least two characters before searching', async () => {
         const { canSearchRoadmaps, normalizeRoadmapQuery } = await import('./roadmapSearch.logic.js');

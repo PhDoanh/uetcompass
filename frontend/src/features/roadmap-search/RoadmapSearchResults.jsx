@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React, { useEffect, useRef } from 'react';
 
 import { Star } from 'lucide-react';
@@ -82,10 +83,7 @@ export default function RoadmapSearchResults({
 
     const listRef = useRef(null);
 
-
-
     useEffect(() => {
-
         if (!selectedRoadmapId || !listRef.current) {
 
             return;
@@ -97,14 +95,11 @@ export default function RoadmapSearchResults({
         const card = Array.from(listRef.current.querySelectorAll('[data-result-id]')).find(
 
             (el) => el.getAttribute('data-result-id') === id
-
         );
 
         card?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
     }, [selectedRoadmapId, results]);
-
-
 
     if (resultsStatus === 'searching') {
 
@@ -152,7 +147,12 @@ export default function RoadmapSearchResults({
 
             ) : (
 
-                <div ref={listRef} className="roadmap-search-results__list" role="listbox" aria-label="Danh sách lộ trình">
+                <div
+                    ref={listRef}
+                    className="roadmap-search-results__list"
+                    role="listbox"
+                    aria-label="Danh sách lộ trình"
+                >
 
                     {results.map((result) => {
 

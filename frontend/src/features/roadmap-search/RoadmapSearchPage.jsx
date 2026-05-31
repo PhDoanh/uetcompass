@@ -64,6 +64,8 @@ export default function RoadmapSearchPage() {
 
     const queryInputRef = useRef(null);
 
+    const lastSortedResultsSignatureRef = useRef('');
+
     const [hasSearchContent, setHasSearchContent] = useState(false);
 
     const [availableTags, setAvailableTags] = useState([]);
@@ -118,7 +120,7 @@ export default function RoadmapSearchPage() {
 
             })
 
-            .catch(() => {});
+            .catch(() => { });
 
         return () => {
 
@@ -230,33 +232,39 @@ export default function RoadmapSearchPage() {
 
             e.preventDefault();
 
-            const idx = results.findIndex((r) => r._id === selectedRoadmapId);
+            const orderedResults = [...results].sort((a, b) => {
+
+                const left = String(a?.title || '').trim().toLocaleLowerCase('vi');
+
+                const right = String(b?.title || '').trim().toLocaleLowerCase('vi');
+
+                if (left === right) {
+
+                    return 0;
+
+                }
+
+                const order = left < right ? -1 : 1;
+
+                return sortAscending ? order : -order;
+
+            });
+
+            const idx = orderedResults.findIndex((r) => r._id === selectedRoadmapId);
 
             let nextIdx;
 
             if (e.key === 'ArrowDown') {
 
-                nextIdx = idx < 0 ? 0 : (idx + 1) % results.length;
+                nextIdx = idx < 0 ? 0 : (idx + 1) % orderedResults.length;
 
             } else {
 
-                nextIdx = idx <= 0 ? results.length - 1 : idx - 1;
+                nextIdx = idx <= 0 ? orderedResults.length - 1 : idx - 1;
 
             }
 
-            setSelectedRoadmapId(results[nextIdx]._id);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        window.dispatchEvent(
-            new CustomEvent('roadmap-search-content-change', {
-                detail: { hasSearchContent },
-            })
-        );
-    }, [hasSearchContent]);
+            setSelectedRoadmapId(orderedResults[nextIdx]._id);
         }
 
 
@@ -294,6 +302,33 @@ export default function RoadmapSearchPage() {
         return copy;
 
     }, [results, sortAscending]);
+
+    useEffect(() => {
+        if (resultsStatus !== 'loaded' || sortedResults.length === 0) {
+            return;
+        }
+
+        const signature = sortedResults.map((result) => result._id).join('|');
+
+        if (lastSortedResultsSignatureRef.current === signature) {
+            return;
+        }
+
+        lastSortedResultsSignatureRef.current = signature;
+        setSelectedRoadmapId(sortedResults[0]._id);
+    }, [resultsStatus, sortedResults, setSelectedRoadmapId]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.dispatchEvent(
+            new CustomEvent('roadmap-search-content-change', {
+                detail: { hasSearchContent },
+            })
+        );
+    }, [hasSearchContent]);
 
 
 

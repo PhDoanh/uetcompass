@@ -4,6 +4,7 @@ import { computeLayoutSafe } from '../../shared/elkLayoutEngine';
 import { useAuth } from '../../providers/AuthProvider';
 import manualRoadmapApi from '../manual-roadmap/manualRoadmap.api';
 import { useNotification } from '../notification/NotificationContainer';
+import { patchNodeStatus, getRoadmapProgress } from '../../services/skillTree.api';
 import { Copy } from 'lucide-react';
 import './skill-tree.css';
 import { useSplitLayout } from './useSplitLayout';
@@ -383,7 +384,16 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
       ...prev,
       [node.nodeId]: toState,
     }));
-  }, [nodeStates]);
+
+    if (isOwner && accessToken) {
+      try {
+        await patchNodeStatus(accessToken, normalizedRoadmapId, node.nodeId, fromState, toState);
+      } catch (error) {
+        setNodeStates((prev) => ({ ...prev, [node.nodeId]: fromState }));
+        addNotification(error?.message || 'Không thể lưu tiến độ.', 'error');
+      }
+    }
+  }, [accessToken, addNotification, isOwner, nodeStates, normalizedRoadmapId]);
 
   const handleRightClickToggle = useCallback((nodeId) => {
     const target = nodesForRender.find((node) => node.nodeId === nodeId);
@@ -530,6 +540,47 @@ export default function PublicSkillTreePage({ roadmapId = '' }) {
     setNodeStates(initialStates);
     setActiveNodeId('');
   }, [normalizedNodes]);
+
+  useEffect(() => {
+    if (!isOwner || !accessToken || !normalizedRoadmapId || normalizedNodes.length === 0) {
+      return;
+    }
+
+    let isActive = true;
+
+    (async () => {
+      try {
+        const progress = await getRoadmapProgress(accessToken, normalizedRoadmapId);
+        if (!isActive || !progress?.state) {
+          return;
+        }
+
+        const { pending = [], inProgress = [], completed = [], skip = [] } = progress.state;
+        const progressMap = {};
+        pending.forEach((id) => { progressMap[id] = 'pending'; });
+        inProgress.forEach((id) => { progressMap[id] = 'inProgress'; });
+        completed.forEach((id) => { progressMap[id] = 'completed'; });
+        skip.forEach((id) => { progressMap[id] = 'skip'; });
+
+        setNodeStates((prev) => {
+          const next = { ...prev };
+          Object.keys(progressMap).forEach((id) => {
+            if (id in next) {
+              next[id] = progressMap[id];
+            }
+          });
+          return next;
+        });
+      } catch {
+        // Progress load failed, keep defaults
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwner, accessToken, normalizedRoadmapId, normalizedNodes]);
 
   useEffect(() => {
     if (!focusNodeId || normalizedNodes.length === 0) {

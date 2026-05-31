@@ -463,11 +463,23 @@ export function RoadmapGraphRenderer({
             y: event.clientY - rect.top - paddingTop,
         };
 
-        const deltaScale = event.deltaMode === 1 ? 0.16 : event.deltaMode === 2 ? 0.36 : 0.005;
-        const nextDelta = Math.max(-0.36, Math.min(0.36, -event.deltaY * deltaScale));
-        if (nextDelta === 0) return;
+        const deltaUnit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 120 : 1;
+        const normalizedDeltaX = event.deltaX * deltaUnit;
+        const normalizedDeltaY = event.deltaY * deltaUnit;
 
-        zoomBy(nextDelta, focalPoint);
+        const isPinchGesture = event.ctrlKey || event.metaKey;
+        const dominantDelta = Math.abs(normalizedDeltaY) >= Math.abs(normalizedDeltaX)
+            ? normalizedDeltaY
+            : normalizedDeltaX;
+        const sensitivity = isPinchGesture ? 0.0032 : 0.0018;
+        const maxStep = isPinchGesture ? 0.32 : 0.22;
+        const zoomDelta = Math.max(-maxStep, Math.min(maxStep, -dominantDelta * sensitivity));
+
+        if (zoomDelta === 0) {
+            return;
+        }
+
+        zoomBy(zoomDelta, focalPoint);
     }, [zoomBy]);
 
     useEffect(() => {

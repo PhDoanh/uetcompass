@@ -244,11 +244,6 @@ function AppContent() {
 			if (isOutsideOverlayPanel(event.target)) {
 				event.preventDefault();
 				setIsRoadmapSearchOverlayOpen(false);
-				return;
-			}
-
-			if (event.ctrlKey || event.metaKey) {
-				event.preventDefault();
 			}
 		};
 

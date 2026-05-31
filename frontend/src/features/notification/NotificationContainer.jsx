@@ -66,6 +66,7 @@ export function NotificationProvider({ children, sseToken }) {
         }
         if (payload.status === 'completed') {
           requestRefetch();
+          window.dispatchEvent(new CustomEvent('roadmap:generation:completed'));
         }
       } catch {
         // Ignore malformed notification payloads.
@@ -98,6 +99,7 @@ export function NotificationProvider({ children, sseToken }) {
 
         addNotification('Roadmap generated and accepted successfully.', 'success');
         requestRefetch();
+        window.dispatchEvent(new CustomEvent('roadmap:generation:completed'));
       } catch (error) {
         addNotification(error?.message || 'Failed to accept generated roadmap preview.', 'error');
       } finally {

@@ -330,6 +330,16 @@ function AppContent() {
 		);
 	}
 
+	if (!content && pathname === '/manual-roadmap/versions') {
+		content = (
+			<AuthGuard>
+				<main style={{ width: '100%', minHeight: 'calc(100vh - 70px)' }}>
+					<RoadmapVersionHistoryPage />
+				</main>
+			</AuthGuard>
+		);
+	}
+
 	if (!content && pathname === '/progress') {
 		content = (
 			<AuthGuard>

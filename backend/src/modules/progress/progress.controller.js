@@ -67,8 +67,8 @@ function streamProgressEvents(req, res) {
 
   const sseToken = req.query?.sseToken;
   if (!sseToken || typeof sseToken !== 'string') {
-    res.write('event: error\\n');
-    res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\\n\\n');
+    res.write('event: error\n');
+    res.write('data: {"code":"UNAUTHORIZED","message":"Invalid or missing sseToken"}\n\n');
     res.end();
     return;
   }
@@ -89,7 +89,7 @@ function streamProgressEvents(req, res) {
     return;
   }
 
-  res.write(': ok\\n\\n');
+  res.write(': ok\n\n');
   progressSse.addClient(userId, res);
 }
 

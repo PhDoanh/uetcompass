@@ -106,7 +106,7 @@ function isManualRoadmapShared(roadmap) {
 }
 
 export default function PublicSkillTreePage({ roadmapId = '' }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, accessToken } = useAuth();
   const { addNotification } = useNotification();
   const [previewStatus, setPreviewStatus] = useState('loading');
   const [previewData, setPreviewData] = useState(null);

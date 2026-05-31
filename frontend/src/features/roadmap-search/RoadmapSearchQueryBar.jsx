@@ -136,16 +136,19 @@ export default function RoadmapSearchQueryBar({
                 const len = suggestionOptions.length;
                 if (event.key === 'ArrowDown' && len > 0) {
                     event.preventDefault();
+                    event.stopPropagation();
                     setSuggestionHighlightIndex((i) => Math.min(i + 1, len - 1));
                     return;
                 }
                 if (event.key === 'ArrowUp' && len > 0) {
                     event.preventDefault();
+                    event.stopPropagation();
                     setSuggestionHighlightIndex((i) => Math.max(i - 1, 0));
                     return;
                 }
                 if (event.key === 'Enter') {
                     event.preventDefault();
+                    event.stopPropagation();
                     const pick = suggestionOptions[suggestionHighlightIndex];
                     if (pick) {
                         commitTag(pick.label);
@@ -156,6 +159,7 @@ export default function RoadmapSearchQueryBar({
                 }
                 if (event.key === 'Escape') {
                     event.preventDefault();
+                    event.stopPropagation();
                     setTagDraft(null);
                     return;
                 }

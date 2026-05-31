@@ -82,6 +82,7 @@ export default function RoadmapSearchResults({
 }) {
 
     const listRef = useRef(null);
+    const isCompactResults = results.length > 0 && results.length <= 3;
 
     useEffect(() => {
         if (!selectedRoadmapId || !listRef.current) {
@@ -149,7 +150,7 @@ export default function RoadmapSearchResults({
 
                 <div
                     ref={listRef}
-                    className="roadmap-search-results__list"
+                    className={`roadmap-search-results__list${isCompactResults ? ' roadmap-search-results__list--compact' : ''}`}
                     role="listbox"
                     aria-label="Danh sách lộ trình"
                 >

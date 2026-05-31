@@ -113,6 +113,7 @@ export default function RoadmapPreviewPanel({ previewData, previewStatus = 'idle
                 throw new Error('Roadmap not found');
             }
 
+            window.dispatchEvent(new CustomEvent('roadmap-search-overlay-close'));
             navigateTo(`/skill-tree/${encodeURIComponent(roadmapId)}`);
         } catch {
             // Keep panel interaction non-blocking; fail silently like homepage card flow.

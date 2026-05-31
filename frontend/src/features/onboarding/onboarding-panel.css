@@ -5,8 +5,9 @@
   margin-bottom: 0;
   background: var(--surface-1);
     color: var(--text-1);
-    box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-xl);
   width: min(1120px, 96vw);
+  height: min(760px, 86vh);
   max-height: 86vh;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -29,7 +30,7 @@
   display: grid;
   grid-template-columns: 1fr;
   min-height: 0;
-    height: 100%;
+  height: 100%;
 }
 
 .onboarding-panel-shell--page .onboarding-panel-layout {
@@ -123,9 +124,10 @@
   padding: 1.25rem 1.1rem;
   background: var(--surface-1);
   display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    min-height: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .onboarding-panel-shell--page .onboarding-panel-form-wrap,
@@ -150,6 +152,11 @@
   margin-top: 0.65rem;
   display: grid;
   gap: 0.75rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  align-content: start;
 }
 
 .onboarding-modern-field {
@@ -456,8 +463,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 0;
   }
+
+.onboarding-panel-actions-wrap {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -0.2rem -0.2rem;
+  padding: 0.65rem 0.2rem 0.2rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-1) 0%, transparent) 0%,
+    var(--surface-1) 34%,
+    var(--surface-1) 100%
+  );
+}
   
   .onboarding-panel-actions .primary-btn,
   .onboarding-panel-actions .secondary-btn {

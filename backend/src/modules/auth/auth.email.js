@@ -1,36 +1,61 @@
-const nodemailer = require('nodemailer');
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-function buildTransporter() {
-  const user = String(process.env.GMAIL_USER || '').trim();
-  const pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
-
-  if (!user || !pass) {
-    return null;
+function buildEmailError(status, code, message, details) {
+  const err = new Error(message);
+  err.status = status;
+  err.code = code;
+  if (details) {
+    err.details = details;
   }
-  
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    family: 4,
-    auth: { user, pass },
-  });
+  return err;
+}
+
+function getBrevoConfig() {
+  const apiKey = String(process.env.BREVO_API_KEY || '').trim();
+  const senderName = String(process.env.BREVO_SENDER_NAME || '').trim();
+  const senderEmail = String(process.env.BREVO_SENDER_EMAIL || '').trim();
+
+  if (!apiKey || !senderName || !senderEmail) {
+    throw buildEmailError(
+      503,
+      'EMAIL_PROVIDER_NOT_CONFIGURED',
+      'Email provider is not configured. Please set BREVO_API_KEY, BREVO_SENDER_NAME, and BREVO_SENDER_EMAIL.'
+    );
+  }
+
+  return { apiKey, senderName, senderEmail };
 }
 
 async function sendMailSafe({ to, subject, text, html }) {
-  const transporter = buildTransporter();
-  if (!transporter) {
-    console.warn('[auth:email:skip] mail transporter not configured');
-    return;
-  }
+  const { apiKey, senderName, senderEmail } = getBrevoConfig();
 
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to,
-    subject,
-    text,
-    html,
+  const response = await fetch(BREVO_API_URL, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      'api-key': apiKey,
+    },
+    body: JSON.stringify({
+      sender: {
+        name: senderName,
+        email: senderEmail,
+      },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      htmlContent: html,
+    }),
   });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw buildEmailError(502, 'EMAIL_PROVIDER_ERROR', 'Failed to deliver email.', {
+      provider: 'brevo',
+      status: response.status,
+      body,
+    });
+  }
 }
 
 async function sendRegistrationOtpEmail(email, otp) {

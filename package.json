@@ -12,6 +12,8 @@
 		"jest": "^29.7.0"
 	},
 	"dependencies": {
-		"mongodb": "^7.1.1"
+		"mongodb": "^7.1.1",
+		"playwright": "^1.60.0",
+		"resend": "^6.12.4"
 	}
 }
